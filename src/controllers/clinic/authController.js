@@ -33,7 +33,6 @@ export const getProfile = async (req, res) => {
         if (!clinic) {
             return handleError(res, 404, "en", "CLINIC_NOT_FOUND");
         }
-        // Get all related clinic data using separate model functions
         const [clinicLocation] = await clinicModels.getClinicLocation(clinic.clinic_id);
         clinic.location = clinicLocation;
 
@@ -113,7 +112,6 @@ export const onboardClinic = async (req, res) => {
             clinic_name: Joi.string().optional().allow('', null),
             clinic_description: Joi.string().optional().allow('', null),
             org_number: Joi.string().optional().allow('', null),
-            email: Joi.string().email().optional().allow('', null),
             language: Joi.string().valid('en', 'sv').optional().allow('', null),
             mobile_number: Joi.string().optional().allow('', null),
             address: Joi.string().optional().allow('', null),
@@ -135,7 +133,7 @@ export const onboardClinic = async (req, res) => {
                 saturday: daySchema.optional().allow('', null),
                 sunday: daySchema.optional().allow('', null),
             }).optional(),
-            equipments: Joi.array().items(Joi.string()).optional().allow('', null),
+            // equipments: Joi.array().items(Joi.string()).optional().allow('', null),
             skin_types: Joi.array().items(Joi.string()).optional().allow('', null),
             severity_levels: Joi.array().items(Joi.string()).optional().allow('', null),
             form_stage: Joi.number().optional().allow('', null),
@@ -183,7 +181,6 @@ export const onboardClinic = async (req, res) => {
             }
         }
 
-
         const { error, value } = clinicSchema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
@@ -224,7 +221,6 @@ export const onboardClinic = async (req, res) => {
             is_onboarded: is_onboarded === "" ? null : is_onboarded || clinic_data.is_onboarded
         });
 
-
         if (clinic_data) {
             await clinicModels.updateClinicData(clinicData, clinic_data.clinic_id);
         } else {
@@ -245,7 +241,6 @@ export const onboardClinic = async (req, res) => {
                 }
             });
         }
-
 
         const [clinicLocation] = await clinicModels.getClinicLocation(clinic_id);
         if (clinicLocation) {
@@ -328,7 +323,6 @@ export const onboardClinic = async (req, res) => {
                 await clinicModels.insertClinicSeverityLevels(severity_levels, clinic_id);
             }
         }
-
 
         return handleSuccess(res, 201, language, "CLINIC_ONBOARDED_SUCCESSFULLY");
     }
