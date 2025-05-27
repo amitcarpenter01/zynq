@@ -381,18 +381,21 @@ export const get_clinics_data_by_doctor_id = async (doctorId) => {
     try {
         return await db.query(`
             SELECT
-                c.*,
-                u.email
-            FROM
-                tbl_doctor_clinic_map dcm
-            JOIN
-                tbl_clinics c ON dcm.clinic_id = c.clinic_id
-            LEFT JOIN
-                tbl_zqnq_users u ON c.zynq_user_id = u.id
-            WHERE
-                dcm.doctor_id = ?
-            ORDER BY
-                dcm.assigned_at DESC
+    c.*,
+    cl.*,
+    u.email
+FROM
+    tbl_doctor_clinic_map dcm
+JOIN
+    tbl_clinics c ON dcm.clinic_id = c.clinic_id
+LEFT JOIN
+    tbl_clinic_locations cl ON cl.clinic_id = c.clinic_id
+LEFT JOIN
+    tbl_zqnq_users u ON c.zynq_user_id = u.id
+WHERE
+    dcm.doctor_id = ?
+ORDER BY
+    dcm.assigned_at DESC;
         `, [doctorId]);
     } catch (error) {
         console.error("Database Error:", error.message);
