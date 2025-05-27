@@ -511,3 +511,31 @@ export const get_doctor_by_zynq_user_id = async (zynq_user_id) => {
         throw new Error("Failed to fetch doctor by zynq user ID.");
     }
 };
+export const getCertificationsWithUploadPathByDoctorId = async (doctorId) => {
+    try {
+        const query = `
+            SELECT
+                tc.certification_type_id,
+                tc.name AS certification_name,
+                tc.created_at AS certification_type_created_at,
+                tc.updated_at AS certification_type_updated_at,
+                tc.file_name,
+                CASE
+                    WHEN tdc.certification_type_id IS NOT NULL THEN tdc.upload_path
+                    ELSE NULL
+                END AS upload_path
+            FROM
+                tbl_certification_type AS tc
+            LEFT JOIN
+                tbl_doctor_certification AS tdc ON tc.certification_type_id = tdc.certification_type_id
+            WHERE
+                tc.file_name IS NOT NULL
+                AND tdc.doctor_id = ?;
+        `;
+        return await db.query(query, [doctorId]); // Assuming db.query returns an array, with the first element being the actual data rows.// This will return an array of certification objects for the given doctor.
+
+    } catch (error) {
+        console.error("Database Error (getCertificationsWithUploadPathByDoctorId):", error.message);
+        throw new Error("Failed to retrieve certifications due to a database error.");
+    }
+};

@@ -68,4 +68,7 @@ router.get("/get-issue-categories", supportControllers.get_issue_categories);
 router.post("/create-support-ticket", authenticate(['DOCTOR']), supportControllers.create_support_ticket);
 router.get("/get-support-tickets-by-doctor-id", authenticate(['DOCTOR']), supportControllers.get_support_tickets_by_doctor_id);
 
+router.get("/get_doctor_certificates_path", authenticate(['DOCTOR']), supportControllers.get_support_tickets_by_doctor_id);
+
+
 export default router;

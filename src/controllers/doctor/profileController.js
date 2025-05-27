@@ -801,3 +801,18 @@ export const deleteProfileImage = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
+
+
+export const getDoctorCertificatesWithPath = async (req, res) => {
+    try {
+        const language = 'en';
+        const doctorId = req.user.doctorData.doctor_id; // Assuming doctorId is available in req.user
+
+        const profileData = await doctorModels.getCertificationsWithUploadPathByDoctorId(doctorId);
+
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", profileData);
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
