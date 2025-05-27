@@ -202,7 +202,6 @@ export const onboardClinic = async (req, res) => {
         console.log(clinic_logo, "clinic_logo");
         const [clinic_data] = await clinicModels.get_clinic_by_zynq_user_id(zynq_user_id);
 
-
         const clinicData = buildClinicData({
             zynq_user_id: zynq_user_id === "" ? null : zynq_user_id || clinic_data.zynq_user_id,
             clinic_name: clinic_name === "" ? null : clinic_name || clinic_data.clinic_name,
