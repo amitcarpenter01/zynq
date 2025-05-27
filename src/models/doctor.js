@@ -520,7 +520,8 @@ export const getCertificationsWithUploadPathByDoctorId = async (doctorId) => {
     tc.created_at AS certification_type_created_at,
     tc.updated_at AS certification_type_updated_at,
     tc.file_name,
-tdc.upload_path
+tdc.upload_path,
+tdc.doctor_certification_id
 FROM
     tbl_certification_type AS tc
 LEFT JOIN tbl_doctor_certification AS tdc
