@@ -1,0 +1,23 @@
+{
+  "USER_REGISTER_SUCCESS": "Användare registrerad framgångsrikt",
+  "ADMIN_CREATED": "Admin skapad framgångsrikt",
+  "EMAIL_ALREADY": "E-postadressen finns redan",
+  "ADMIN_NOT_FOUND": "Admin hittades inte",
+  "USER_NOT_FOUND": "Användare hittades inte",
+  "INVALID_OTP": "Ogiltig OTP",
+  "LOGIN_SUCCESSFUL": "Inloggning lyckades",
+  "USER_PROFILE": "Användarprofil hämtades framgångsrikt",
+  "PROFILE_UPDATED": "Profil uppdaterad framgångsrikt",
+  "ADMIN_DEACTIVATION": "Ditt konto har inaktiverats av administratören.",
+  "VERIFICATION_OTP": "OTP skickades framgångsrikt.",
+  "VERIFY_EMAIL_FIRST": "Vänligen verifiera ditt konto först",
+  "ACOUNT_DELETED": "Konto raderat framgångsrikt.",
+  "UNAUTH": "Obehörig: Ingen token tillhandahållen.",
+  "UNAUTHMISSINGTOKEN": "Obehörig: Ogiltig eller saknad token",
+  "PROMPT_DATA_UPDATE": "Promptdata uppdaterad framgångsrikt",
+  "PROMPT_DATA_GET": "Promptdata hämtad framgångsrikt",
+  "PROMPT_NOT_FOUND": "Prompt hittades inte",
+  "SCAN_DATA_ADDED": "Ansiktsskanningsdata tillagd framgångsrikt",
+  "SCAN_HISTORY_DATA": "Ansiktsskanningshistorik hämtad framgångsrikt",
+  "INTERNAL_SERVER_ERROR": "internt serverfel"
+}

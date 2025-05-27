@@ -1,0 +1,1958 @@
+{
+  "tbl_admin": [
+    {
+      "Field": "admin_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "uuid()",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "full_name",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "email",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "password",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "mobile_number",
+      "Type": "varchar(191)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "fcm_token",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "profile_image",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "language",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "jwt_token",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "is_verified",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "is_active",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "is_push_notification_on",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "is_location_on",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_appointments": [
+    {
+      "Field": "appointment_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "doctor_id",
+      "Type": "varchar(36)",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "patient_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "appointment_date",
+      "Type": "date",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "start_time",
+      "Type": "time",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "end_time",
+      "Type": "time",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "type",
+      "Type": "enum('Offline','Video Call')",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "status",
+      "Type": "enum('Upcoming','Completed','Rescheduled','Cancelled')",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "fee",
+      "Type": "decimal(10,2)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_certification_type": [
+    {
+      "Field": "certification_type_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "uuid()",
+      "Extra": ""
+    },
+    {
+      "Field": "name",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_clinic_documents": [
+    {
+      "Field": "clinic_document_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "document_type",
+      "Type": "enum('legal','certification')",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "file_url",
+      "Type": "varchar(500)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_clinic_equipments": [
+    {
+      "Field": "clinic_equipment_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "equipment_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_clinic_locations": [
+    {
+      "Field": "clinic_location_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "street_address",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "city",
+      "Type": "varchar(100)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "state",
+      "Type": "varchar(100)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "zip_code",
+      "Type": "varchar(20)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "latitude",
+      "Type": "decimal(10,8)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "longitude",
+      "Type": "decimal(11,8)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_clinic_operation_hours": [
+    {
+      "Field": "clinic_operation_hours_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "day_of_week",
+      "Type": "enum('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "open_time",
+      "Type": "time",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "close_time",
+      "Type": "time",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_clinic_services": [
+    {
+      "Field": "clinic_service_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "service_name",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "service_type",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "service_for_skintype",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "min_fee",
+      "Type": "decimal(10,2)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "max_fee",
+      "Type": "decimal(10,2)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_clinic_severity_levels": [
+    {
+      "Field": "clinic_severity_level_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "severity_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_clinic_skin_types": [
+    {
+      "Field": "clinic_skin_type_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "skin_type_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_clinic_treatments": [
+    {
+      "Field": "clinic_treatment_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "treatment_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_clinics": [
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "uuid()",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "zynq_user_id",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "clinic_name",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "org_number",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "email",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "mobile_number",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "address",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "is_invited",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "is_active",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "onboarding_token",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "profile_completion_percentage",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    },
+    {
+      "Field": "email_sent_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "email_sent_count",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    }
+  ],
+  "tbl_doctor_certification": [
+    {
+      "Field": "doctor_certification_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "uuid()",
+      "Extra": ""
+    },
+    {
+      "Field": "doctor_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "certification_type_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "upload_path",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "issue_date",
+      "Type": "date",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "expiry_date",
+      "Type": "date",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "issuing_authority",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_doctor_clinic_map": [
+    {
+      "Field": "map_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "doctor_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "assigned_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    }
+  ],
+  "tbl_doctor_educations": [
+    {
+      "Field": "education_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "doctor_id",
+      "Type": "varchar(36)",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "degree",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "institution",
+      "Type": "varchar(150)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "start_year",
+      "Type": "year",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "end_year",
+      "Type": "year",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "education_type",
+      "Type": "enum('UG','PG')",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_doctor_experiences": [
+    {
+      "Field": "experience_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "doctor_id",
+      "Type": "varchar(36)",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "title",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "start_date",
+      "Type": "date",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "end_date",
+      "Type": "date",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_doctor_reviews": [
+    {
+      "Field": "doctor_review_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "appointment_id",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "doctor_id",
+      "Type": "varchar(36)",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "patient_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "rating",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "review_text",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_doctors": [
+    {
+      "Field": "doctor_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "uuid()",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "zynq_user_id",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "name",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "specialization",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "employee_id",
+      "Type": "varchar(20)",
+      "Null": "YES",
+      "Key": "UNI",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "experience_years",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "rating",
+      "Type": "decimal(2,1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "fee_per_session",
+      "Type": "decimal(10,2)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "phone",
+      "Type": "varchar(20)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "email",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "age",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "address",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "biography",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "gender",
+      "Type": "enum('Male','Female','Other')",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "profile_image",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_equipments": [
+    {
+      "Field": "equipment_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "name",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": null,
+      "Extra": ""
+    }
+  ],
+  "tbl_face_scan_results": [
+    {
+      "Field": "face_scan_result_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "skin_type",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "skin_concerns",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "face",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "details",
+      "Type": "longtext",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    },
+    {
+      "Field": "user_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "aiAnalysisResult",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "scoreInfo",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    }
+  ],
+  "tbl_product_reviews": [
+    {
+      "Field": "review_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "product_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "user_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "rating",
+      "Type": "float",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "comment",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_product_usage_instructions": [
+    {
+      "Field": "instruction_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "product_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "step_number",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "instruction_text",
+      "Type": "text",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_products": [
+    {
+      "Field": "product_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "clinic_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "name",
+      "Type": "varchar(100)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "price",
+      "Type": "decimal(10,2)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "rating",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "short_description",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "full_description",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "feature_text",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "size_label",
+      "Type": "varchar(50)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "image_url",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "benefit_text",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_roles": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "role",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": "CLINIC",
+      "Extra": ""
+    }
+  ],
+  "tbl_severity_levels": [
+    {
+      "Field": "severity_level_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "level",
+      "Type": "varchar(100)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": null,
+      "Extra": ""
+    }
+  ],
+  "tbl_skin_types": [
+    {
+      "Field": "skin_type_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "name",
+      "Type": "varchar(100)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": null,
+      "Extra": ""
+    }
+  ],
+  "tbl_support_tickets": [
+    {
+      "Field": "ticket_id",
+      "Type": "varchar(20)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "title",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "date_raised",
+      "Type": "date",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "issue_category",
+      "Type": "varchar(100)",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "description",
+      "Type": "text",
+      "Null": "NO",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "status",
+      "Type": "enum('Pending','Resolved')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "Pending",
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "tbl_treatments": [
+    {
+      "Field": "treatment_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": null,
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "name",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": null,
+      "Extra": ""
+    }
+  ],
+  "tbl_users": [
+    {
+      "Field": "user_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "uuid()",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "email",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "password",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "full_name",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "age",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "gender",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "mobile_number",
+      "Type": "varchar(191)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "fcm_token",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "otp",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "profile_image",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "language",
+      "Type": "varchar(191)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "jwt_token",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "is_verified",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "is_active",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "is_push_notification_on",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "is_location_on",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED"
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    },
+    {
+      "Field": "latitude",
+      "Type": "decimal(10,8)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "longitude",
+      "Type": "decimal(11,8)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    }
+  ],
+  "tbl_zqnq_users": [
+    {
+      "Field": "id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "uuid()",
+      "Extra": ""
+    },
+    {
+      "Field": "email",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "UNI",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "password",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "show_password",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "jwt_token",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "reset_token",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "reset_token_expiry",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "fcm_token",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": null,
+      "Extra": ""
+    },
+    {
+      "Field": "role_id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "language",
+      "Type": "enum('en','sv')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "en",
+      "Extra": ""
+    }
+  ]
+}
