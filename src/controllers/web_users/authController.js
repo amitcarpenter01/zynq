@@ -143,33 +143,27 @@ export const reset_password = async (req, res) => {
         });
 
         const { error, value } = resetPasswordSchema.validate(req.body);
-        if (error) {
-            return handleError(res, 400, error.details[0].message);
-        }
+        if (error) return joiErrorHandle(res, error);
 
         const { token, newPassword } = value;
 
-        // Get user by reset token
         const [webUser] = await webModels.get_web_user_by_reset_token(token);
         if (!webUser) {
             return handleError(res, 400, webUser.language, "INVALID_EXPIRED_TOKEN");
         }
 
-        // Check if new password matches current password
         if (webUser.show_password === newPassword) {
             return handleError(res, 400, webUser.language, "PASSWORD_CAN_NOT_SAME");
         }
 
-        // Hash the new password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-        // Update password and clear reset token
         const updateResult = await webModels.update_web_user_password(
             hashedPassword,
             newPassword,
-            null, // reset token
-            null, // reset token expiry
+            null, 
+            null,
             webUser.id
         );
 
@@ -186,31 +180,23 @@ export const reset_password = async (req, res) => {
 };
 
 export const render_success_reset = (req, res) => {
-    return res.render("reset_password/en.ejs")
+    return res.render("success_reset/en.ejs")
 }
-    
+
 export const set_password = async (req, res) => {
     try {
         const schema = Joi.object({
             new_password: Joi.string().required(),
         });
-
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
-
-
         const { new_password } = value;
 
         const [user] = await webModels.get_web_user_by_id(req.user.id);
         if (!user) return handleError(res, 404, 'en', "USER_NOT_FOUND");
-
-
         const hashedPassword = await bcrypt.hash(new_password, 10);
-
         await webModels.update_web_user_password_set(hashedPassword, new_password, user.id);
-
         return handleSuccess(res, 200, 'en', "PASSWORD_SET_SUCCESSFULLY");
-
     } catch (error) {
         console.error("Error setting password:", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
