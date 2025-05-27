@@ -243,7 +243,6 @@ export const onboardClinic = async (req, res) => {
 
         const [clinicLocation] = await clinicModels.getClinicLocation(clinic_id);
         if (clinicLocation) {
-
             const update_data = {
                 clinic_id: clinic_id,
                 street_address: street_address === "" ? null : street_address || clinicLocation.street_address,
@@ -307,11 +306,13 @@ export const onboardClinic = async (req, res) => {
             }
         }
 
-        const skinTypesData = await clinicModels.getClinicSkinTypes(clinic_id);
-        if (skinTypesData) {
-            await clinicModels.updateClinicSkinTypes(skin_types, clinic_id);
-        } else {
-            await clinicModels.insertClinicSkinTypes(skin_types, clinic_id);
+        if (skin_types) {
+            const skinTypesData = await clinicModels.getClinicSkinTypes(clinic_id);
+            if (skinTypesData) {
+                await clinicModels.updateClinicSkinTypes(skin_types, clinic_id);
+            } else {
+                await clinicModels.insertClinicSkinTypes(skin_types, clinic_id);
+            }
         }
 
         if (severity_levels) {
