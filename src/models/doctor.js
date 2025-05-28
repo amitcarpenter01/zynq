@@ -530,7 +530,7 @@ export const get_doctor_support_tickets_by_doctor_id = async (doctor_id) => {
         throw new Error("Failed to fetch support tickets.");
     }
 }
-=======
+
 export const getCertificationsWithUploadPathByDoctorId = async (doctorId) => {
     try {
         const query = `
@@ -557,4 +557,4 @@ WHERE
         throw new Error("Failed to retrieve certifications due to a database error.");
     }
 };
->>>>>>> 466142ddad142600367f97cf924a4a6f7e88b67e
+
