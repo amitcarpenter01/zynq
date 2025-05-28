@@ -24,16 +24,6 @@ const APP_URL = process.env.APP_URL;
 const image_logo = process.env.LOGO_URL;
 
 
-export const get_issue_categories = async (req, res) => {
-    try {
-        const issueCategories = await clinicModels.get_issue_categories();
-        return handleSuccess(res, 200, "en", "ISSUE_CATEGORIES_FETCHED_SUCCESSFULLY", issueCategories);
-    } catch (error) {
-        console.error("Error in get_issue_categories:", error);
-        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
-    }
-}
-
 export const create_support_ticket = async (req, res) => {
     try {
         const schema = Joi.object({
@@ -72,3 +62,39 @@ export const get_support_tickets_by_clinic_id = async (req, res) => {
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 }
+
+export const get_support_tickets_by_doctor_id_to_clinic = async (req, res) => {
+    try {
+        const clinic_id = req.user.clinicData.clinic_id;
+        const supportTickets = await clinicModels.get_support_tickets_by_doctor_id_to_clinic(clinic_id);
+        return handleSuccess(res, 200, "en", "SUPPORT_TICKETS_FETCHED_SUCCESSFULLY", supportTickets);
+    } catch (error) {
+        console.error("Error in get_support_tickets_by_clinic_id:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
+}
+ 
+export const send_response_to_doctor = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            support_ticket_id :Joi.string().required(),
+            response: Joi.string().required(),
+        });
+ 
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+        const { response,support_ticket_id  } = value;
+ 
+        const [ticket] = await clinicModels.get_issue_by_id(support_ticket_id );
+        if (!ticket) return handleError(res, 404, "en", "SUPPORT_TICKET_NOT_FOUND");
+ 
+ 
+        await clinicModels.send_ticket_response(response,support_ticket_id );
+        return handleSuccess(res, 201, "en", "RESPONSE_SENT_SUCCESSFULLY");
+    } catch (error) {
+        console.error("Error in send_response_to_doctor:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
+}
+ 
+ 

@@ -64,9 +64,11 @@ router.delete('/delete_profile_image', authenticate(['DOCTOR']), doctorControlle
 
 
 //======================================= Support apis =========================================
-router.get("/get-issue-categories", supportControllers.get_issue_categories);
 router.post("/create-support-ticket", authenticate(['DOCTOR']), supportControllers.create_support_ticket);
 router.get("/get-support-tickets-by-doctor-id", authenticate(['DOCTOR']), supportControllers.get_support_tickets_by_doctor_id);
+router.post("/create-support-ticket-to-clinic", authenticate(['DOCTOR']), supportControllers.create_support_ticket_to_clinic);
+router.get("/get-support-tickets-by-doctor-id-to-clinic", authenticate(['DOCTOR']), supportControllers.get_support_tickets_by_doctor_id_to_clinic);
+
 
 router.get("/get_doctor_certificates_path", authenticate(['DOCTOR']), doctorController.getDoctorCertificatesWithPath);
 

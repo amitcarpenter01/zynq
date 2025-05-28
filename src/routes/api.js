@@ -11,7 +11,7 @@ import * as faceScanControllers from "../controllers/api/faceScanController.js";
 import * as doctorControllers from "../controllers/api/doctorController.js";
 import * as productControllers from "../controllers/api/productController.js";
 import * as clinicControllers from "../controllers/api/clinicController.js";
-
+import * as supportControllers from "../controllers/api/supportController.js";
 
 const router = express.Router();
 
@@ -47,5 +47,8 @@ router.get("/get-all-products", authenticateUser, productControllers.getAllProdu
 // ==================================== Clinic ==============================
 router.get("/get-all-clinics", authenticateUser, clinicControllers.get_all_clinics);
 
+//==================================== Support ==============================
+router.post("/create-support-ticket", authenticateUser, supportControllers.create_support_ticket);
+router.get("/get-support-tickets", authenticateUser, supportControllers.get_support_tickets);
 
 export default router;

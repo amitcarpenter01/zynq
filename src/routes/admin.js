@@ -9,7 +9,7 @@ import * as userControllers from "../controllers/admin/userController.js";
 import * as clinicControllers from "../controllers/admin/clinicController.js";
 import * as doctorControllers from "../controllers/admin/doctorController.js";
 import * as productControllers from "../controllers/admin/productController.js";
-
+import * as supportControllers from "../controllers/admin/supportController.js";
 const router = express.Router();
 
 //==================================== Authentication ==============================
@@ -46,5 +46,11 @@ router.get('/get-dcotors-managment', doctorControllers.get_doctors_management);
 //==================================== Product Managment ==============================
 router.get('/get-products-managment', productControllers.get_products_managment);
 router.post('/delete-products-managment', productControllers.delete_products_managment);
+
+
+//==================================== Support Managment ==============================
+router.get('/get-all-support-tickets', supportControllers.get_all_support_tickets);
+router.post('/admin-response-to-support-ticket', supportControllers.admin_response_to_support_ticket);
+
 
 export default router;

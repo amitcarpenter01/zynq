@@ -927,3 +927,31 @@ export const get_support_tickets_by_clinic_id = async (clinic_id) => {
     }
 }
 
+export const get_issue_by_id = async (support_ticket_id) => {
+    try {
+        return await db.query(`SELECT * FROM tbl_doctor_support_tickets WHERE support_ticket_id  = ?`, [support_ticket_id]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch clinic data.");
+    }
+};
+ 
+export const get_support_tickets_by_doctor_id_to_clinic = async (clinic_id) => {
+    try {
+        const result = await db.query('SELECT * FROM tbl_doctor_support_tickets WHERE clinic_id = ? ORDER BY created_at DESC', [clinic_id]);
+ 
+        return result;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch support tickets.");
+    }
+}
+ 
+export const send_ticket_response = async (clinic_response, ticket_id) => {
+    try {
+        return await db.query(`UPDATE  tbl_doctor_support_tickets SET clinic_response = ? , responded_at = NOW() where support_ticket_id  = ? `, [clinic_response, ticket_id]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to add doctor personal details.");
+    }
+};

@@ -72,10 +72,14 @@ router.delete("/delete-product/:product_id", authenticate(['CLINIC']), productCo
 router.delete("/delete-product-image/:product_image_id", authenticate(['CLINIC']), productControllers.deleteProductImage);
 router.post("/get-product-by-id", authenticate(['CLINIC']), productControllers.getProductById);
 
+
 //==================================== Support ==============================
-router.get("/get-issue-categories", supportControllers.get_issue_categories);
 router.post("/create-support-ticket", authenticate(['CLINIC']), supportControllers.create_support_ticket);
-router.get("/get-support-tickets-by-clinic-id", authenticate(['CLINIC']), supportControllers.get_support_tickets_by_clinic_id);
+router.get("/get-support-tickets", authenticate(['CLINIC']), supportControllers.get_support_tickets_by_clinic_id);
+router.get("/get-support-tickets-to-clinic", authenticate(['CLINIC']), supportControllers.get_support_tickets_by_doctor_id_to_clinic);
+router.post("/send-response-to-doctor", authenticate(['CLINIC']), supportControllers.send_response_to_doctor);
+
+
 
 
 export default router;

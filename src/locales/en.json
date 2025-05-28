@@ -177,5 +177,9 @@
     "SUPPORT_TICKET_CREATION_FAILED": "Support Ticket Creation Failed",
     "SUPPORT_TICKETS_FETCHED_SUCCESSFULLY": "Support Tickets Fetched Successfully",
     "SUPPORT_TICKETS_FETCHED_FAILED": "Support Tickets Fetch Failed",
-    "SUPPORT_TICKET_NOT_FOUND": "Support Ticket Not Found"
+    "SUPPORT_TICKET_NOT_FOUND": "Support Ticket Not Found",
+    "SUPPORT_TICKET_UPDATED_SUCCESSFULLY": "Support Ticket Updated Successfully",
+    "SUPPORT_TICKET_UPDATED_FAILED": "Support Ticket Update Failed",
+    "RESPONSE_SENT_SUCCESSFULLY": "Response Sent Successfully",
+    "RESPONSE_SENT_FAILED": "Response Sent Failed"
 }
