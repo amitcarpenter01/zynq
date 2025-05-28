@@ -1,5 +1,6 @@
 import * as adminModels from "../../models/admin.js";
 import { handleError, handleSuccess } from "../../utils/responseHandler.js";
+import { calculateProfileCompletionPercentageByDoctorId } from "../doctor/profileController.js";
 
 export const get_doctors_management = async (req, res) => {
     try {
@@ -17,8 +18,10 @@ export const get_doctors_management = async (req, res) => {
                 const treatments = await adminModels.get_doctor_treatments(doctor.doctor_id);
                 const skinTypes = await adminModels.get_doctor_skin_types(doctor.doctor_id);
                 const severityLevels = await adminModels.get_doctor_severity_levels(doctor.doctor_id);
+                const completionPercantage = await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id)
                 return {
                     ...doctor,
+                    onboarding_progress:completionPercantage,
                     experince,
                     education,
                     treatments,

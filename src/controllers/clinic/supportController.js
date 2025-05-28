@@ -37,21 +37,19 @@ export const get_issue_categories = async (req, res) => {
 export const create_support_ticket = async (req, res) => {
     try {
         const schema = Joi.object({
-            issue_category_id: Joi.string().required(),
             issue_title: Joi.string().required(),
             issue_description: Joi.string().required(),
         });
 
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
-        const { issue_category_id, issue_title, issue_description } = value;
+        const { issue_title, issue_description } = value;
 
         const [clinic] = await clinicModels.get_clinic_by_zynq_user_id(req.user.id);
         if (!clinic) return handleError(res, 404, "en", "CLINIC_NOT_FOUND");
 
         const supportTicketData = {
             clinic_id: clinic.clinic_id,
-            issue_category_id: issue_category_id,
             issue_title: issue_title,
             issue_description: issue_description,
         };
@@ -66,7 +64,6 @@ export const create_support_ticket = async (req, res) => {
 
 export const get_support_tickets_by_clinic_id = async (req, res) => {
     try {
-
         const clinic_id = req.user.clinicData.clinic_id;
         const supportTickets = await clinicModels.get_support_tickets_by_clinic_id(clinic_id);
         return handleSuccess(res, 200, "en", "SUPPORT_TICKETS_FETCHED_SUCCESSFULLY", supportTickets);
