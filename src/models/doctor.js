@@ -381,18 +381,21 @@ export const get_clinics_data_by_doctor_id = async (doctorId) => {
     try {
         return await db.query(`
             SELECT
-                c.*,
-                u.email
-            FROM
-                tbl_doctor_clinic_map dcm
-            JOIN
-                tbl_clinics c ON dcm.clinic_id = c.clinic_id
-            LEFT JOIN
-                tbl_zqnq_users u ON c.zynq_user_id = u.id
-            WHERE
-                dcm.doctor_id = ?
-            ORDER BY
-                dcm.assigned_at DESC
+    c.*,
+    cl.*,
+    u.email
+FROM
+    tbl_doctor_clinic_map dcm
+JOIN
+    tbl_clinics c ON dcm.clinic_id = c.clinic_id
+LEFT JOIN
+    tbl_clinic_locations cl ON cl.clinic_id = c.clinic_id
+LEFT JOIN
+    tbl_zqnq_users u ON c.zynq_user_id = u.id
+WHERE
+    dcm.doctor_id = ?
+ORDER BY
+    dcm.assigned_at DESC;
         `, [doctorId]);
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -509,7 +512,6 @@ export const get_doctor_by_zynq_user_id = async (zynq_user_id) => {
     }
 };
 
-
 export const insertDoctorSupportTicket = async (supportTicketData) => {
     try {
         return await db.query(`INSERT INTO tbl_doctor_support_tickets SET ?`, [supportTicketData]);
@@ -528,3 +530,31 @@ export const get_doctor_support_tickets_by_doctor_id = async (doctor_id) => {
         throw new Error("Failed to fetch support tickets.");
     }
 }
+=======
+export const getCertificationsWithUploadPathByDoctorId = async (doctorId) => {
+    try {
+        const query = `
+            SELECT
+    tc.certification_type_id,
+    tc.name AS certification_name,
+    tc.created_at AS certification_type_created_at,
+    tc.updated_at AS certification_type_updated_at,
+    tc.file_name,
+tdc.upload_path,
+tdc.doctor_certification_id
+FROM
+    tbl_certification_type AS tc
+LEFT JOIN tbl_doctor_certification AS tdc
+ON
+    tc.certification_type_id = tdc.certification_type_id AND tdc.doctor_id = ?
+WHERE
+    tc.file_name IS NOT NULL;;
+        `;
+        return await db.query(query, [doctorId]); // Assuming db.query returns an array, with the first element being the actual data rows.// This will return an array of certification objects for the given doctor.
+
+    } catch (error) {
+        console.error("Database Error (getCertificationsWithUploadPathByDoctorId):", error.message);
+        throw new Error("Failed to retrieve certifications due to a database error.");
+    }
+};
+>>>>>>> 466142ddad142600367f97cf924a4a6f7e88b67e

@@ -70,4 +70,7 @@ router.post("/create-support-ticket-to-clinic", authenticate(['DOCTOR']), suppor
 router.get("/get-support-tickets-by-doctor-id-to-clinic", authenticate(['DOCTOR']), supportControllers.get_support_tickets_by_doctor_id_to_clinic);
 
 
+router.get("/get_doctor_certificates_path", authenticate(['DOCTOR']), doctorController.getDoctorCertificatesWithPath);
+
+
 export default router;
