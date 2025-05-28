@@ -12,13 +12,8 @@
 
   <title>Verify Your Account</title>
 
-
   <style type="text/css">
     @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
-
-    a {
-      cursor: pointer;
-    }
 
     a,
     a[href],
@@ -99,116 +94,137 @@
       <tbody>
         <tr>
           <td
-            style="max-width: 620px; width: 100%; vertical-align: top; padding-left: 30px; padding-right: 30px; padding-top: 30px; padding-bottom: 40px;">
+            style="max-width: 620px; width: 100%; vertical-align: top; padding-left: 30px; padding-right: 30px; padding-top: 30px; padding-bottom: 20px;">
 
-            <div style="border-bottom: 1px dashed #aaaaaa5c; padding-bottom:10px">
-              <h6
-                style="font-size:20px; margin-top: 0px; margin-bottom:5px; font-weight:600;font-family: 'Poppins', sans-serif;text-align: start;">
-                Hello <%= name %>,</h6>
+            <!--  <h1 style="font-size: 20px; line-height: 24px; font-family: 'Poppins', sans-serif; font-weight: 600; text-decoration: none; color: #000000;">Forgot Your Password?
 
-              <p style="text-align:left; margin-bottom:5px; margin-top:5px; font-size: 14px;">
-                We are excited to inform you that your clinic has already been pre-registered on ZYNQ – the Nordics’
-                first AI-driven platform for advanced aesthetic treatments and skincare.
+</h1> -->
+            <h6
+              style="font-size:20px; margin-top: 0px; margin-bottom:15px; font-weight:600;font-family: 'Poppins', sans-serif;text-align: start;">
+              Clinic Details</h6>
 
-              </p>
-            </div>
-            <div style="border-bottom: 1px dashed #aaaaaa5c; padding-bottom:10px; padding-top:20px">
-              <h6
-                style="font-size:16px; margin-top: 0px; margin-bottom:5px; font-weight:600;font-family: 'Poppins', sans-serif;text-align: start;">
-                What is ZYNQ?
-              </h6>
-
-              <p style="text-align:left; margin-bottom:5px; margin-top:5px; font-size: 14px; ">ZYNQ connects qualified
-                customers with the right clinic and treatment through AI-powered skin analysis and personalized
-                matching.
-              </p>
-              <p style="text-align:left; margin-bottom:5px; margin-top:5px; font-size: 14px; ">This means you engage
-                with users who already know what they need – and are ready to book.
-              </p>
-            </div>
-            <div style="border-bottom: 1px dashed #aaaaaa5c; padding-bottom:10px; padding-top:20px">
-              <h6
-                style="font-size:16px; margin-top: 0px; margin-bottom:5px; font-weight:600;font-family: 'Poppins', sans-serif;text-align: start;">
-                How ZYNQ generates customers for you:
-
-              </h6>
-              <ul style="text-align:left;padding-left: 20px;margin-top: 5px;">
-                <li style="font-family: 'Poppins', sans-serif; font-weight: 300;">
-                  AI recommends clinics based on real, individual needs – not generic advertising.
-                </li>
-                <li style="font-family: 'Poppins', sans-serif; font-weight: 300; margin-top: 5px;">You get visibility to
-                  highly motivated clients, not just casual browsers.</li>
-                <li style="font-family: 'Poppins', sans-serif; font-weight: 300; margin-top: 5px;">Your clinic is
-                  matched and highlighted at the exact moment of decision.</li>
-              </ul>
-
-
-            </div>
-            <div style="border-bottom: 1px dashed #aaaaaa5c; padding-bottom:10px; padding-top:20px">
-              <h6
-                style="font-size:16px; margin-top: 0px; margin-bottom:5px; font-weight:600;font-family: 'Poppins', sans-serif;text-align: start;">
-                Why activate your profile now?
-
-
-              </h6>
-              <p style="text-align:left; margin-bottom:5px; margin-top:5px; font-size: 14px;">
-                Not activating your clinic on ZYNQ is like being an available Uber car, parked right on Kungsgatan 78 –
-                but invisible in the app.
-              </p>
-              <p style="text-align:left; margin-bottom:5px; margin-top:5px; font-size: 14px;">Customers are searching.
-                They are ready to book. But because you are not visible, they go elsewhere.
-              </p>
-              <p style="text-align:left; margin-bottom:5px; margin-top:5px; font-size: 14px;">With ZYNQ, you are
-                automatically matched with the right client at the right moment – without chasing them.
-              </p>
-
-
-            </div>
-
-
+            <table style="width:100% ;">
+              <tr>
+                <td style="text-align:left">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;"><span
+                      style="color:#282828">Clinic Name : </span> </p>
+                </td>
+                <td style="text-align: left ;">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;">
+                    <%= clinic_name %>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="text-align:left">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;"><span
+                      style="color:#282828">Swedish Organization Number : </span> </p>
+                </td>
+                <td style="text-align: left ;">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;">
+                    <%= organization_number %>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="text-align:left">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;"><span
+                      style="color:#282828">Email : </span> </p>
+                </td>
+                <td style="text-align: left ;">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;">
+                    <%= email %>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="text-align:left">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;"><span
+                      style="color:#282828">Phone Number :</span> </p>
+                </td>
+                <td style="text-align: left ;">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;">
+                    <%= phone %>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="text-align:left">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;"><span
+                      style="color:#282828">City : </span> </p>
+                </td>
+                <td style="text-align: left ;">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;">
+                    <%= city %>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="text-align:left">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;"><span
+                      style="color:#282828">Postal Code : </span> </p>
+                </td>
+                <td style="text-align: left ;">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;">
+                    <%= postal_code %>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="text-align:left">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;"><span
+                      style="color:#282828">Address : </span> </p>
+                </td>
+                <td style="text-align: left ;">
+                  <p style="margin-bottom:0px; margin-top:5px; font-weight:500; color: #858585;"><%= address %>
+                  </p>
+                </td>
+              </tr>
+            </table>
             <div>
 
-
-
-
             </div>
 
-            <p style="text-align: center; padding-top: 20px;">
-              Activate your profile in just a few minutes:
+
+
+          </td>
+        </tr>
+        <tr>
+          <td
+            style="max-width: 620px; width: 100%; vertical-align: top; padding-left: 30px; padding-right: 30px;  padding-bottom: 40px;">
+            <h6
+              style="font-size:20px; margin-top: 0px; margin-bottom:15px; font-weight:600;font-family: 'Poppins', sans-serif;text-align: start;">
+              Invitation Login Credentials</h6>
+            <div>
+              <p style="text-align:left; margin-bottom:5px; margin-top:5px;font-weight:500; color: #858585;"><span
+                  style="font-weight:600; color: #282828; width:100px; display:inline-block">Email :</span>
+                <%= email %>
+              </p>
+              <p style="text-align:left; margin-bottom:5px; margin-top:5px;font-weight:500; color: #858585;"><span
+                  style="font-weight:500; color: #282828; width:100px; display:inline-block">Password :</span>
+                <%= password %>
+              </p>
+            </div>
+
+
+            <p
+              style="font-size: 16px; line-height: 24px; text-align: start; margin-bottom: 0px; margin-top: 30px; font-family: 'Poppins', sans-serif; font-weight: 500; text-decoration: none; color: #333;">
+              Please click the button below to accept your invitation and access your ZYNQ dashboard.
+
             </p>
-
-            <h4 style="text-align: left; font-family: 'Poppins', sans-serif; margin-bottom: 0px;">Login Credentials:
-            </h4>
-
-            <p style="text-align: left; font-family: 'Poppins', sans-serif; margin-bottom: 0px;">
-              <span style="font-weight: 600;">Email :</span>
-              <%= email %>
-            </p>
-
-            <p style="text-align: left; margin-top: 5px;">
-              <span style="font-weight: 600;">Password :</span>
-              <%= password %>
-            </p>
+            <div style="text-align:left">
+              <a href="<%= invitationLink %>" target="_blank"
+                style="background-color: #282828; font-size: 15px;  margin-top: 30px; line-height: 22px; font-family: 'Poppins', sans-serif; font-weight: normal; text-decoration: none; padding: 12px 15px; color: #ffffff; border-radius: 5px; display: inline-block; mso-padding-alt: 0;">
 
 
-            <a href="<%= invitationLink %>" target="_blank"
-              style="background-color: #282828; cursor: pointer; font-size: 15px;  margin-top: 20px; line-height: 22px; font-family: 'Poppins', sans-serif; font-weight: normal; text-decoration: none; padding: 12px 15px; color: #ffffff; border-radius: 5px; display: inline-block; mso-padding-alt: 0;">
 
-              <span style="mso-text-raise: 15pt; color: #ffffff;cursor: pointer;">Accept Invitation</span>
+                <span style="mso-text-raise: 15pt; color: #ffffff;">
+                  Accept Invitation</span>
 
-            </a>
-
-            <p>If you do not wish to receive further invitations from ZYNQ, you can <a href="<%= unsubscribeLink %>"
-                style="font-weight: 600; color:#282828;cursor: pointer;">unsubscribe here</a>.
-            </p>
-            <!-- Start button (You can change the background colour by the hex code below) -->
-            <!--  <a href="#" target="_blank" style="background-color: #000000; font-size: 15px; line-height: 22px; font-family: 'Poppins', sans-serif; font-weight: normal; text-decoration: none; padding: 12px 15px; color: #ffffff; border-radius: 5px; display: inline-block; mso-padding-alt: 0;">
-                  <span style="mso-text-raise: 15pt; color: #ffffff;">521545</span>
-                </a> -->
-            <div style="padding-top: 50px; text-align: left;">
-              <h4 style="margin-bottom: 10px;font-family: 'Poppins', sans-serif;">
-                <%= name %>,
-              </h4>
+              </a>
+            </div>
+            <div style="padding-top: 40px; text-align: left;">
+              <h4 style="margin-bottom: 10px; font-family: 'Poppins', sans-serif;margin-top: 0px;">Cheers,</h4>
               <p style="margin-top: 0px;font-family: 'Poppins', sans-serif;">ZYNQ Team</p>
             </div>
           </td>

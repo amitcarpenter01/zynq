@@ -918,7 +918,7 @@ export const insertSupportTicket = async (supportTicketData) => {
 
 export const get_support_tickets_by_clinic_id = async (clinic_id) => {
     try {
-        const result = await db.query('SELECT *, ic.name FROM tbl_support_tickets st JOIN tbl_issue_categories ic ON st.issue_category_id = ic.issue_category_id WHERE st.clinic_id = ?', [clinic_id]);
+        const result = await db.query('SELECT * FROM tbl_support_tickets WHERE clinic_id = ? ORDER BY created_at DESC', [clinic_id]);
 
         return result;
     } catch (error) {

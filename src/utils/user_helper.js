@@ -45,7 +45,6 @@ export const generateToken = () => {
 }
 
 export const generatePassword = (email) => {
-
     const username = email.split('@')[0];
     const firstName = username.split('.')[0];
 
@@ -54,20 +53,21 @@ export const generatePassword = (email) => {
     const numberChars = '0123456789';
     const specialChars = '@#$%&';
 
-    const randomUpperCase = upperCaseChars.charAt(Math.floor(Math.random() * upperCaseChars.length));
-    const randomLowerCase = lowerCaseChars.charAt(Math.floor(Math.random() * lowerCaseChars.length));
-    const randomNumber = numberChars.charAt(Math.floor(Math.random() * numberChars.length));
-    const randomSpecial = specialChars.charAt(Math.floor(Math.random() * specialChars.length));
+    const getRandomChar = (chars) => chars.charAt(Math.floor(Math.random() * chars.length));
 
-    let basePassword = firstName.slice(0, 4);
+    const randomUpperCase = getRandomChar(upperCaseChars);
+    const randomLowerCase = getRandomChar(lowerCaseChars);
+    const randomNumber = getRandomChar(numberChars);
+    const randomSpecial = getRandomChar(specialChars);
 
-    const combined = basePassword + randomUpperCase + randomLowerCase + randomNumber + randomSpecial;
+    let base = firstName.padEnd(4, 'x').slice(0, 4);
 
-    const shuffledPassword = combined
+    const combined = base + randomUpperCase + randomLowerCase + randomNumber + randomSpecial;
+
+    const shuffled = combined
         .split('')
         .sort(() => Math.random() - 0.5)
         .join('');
 
-    return shuffledPassword.slice(0, 8);
+    return shuffled;
 };
-

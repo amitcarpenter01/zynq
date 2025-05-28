@@ -160,7 +160,7 @@ export const add_clinic_managment = async (req, res) => {
             }
         }));
 
-        return handleSuccess(res, 200, 'en', "Clinic import completed.", {
+        return handleSuccess(res, 200, 'en', "Clinic imported completed.", {
             inserted: insertedClinics,
             skipped: skippedClinics
         });
@@ -269,23 +269,26 @@ export const send_invitation = async (req, res) => {
                 moment().format('YYYY-MM-DD HH:mm:ss')
             );
             const is_subscribed = clinic.clinic_id;
-
-            const is_unsubscribed = clinic.clinic_id;
+            
             const html = await ejs.renderFile(
                 path.join(__dirname, "../../views/invitation-mail.ejs"),
                 {
-                    name: clinic.clinic_name,
+                    clinic_name: clinic.clinic_name,
+                    organization_number: clinic.org_number,
                     email: clinic.email,
+                    phone: clinic.mobile_number,
+                    city: clinic.city,
+                    postal_code: clinic.zip_code,
+                    address: clinic.address,
                     password: password,
                     logo: process.env.LOGO_URL,
                     invitationLink: `${process.env.LOCAL_APP_URL}admin/subscribed/${is_subscribed}`,
-                    unsubscribeLink: `${process.env.LOCAL_APP_URL}admin/unsubscribed/${is_unsubscribed}`,
                 }
             );
 
             await sendEmail({
                 to: clinic.email,
-                subject: "Your clinic is already part of the future. Activate your profile on ZYNQ today.",
+                subject: "You're One Step Away from Joining ZYNQ – Accept Your Invite",
                 html,
             });
         }));
