@@ -389,3 +389,59 @@ export const get_doctor_severity_levels = async (doctorId) => {
         throw new Error("Failed to get doctor's severity_levels");
     }
 };
+
+//======================================= Support Managment =========================================
+
+export const get_all_support_tickets = async () => {
+    try {
+        return await db.query('SELECT * FROM `tbl_support_tickets` ORDER BY `created_at` DESC;');
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get all support tickets.");
+    }
+}
+
+export const get_clinic_by_id = async (clinic_id) => {
+    try {
+        return await db.query('SELECT * FROM `tbl_clinics` WHERE clinic_id = ?', [clinic_id]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get clinic by id.");
+    }
+}
+
+export const get_doctor_by_id = async (doctor_id) => {
+    try {
+        return await db.query('SELECT * FROM `tbl_doctors` WHERE doctor_id = ?', [doctor_id]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor by id.");
+    }
+}
+
+export const get_user_by_id = async (user_id) => {
+    try {
+        return await db.query('SELECT * FROM `tbl_users` WHERE user_id = ?', [user_id]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get user by id.");
+    }
+}
+
+export const get_support_ticket_by_id = async (support_ticket_id) => {
+    try {
+        return await db.query('SELECT * FROM `tbl_support_tickets` WHERE support_ticket_id = ?', [support_ticket_id]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get support ticket by id.");
+    }   
+}
+
+export const update_support_ticket = async (support_ticket_id, updateData) => {
+    try {
+        return await db.query('UPDATE `tbl_support_tickets` SET `admin_response`= ?, `responsed_at`= ? WHERE support_ticket_id = ?', [updateData.response, new Date(), support_ticket_id]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update support ticket.");
+    }
+}

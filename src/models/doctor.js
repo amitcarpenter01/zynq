@@ -508,3 +508,23 @@ export const get_doctor_by_zynq_user_id = async (zynq_user_id) => {
         throw new Error("Failed to fetch doctor by zynq user ID.");
     }
 };
+
+
+export const insertDoctorSupportTicket = async (supportTicketData) => {
+    try {
+        return await db.query(`INSERT INTO tbl_doctor_support_tickets SET ?`, [supportTicketData]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to insert support ticket.");
+    }
+};
+ 
+export const get_doctor_support_tickets_by_doctor_id = async (doctor_id) => {
+    try {
+        const result = await db.query('SELECT * FROM tbl_doctor_support_tickets WHERE doctor_id = ? ORDER BY created_at DESC', [doctor_id]);
+        return result;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch support tickets.");
+    }
+}

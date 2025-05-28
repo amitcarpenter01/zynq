@@ -257,5 +257,33 @@ export const getAllClinicsForUser = async () => {
     }
 }
 
+export const get_clinic_by_zynq_user_id = async (zynq_user_id) => {
+    try {
+        return await db.query(`SELECT * FROM tbl_clinics WHERE zynq_user_id = ?`, [zynq_user_id]);
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch clinic.");
+    }
+}
 
 
+//======================================= Support =========================================
+export const insert_support_ticket = async (support_ticket_data) => {
+    try {
+        return await db.query(`INSERT INTO tbl_support_tickets SET ?`, support_ticket_data);
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to insert support ticket.");
+    }
+}
+
+export const get_support_tickets_by_user_id = async (user_id) => {
+    try {
+        return await db.query(`SELECT * FROM tbl_support_tickets WHERE user_id = ? ORDER BY created_at DESC`, [user_id]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch support tickets.");
+    }
+}
