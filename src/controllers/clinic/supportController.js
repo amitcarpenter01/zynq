@@ -67,6 +67,13 @@ export const get_support_tickets_by_doctor_id_to_clinic = async (req, res) => {
     try {
         const clinic_id = req.user.clinicData.clinic_id;
         const supportTickets = await clinicModels.get_support_tickets_by_doctor_id_to_clinic(clinic_id);
+        for (let ticket of supportTickets) {
+          const [doctor] = await adminModels.get_doctor_by_id(ticket.doctor_id);
+            finalData.push({
+                ...ticket,
+                doctor: doctor,
+            });
+        }
         return handleSuccess(res, 200, "en", "SUPPORT_TICKETS_FETCHED_SUCCESSFULLY", supportTickets);
     } catch (error) {
         console.error("Error in get_support_tickets_by_clinic_id:", error);
