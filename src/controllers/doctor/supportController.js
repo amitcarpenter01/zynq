@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import * as clinicModels from "../../models/clinic.js";
 import * as doctorModels from "../../models/doctor.js";
+import * as adminModels from "../../models/admin.js";
 import { sendEmail } from "../../services/send_email.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
