@@ -100,6 +100,7 @@ export const get_support_tickets_by_doctor_id_to_clinic = async (req, res) => {
     try {
         const doctor_id = req.user.doctorData.doctor_id;
         const supportTickets = await doctorModels.get_doctor_support_tickets_by_doctor_id(doctor_id);
+        let finalData = [];
         for (let ticket of supportTickets) {
             const [clinic] = await adminModels.get_clinic_by_id(ticket.clinic_id);
             finalData.push({
@@ -107,7 +108,7 @@ export const get_support_tickets_by_doctor_id_to_clinic = async (req, res) => {
                 clinic: clinic,
             });
         }
-        return handleSuccess(res, 200, "en", "SUPPORT_TICKETS_FETCHED_SUCCESSFULLY", supportTickets);
+        return handleSuccess(res, 200, "en", "SUPPORT_TICKETS_FETCHED_SUCCESSFULLY", finalData);
     } catch (error) {
         console.error("Error in get_support_tickets_by_doctor_id:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
