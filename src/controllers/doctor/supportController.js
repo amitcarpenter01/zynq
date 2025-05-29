@@ -73,21 +73,21 @@ export const create_support_ticket_to_clinic = async (req, res) => {
             issue_title: Joi.string().required(),
             issue_description: Joi.string().required(),
         });
- 
+
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
         const { clinic_id, issue_title, issue_description } = value;
- 
+
         const [doctor] = await doctorModels.get_doctor_by_zynq_user_id(req.user.id);
         if (!doctor) return handleError(res, 404, "en", "DOCTOR_NOT_FOUND");
- 
+
         const supportTicketData = {
             doctor_id: doctor.doctor_id,
             clinic_id: clinic_id,
             issue_title: issue_title,
             issue_description: issue_description,
         };
- 
+
         await doctorModels.insertDoctorSupportTicket(supportTicketData);
         return handleSuccess(res, 201, "en", "SUPPORT_TICKET_CREATED_SUCCESSFULLY");
     } catch (error) {
@@ -95,11 +95,18 @@ export const create_support_ticket_to_clinic = async (req, res) => {
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 }
- 
+
 export const get_support_tickets_by_doctor_id_to_clinic = async (req, res) => {
     try {
         const doctor_id = req.user.doctorData.doctor_id;
         const supportTickets = await doctorModels.get_doctor_support_tickets_by_doctor_id(doctor_id);
+        for (let ticket of supportTickets) {
+            const [clinic] = await adminModels.get_clinic_by_id(ticket.clinic_id);
+            finalData.push({
+                ...ticket,
+                clinic: clinic,
+            });
+        }
         return handleSuccess(res, 200, "en", "SUPPORT_TICKETS_FETCHED_SUCCESSFULLY", supportTickets);
     } catch (error) {
         console.error("Error in get_support_tickets_by_doctor_id:", error);
