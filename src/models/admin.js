@@ -420,7 +420,7 @@ export const get_doctor_by_id = async (doctor_id) => {
             FROM 
                 tbl_doctors AS td
             JOIN 
-                tbl_zynq_users AS tu 
+                tbl_zqnq_users AS tu 
             ON 
                 td.zynq_user_id = tu.id
             WHERE 
