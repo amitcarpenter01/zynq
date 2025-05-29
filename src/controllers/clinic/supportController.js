@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken"
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import * as clinicModels from "../../models/clinic.js";
+import * as adminModels from "../../models/admin.js";
 import * as webModels from "../../models/web_user.js";
 import { sendEmail } from "../../services/send_email.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
