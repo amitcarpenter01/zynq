@@ -412,10 +412,24 @@ export const get_clinic_by_id = async (clinic_id) => {
 
 export const get_doctor_by_id = async (doctor_id) => {
     try {
-        return await db.query('SELECT * FROM `tbl_doctors` WHERE doctor_id = ?', [doctor_id]);
+        const query = `
+            SELECT 
+                td.*, 
+                tu.email, 
+                tu.password
+            FROM 
+                tbl_doctors AS td
+            JOIN 
+                tbl_zynq_users AS tu 
+            ON 
+                td.zynq_user_id = tu.id
+            WHERE 
+                td.doctor_id = ?;
+        `;
+        return await db.query(query, [doctor_id]);
     } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to get doctor by id.");
+        throw new Error("Failed to get doctor and user data by doctor id.");
     }
 }
 
