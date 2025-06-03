@@ -453,7 +453,7 @@ export const get_support_ticket_by_id = async (support_ticket_id) => {
 
 export const update_support_ticket = async (support_ticket_id, updateData) => {
     try {
-        return await db.query('UPDATE `tbl_support_tickets` SET `admin_response`= ?, `responsed_at`= ? WHERE support_ticket_id = ?', [updateData.response, new Date(), support_ticket_id]);
+        return await db.query('UPDATE `tbl_support_tickets` SET `admin_response`= ?, `responded_at`= ? WHERE support_ticket_id = ?', [updateData.response, new Date(), support_ticket_id]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update support ticket.");
