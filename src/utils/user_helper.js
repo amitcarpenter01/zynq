@@ -71,3 +71,13 @@ export const generatePassword = (email) => {
 
     return shuffled;
 };
+
+export const generateSupportTicketId = () => {
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const randomNumber = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+    const ticketId = `#${dd}${mm}${yyyy}-000${randomNumber}`;
+    return ticketId;
+}

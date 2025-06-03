@@ -12,7 +12,7 @@ import * as adminModels from "../../models/admin.js";
 import * as webModels from "../../models/web_user.js";
 import { sendEmail } from "../../services/send_email.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
-import { generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
+import { generateAccessToken, generatePassword, generateVerificationLink, generateSupportTicketId } from "../../utils/user_helper.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,10 +39,12 @@ export const create_support_ticket = async (req, res) => {
         const [clinic] = await clinicModels.get_clinic_by_zynq_user_id(req.user.id);
         if (!clinic) return handleError(res, 404, "en", "CLINIC_NOT_FOUND");
 
+        const supportTicketId = generateSupportTicketId();
         const supportTicketData = {
             clinic_id: clinic.clinic_id,
             issue_title: issue_title,
             issue_description: issue_description,
+            ticket_id: supportTicketId,
         };
 
         await clinicModels.insertSupportTicket(supportTicketData);
