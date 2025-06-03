@@ -505,7 +505,7 @@ export const get_support_tickets_by_doctor_id = async (doctor_id) => {
 
 export const get_doctor_by_zynq_user_id = async (zynq_user_id) => {
     try {
-        return await db.query(`SELECT * FROM tbl_doctors WHERE zynq_user_id = ?`, [zynq_user_id]);
+        return await db.query(`SELECT * FROM tbl_doctors WHERE zynq_user_id = ? ORDER BY created_at DESC`, [zynq_user_id]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch doctor by zynq user ID.");
