@@ -134,7 +134,7 @@ export const resetPassword = async (req, res) => {
 };
 
 export const successChange = async (req, res) => {
-    res.render("success_reset/en.ejs");
+    res.render("success_reset/admin_en.ejs");
 };
 
 export const profile = async (req, res) => {
