@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { fileURLToPath } from 'url';
 import * as apiModels from "../../models/api.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
-
+import { generateSupportTicketId } from "../../utils/user_helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,10 +24,12 @@ export const create_support_ticket = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
         const { issue_title, issue_description } = value;
 
+        const supportTicketId = generateSupportTicketId();
         const supportTicketData = {
             user_id: req.user.user_id,
             issue_title: issue_title,
             issue_description: issue_description,
+            ticket_id: supportTicketId,
         };
 
         await apiModels.insert_support_ticket(supportTicketData);
