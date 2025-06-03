@@ -84,11 +84,14 @@ export const create_support_ticket_to_clinic = async (req, res) => {
         const [doctor] = await doctorModels.get_doctor_by_zynq_user_id(req.user.id);
         if (!doctor) return handleError(res, 404, "en", "DOCTOR_NOT_FOUND");
 
+        const supportTicketId = generateSupportTicketId();
+
         const supportTicketData = {
             doctor_id: doctor.doctor_id,
             clinic_id: clinic_id,
             issue_title: issue_title,
             issue_description: issue_description,
+            ticket_id: supportTicketId,
         };
 
         await doctorModels.insertDoctorSupportTicket(supportTicketData);
