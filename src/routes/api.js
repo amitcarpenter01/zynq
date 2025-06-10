@@ -26,6 +26,7 @@ router.delete("/delete-account", authenticateUser, authControllers.deleteAccount
 router.get("/privacy-policy", authControllers.render_privacy_policy);
 router.post("/terms-and-conditions", authControllers.render_terms_and_condition);
 router.post("/privacy-policy", authControllers.render_privacy_policy);
+router.post("/enroll-user", authControllers.enroll_user);
 
 
 //==================================== AI Prompt ==============================

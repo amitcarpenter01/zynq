@@ -181,5 +181,7 @@
     "SUPPORT_TICKET_UPDATED_SUCCESSFULLY": "Support Ticket Updated Successfully",
     "SUPPORT_TICKET_UPDATED_FAILED": "Support Ticket Update Failed",
     "RESPONSE_SENT_SUCCESSFULLY": "Response Sent Successfully",
-    "RESPONSE_SENT_FAILED": "Response Sent Failed"
+    "RESPONSE_SENT_FAILED": "Response Sent Failed",
+    "ENROLL_SUCCESSFUL": "Enroll Successful",
+    "USER_ALREADY_ENROLLED": "User Already Enrolled"
 }

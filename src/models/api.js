@@ -36,6 +36,15 @@ export const create_user = async (mobile_number, otp = '', language) => {
     }
 };
 
+export const enroll_user = async (user_data) => {
+    try {
+        return await db.query(`INSERT INTO tbl_users SET ?`, user_data);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to create user.");
+    }
+};
+
 export const update_user = async (user_data, user_id) => {
     try {
         return await db.query(

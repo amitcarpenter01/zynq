@@ -11,6 +11,10 @@ import { generateAccessToken, generateVerificationLink } from "../../utils/user_
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import twilio from 'twilio';
 
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 dotenv.config();
 
@@ -214,7 +218,6 @@ export const updateProfile = async (req, res) => {
             latitude: Joi.number().optional().allow(null),
             longitude: Joi.number().optional().allow(null),
             language: Joi.string().optional().allow("", null),
-
         });
 
         const { error, value } = updateProfileSchema.validate(req.body);
@@ -390,6 +393,80 @@ export const register_with_email = async (req, res) => {
         return handleSuccess(res, 201, `Verification link sent successfully to your email (${lower_email}). Please verify your account.`);
     } catch (error) {
         console.error('Error in register:', error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+
+export const enroll_user = async (req, res) => {
+    try {
+        const enrollSchema = Joi.object({
+            email: Joi.string().required(),
+            mobile_number: Joi.string().required(),
+            applicaiton_type: Joi.string().valid('android', 'ios', 'both').required(),
+            udid: Joi.string().optional().allow("", null),
+        });
+
+        const { error, value } = enrollSchema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+        const { email, mobile_number, applicaiton_type, udid } = value;
+
+        const android_app_link = process.env.ANDROID_APP_LINK;
+        const ios_app_link = process.env.IOS_APP_LINK;
+
+        const [user] = await apiModels.get_user_by_mobile_number(mobile_number);
+        if (user) {
+            return handleError(res, 400, 'en', "USER_ALREADY_ENROLLED");
+        }
+
+        const user_data = {
+            email,
+            mobile_number,
+            udid
+        }
+        await apiModels.enroll_user(user_data); 
+
+        if (applicaiton_type == "android") {
+            const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
+            const emailHtml = await ejs.renderFile(emailTemplatePath, { image_logo, email, android_app_link, application_type: "android" });
+
+            const emailOptions = {
+                to: email,
+                subject: "Enroll Your Account",
+                html: emailHtml,
+            };
+            await sendEmail(emailOptions);
+            return handleSuccess(res, 200, 'en', "ENROLL_SUCCESSFUL");
+        }
+
+        if (applicaiton_type == "ios") {
+            const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
+            const emailHtml = await ejs.renderFile(emailTemplatePath, { udid, image_logo, email, ios_app_link, application_type: "ios" });
+
+            const emailOptions = {
+                to: email,
+                subject: "Enroll Your Account",
+                html: emailHtml,
+            };
+            await sendEmail(emailOptions);
+            return handleSuccess(res, 200, 'en', "ENROLL_SUCCESSFUL");
+        }
+
+        if (applicaiton_type == "both") {
+            const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
+            const emailHtml = await ejs.renderFile(emailTemplatePath, { udid, image_logo, email, android_app_link, ios_app_link, application_type: "both" });
+            const emailOptions = {
+                to: email,
+                subject: "Enroll Your Account",
+                html: emailHtml,
+            };
+            await sendEmail(emailOptions);
+            return handleSuccess(res, 200, 'en', "ENROLL_SUCCESSFUL");
+        }
+
+
+    } catch (error) {
+        console.error('Error in enroll:', error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
