@@ -955,3 +955,33 @@ export const send_ticket_response = async (clinic_response, ticket_id) => {
         throw new Error("Failed to add doctor personal details.");
     }
 };
+
+export const getAllSkinCondition = async () => {
+    try {
+        const conditions = await db.query('SELECT * FROM tbl_skin_conditions');
+        return conditions;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch conditions.");
+    }
+};
+
+export const getAllsurgery = async() =>{
+    try {
+        const surgeries = await db.query('SELECT * FROM tbl_surgery');
+        return surgeries;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch surgeries.");
+    }
+}
+
+export const getAllDevices = async() =>{
+    try {
+        const devices = await db.query('SELECT * FROM tbl_aesthetic_devices')
+        return devices;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch devices.");
+    }
+}

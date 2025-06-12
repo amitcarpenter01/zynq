@@ -11,6 +11,7 @@ import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken, generateVerificationLink } from "../../utils/user_helper.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import axios from 'axios';
+import { tryCatch } from "bullmq";
 
 
 dotenv.config();
@@ -586,3 +587,46 @@ export const getLatLong = (req, res) => {
         }
     });
 };
+
+
+export const getAllSkinConditions = async(req,res) =>{
+    try{
+    const language = "en"
+    const skinCondition = await clinicModels.getAllSkinCondition();
+    if(!skinCondition.length){
+        return handleError(res, 404, language, "NO_SKIN_CONDITION_FOUND");
+    }
+        return handleSuccess(res,200,language,"SKIN_CONDITION_FETCHED_SUCCESSFULLY",skinCondition)
+    }
+    catch (error) {
+        console.error("Error in getAllTreatments:", error);
+        return handleError(res, 500, "en", 'INTERNAL_SERVER_ERROR');
+    }
+}
+
+export const getAllSurgery = async(req,res) =>{
+    try {
+        const language = "en";
+        const surgery = await clinicModels.getAllsurgery();
+        if(!surgery.length){
+            return handleError(res,400,language,"NO_SURGERY_FOUND")
+        }
+        return handleSuccess(res,200,language,"SURGERY_FETCHED_SUCCESSFULLY",surgery)
+    } catch (error) {
+        console.error("Error in getAllSurgery:", error);
+        return handleError(res, 500, "en", 'INTERNAL_SERVER_ERROR');
+    }
+}
+
+export const getAllDevices = async(req,res) =>{
+    try {
+        const language = "en";
+        const devices = await clinicModels.getAllDevices();
+        if(!devices.length){
+            return handleError(res,400,language,"NO_DEVICES_FOUND")
+        }
+            return handleSuccess(res,200,language,"DEVICES_FETCHED_SUCCESSFULLY",devices)
+    } catch (error) {
+        return handleError(res, 500, "en", 'INTERNAL_SERVER_ERROR');
+    }
+}

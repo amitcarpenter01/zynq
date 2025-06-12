@@ -339,10 +339,13 @@ export const get_doctor_profile = async (doctorId) => {
         const severityLevels = await get_doctor_severity_levels(doctorId);
         const availability = await get_doctor_availability(doctorId);
         const certifications = await get_doctor_certifications(doctorId);
+        const skinCondition = await get_doctor_skin_condition(doctorId);
+        const surgery = await get_doctor_surgeries(doctorId);
+        const aestheticDevices = await get_doctor_aesthetic_devices(doctorId)
 
         return {
             ...mainUser,
-            ...doctor, education, experience, treatments, skinTypes, severityLevels, availability, certifications,
+            ...doctor, education, experience, treatments, skinTypes, severityLevels, availability, certifications,skinCondition,surgery,aestheticDevices
         };
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -558,3 +561,100 @@ WHERE
     }
 };
 
+export const update_doctor_skin_conditions = async (doctorId, skinConditionIds) => {
+    try {
+        await db.query(`DELETE FROM tbl_doctor_skin_condition WHERE doctor_id = ?`, [doctorId]);
+        const values = skinConditionIds.map(skinConditionId => [doctorId, skinConditionId]);
+        if (values.length > 0) {
+            return await db.query(`INSERT INTO tbl_doctor_skin_condition (doctor_id, skin_condition_id) VALUES ?`, [values]);
+        }
+        return null;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update doctor's skin conditions.");
+    }
+};
+
+export const update_doctor_surgery = async (doctorId, surgeryIds) => {
+    try {
+        await db.query(`DELETE FROM tbl_doctor_surgery WHERE doctor_id = ?`, [doctorId]);
+        const values = surgeryIds.map(surgeryId => [doctorId, surgeryId]);
+        if (values.length > 0) {
+            return await db.query(`INSERT INTO tbl_doctor_surgery (doctor_id, surgery_id) VALUES ?`, [values]);
+        }
+        return null;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update doctor's surgery.");
+    }
+};
+
+export const update_doctor_aesthetic_devices = async (doctorId, aestheticDevicesIds) => {
+    try {
+        await db.query(`DELETE FROM tbl_doctor_aesthetic_devices WHERE doctor_id = ?`, [doctorId]);
+        const values = aestheticDevicesIds.map(aestheticDevicesId => [doctorId, aestheticDevicesId]);
+        if (values.length > 0) {
+            return await db.query(`INSERT INTO tbl_doctor_aesthetic_devices (doctor_id, aesthetic_devices_id) VALUES ?`, [values]);
+        }
+        return null;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update doctor's aesthetic devices.");
+    }
+};
+
+export const get_doctor_skin_condition = async (doctorId) => {
+    try {
+        return await db.query(`
+            SELECT 
+                dsc.*, 
+                tsc.*
+            FROM 
+                tbl_doctor_skin_condition dsc
+            INNER JOIN 
+                tbl_skin_conditions tsc ON dsc.skin_condition_id = tsc.skin_condition_id
+            WHERE 
+                dsc.doctor_id = ?`, [doctorId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's skin conditions.");
+    }
+};
+
+
+export const get_doctor_surgeries = async (doctorId) => {
+    try {
+        return await db.query(`
+            SELECT 
+                ds.*, 
+                s.*
+            FROM 
+                tbl_doctor_surgery ds
+            INNER JOIN 
+                tbl_surgery s ON ds.surgery_id = s.surgery_id
+            WHERE 
+                ds.doctor_id = ?`, [doctorId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's surgeries.");
+    }
+};
+
+
+export const get_doctor_aesthetic_devices = async (doctorId) => {
+    try {
+        return await db.query(`
+            SELECT 
+                dad.*, 
+                ad.*
+            FROM 
+                tbl_doctor_aesthetic_devices dad
+            INNER JOIN 
+                tbl_aesthetic_devices ad ON dad.device_id = ad.device_id
+            WHERE 
+                dad.doctor_id = ?`, [doctorId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's aesthetic devices.");
+    }
+};
