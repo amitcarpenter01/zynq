@@ -54,6 +54,10 @@ router.get("/get-certificate-type", authControllers.getCertificateType);
 router.get("/search-location", authControllers.searchLocation);
 router.get("/get-lat-long", authControllers.getLatLong);
 
+router.get("/get-SkinConditions",authControllers.getAllSkinConditions)
+router.get("/get-surgery",authControllers.getAllSurgery)
+router.get("/get-devices",authControllers.getAllDevices)
+
 //==================================== Roles ==============================
 router.get("/get-roles", authControllers.getAllRoles);
 

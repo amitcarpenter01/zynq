@@ -143,6 +143,9 @@ export const addExpertise = async (req, res) => {
         const schema = Joi.object({
             treatment_ids: Joi.string().required(),
             skin_type_ids: Joi.string().required(),
+            skin_condition_ids:Joi.string().required(),
+            surgery_ids:Joi.string().required(),
+            aesthetic_devices_ids:Joi.string().required(),
             severity_levels_ids: Joi.string().required(),
         });
 
@@ -154,12 +157,19 @@ export const addExpertise = async (req, res) => {
 
         const treatmentIds = value.treatment_ids.split(',').map(id => id.trim());
         const skinTypeIds = value.skin_type_ids.split(',').map(id => id.trim());
+        const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
+        const surgeryIds = value.surgery_ids.split(',').map(id => id.trim());
+        const aestheticDevicesIds = value.aesthetic_devices_ids.split(',').map(id => id.trim());
         const severityLevelIds = value.severity_levels_ids.split(',').map(id => id.trim());
 
         // Call model functions to update each expertise
         await doctorModels.update_doctor_treatments(doctorId, treatmentIds);
         await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
         await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
+        await doctorModels.update_doctor_skin_conditions(doctorId,skinConditionIds);
+        await doctorModels.update_doctor_surgery(doctorId,surgeryIds);
+        await doctorModels.update_doctor_aesthetic_devices(doctorId,aestheticDevicesIds);
+
 
         const zynqUserId = req.user.id
         await update_onboarding_status(3, zynqUserId);
@@ -234,7 +244,7 @@ export const getDoctorProfile = async (req, res) => {
         if (profileData.experience && profileData.experience.length > 0) filledFieldsCount++;
 
         // Expertise
-        const expertiseCategories = ['treatments', 'skinTypes', 'severityLevels'];
+        const expertiseCategories = ['treatments', 'skinTypes', 'severityLevels','skinCondition','surgery','aestheticDevices'];
         totalFieldsCount += expertiseCategories.length;
         expertiseCategories.forEach(category => {
             if (profileData[category] && profileData[category].length > 0) filledFieldsCount++;
@@ -512,6 +522,9 @@ export const editExpertise = async (req, res) => {
             treatment_ids: Joi.string().optional(),
             skin_type_ids: Joi.string().optional(),
             severity_levels_ids: Joi.string().optional(),
+            skin_condition_ids:Joi.string().optional(),
+            surgery_ids:Joi.string().optional(),
+            aesthetic_devices_ids:Joi.string().optional(),
         });
 
         let language = 'en';
@@ -531,6 +544,18 @@ export const editExpertise = async (req, res) => {
         if (value.severity_levels_ids !== undefined) {
             const severityLevelIds = value.severity_levels_ids.split(',').map(id => id.trim());
             await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
+        }
+        if(value.skin_condition_ids !== undefined){
+            const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
+            await doctorModels.update_doctor_skin_conditions(doctorId,skinConditionIds)
+        }
+        if(value.surgery_ids !== undefined){
+            const surgeryIds = value.surgery_ids.split(',').map(id => id.trim());
+            await doctorModels.update_doctor_surgery(doctorId,surgeryIds)
+        }
+        if(value.aesthetic_devices_ids !== undefined){
+            const aestheticDevicesIds = value.aesthetic_devices_ids.split(',').map(id => id.trim());
+            await doctorModels.update_doctor_aesthetic_devices(doctorId,aestheticDevicesIds)
         }
 
         return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", {});
