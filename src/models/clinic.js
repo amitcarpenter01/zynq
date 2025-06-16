@@ -985,3 +985,136 @@ export const getAllDevices = async() =>{
         throw new Error("Failed to fetch devices.");
     }
 }
+
+export const getClinicSkinCondition = async(clinic_id) =>{
+    try {
+       const skinCondition = await db.query(
+            `SELECT s.* 
+             FROM tbl_skin_conditions s 
+             INNER JOIN tbl_clinic_skin_condition csc 
+             ON s.skin_condition_id = csc.skin_condition_id 
+             WHERE csc.clinic_id = ? 
+             ORDER BY s.created_at DESC`, 
+            [clinic_id]
+        );
+        return skinCondition;
+    } catch (error) {
+         console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch skin condition.");
+    }
+}
+
+export const getClinicSurgery = async(clinic_id) =>{
+    try {
+         const surgery = await db.query(
+        `SELECT s.* FROM tbl_surgery s ` +  
+        `INNER JOIN tbl_clinic_surgery cs ON s.surgery_id = cs.surgery_id ` + 
+        `WHERE cs.clinic_id = ? ORDER BY s.created_at DESC`,
+        [clinic_id]
+    );
+    return surgery;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch surgery");
+    }
+}
+
+export const getClinicAestheticDevice = async (clinic_id) => {
+    // try {
+        const devices = await db.query(
+            `SELECT s.* 
+             FROM tbl_aesthetic_devices s 
+             INNER JOIN tbl_clinic_aesthetic_devices cad 
+             ON s.aesthetic_device_id = cad.aesthetic_devices_id 
+             WHERE cad.clinic_id = ? 
+             ORDER BY s.created_at DESC`,
+            [clinic_id]
+        );
+        return devices;
+    // } catch (error) {
+    //     console.error("Database Error:", error.message);
+    //     throw new Error("Failed to fetch devices");
+    // }
+};
+
+export const updateClinicSkinCondition = async(skin_conditions,clinic_id) =>{
+    try {
+        await db.query('DELETE FROM tbl_clinic_skin_condition WHERE clinic_id = ?',[clinic_id]);
+        if(!skin_conditions || skin_conditions.length === 0) return;
+        const values = skin_conditions.map(skin_condition_id =>[clinic_id,skin_condition_id]);
+        await db.query('INSERT INTO tbl_clinic_skin_condition (clinic_id, skin_condition_id) VALUES ?',[values])
+    } catch (error) {
+         console.error("Database Error:", error.message);
+        throw new Error("Failed to update clinic skin conditions.");
+    }
+}
+
+export const updateClinicSurgery =async(surgery,clinic_id) =>{ 
+    try {
+        await db.query('DELETE FROM tbl_clinic_surgery WHERE clinic_id =?',[clinic_id]);
+        if(!surgery || surgery.length === 0) return;
+        const values = surgery.map(surgery_id =>[clinic_id,surgery_id])
+        await db.query('INSERT INTO tbl_clinic_surgery(clinic_id,surgery_id) VALUES ?',[values])
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update clinic surgery");
+    }
+
+}
+
+export const updateClinicAestheticDevices = async(aesthetic_devices,clinic_id) =>{
+    try {
+        await db.query('DELETE FROM tbl_clinic_aesthetic_devices WHERE clinic_id =?',[clinic_id]);
+        if(!aesthetic_devices || aesthetic_devices.length === 0) return;
+        const values = aesthetic_devices.map(aesthetic_devices_id =>[clinic_id,aesthetic_devices_id])
+        await db.query('INSERT INTO tbl_clinic_aesthetic_devices(clinic_id,aesthetic_devices_id) VALUES ?',[values])
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update clinic aesthetic devices");
+    }
+}
+
+export const insertClinicSkinCondition = async (skin_condition, clinic_id) => {
+    try {
+        const SkinConditionPromises = skin_condition.map(skin_condition_id => {
+            return db.query(
+                'INSERT INTO tbl_clinic_skin_condition (clinic_id, skin_condition_id) VALUES (?, ?)',
+                [clinic_id, skin_condition_id]
+            );
+        });
+        return await Promise.all(SkinConditionPromises);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to insert clinic skin condition.");
+    }
+};
+
+export const insertClinicAestheticDevices = async (aesthetic_devices, clinic_id) => {
+    try {
+        const AestheticDevicesPromises = aesthetic_devices.map(aesthetic_devices_id => {
+            return db.query(
+                'INSERT INTO tbl_clinic_skin_condition (clinic_id, aesthetic_devices_id) VALUES (?, ?)',
+                [clinic_id, aesthetic_devices_id]
+            );
+        });
+        return await Promise.all(AestheticDevicesPromises);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to insert clinic aesthetic devices.");
+    }
+};
+
+export const insertClinicSurgery = async (surgery, clinic_id) => {
+    try {
+        const SurgeryPromises = surgery.map(surgery_id => {
+            return db.query(
+                'INSERT INTO tbl_clinic_surgery (clinic_id, surgery_id) VALUES (?, ?)',
+                [clinic_id, surgery_id]
+            );
+        });
+        return await Promise.all(SurgeryPromises);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to insert clinic aesthetic devices.");
+    }
+};

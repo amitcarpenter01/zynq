@@ -3,6 +3,7 @@ import db from "../config/db.js";
 //======================================= Auth =========================================
 
 export const get_web_user_by_id = async (id) => {
+    console.log("id>>>>",id)
     try {
         return await db.query(`SELECT
             u.*, 
@@ -13,6 +14,7 @@ export const get_web_user_by_id = async (id) => {
             tbl_roles r ON u.role_id = r.id
         WHERE
             u.id = ?`, [id]);
+            
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch web user data.");

@@ -34,6 +34,7 @@ export const authenticate = (allowedRoles = []) => {
 
 
             let [user] = await webModels.get_web_user_by_id(decodedToken.web_user_id)
+            console.log("user>>>>>",user)
 
             if (!user) {
                 return handleError(res, 401, 'en', "USER_NOT_FOUND");

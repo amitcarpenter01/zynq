@@ -52,6 +52,19 @@ export const getProfile = async (req, res) => {
         const severityLevels = await clinicModels.getClinicSeverityLevels(clinic.clinic_id);
         clinic.severity_levels = severityLevels;
 
+        const skinCondition = await clinicModels.getClinicSkinCondition(clinic.clinic_id);
+        clinic.skin_condition = skinCondition;
+        
+
+        const surgery = await clinicModels.getClinicSurgery(clinic.clinic_id);
+        clinic.surgery = surgery;
+        console.log("surgery",surgery)
+
+        const devices = await clinicModels.getClinicAestheticDevice(clinic.clinic_id);
+        clinic.device = devices;
+
+        // const skinCondition = await 
+
         const documents = await clinicModels.getClinicDocuments(clinic.clinic_id);
         documents.forEach(document => {
             if (document.file_url && !document.file_url.startsWith("http")) {
@@ -136,6 +149,9 @@ export const onboardClinic = async (req, res) => {
             }).optional(),
             // equipments: Joi.array().items(Joi.string()).optional().allow('', null),
             skin_types: Joi.array().items(Joi.string()).optional().allow('', null),
+            skin_condition:Joi.array().items(Joi.string()).optional().allow('', null),
+            surgery:Joi.array().items(Joi.string()).optional().allow('', null),
+            aesthetic_devices:Joi.array().items(Joi.string()).optional().allow('', null),
             severity_levels: Joi.array().items(Joi.string()).optional().allow('', null),
             form_stage: Joi.number().optional().allow('', null),
             ivo_registration_number: Joi.string().optional().allow('', null),
@@ -174,6 +190,30 @@ export const onboardClinic = async (req, res) => {
             }
         }
 
+        if(typeof req.body.skin_condition === 'string'){
+            try {
+                req.body.skin_condition = JSON.parse(req.body.skin_condition);
+            } catch (error) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SKIN_CONDITION");
+            }
+        }
+
+        if(typeof req.body.surgery === 'string'){
+            try {
+                req.body.surgery = JSON.parse(req.body.surgery);
+            } catch (error) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SURGERY");
+            }
+        }
+
+        if(typeof req.body.aesthetic_devices === 'string'){
+            try {
+                req.body.aesthetic_devices = JSON.parse(req.body.aesthetic_devices);
+            } catch (error) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_AESTHETIC_DEVICES")
+            }
+        }
+
         if (typeof req.body.severity_levels === 'string') {
             try {
                 req.body.severity_levels = JSON.parse(req.body.severity_levels);
@@ -189,7 +229,7 @@ export const onboardClinic = async (req, res) => {
             zynq_user_id, clinic_name, org_number, email, mobile_number,
             address, street_address, city, state, zip_code, latitude, longitude,
             treatments, clinic_timing, website_url, clinic_description,
-            equipments, skin_types, severity_levels, fee_range, language, form_stage,
+            equipments, skin_types, severity_levels,skin_condition,surgery,aesthetic_devices, fee_range, language, form_stage,
             ivo_registration_number, hsa_id, is_onboarded
         } = value;
 
@@ -203,23 +243,41 @@ export const onboardClinic = async (req, res) => {
         console.log(clinic_logo, "clinic_logo");
         const [clinic_data] = await clinicModels.get_clinic_by_zynq_user_id(zynq_user_id);
 
+        // const clinicData = buildClinicData({
+        //     zynq_user_id: zynq_user_id === "" ? null : zynq_user_id || clinic_data.zynq_user_id,
+        //     clinic_name: clinic_name === "" ? null : clinic_name || clinic_data.clinic_name,
+        //     org_number: org_number === "" ? null : org_number || clinic_data.org_number,
+        //     email: email === "" ? null : email || clinic_data.email,
+        //     mobile_number: mobile_number === "" ? null : mobile_number || clinic_data.mobile_number,
+        //     address: address === "" ? null : address || clinic_data.address,
+        //     fee_range: fee_range === "" ? null : fee_range || clinic_data.fee_range,
+        //     website_url: website_url === "" ? null : website_url || clinic_data.website_url,
+        //     clinic_description: clinic_description === "" ? null : clinic_description || clinic_data.clinic_description,
+        //     language: language === "" ? null : language || clinic_data.language,
+        //     clinic_logo: clinic_logo ? clinic_logo : clinic_data.clinic_logo,
+        //     form_stage: form_stage === "" ? null : form_stage || clinic_data.form_stage,
+        //     ivo_registration_number: ivo_registration_number === "" ? null : ivo_registration_number || clinic_data.ivo_registration_number,
+        //     hsa_id: hsa_id === "" ? null : hsa_id || clinic_data.hsa_id,
+        //     is_onboarded: is_onboarded === "" ? null : is_onboarded || clinic_data.is_onboarded
+        // });
+
         const clinicData = buildClinicData({
-            zynq_user_id: zynq_user_id === "" ? null : zynq_user_id || clinic_data.zynq_user_id,
-            clinic_name: clinic_name === "" ? null : clinic_name || clinic_data.clinic_name,
-            org_number: org_number === "" ? null : org_number || clinic_data.org_number,
-            email: email === "" ? null : email || clinic_data.email,
-            mobile_number: mobile_number === "" ? null : mobile_number || clinic_data.mobile_number,
-            address: address === "" ? null : address || clinic_data.address,
-            fee_range: fee_range === "" ? null : fee_range || clinic_data.fee_range,
-            website_url: website_url === "" ? null : website_url || clinic_data.website_url,
-            clinic_description: clinic_description === "" ? null : clinic_description || clinic_data.clinic_description,
-            language: language === "" ? null : language || clinic_data.language,
-            clinic_logo: clinic_logo ? clinic_logo : clinic_data.clinic_logo,
-            form_stage: form_stage === "" ? null : form_stage || clinic_data.form_stage,
-            ivo_registration_number: ivo_registration_number === "" ? null : ivo_registration_number || clinic_data.ivo_registration_number,
-            hsa_id: hsa_id === "" ? null : hsa_id || clinic_data.hsa_id,
-            is_onboarded: is_onboarded === "" ? null : is_onboarded || clinic_data.is_onboarded
-        });
+    zynq_user_id: zynq_user_id === "" ? null : zynq_user_id || clinic_data?.zynq_user_id || null,
+    clinic_name: clinic_name === "" ? null : clinic_name || clinic_data?.clinic_name || null,
+    org_number: org_number === "" ? null : org_number || clinic_data?.org_number || null,
+    email: email === "" ? null : email || clinic_data?.email || null,
+    mobile_number: mobile_number === "" ? null : mobile_number || clinic_data?.mobile_number || null,
+    address: address === "" ? null : address || clinic_data?.address || null,
+    fee_range: fee_range === "" ? null : fee_range || clinic_data?.fee_range || null,
+    website_url: website_url === "" ? null : website_url || clinic_data?.website_url || null,
+    clinic_description: clinic_description === "" ? null : clinic_description || clinic_data?.clinic_description || null,
+    language: language === "" ? null : language || clinic_data?.language || "en",
+    clinic_logo: clinic_logo ? clinic_logo : clinic_data?.clinic_logo || null,
+    form_stage: form_stage === "" ? null : form_stage || clinic_data?.form_stage || null,
+    ivo_registration_number: ivo_registration_number === "" ? null : ivo_registration_number || clinic_data?.ivo_registration_number || null,
+    hsa_id: hsa_id === "" ? null : hsa_id || clinic_data?.hsa_id || null,
+    is_onboarded: is_onboarded === "" ? null : is_onboarded || clinic_data?.is_onboarded || false
+});
 
         if (clinic_data) {
             await clinicModels.updateClinicData(clinicData, clinic_data.clinic_id);
@@ -325,6 +383,33 @@ export const onboardClinic = async (req, res) => {
             }
         }
 
+        if(skin_condition){
+            const skinConditionData = await clinicModels.getClinicSkinCondition(clinic_id);
+            if(skinConditionData){
+                await clinicModels.updateClinicSkinCondition(skin_condition,clinic_id);
+            }else{
+                await clinicModels.insertClinicSkinCondition(skin_condition,clinic_id);
+            }
+        }
+
+        if(surgery){
+            const surgeryData = await clinicModels.getClinicSurgery(clinic_id);
+            if(surgeryData){
+                await clinicModels.updateClinicSurgery(surgery,clinic_id);
+            }else{
+                await clinicModels.insertClinicSurgery(surgery,clinic_id);
+            }
+        }
+
+        if(aesthetic_devices){
+            const aestheticDevicesData = await clinicModels.getClinicAestheticDevice(clinic_id);
+            if(aestheticDevicesData){
+                await clinicModels.updateClinicAestheticDevices(aesthetic_devices,clinic_id);
+            }else{
+                await clinicModels.insertClinicAestheticDevices(aesthetic_devices,clinic_id)
+            }
+        }
+
         return handleSuccess(res, 201, language, "CLINIC_ONBOARDED_SUCCESSFULLY");
     }
     catch (error) {
@@ -364,6 +449,9 @@ export const updateClinic = async (req, res) => {
             }).optional(),
             equipments: Joi.array().items(Joi.string()).optional(),
             skin_types: Joi.array().items(Joi.string()).optional(),
+            skin_conditions: Joi.array().items(Joi.string()).optional(),
+            surgery:Joi.array().items(Joi.string()).optional(),
+            aesthetic_devices:Joi.array().items(Joi.string()).optional(),
             severity_levels: Joi.array().items(Joi.string()).optional(),
             language: Joi.string().valid('en', 'sv').optional(),
             ivo_registration_number: Joi.string().optional(),
@@ -386,7 +474,7 @@ export const updateClinic = async (req, res) => {
             clinic_name, org_number, email, mobile_number,
             address, fee_range, website_url, clinic_description,
             street_address, city, state, zip_code, latitude, longitude,
-            treatments, clinic_timing, equipments, skin_types, severity_levels, language,
+            treatments, clinic_timing, equipments, skin_types, severity_levels, language,skin_conditions,surgery,aesthetic_devices,
             ivo_registration_number, hsa_id
         } = value;
 
@@ -424,7 +512,10 @@ export const updateClinic = async (req, res) => {
             clinicModels.updateClinicOperationHours(clinic_timing, clinic_id),
             clinicModels.updateClinicEquipments(equipments, clinic_id),
             clinicModels.updateClinicSkinTypes(skin_types, clinic_id),
-            clinicModels.updateClinicSeverityLevels(severity_levels, clinic_id)
+            clinicModels.updateClinicSeverityLevels(severity_levels, clinic_id),
+            clinicModels.updateClinicSkinCondition(skin_conditions,clinic_id),
+            clinicModels.updateClinicSurgery(surgery,clinic_id),
+            clinicModels.updateClinicAestheticDevices(aesthetic_devices,clinic_id)
         ]);
 
         if (uploadedFiles.length > 0) {
@@ -630,3 +721,5 @@ export const getAllDevices = async(req,res) =>{
         return handleError(res, 500, "en", 'INTERNAL_SERVER_ERROR');
     }
 }
+
+
