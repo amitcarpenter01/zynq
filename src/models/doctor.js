@@ -591,6 +591,21 @@ export const update_doctor_surgery = async (doctorId, surgeryIds) => {
     }
 };
 
+export const update_doctor_skin_conditions = async (doctorId, surgeryIds) => {
+    try {
+        await db.query(`DELETE FROM tbl_doctor_skin_condition WHERE doctor_id = ?`, [doctorId]);
+        const values = surgeryIds.map(surgeryId => [doctorId, surgeryId]);
+        if (values.length > 0) {
+            return await db.query(`INSERT INTO tbl_doctor_skin_condition (doctor_id, skin_condition_id) VALUES ?`, [values]);
+        }
+        return null;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update doctor's surgery.");
+    }
+};
+
+
 export const update_doctor_aesthetic_devices = async (doctorId, aestheticDevicesIds) => {
     try {
         await db.query(`DELETE FROM tbl_doctor_aesthetic_devices WHERE doctor_id = ?`, [doctorId]);
