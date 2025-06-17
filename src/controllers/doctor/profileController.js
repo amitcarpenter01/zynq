@@ -685,7 +685,7 @@ export const calculateProfileCompletionPercentageByDoctorId = async (doctorId) =
     try {
         const profileData = await doctorModels.get_doctor_profile(doctorId);
         if (!profileData) {
-            return 0; // Or handle the case where profile data is not found
+            return 0; // No profile found
         }
 
         let filledFieldsCount = 0;
@@ -699,15 +699,22 @@ export const calculateProfileCompletionPercentageByDoctorId = async (doctorId) =
         });
 
         // Education
-        totalFieldsCount += 1; // Count for at least one entry
+        totalFieldsCount += 1;
         if (profileData.education && profileData.education.length > 0) filledFieldsCount++;
 
         // Experience
-        totalFieldsCount += 1; // Count for at least one entry
+        totalFieldsCount += 1;
         if (profileData.experience && profileData.experience.length > 0) filledFieldsCount++;
 
-        // Expertise
-        const expertiseCategories = ['treatments', 'skinTypes', 'severityLevels'];
+        // Expertise (Expanded to include surgeries, aestheticDevices, skinConditions)
+        const expertiseCategories = [
+            'treatments',
+            'skinTypes',
+            'severityLevels',
+            'surgeries',
+            'aestheticDevices',
+            'skinConditions'
+        ];
         totalFieldsCount += expertiseCategories.length;
         expertiseCategories.forEach(category => {
             if (profileData[category] && profileData[category].length > 0) filledFieldsCount++;
@@ -722,7 +729,7 @@ export const calculateProfileCompletionPercentageByDoctorId = async (doctorId) =
 
     } catch (error) {
         console.error("Error calculating profile completion:", error);
-        return 0; // Or handle the error as needed
+        return 0;
     }
 };
 
@@ -809,7 +816,6 @@ export const editEducationAndExperienceInformation = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
-
 
 export const deleteProfileImage = async (req, res) => {
     try {

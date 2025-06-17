@@ -180,18 +180,25 @@ export const get_clinic_managment = async (req, res) => {
 
         const fullClinicData = await Promise.all(
             clinics.map(async (clinic) => {
-                clinic.clinic_logo = clinic.clinic_logo == null ? null : process.env.APP_URL + 'clinic/logo/' + clinic.clinic_logo;
+                clinic.clinic_logo = clinic.clinic_logo == null
+                    ? null
+                    : process.env.APP_URL + 'clinic/logo/' + clinic.clinic_logo;
+
                 const treatments = await adminModels.get_clinic_treatments(clinic.clinic_id);
-                // const equipments = await adminModels.get_clinic_equipments(clinic.clinic_id);
                 const skinTypes = await adminModels.get_clinic_skintype(clinic.clinic_id);
                 const severityLevels = await adminModels.get_clinic_serveritylevel(clinic.clinic_id);
+                const skinConditionsLevel = await adminModels.get_clinic_skin_conditions(clinic.clinic_id);
+                const surgeriesLevel = await adminModels.get_clinic_surgeries(clinic.clinic_id);
+                const aestheticDevicesLevel = await adminModels.get_clinic_aesthetic_devices(clinic.clinic_id);
 
                 return {
                     ...clinic,
                     treatments,
-                    // equipments,
                     skinTypes,
-                    severityLevels
+                    severityLevels,
+                    skinConditionsLevel,
+                    surgeriesLevel,
+                    aestheticDevicesLevel
                 };
             })
         );
@@ -203,6 +210,7 @@ export const get_clinic_managment = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
+
 
 export const delete_clinic_management = async (req, res) => {
     try {

@@ -408,6 +408,60 @@ export const getClinicSeverityLevels = async (clinic_id) => {
     }
 };
 
+export const getClinicSurgeriesLevels = async (clinic_id) => {
+    try {
+        const surgeries = await db.query(
+            `SELECT s.* 
+             FROM tbl_surgery s 
+             INNER JOIN tbl_clinic_surgery cs 
+             ON s.surgery_id = cs.surgery_id 
+             WHERE cs.clinic_id = ? 
+             ORDER BY s.created_at DESC`,
+            [clinic_id]
+        );
+        return surgeries;
+    } catch (error) {
+        console.error("Database Error (Surgeries):", error.message);
+        throw new Error("Failed to fetch surgeries.");
+    }
+};
+
+export const getClinicAestheticDevicesLevel = async (clinic_id) => {
+    try {
+        const devices = await db.query(
+            `SELECT ad.* 
+             FROM tbl_aesthetic_devices ad 
+             INNER JOIN tbl_clinic_aesthetic_devices cad 
+             ON ad.aesthetic_device_id = cad.aesthetic_device_id 
+             WHERE cad.clinic_id = ? 
+             ORDER BY ad.created_at DESC`,
+            [clinic_id]
+        );
+        return devices;
+    } catch (error) {
+        console.error("Database Error (Aesthetic Devices):", error.message);
+        throw new Error("Failed to fetch aesthetic devices.");
+    }
+};
+
+export const getClinicSkinConditionsLevel = async (clinic_id) => {
+    try {
+        const conditions = await db.query(
+            `SELECT sc.* 
+             FROM tbl_skin_conditions sc 
+             INNER JOIN tbl_clinic_skin_condition csc 
+             ON sc.skin_condition_id = csc.skin_condition_id 
+             WHERE csc.clinic_id = ? 
+             ORDER BY sc.created_at DESC`,
+            [clinic_id]
+        );
+        return conditions;
+    } catch (error) {
+        console.error("Database Error (Skin Conditions):", error.message);
+        throw new Error("Failed to fetch skin conditions.");
+    }
+};
+
 export const getClinicDocuments = async (clinic_id) => {
     try {
         const documents = await db.query('SELECT * FROM tbl_clinic_documents WHERE clinic_id = ? ORDER BY created_at DESC', [clinic_id]);
