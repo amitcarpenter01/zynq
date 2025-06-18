@@ -211,7 +211,6 @@ export const get_clinic_managment = async (req, res) => {
     }
 };
 
-
 export const delete_clinic_management = async (req, res) => {
     try {
         const schema = Joi.object({
@@ -277,7 +276,7 @@ export const send_invitation = async (req, res) => {
                 moment().format('YYYY-MM-DD HH:mm:ss')
             );
             const is_subscribed = clinic.clinic_id;
-            
+
             const html = await ejs.renderFile(
                 path.join(__dirname, "../../views/invitation-mail.ejs"),
                 {
@@ -290,7 +289,7 @@ export const send_invitation = async (req, res) => {
                     address: clinic.address,
                     password: password,
                     logo: process.env.LOGO_URL,
-                    invitationLink: `${process.env.LOCAL_APP_URL}admin/subscribed/${is_subscribed}`,
+                    invitationLink: `${process.env.APP_URL}admin/subscribed/${is_subscribed}`,
                 }
             );
 
@@ -321,9 +320,9 @@ export const subscribed = async (req, res) => {
 
         const { is_subscribed } = value;
 
-        await adminModels.clinicSubscribed(is_subscribed);
+        const gwetClinic = await adminModels.clinicSubscribed(is_subscribed);
 
-        return res.render("invitation_success/Success.ejs");
+        return res.redirect(`http://localhost:4200/choose-role?id=${gwetClinic[0].zynq_user_id}`);
     } catch (error) {
         console.error("clinic unsubscribed Error:", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
