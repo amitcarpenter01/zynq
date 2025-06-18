@@ -164,6 +164,7 @@ export const onboardClinic = async (req, res) => {
                 return handleError(res, 400, "en", "INVALID_JSON_FOR_CLINIC_TIMING");
             }
         }
+        
         if (typeof req.body.treatments === 'string') {
             try {
                 req.body.treatments = JSON.parse(req.body.treatments);
