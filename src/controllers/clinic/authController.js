@@ -182,9 +182,9 @@ export const onboardClinic = async (req, res) => {
         }
 
 
-        if (typeof req.body.skin_conditions === 'string') {
+        if (typeof req.body.skin_Conditions === 'string') {
             try {
-                req.body.skin_conditions = JSON.parse(req.body.skin_conditions);
+                req.body.skin_Conditions = JSON.parse(req.body.skin_Conditions);
             } catch (err) {
                 return handleError(res, 400, "en", "INVALID_JSON_FOR_SKIN_CONDITIONS");
             }
@@ -231,7 +231,7 @@ export const onboardClinic = async (req, res) => {
             address, street_address, city, state, zip_code, latitude, longitude,
             treatments, clinic_timing, website_url, clinic_description,
             equipments, skin_types, severity_levels, fee_range, language, form_stage,
-            ivo_registration_number, hsa_id, is_onboarded, surgeries, aestheticDevices, skin_conditions
+            ivo_registration_number, hsa_id, is_onboarded, surgeries, aestheticDevices, skin_Conditions
         } = value;
 
         language = language || "en";
@@ -331,12 +331,12 @@ export const onboardClinic = async (req, res) => {
             }
         }
 
-        if (skin_conditions) {
+        if (skin_Conditions) {
             const skinConditionData = await clinicModels.getClinicSkinConditions(clinic_id);
             if (skinConditionData && skinConditionData.length > 0) {
-                await clinicModels.updateClinicSkinConditions(skin_conditions, clinic_id);
+                await clinicModels.updateClinicSkinConditions(skin_Conditions, clinic_id);
             } else {
-                await clinicModels.insertClinicSkinConditions(skin_conditions, clinic_id);
+                await clinicModels.insertClinicSkinConditions(skin_Conditions, clinic_id);
             }
         }
 
