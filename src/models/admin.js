@@ -196,7 +196,7 @@ export const insert_clinic = async (clinic) => {
 
 export const get_clinic_managment = async () => {
     try {
-    return await db.query(`SELECT tbl_clinics.clinic_id, tbl_clinics.clinic_name, tbl_clinics.org_number, tbl_clinics.email, tbl_clinics.mobile_number, tbl_clinics.address, tbl_clinics.email_sent_count, tbl_clinics.clinic_logo, tbl_clinics.clinic_description, tbl_clinics.website_url, tbl_clinics.profile_completion_percentage AS onboarding_progress, tbl_clinic_locations.city, tbl_clinic_locations.zip_code AS postal_code,tbl_clinics.ivo_registration_number , tbl_clinics.hsa_id FROM tbl_clinics LEFT JOIN tbl_clinic_locations ON tbl_clinic_locations.clinic_id = tbl_clinics.clinic_id WHERE tbl_clinics.is_deleted = 0 ORDER BY tbl_clinics.created_at DESC;`);
+        return await db.query(`SELECT tbl_clinics.clinic_id, tbl_clinics.clinic_name, tbl_clinics.org_number, tbl_clinics.email, tbl_clinics.mobile_number, tbl_clinics.address, tbl_clinics.email_sent_count, tbl_clinics.clinic_logo, tbl_clinics.clinic_description, tbl_clinics.website_url, tbl_clinics.profile_completion_percentage AS onboarding_progress, tbl_clinic_locations.city, tbl_clinic_locations.zip_code AS postal_code,tbl_clinics.ivo_registration_number , tbl_clinics.hsa_id FROM tbl_clinics LEFT JOIN tbl_clinic_locations ON tbl_clinic_locations.clinic_id = tbl_clinics.clinic_id WHERE tbl_clinics.is_deleted = 0 ORDER BY tbl_clinics.created_at DESC;`);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get clinic latest data.");
@@ -218,6 +218,50 @@ export const get_clinic_skintype = async (clinic_id) => {
 export const get_clinic_serveritylevel = async (clinic_id) => {
     return await db.query('SELECT tbl_clinic_severity_levels.clinic_severity_level_id, tbl_clinic_severity_levels.clinic_id, tbl_severity_levels.level FROM tbl_clinic_severity_levels LEFT JOIN tbl_severity_levels ON tbl_severity_levels.severity_level_id = tbl_clinic_severity_levels.severity_id WHERE tbl_clinic_severity_levels.clinic_id = ? ORDER BY tbl_clinic_severity_levels.created_at DESC;', [clinic_id])
 }
+
+export const get_clinic_skin_conditions = async (clinic_id) => {
+    return await db.query(`
+        SELECT 
+            tbl_clinic_skin_condition.clinic_skin_condition_id, 
+            tbl_clinic_skin_condition.clinic_id, 
+            tbl_skin_conditions.name 
+        FROM tbl_clinic_skin_condition 
+        LEFT JOIN tbl_skin_conditions 
+            ON tbl_skin_conditions.skin_condition_id = tbl_clinic_skin_condition.skin_condition_id 
+        WHERE tbl_clinic_skin_condition.clinic_id = ? 
+        ORDER BY tbl_clinic_skin_condition.created_at DESC
+    `, [clinic_id]);
+};
+
+export const get_clinic_surgeries = async (clinic_id) => {
+    return await db.query(`
+        SELECT 
+            tbl_clinic_surgery.clinic_surgery_id, 
+            tbl_clinic_surgery.clinic_id, 
+            tbl_surgery.name 
+        FROM tbl_clinic_surgery 
+        LEFT JOIN tbl_surgery 
+            ON tbl_surgery.surgery_id = tbl_clinic_surgery.surgery_id 
+        WHERE tbl_clinic_surgery.clinic_id = ? 
+        ORDER BY tbl_clinic_surgery.created_at DESC
+    `, [clinic_id]);
+};
+
+export const get_clinic_aesthetic_devices = async (clinic_id) => {
+    return await db.query(`
+        SELECT 
+            tbl_clinic_aesthetic_devices.clinic_aesthetic_device_id, 
+            tbl_clinic_aesthetic_devices.clinic_id, 
+            tbl_aesthetic_devices.name 
+        FROM tbl_clinic_aesthetic_devices 
+        LEFT JOIN tbl_aesthetic_devices 
+            ON tbl_aesthetic_devices.device_id = tbl_clinic_aesthetic_devices.device_id 
+        WHERE tbl_clinic_aesthetic_devices.clinic_id = ? 
+        ORDER BY tbl_clinic_aesthetic_devices.created_at DESC
+    `, [clinic_id]);
+};
+
+
 
 export const delete_clinic_by_id = async (clinic_id) => {
     try {
@@ -257,7 +301,8 @@ export const updateClinicCountAndEmailSent = async (clinic_id, email_sent_count,
 
 export const clinicSubscribed = async (clinic_id) => {
     try {
-        return await db.query('UPDATE `tbl_clinics` SET `is_invited`= 1 WHERE clinic_id = ?', [clinic_id]);
+        await db.query('UPDATE `tbl_clinics` SET `is_invited`= 1 WHERE clinic_id = ?', [clinic_id]);
+        return await db.query('SELECT * FROM `tbl_clinics` WHERE clinic_id = ?', [clinic_id])
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update clinic invited status.");
@@ -390,6 +435,67 @@ export const get_doctor_severity_levels = async (doctorId) => {
     }
 };
 
+export const get_doctor_skin_conditions = async (doctorId) => {
+    try {
+        return await db.query(`
+            SELECT 
+                dsc.*,
+                sc.name 
+            FROM 
+                tbl_doctor_skin_condition dsc
+            INNER JOIN 
+                tbl_skin_conditions sc 
+            ON 
+                dsc.skin_condition_id = sc.skin_condition_id
+            WHERE 
+                dsc.doctor_id = ?`, [doctorId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's skin conditions.");
+    }
+};
+
+export const get_doctor_surgeries = async (doctorId) => {
+    try {
+        return await db.query(`
+            SELECT 
+                ds.*,
+                s.name 
+            FROM 
+                tbl_doctor_surgery ds
+            INNER JOIN 
+                tbl_surgery s 
+            ON 
+                ds.surgery_id = s.surgery_id
+            WHERE 
+                ds.doctor_id = ?`, [doctorId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's surgeries.");
+    }
+};
+
+export const get_doctor_aesthetic_devices = async (doctorId) => {
+    try {
+        return await db.query(`
+            SELECT 
+                dad.*,
+                ad.name 
+            FROM 
+                tbl_doctor_aesthetic_devices dad
+            INNER JOIN 
+                tbl_aesthetic_devices ad 
+            ON 
+                dad.device_id = ad.device_id
+            WHERE 
+                dad.doctor_id = ?`, [doctorId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's aesthetic devices.");
+    }
+};
+
+
 //======================================= Support Managment =========================================
 
 export const get_all_support_tickets = async () => {
@@ -448,7 +554,7 @@ export const get_support_ticket_by_id = async (support_ticket_id) => {
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get support ticket by id.");
-    }   
+    }
 }
 
 export const update_support_ticket = async (support_ticket_id, updateData) => {

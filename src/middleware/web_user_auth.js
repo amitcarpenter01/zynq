@@ -48,7 +48,7 @@ export const authenticate = (allowedRoles = []) => {
                 const [doctorData] = await doctorModels.get_doctor_by_zynquser_id(user.id);
                 if (doctorData) {
                     user.doctorData = doctorData
-                }else{
+                } else {
                     return handleError(res, 401, 'en', "DOCTOR_NOT_FOUND");
                 }
             }
@@ -57,7 +57,18 @@ export const authenticate = (allowedRoles = []) => {
                 const [clinicData] = await clinicModels.get_clinic_by_zynq_user_id(user.id);
                 if (clinicData) {
                     user.clinicData = clinicData
-                }else{
+                } else {
+                    return handleError(res, 401, 'en', "CLINIC_NOT_FOUND");
+                }
+            }
+
+            if (userRole === 'SOLO_DOCTOR') {
+                const [clinicData] = await clinicModels.get_clinic_by_zynq_user_id(user.id);
+                const [doctorData] = await doctorModels.get_doctor_by_zynquser_id(user.id);
+                if (clinicData && doctorData) {
+                    user.clinicData = clinicData
+                    user.doctorData = doctorData
+                } else {
                     return handleError(res, 401, 'en', "CLINIC_NOT_FOUND");
                 }
             }

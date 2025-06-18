@@ -180,18 +180,25 @@ export const get_clinic_managment = async (req, res) => {
 
         const fullClinicData = await Promise.all(
             clinics.map(async (clinic) => {
-                clinic.clinic_logo = clinic.clinic_logo == null ? null : process.env.APP_URL + 'clinic/logo/' + clinic.clinic_logo;
+                clinic.clinic_logo = clinic.clinic_logo == null
+                    ? null
+                    : process.env.APP_URL + 'clinic/logo/' + clinic.clinic_logo;
+
                 const treatments = await adminModels.get_clinic_treatments(clinic.clinic_id);
-                // const equipments = await adminModels.get_clinic_equipments(clinic.clinic_id);
                 const skinTypes = await adminModels.get_clinic_skintype(clinic.clinic_id);
                 const severityLevels = await adminModels.get_clinic_serveritylevel(clinic.clinic_id);
+                const skinConditionsLevel = await adminModels.get_clinic_skin_conditions(clinic.clinic_id);
+                const surgeriesLevel = await adminModels.get_clinic_surgeries(clinic.clinic_id);
+                const aestheticDevicesLevel = await adminModels.get_clinic_aesthetic_devices(clinic.clinic_id);
 
                 return {
                     ...clinic,
                     treatments,
-                    // equipments,
                     skinTypes,
-                    severityLevels
+                    severityLevels,
+                    skinConditionsLevel,
+                    surgeriesLevel,
+                    aestheticDevicesLevel
                 };
             })
         );
@@ -269,7 +276,7 @@ export const send_invitation = async (req, res) => {
                 moment().format('YYYY-MM-DD HH:mm:ss')
             );
             const is_subscribed = clinic.clinic_id;
-            
+
             const html = await ejs.renderFile(
                 path.join(__dirname, "../../views/invitation-mail.ejs"),
                 {
@@ -282,7 +289,7 @@ export const send_invitation = async (req, res) => {
                     address: clinic.address,
                     password: password,
                     logo: process.env.LOGO_URL,
-                    invitationLink: `${process.env.LOCAL_APP_URL}admin/subscribed/${is_subscribed}`,
+                    invitationLink: `${process.env.APP_URL}admin/subscribed/${is_subscribed}`,
                 }
             );
 
@@ -313,9 +320,9 @@ export const subscribed = async (req, res) => {
 
         const { is_subscribed } = value;
 
-        await adminModels.clinicSubscribed(is_subscribed);
+        const gwetClinic = await adminModels.clinicSubscribed(is_subscribed);
 
-        return res.render("invitation_success/Success.ejs");
+        return res.redirect(`http://localhost:4200/choose-role?id=${gwetClinic[0].zynq_user_id}`);
     } catch (error) {
         console.error("clinic unsubscribed Error:", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
