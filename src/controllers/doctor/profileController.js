@@ -146,7 +146,7 @@ export const addExpertise = async (req, res) => {
             skin_condition_ids:Joi.string().required(),
             surgery_ids:Joi.string().required(),
             aesthetic_devices_ids:Joi.string().required(),
-            severity_levels_ids: Joi.string().required(),
+            //severity_levels_ids: Joi.string().required(),
         });
 
         let language = 'en';
@@ -160,12 +160,12 @@ export const addExpertise = async (req, res) => {
         const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
         const surgeryIds = value.surgery_ids.split(',').map(id => id.trim());
         const aestheticDevicesIds = value.aesthetic_devices_ids.split(',').map(id => id.trim());
-        const severityLevelIds = value.severity_levels_ids.split(',').map(id => id.trim());
+        //const severityLevelIds = value.severity_levels_ids.split(',').map(id => id.trim());
 
         // Call model functions to update each expertise
         await doctorModels.update_doctor_treatments(doctorId, treatmentIds);
         await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
-        await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
+        //await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
         await doctorModels.update_doctor_skin_conditions(doctorId,skinConditionIds);
         await doctorModels.update_doctor_surgery(doctorId,surgeryIds);
         await doctorModels.update_doctor_aesthetic_devices(doctorId,aestheticDevicesIds);
