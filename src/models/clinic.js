@@ -528,13 +528,13 @@ export const updateClinicTreatments = async (treatments, clinic_id) => {
 
 export const updateClinicSurgeries = async (surgeries, clinic_id) => {
     try {
-        await db.query('DELETE FROM clinic_surgery WHERE clinic_id = ?', [clinic_id]);
+        await db.query('DELETE FROM tbl_clinic_surgery WHERE clinic_id = ?', [clinic_id]);
 
         if (!surgeries || surgeries.length === 0) return;
 
         const values = surgeries.map(surgery_id => [clinic_id, surgery_id]);
         await db.query(
-            'INSERT INTO clinic_surgery (clinic_id, surgery_id) VALUES ?',
+            'INSERT INTO tbl_clinic_surgery (clinic_id, surgery_id) VALUES ?',
             [values]
         );
     } catch (error) {
@@ -546,13 +546,13 @@ export const updateClinicSurgeries = async (surgeries, clinic_id) => {
 
 export const updateClinicSkinConditions = async (skin_conditions, clinic_id) => {
     try {
-        await db.query('DELETE FROM clinic_skin_condition WHERE clinic_id = ?', [clinic_id]);
+        await db.query('DELETE FROM tbl_clinic_skin_condition WHERE clinic_id = ?', [clinic_id]);
 
         if (!skin_conditions || skin_conditions.length === 0) return;
 
         const values = skin_conditions.map(skin_condition_id => [clinic_id, skin_condition_id]);
         await db.query(
-            'INSERT INTO clinic_skin_condition (clinic_id, skin_condition_id) VALUES ?',
+            'INSERT INTO tbl_clinic_skin_condition (clinic_id, skin_condition_id) VALUES ?',
             [values]
         );
     } catch (error) {
@@ -563,13 +563,13 @@ export const updateClinicSkinConditions = async (skin_conditions, clinic_id) => 
 
 export const updateClinicAestheticDevices = async (device_ids, clinic_id) => {
     try {
-        await db.query('DELETE FROM clinic_aesthetic_device WHERE clinic_id = ?', [clinic_id]);
+        await db.query('DELETE FROM tbl_clinic_aesthetic_devices WHERE clinic_id = ?', [clinic_id]);
 
         if (!device_ids || device_ids.length === 0) return;
 
         const values = device_ids.map(device_id => [clinic_id, device_id]);
         await db.query(
-            'INSERT INTO clinic_aesthetic_device (clinic_id, device_id) VALUES ?',
+            'INSERT INTO tbl_clinic_aesthetic_devices (clinic_id, device_id) VALUES ?',
             [values]
         );
     } catch (error) {
