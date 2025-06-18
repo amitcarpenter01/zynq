@@ -73,6 +73,7 @@ router.delete("/delete-product-image/:product_image_id", authenticate(['CLINIC']
 router.post("/get-product-by-id", authenticate(['CLINIC']), productControllers.getProductById);
 
 
+
 //==================================== Support ==============================
 router.post("/create-support-ticket", authenticate(['CLINIC']), supportControllers.create_support_ticket);
 router.get("/get-support-tickets", authenticate(['CLINIC']), supportControllers.get_support_tickets_by_clinic_id);

@@ -183,5 +183,7 @@
     "RESPONSE_SENT_SUCCESSFULLY": "Response Sent Successfully",
     "RESPONSE_SENT_FAILED": "Response Sent Failed",
     "ENROLL_SUCCESSFUL": "Enroll Successful",
-    "USER_ALREADY_ENROLLED": "User Already Enrolled"
+    "USER_ALREADY_ENROLLED": "User Already Enrolled",
+    "PERSONAL_DETAILS_ADDED":"Personal Details Added Successfully"
+ 
 }

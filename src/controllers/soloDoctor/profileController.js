@@ -1,0 +1,916 @@
+import Joi from "joi";
+import dotenv from "dotenv";
+import * as doctorModels from "../../models/doctor.js";
+import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { update_onboarding_status } from "../../models/web_user.js";
+import dbOperations from '../../models/common.js';
+
+dotenv.config();
+
+//const APP_URL = process.env.APP_URL;
+const APP_URL = process.env.LOCAL_APP_URL;
+const image_logo = process.env.LOGO_URL;
+
+export const addPersonalInformation = async (req, res) => {
+    try {
+        console.log("req.body>>", req.body);
+        const schema = Joi.object({
+            name: Joi.string().max(255).required(),
+            age: Joi.string().max(255).required(),
+            gender: Joi.string().max(255).required(),
+            clinic_name: Joi.string().optional().allow('', null),
+            clinic_description: Joi.string().optional().allow('', null),
+            language: Joi.string().valid('en', 'sv').optional().allow('', null),
+            form_stage: Joi.number().optional().allow('', null),
+            ivo_registration_number: Joi.string().optional().allow('', null),
+            hsa_id: Joi.string().optional().allow('', null)
+        });
+        let language = 'en';
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        let filename = '';
+        if (req.files) {
+            console.log(req.files);
+            filename = req.file.filename
+        }
+        console.log("req.user", req.user)
+        const zynqUserId = req.user.id
+
+        const doctorData = {
+            name: value.name,
+            phone: value.phone,
+            address: value.address,
+            gender: value.gender,
+            profile_image: filename,
+            logo:filename,
+            biography: value.clinic_description,
+            zynq_user_id: value.zynqUserId,
+
+
+        };
+
+        const clinicData = {
+            zynq_user_id: value.zynqUserId,
+            clinic_name: value.clinic_name,
+            email: value.email === "" ? null : value.email,
+            mobile_number: value.mobile_number === "" ? null : value.mobile_number,
+            address: value.address === "" ? null : value.address,
+            fee_range: value.fee_range === "" ? null : value.fee_range,
+            website_url: value.website_url === "" ? null : value.website_url,
+            clinic_description: value.clinic_description === "" ? null : value.clinic_description,
+            language: value.language === "" ? null : value.language,
+            clinic_logo: value.clinic_logo ? value.clinic_logo : clinic_data.clinic_logo,
+            form_stage: value.form_stage === "" ? null : value.form_stage,
+            ivo_registration_number: value.ivo_registration_number === "" ? null : value.ivo_registration_number,
+            hsa_id: value.hsa_id === "" ? null : value.hsa_id,
+            is_onboarded: value.is_onboarded === "" ? null : value.is_onboarded
+        }
+
+        const doctorResult = await dbOperations.insertData('tbl_doctors', doctorData);
+        const getClinicData = await dbOperations.getData('tbl_clinics', { zynq_user_id: zynqUserId });
+        if (!getClinicData) {
+            const insert_clinic = await dbOperations.insertData('tbl_clinics', clinicData);
+        } else {
+            const updatClinic = await dbOperations.updateData('tbl_clinics', clinicData, `WHERE zynq_user_id = '${zynqUserId}' `);
+        }
+
+        console.log("doctorResult", doctorResult)
+        if (doctorResult.affectedRows) {
+            await update_onboarding_status(1, zynqUserId)
+            return handleSuccess(res, 201, language, "PERSONAL_DETAILS_ADDED", result.affectedRows);
+        } else {
+            return handleError(res, 500, language, 'FAILED_TO_ADD_PERSONAL_DETAILS');
+        }
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const addContactInformation = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            street_address: Joi.string().required(),
+            city: Joi.string().required(),
+            state: Joi.string().required(),
+            zip_code: Joi.string().required(),
+            latitude: Joi.number().required(),
+            longitude: Joi.number().required(),
+            phone: Joi.string().required(),
+            website_url: Joi.string().optional(),
+            form_stage: Joi.number().required(),
+            clinic_id: Joi.string().required()
+    
+        });
+       
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        console.log("req.user", req.user)
+        const zynqUserId = req.user.id
+
+        const clinicData = {
+            street_address: value.street_address,
+            city: value.city,
+            state: value.state,
+            zip_code: value.zip_code,
+            latitude: value.latitude,
+            longitude: value.longitude,
+            mobile_number: value.phone,
+            website_url: value.website_url,
+            form_stage: value.form_stage,
+            clinic_id: value.clinic_id
+
+        };
+
+      
+        const getClinicLocation = await dbOperations.getData('tbl_clinic_locations', { clinic_id: value.clinic_id });
+        if (!getClinicLocation) {
+         const insert_clinic_location = await dbOperations.insertData('tbl_clinic_locations', clinicData);
+        } else {
+            const updateClinic = await dbOperations.updateData('tbl_clinic_locations', clinicData, `WHERE clinic_id = '${value.clinic_id}' `);
+            const updateDoctor = await dbOperations.updateData('tbl_doctors', {phone: value.phone,}, `WHERE zynq_user_id = '${zynqUserId}' `);
+        }
+
+        console.log("doctorResult", doctorResult)
+        if (doctorResult.affectedRows) {
+            return handleSuccess(res, 201, language, "PERSONAL_DETAILS_ADDED", result.affectedRows);
+        } else {
+            return handleError(res, 500, language, 'FAILED_TO_ADD_PERSONAL_DETAILS');
+        }
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const addEducationAndExperienceInformation = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            education: Joi.string().required(),   // will be JSON
+            experience: Joi.string().required(), // will be JSON
+        });
+
+        let language = 'en';
+
+        const payload = {
+            education: req.body.education,
+            experience: req.body.experience
+        };
+
+        const { error, value } = schema.validate(payload);
+        if (error) return joiErrorHandle(res, error);
+
+        const doctorId = req.user.doctorData.doctor_id;
+
+        const educationList = JSON.parse(value.education);
+        const experienceList = JSON.parse(value.experience);
+
+        const files = req.files;
+        if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
+            for (const key in files) { // 'key' is like 'medical_council', 'deramatology_board', etc.
+                const certTypeFromDb = await doctorModels.get_certification_type_by_filename(key);
+
+                if (certTypeFromDb.length > 0) {
+                    const certification_type_id = certTypeFromDb[0].certification_type_id;
+
+                    for (const file of files[key]) { // Loop through potential multiple files for the same field name
+                        const newUploadPath = file.filename; // This is the new path
+
+                        // Check if this certification type already exists for the doctor
+                        const existingCert = await doctorModels.get_doctor_certification_by_type(doctorId, certification_type_id);
+
+                        if (existingCert.length > 0) {
+                            // Certification already exists, update its file path
+                            await doctorModels.update_certification_upload_path(doctorId, certification_type_id, newUploadPath);
+                            console.log(`Updated certification for doctor ${doctorId}, type ${certification_type_id} with new file ${newUploadPath}`);
+                        } else {
+                            // Certification does not exist, add it
+                            await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath); // Add other metadata if available from req.body
+                            console.log(`Added new certification for doctor ${doctorId}, type ${certification_type_id} with file ${newUploadPath}`);
+                        }
+                    }
+                } else {
+                    console.warn(`Certification type with filename key '${key}' not found in tbl_certification_type. Skipping file processing.`);
+                }
+            }
+        }
+        // --- END IMPROVED LOGIC ---
+
+
+
+        await doctorModels.delete_all_education(doctorId);
+        await doctorModels.delete_all_experience(doctorId);
+
+        // Save Education
+        for (let edu of educationList) {
+            await doctorModels.add_education(
+                doctorId,
+                edu.institute,
+                edu.degree,
+                edu.start_year,
+                edu.end_year,
+
+            );
+        }
+
+        // Save Experience
+        for (let exp of experienceList) {
+            await doctorModels.add_experience(
+                doctorId,
+                exp.organization,
+                exp.designation,
+                exp.start_date,
+                exp.end_date
+            );
+        }
+        const zynqUserId = req.user.id
+        await update_onboarding_status(2, zynqUserId)
+        return handleSuccess(res, 201, language, "DOCTOR_PROFILE_INFO_ADDED", {});
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const addExpertise = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            treatment_ids: Joi.string().required(),
+            skin_type_ids: Joi.string().required(),
+            severity_levels_ids: Joi.string().required(),
+        });
+
+        let language = 'en';
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const doctorId = req.user.doctorData.doctor_id;
+
+        const treatmentIds = value.treatment_ids.split(',').map(id => id.trim());
+        const skinTypeIds = value.skin_type_ids.split(',').map(id => id.trim());
+        const severityLevelIds = value.severity_levels_ids.split(',').map(id => id.trim());
+
+        // Call model functions to update each expertise
+        await doctorModels.update_doctor_treatments(doctorId, treatmentIds);
+        await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
+        await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
+
+        const zynqUserId = req.user.id
+        await update_onboarding_status(3, zynqUserId);
+        return handleSuccess(res, 200, language, "EXPERTISE_UPDATED", {});
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const addConsultationFeeAndAvailability = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            fee_per_session: Joi.number().positive().optional(),
+            currency: Joi.string().min(1).max(10).default('USD').optional(),
+            session_duration: Joi.string().optional(),
+            availability: Joi.array().items(
+                Joi.object({
+                    day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+
+                    start_time: Joi.string().required().allow(''),
+                    end_time: Joi.string().required().allow(''),
+
+
+
+                    closed: Joi.number().integer().required()
+                })
+            ).optional(),
+        });
+        const language = 'en'
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+        const doctorId = req.user.doctorData.doctor_id;
+        await doctorModels.update_consultation_fee(doctorId, value.fee_per_session, "USD", value.session_duration);
+        if (value.availability?.length > 0) {
+            await doctorModels.update_availability(doctorId, value.availability);
+        }
+
+        const zynqUserId = req.user.id
+        await update_onboarding_status(4, zynqUserId)
+        return handleSuccess(res, 200, language, "FEE_AVAILABILITY_ADDED", {});
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const getDoctorProfile = async (req, res) => {
+    try {
+        const language = 'en';
+        const doctorId = req.user.doctorData.doctor_id;
+
+        const profileData = await doctorModels.get_doctor_profile(doctorId);
+
+        let completionPercentage = 0;
+        let filledFieldsCount = 0;
+        let totalFieldsCount = 0;
+
+        // Personal Details
+        const personalFields = ['name', 'phone', 'age', 'address', 'gender', 'profile_image', 'biography'];
+        totalFieldsCount += personalFields.length;
+        personalFields.forEach(field => {
+            if (profileData[field]) filledFieldsCount++;
+        });
+
+        // Education
+        totalFieldsCount += 1;
+        if (profileData.education && profileData.education.length > 0) filledFieldsCount++;
+
+        // Experience
+        totalFieldsCount += 1;
+        if (profileData.experience && profileData.experience.length > 0) filledFieldsCount++;
+
+        // Expertise
+        const expertiseCategories = ['treatments', 'skinTypes', 'severityLevels'];
+        totalFieldsCount += expertiseCategories.length;
+        expertiseCategories.forEach(category => {
+            if (profileData[category] && profileData[category].length > 0) filledFieldsCount++;
+        });
+
+        // Fee & Availability
+        totalFieldsCount += 2;
+        if (profileData.consultationFee && profileData.consultationFee.fee_per_session) filledFieldsCount++;
+        if (profileData.availability && profileData.availability.length > 0) filledFieldsCount++;
+
+        totalFieldsCount += 1;
+        if (profileData.certifications && profileData.certifications.length > 0) filledFieldsCount++;
+
+        completionPercentage = totalFieldsCount > 0 ? Math.round((filledFieldsCount / totalFieldsCount) * 100) : 0;
+
+
+
+        if (profileData && profileData.profile_image && !profileData.profile_image.startsWith("http")) {
+            profileData.profile_image = `${APP_URL}doctor/profile_images/${profileData.profile_image}`;
+        }
+        console.log("profileData.certifications", profileData.certifications)
+
+        if (profileData.certifications && Array.isArray(profileData.certifications)) {
+            profileData.certifications.forEach(certification => {
+                if (certification.upload_path && !certification.upload_path.startsWith("http")) {
+                    certification.upload_path = `${APP_URL}doctor/certifications/${certification.upload_path}`;
+                }
+            });
+        }
+
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, completionPercentage });
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const editPersonalInformation = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            name: Joi.string().max(255).optional(),
+            phone: Joi.string().max(255).optional(),
+            age: Joi.string().max(255).optional(),
+            address: Joi.string().max(255).optional(),
+            gender: Joi.string().max(255).optional(),
+            biography: Joi.string().optional().allow('')
+        });
+        let language = 'en';
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        console.log("value", value)
+
+
+        const zynqUserId = req.user.id;
+        const [doctorData] = await doctorModels.get_doctor_by_zynquser_id(zynqUserId);
+
+        if (!doctorData) {
+            return handleError(res, 404, language, "DOCTOR_NOT_FOUND");
+        }
+        let filename = doctorData.profile_image;
+        if (req.file) {
+            filename = req.file.filename
+        }
+
+        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography);
+
+        if (result.affectedRows > 0) {
+            return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", result.affectedRows);
+        } else if (result.affectedRows === 0) {
+            return handleSuccess(res, 200, language, "NO_CHANGES_MADE", {});
+        } else {
+            return handleError(res, 500, language, 'FAILED_TO_UPDATE_PERSONAL_DETAILS');
+        }
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const addEducation = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            education: Joi.string().required(),   // will be JSON
+        });
+
+        let language = 'en';
+
+        const payload = {
+            education: req.body.education,
+        };
+
+        const { error, value } = schema.validate(payload);
+        if (error) return joiErrorHandle(res, error);
+
+        const doctorId = req.user.doctorData.doctor_id;
+
+        const educationList = JSON.parse(value.education);
+
+        // Save Education
+        for (let edu of educationList) {
+            await doctorModels.add_education(
+                doctorId,
+                edu.institute,
+                edu.degree,
+                edu.start_year,
+                edu.end_year,
+
+            );
+        }
+
+        return handleSuccess(res, 201, language, "EDUCATION_ADDED", {});
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const editEducation = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            education_id: Joi.string().uuid().required(),
+            institute: Joi.string().min(3).max(255).optional(),
+            degree: Joi.string().min(2).max(255).optional(),
+            start_year: Joi.string().optional(),
+            end_year: Joi.string().optional(),
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const language = 'en'
+
+        const result = await doctorModels.update_education(
+            value.education_id,
+            value.institute,
+            value.degree,
+            value.start_year,
+            value.end_year
+        );
+
+        if (result.affectedRows > 0) {
+            return handleSuccess(res, 200, language, "EDUCATION_UPDATED_SUCCESSFULLY", result.affectedRows);
+        } else {
+            return handleSuccess(res, 200, language, "NO_CHANGES_MADE", {});
+        }
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const deleteEducation = async (req, res) => {
+    try {
+        console.log("req.params>>", req.params)
+        const schema = Joi.object({
+            education_id: Joi.string().required(),
+        });
+
+        const { error, value } = schema.validate(req.params);
+        if (error) return joiErrorHandle(res, error);
+
+        console.log("req.params>>", req.params);
+
+        const language = 'en'
+
+        const result = await doctorModels.delete_education(value.education_id);
+
+        if (result.affectedRows > 0) {
+            return handleSuccess(res, 200, language, "EDUCATION_DELETED", result.affectedRows);
+        } else {
+            return handleError(res, 500, language, 'EDUCATION_NOT_FOUND');
+        }
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const addExperince = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            experience: Joi.string().required(), // will be JSON
+        });
+
+        let language = 'en';
+
+        const payload = {
+            experience: req.body.experience
+        };
+
+        const { error, value } = schema.validate(payload);
+        if (error) return joiErrorHandle(res, error);
+
+        const doctorId = req.user.doctorData.doctor_id;
+        const experienceList = JSON.parse(value.experience);
+
+        // Save Experience
+        for (let exp of experienceList) {
+            await doctorModels.add_experience(
+                doctorId,
+                exp.organization,
+                exp.designation,
+                exp.start_date,
+                exp.end_date
+            );
+        }
+        return handleSuccess(res, 201, language, "EXPERIENCE_ADDED", {});
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const editExperience = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            experience_id: Joi.string().uuid().required(),
+            organization: Joi.string().min(3).max(255).optional(),
+            designation: Joi.string().min(2).max(255).optional(),
+            start_date: Joi.string().optional(),
+            end_date: Joi.string().optional(),
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const result = await doctorModels.update_experience(
+            value.experience_id,
+            value.organization,
+            value.designation,
+            value.start_date,
+            value.end_date
+        );
+
+        const language = 'en'
+
+        if (result.affectedRows > 0) {
+            return handleSuccess(res, 200, language, "EXPERIENCE_UPDATED", result.affectedRows);
+        } else {
+            return handleSuccess(res, 200, language, "NO_CHANGES_MADE", {});
+        }
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const deleteExperience = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            experience_id: Joi.string().required(),
+        });
+
+        const { error, value } = schema.validate(req.params);
+        if (error) return joiErrorHandle(res, error);
+
+        const result = await doctorModels.delete_experience(value.experience_id);
+        const language = 'en'
+        if (result.affectedRows > 0) {
+            return handleSuccess(res, 200, language, "EXPERIENCE_DELETED", result.affectedRows);
+        } else {
+            return handleError(res, 500, language, 'EXPERIENCE_NOT_FOUND');
+        }
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const editExpertise = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            treatment_ids: Joi.string().optional(),
+            skin_type_ids: Joi.string().optional(),
+            severity_levels_ids: Joi.string().optional(),
+        });
+
+        let language = 'en';
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const doctorId = req.user.doctorData.doctor_id;
+
+        if (value.treatment_ids !== undefined) {
+            const treatmentIds = value.treatment_ids.split(',').map(id => id.trim());
+            await doctorModels.update_doctor_treatments(doctorId, treatmentIds);
+        }
+        if (value.skin_type_ids !== undefined) {
+            const skinTypeIds = value.skin_type_ids.split(',').map(id => id.trim());
+            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
+        }
+        if (value.severity_levels_ids !== undefined) {
+            const severityLevelIds = value.severity_levels_ids.split(',').map(id => id.trim());
+            await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
+        }
+
+        return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", {});
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const addCertifications = async (req, res) => {
+    try {
+
+        let language = 'en';
+
+        const doctorId = req.user.doctorData.doctor_id;
+
+        const files = req.files;
+
+        for (const key in files) {
+            const certType = await doctorModels.get_certification_type_by_filename(key)
+
+            if (certType.length > 0) {
+                const certification_type_id = certType[0].certification_type_id;
+
+                for (const file of files[key]) {
+                    console.log("file>>>>>>>", file)
+                    await doctorModels.add_certification(doctorId, certification_type_id, file.filename)
+                }
+            }
+        }
+
+        return handleSuccess(res, 201, language, "CERTIFICATION_ADDED", {});
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const editCertification = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            doctor_certification_id: Joi.string().uuid().required(),
+        });
+        let language = 'en';
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const result = await doctorModels.update_certification(req.file.filename, value.doctor_certification_id);
+
+        if (result.affectedRows > 0) {
+            return handleSuccess(res, 200, language, "CERTIFICATION_UPDATED", result.affectedRows);
+        } else {
+            return handleSuccess(res, 200, language, "NO_CHANGES_MADE", {});
+        }
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const deleteCertification = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            doctor_certification_id: Joi.string().required(),
+        });
+
+        const { error, value } = schema.validate(req.params);
+        if (error) return joiErrorHandle(res, error);
+
+        const result = await doctorModels.delete_certification(value.doctor_certification_id);
+        const language = 'en'
+        if (result.affectedRows > 0) {
+            return handleSuccess(res, 200, language, "CERTIFICATION_DELETED", result.affectedRows);
+        } else {
+            return handleError(res, 500, language, 'CERTIFICATION_NOT_FOUND');
+        }
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const editConsultationFeeAndAvailability = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            fee_per_session: Joi.number().positive().optional(),
+            currency: Joi.string().min(1).max(10).default('USD').optional(),
+            session_duration: Joi.string().optional(),
+            availability: Joi.array().items(
+                Joi.object({
+                    day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+
+                    start_time: Joi.string().required().allow(''),
+                    end_time: Joi.string().required().allow(''),
+                    closed: Joi.number().integer().required()
+                })
+            ).optional(),
+        });
+        const language = 'en'
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+        const doctorId = req.user.doctorData.doctor_id;
+        await doctorModels.update_consultation_fee(doctorId, value.fee_per_session, "USD", value.session_duration);
+        await doctorModels.update_availability(doctorId, value.availability);
+        return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", {});
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const getLinkedClinics = async (req, res) => {
+    try {
+        const language = 'en';
+        const doctorId = req.user.doctorData.doctor_id; // Assuming doctorId is available in req.user
+
+        const profileData = await doctorModels.get_clinics_data_by_doctor_id(doctorId);
+
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", profileData);
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const calculateProfileCompletionPercentageByDoctorId = async (doctorId) => {
+    try {
+        const profileData = await doctorModels.get_doctor_profile(doctorId);
+        if (!profileData) {
+            return 0; // Or handle the case where profile data is not found
+        }
+
+        let filledFieldsCount = 0;
+        let totalFieldsCount = 0;
+
+        // Personal Details
+        const personalFields = ['name', 'phone', 'age', 'address', 'gender', 'profile_image', 'biography'];
+        totalFieldsCount += personalFields.length;
+        personalFields.forEach(field => {
+            if (profileData[field]) filledFieldsCount++;
+        });
+
+        // Education
+        totalFieldsCount += 1; // Count for at least one entry
+        if (profileData.education && profileData.education.length > 0) filledFieldsCount++;
+
+        // Experience
+        totalFieldsCount += 1; // Count for at least one entry
+        if (profileData.experience && profileData.experience.length > 0) filledFieldsCount++;
+
+        // Expertise
+        const expertiseCategories = ['treatments', 'skinTypes', 'severityLevels'];
+        totalFieldsCount += expertiseCategories.length;
+        expertiseCategories.forEach(category => {
+            if (profileData[category] && profileData[category].length > 0) filledFieldsCount++;
+        });
+
+        // Fee & Availability
+        totalFieldsCount += 2;
+        if (profileData.consultationFee && profileData.consultationFee.fee_per_session) filledFieldsCount++;
+        if (profileData.availability && profileData.availability.length > 0) filledFieldsCount++;
+
+        return totalFieldsCount > 0 ? Math.round((filledFieldsCount / totalFieldsCount) * 100) : 0;
+
+    } catch (error) {
+        console.error("Error calculating profile completion:", error);
+        return 0; // Or handle the error as needed
+    }
+};
+
+export const editEducationAndExperienceInformation = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            education: Joi.string().optional(),
+            experience: Joi.string().optional(),
+        });
+
+        let language = 'en';
+
+        const payload = {
+            education: req.body.education,
+            experience: req.body.experience
+        };
+
+        const { error, value } = schema.validate(payload);
+        if (error) return joiErrorHandle(res, error);
+
+        const doctorId = req.user.doctorData.doctor_id;
+
+        const educationList = JSON.parse(value.education);
+        const experienceList = JSON.parse(value.experience);
+
+        const files = req.files;
+        if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
+            for (const key in files) { // 'key' is like 'medical_council', 'deramatology_board', etc.
+                const certTypeFromDb = await doctorModels.get_certification_type_by_filename(key);
+
+                if (certTypeFromDb.length > 0) {
+                    const certification_type_id = certTypeFromDb[0].certification_type_id;
+
+                    for (const file of files[key]) { // Loop through potential multiple files for the same field name
+                        const newUploadPath = file.filename; // This is the new path
+
+                        // Check if this certification type already exists for the doctor
+                        const existingCert = await doctorModels.get_doctor_certification_by_type(doctorId, certification_type_id);
+
+                        if (existingCert.length > 0) {
+                            // Certification already exists, update its file path
+                            await doctorModels.update_certification_upload_path(doctorId, certification_type_id, newUploadPath);
+                            console.log(`Updated certification for doctor ${doctorId}, type ${certification_type_id} with new file ${newUploadPath}`);
+                        } else {
+                            // Certification does not exist, add it
+                            await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath); // Add other metadata if available from req.body
+                            console.log(`Added new certification for doctor ${doctorId}, type ${certification_type_id} with file ${newUploadPath}`);
+                        }
+                    }
+                } else {
+                    console.warn(`Certification type with filename key '${key}' not found in tbl_certification_type. Skipping file processing.`);
+                }
+            }
+        }
+
+        await doctorModels.delete_all_education(doctorId);
+        await doctorModels.delete_all_experience(doctorId);
+
+        // Save Education
+        for (let edu of educationList) {
+            await doctorModels.add_education(
+                doctorId,
+                edu.institute,
+                edu.degree,
+                edu.start_year,
+                edu.end_year,
+
+            );
+        }
+
+        // Save Experience
+        for (let exp of experienceList) {
+            await doctorModels.add_experience(
+                doctorId,
+                exp.organization,
+                exp.designation,
+                exp.start_date,
+                exp.end_date
+            );
+        }
+        return handleSuccess(res, 201, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", {});
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+
+export const deleteProfileImage = async (req, res) => {
+    try {
+        const doctorId = req.user.doctorData.doctor_id;
+        const result = await doctorModels.delete_profile_image(doctorId);
+        const language = 'en'
+        if (result.affectedRows > 0) {
+            return handleSuccess(res, 200, language, "PROFILE_IMAGE_DELETED", result.affectedRows);
+        } else {
+            return handleError(res, 500, language, 'CERTIFICATION_NOT_FOUND');
+        }
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+
+export const getDoctorCertificatesWithPath = async (req, res) => {
+    try {
+        const language = 'en';
+        const doctorId = req.user.doctorData.doctor_id; // Assuming doctorId is available in req.user
+
+        const profileData = await doctorModels.getCertificationsWithUploadPathByDoctorId(doctorId);
+
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", profileData);
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};

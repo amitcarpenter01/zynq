@@ -341,3 +341,4 @@ export const unsubscribed = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
+

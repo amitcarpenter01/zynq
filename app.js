@@ -36,6 +36,7 @@ app.get("/", (req, res) => {
 
 
 if (IS_LIVE) {
+  console.log("SSL is enabled");
   const sslOptions = {
     ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
     key: fs.readFileSync("/var/www/html/ssl/private.key"),
