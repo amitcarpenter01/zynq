@@ -315,7 +315,7 @@ export const getClinicTreatments = async (clinic_id) => {
 
 export const getClinicSurgeries = async (clinic_id) => {
     try {
-        const [surgeries] = await db.query(
+        const surgeries = await db.query(
             `SELECT s.* FROM tbl_surgery s
              INNER JOIN tbl_clinic_surgery cs ON s.surgery_id = cs.surgery_id
              WHERE cs.clinic_id = ?
@@ -344,10 +344,9 @@ export const getClinicSkinConditions = async (clinic_id) => {
     }
 };
 
-
 export const getClinicAestheticDevices = async (clinic_id) => {
     try {
-        const [devices] = await db.query(
+        const devices = await db.query(
             `SELECT ad.* FROM tbl_aesthetic_devices ad
              INNER JOIN tbl_clinic_aesthetic_devices cad ON ad.aesthetic_device_id  = cad.clinic_aesthetic_devices_id 
              WHERE cad.clinic_id = ?
@@ -360,7 +359,6 @@ export const getClinicAestheticDevices = async (clinic_id) => {
         throw new Error("Failed to fetch clinic aesthetic devices.");
     }
 };
-
 
 export const getClinicOperationHours = async (clinic_id) => {
     try {
