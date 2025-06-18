@@ -623,7 +623,7 @@ export const updateClinicAestheticDevices = async (device_ids, clinic_id) => {
 
         const values = device_ids.map(device_id => [clinic_id, device_id]);
         await db.query(
-            'INSERT INTO tbl_clinic_aesthetic_devices (clinic_id, device_id) VALUES ?',
+            'INSERT INTO tbl_clinic_aesthetic_devices (clinic_id, aesthetic_devices_id) VALUES ?',
             [values]
         );
     } catch (error) {
