@@ -183,7 +183,7 @@ export const insertClinicSkinConditions = async (skin_conditions, clinic_id) => 
 
         const insertPromises = skin_conditions.map(skin_condition_id => {
             return db.query(
-                'INSERT INTO clinic_skin_condition (clinic_id, skin_condition_id) VALUES (?, ?)',
+                'INSERT INTO tbl_clinic_skin_condition (clinic_id, skin_condition_id) VALUES (?, ?)',
                 [clinic_id, skin_condition_id]
             );
         });
@@ -333,7 +333,7 @@ export const getClinicSkinConditions = async (clinic_id) => {
     try {
         const conditions = await db.query(
             `SELECT s.* FROM tbl_skin_conditions s
-             INNER JOIN clinic_skin_condition csc ON s.skin_condition_id = csc.skin_condition_id
+             INNER JOIN tbl_clinic_skin_condition csc ON s.skin_condition_id = csc.skin_condition_id
              WHERE csc.clinic_id = ? ORDER BY s.created_at DESC`,
             [clinic_id]
         );
