@@ -301,7 +301,8 @@ export const updateClinicCountAndEmailSent = async (clinic_id, email_sent_count,
 
 export const clinicSubscribed = async (clinic_id) => {
     try {
-        return await db.query('UPDATE `tbl_clinics` SET `is_invited`= 1 WHERE clinic_id = ?', [clinic_id]);
+        await db.query('UPDATE `tbl_clinics` SET `is_invited`= 1 WHERE clinic_id = ?', [clinic_id]);
+        return await db.query('SELECT * FROM `tbl_clinics` WHERE clinic_id = ?', [clinic_id])
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update clinic invited status.");
