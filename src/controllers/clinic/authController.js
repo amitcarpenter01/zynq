@@ -52,7 +52,17 @@ export const getProfile = async (req, res) => {
         const severityLevels = await clinicModels.getClinicSeverityLevels(clinic.clinic_id);
         clinic.severity_levels = severityLevels;
 
-        const documents = await clinicModels.getClinicDocuments(clinic.clinic_id);
+        const surgeries = await clinicModels.getClinicSurgeriesLevels(clinic.clinic_id);
+        clinic.surgeries_level = surgeries;
+
+        const aestheticDevices = await clinicModels.getClinicAestheticDevicesLevel(clinic.clinic_id);
+        clinic.aestheticDevices = aestheticDevices;
+
+        const skin_Conditions = await clinicModels.getClinicSkinConditionsLevel(clinic.clinic_id);
+        clinic.skin_Conditions = skin_Conditions;
+
+
+        const documents = await clinicModels.getClinicDocumentsLevel(clinic.clinic_id);
         documents.forEach(document => {
             if (document.file_url && !document.file_url.startsWith("http")) {
                 document.file_url = `${APP_URL}${document.file_url}`;
@@ -154,6 +164,7 @@ export const onboardClinic = async (req, res) => {
                 return handleError(res, 400, "en", "INVALID_JSON_FOR_CLINIC_TIMING");
             }
         }
+        
         if (typeof req.body.treatments === 'string') {
             try {
                 req.body.treatments = JSON.parse(req.body.treatments);
