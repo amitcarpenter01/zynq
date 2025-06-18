@@ -238,7 +238,7 @@ export const get_clinic_surgeries = async (clinic_id) => {
         SELECT 
             tbl_clinic_surgery.clinic_surgery_id, 
             tbl_clinic_surgery.clinic_id, 
-            tbl_surgery.name 
+            tbl_surgery.swedish AS name 
         FROM tbl_clinic_surgery 
         LEFT JOIN tbl_surgery 
             ON tbl_surgery.surgery_id = tbl_clinic_surgery.surgery_id 
