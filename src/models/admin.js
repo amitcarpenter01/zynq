@@ -3,12 +3,12 @@ import db from "../config/db.js";
 //======================================= Admin =========================================
 
 export const findEmail = async (email) => {
-    try {
-        return await db.query('SELECT * FROM `tbl_admin` WHERE email = ?', [email]);
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to get admin data.");
-    }
+    // try {
+    return await db.query('SELECT * FROM `tbl_admin` WHERE email = ?', [email]);
+    // } catch (error) {
+    //     console.error("Database Error:", error.message);
+    //     throw new Error("Failed to get admin data.");
+    // }
 };
 
 export const updateData = async (admin_id, token, fcm_token) => {
@@ -94,6 +94,19 @@ export const get_users_managment = async () => {
         throw new Error("Failed to get user latest data.");
     }
 };
+
+export const get_all_face_scan_results = async () => {
+    try {
+        const rows = await db.query(`SELECT * FROM tbl_face_scan_results`);
+        return rows;
+    } catch (error) {
+        console.error("Error fetching face scan results:", error);
+        throw error;
+    }
+};
+
+
+
 
 export const update_user_status = async (user_id, is_active) => {
     try {
@@ -238,6 +251,7 @@ export const get_clinic_surgeries = async (clinic_id) => {
         SELECT 
             tbl_clinic_surgery.clinic_surgery_id, 
             tbl_clinic_surgery.clinic_id, 
+            tbl_surgery.type,
             tbl_surgery.swedish AS name 
         FROM tbl_clinic_surgery 
         LEFT JOIN tbl_surgery 
@@ -250,12 +264,12 @@ export const get_clinic_surgeries = async (clinic_id) => {
 export const get_clinic_aesthetic_devices = async (clinic_id) => {
     return await db.query(`
         SELECT 
-            tbl_clinic_aesthetic_devices.clinic_aesthetic_device_id, 
+            tbl_clinic_aesthetic_devices.clinic_aesthetic_devices_id, 
             tbl_clinic_aesthetic_devices.clinic_id, 
-            tbl_aesthetic_devices.name 
+            tbl_aesthetic_devices.device 
         FROM tbl_clinic_aesthetic_devices 
         LEFT JOIN tbl_aesthetic_devices 
-            ON tbl_aesthetic_devices.device_id = tbl_clinic_aesthetic_devices.device_id 
+            ON tbl_aesthetic_devices.aesthetic_device_id  = tbl_clinic_aesthetic_devices.clinic_aesthetic_devices_id 
         WHERE tbl_clinic_aesthetic_devices.clinic_id = ? 
         ORDER BY tbl_clinic_aesthetic_devices.created_at DESC
     `, [clinic_id]);
@@ -460,7 +474,7 @@ export const get_doctor_surgeries = async (doctorId) => {
         return await db.query(`
             SELECT 
                 ds.*,
-                s.name 
+                s.type 
             FROM 
                 tbl_doctor_surgery ds
             INNER JOIN 
@@ -480,13 +494,13 @@ export const get_doctor_aesthetic_devices = async (doctorId) => {
         return await db.query(`
             SELECT 
                 dad.*,
-                ad.name 
+                ad.device 
             FROM 
                 tbl_doctor_aesthetic_devices dad
             INNER JOIN 
                 tbl_aesthetic_devices ad 
             ON 
-                dad.device_id = ad.device_id
+                dad.doctor_aesthetic_devices_id = ad.aesthetic_device_id 
             WHERE 
                 dad.doctor_id = ?`, [doctorId]);
     } catch (error) {

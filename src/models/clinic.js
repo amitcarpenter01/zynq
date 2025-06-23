@@ -431,6 +431,7 @@ export const getClinicAestheticDevicesLevel = async (clinic_id) => {
              FROM tbl_aesthetic_devices ad 
              INNER JOIN tbl_clinic_aesthetic_devices cad 
              ON ad.aesthetic_device_id = cad.aesthetic_devices_id 
+
              WHERE cad.clinic_id = ? 
              ORDER BY ad.created_at DESC`,
             [clinic_id]
