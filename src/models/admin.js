@@ -251,7 +251,8 @@ export const get_clinic_surgeries = async (clinic_id) => {
         SELECT 
             tbl_clinic_surgery.clinic_surgery_id, 
             tbl_clinic_surgery.clinic_id, 
-            tbl_surgery.type 
+            tbl_surgery.type,
+            tbl_surgery.swedish AS name 
         FROM tbl_clinic_surgery 
         LEFT JOIN tbl_surgery 
             ON tbl_surgery.surgery_id = tbl_clinic_surgery.surgery_id 
@@ -314,7 +315,8 @@ export const updateClinicCountAndEmailSent = async (clinic_id, email_sent_count,
 
 export const clinicSubscribed = async (clinic_id) => {
     try {
-        return await db.query('UPDATE `tbl_clinics` SET `is_invited`= 1 WHERE clinic_id = ?', [clinic_id]);
+        await db.query('UPDATE `tbl_clinics` SET `is_invited`= 1 WHERE clinic_id = ?', [clinic_id]);
+        return await db.query('SELECT * FROM `tbl_clinics` WHERE clinic_id = ?', [clinic_id])
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update clinic invited status.");
