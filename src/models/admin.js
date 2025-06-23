@@ -207,14 +207,105 @@ export const insert_clinic = async (clinic) => {
     }
 };
 
+// export const get_clinic_managment = async () => {
+//     try {
+//         return await db.query(`SELECT tbl_clinics.clinic_id, tbl_clinics.clinic_name, tbl_clinics.org_number, tbl_clinics.email, tbl_clinics.mobile_number, tbl_clinics.address, tbl_clinics.email_sent_count, tbl_clinics.clinic_logo, tbl_clinics.clinic_description, tbl_clinics.website_url, tbl_clinics.profile_completion_percentage AS onboarding_progress, tbl_clinic_locations.city, tbl_clinic_locations.zip_code AS postal_code,tbl_clinics.ivo_registration_number , tbl_clinics.hsa_id FROM tbl_clinics LEFT JOIN tbl_clinic_locations ON tbl_clinic_locations.clinic_id = tbl_clinics.clinic_id WHERE tbl_clinics.is_deleted = 0 ORDER BY tbl_clinics.created_at DESC;`);
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to get clinic latest data.");
+//     }
+// };
+
 export const get_clinic_managment = async () => {
     try {
-        return await db.query(`SELECT tbl_clinics.clinic_id, tbl_clinics.clinic_name, tbl_clinics.org_number, tbl_clinics.email, tbl_clinics.mobile_number, tbl_clinics.address, tbl_clinics.email_sent_count, tbl_clinics.clinic_logo, tbl_clinics.clinic_description, tbl_clinics.website_url, tbl_clinics.profile_completion_percentage AS onboarding_progress, tbl_clinic_locations.city, tbl_clinic_locations.zip_code AS postal_code,tbl_clinics.ivo_registration_number , tbl_clinics.hsa_id FROM tbl_clinics LEFT JOIN tbl_clinic_locations ON tbl_clinic_locations.clinic_id = tbl_clinics.clinic_id WHERE tbl_clinics.is_deleted = 0 ORDER BY tbl_clinics.created_at DESC;`);
+        return await db.query(`
+            SELECT 
+                c.clinic_id, 
+                c.clinic_name, 
+                c.org_number, 
+                c.email, 
+                c.mobile_number, 
+                c.address, 
+                c.email_sent_count, 
+                c.clinic_logo, 
+                c.clinic_description, 
+                c.website_url, 
+                c.profile_completion_percentage AS onboarding_progress, 
+                cl.city, 
+                cl.zip_code AS postal_code,
+                c.ivo_registration_number, 
+                c.hsa_id,
+
+                -- ✅ Add role-based label
+                CASE 
+                    WHEN zu.role_id = '2fc0b43c-3196-11f0-9e07-0e8e5d906eef' THEN 'Clinic'
+                    WHEN zu.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+                    ELSE 'Clinic Doctor'
+                END AS user_type
+
+            FROM tbl_clinics c
+
+            LEFT JOIN tbl_clinic_locations cl 
+                ON cl.clinic_id = c.clinic_id
+
+            LEFT JOIN tbl_zqnq_users zu 
+                ON zu.id = c.zynq_user_id
+
+            WHERE c.is_deleted = 0
+            ORDER BY c.created_at DESC
+        `);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get clinic latest data.");
     }
 };
+
+
+// export const get_clinic_managment = async () => {
+//     try {
+//         return await db.query(`
+//             SELECT 
+//                 c.clinic_id, 
+//                 c.clinic_name, 
+//                 c.org_number, 
+//                 c.email, 
+//                 c.mobile_number, 
+//                 c.address, 
+//                 c.email_sent_count, 
+//                 c.clinic_logo, 
+//                 c.clinic_description, 
+//                 c.website_url, 
+//                 c.profile_completion_percentage AS onboarding_progress, 
+//                 cl.city, 
+//                 cl.zip_code AS postal_code,
+//                 c.ivo_registration_number, 
+//                 c.hsa_id,
+
+//                 -- ✅ Determine if user is solo doctor using tbl_zqnq_users
+//                 CASE 
+//                     WHEN zu.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN TRUE
+//                     ELSE FALSE
+//                 END AS is_solo_doctor
+
+//             FROM tbl_clinics c
+
+//             LEFT JOIN tbl_clinic_locations cl 
+//                 ON cl.clinic_id = c.clinic_id
+
+//             LEFT JOIN tbl_zqnq_users zu 
+//                 ON zu.id = c.zynq_user_id
+
+//             WHERE c.is_deleted = 0
+//             ORDER BY c.created_at DESC
+//         `);
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to get clinic latest data.");
+//     }
+// };
+
+
+
 
 export const get_clinic_treatments = async (clinic_id) => {
     return await db.query('SELECT tbl_clinic_treatments.clinic_treatment_id, tbl_clinic_treatments.clinic_id, tbl_treatments.name FROM tbl_clinic_treatments LEFT JOIN tbl_treatments ON tbl_treatments.treatment_id = tbl_clinic_treatments.treatment_id WHERE tbl_clinic_treatments.clinic_id = ? ORDER BY tbl_clinic_treatments.created_at DESC;', [clinic_id])
