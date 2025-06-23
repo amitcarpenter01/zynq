@@ -5,12 +5,19 @@ import { handleError, handleSuccess, joiErrorHandle } from "../../utils/response
 export const get_users_managment = async (req, res) => {
     try {
         const users = await adminModels.get_users_managment();
+        const faceScanResults = await adminModels.get_all_face_scan_results();
 
         if (users && users.length > 0) {
             const formattedUsers = users.map(user => ({
                 ...user,
-                profile_image: user.profile_image ? `${process.env.APP_URL}${user.profile_image}` : null
+                profile_image: user.profile_image
+                    ? `${process.env.APP_URL}${user.profile_image}`
+                    : null,
+                face_scans: faceScanResults.filter(scan => 
+                     scan.user_id == user.user_id)
+
             }));
+
 
             return handleSuccess(res, 200, 'en', "Fetch user management successfully", { users: formattedUsers });
         } else {
@@ -21,6 +28,9 @@ export const get_users_managment = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
+
+
+
 
 export const update_user_status = async (req, res) => {
     try {
