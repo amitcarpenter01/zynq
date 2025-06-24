@@ -1,5 +1,5 @@
 import express from 'express';
-import { upload } from '../services/aws.s3.js';
+import { upload } from '../services/multer.js';
 import { authenticateUser } from '../middleware/auth.js';
 import { uploadFile, uploadMultipleFiles } from '../services/multer.js';
 
@@ -12,6 +12,7 @@ import * as doctorControllers from "../controllers/api/doctorController.js";
 import * as productControllers from "../controllers/api/productController.js";
 import * as clinicControllers from "../controllers/api/clinicController.js";
 import * as supportControllers from "../controllers/api/supportController.js";
+import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 
 const router = express.Router();
 
@@ -34,9 +35,19 @@ router.post("/add-update-prompt", aiPromptControllers.add_and_update_prompt);
 router.post("/get-prompt", aiPromptControllers.get_prompt_data_by_prompt_type);
 
 //==================================== Face Scan ==============================
+const uploadVariousFields = uploadCertificationFieldsTo([
+    { name: 'file', maxCount: 1, subfolder: 'certifications' },
+    { name: 'pdf', maxCount: 1, subfolder: 'certifications' },
+
+]);
+
 // router.post("/add-face-scan-result", authenticateUser, upload.single("file"), faceScanControllers.add_face_scan_result);
-router.post("/add-face-scan-result", authenticateUser, uploadFile, faceScanControllers.add_face_scan_result);
+router.post("/add-face-scan-result", authenticateUser, upload.fields([
+    { name: 'file', maxCount: 1 },
+    { name: 'pdf', maxCount: 1 }
+]), faceScanControllers.add_face_scan_result);
 router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_face_scan_history);
+
 
 
 //==================================== Doctor ==============================
@@ -46,7 +57,7 @@ router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_docto
 router.get("/get-all-products", authenticateUser, productControllers.getAllProducts);
 
 // ==================================== Clinic ==============================
-router.get("/get-all-clinics", authenticateUser, clinicControllers.get_all_clinics);
+router.post("/get-all-clinics", authenticateUser, clinicControllers.get_all_clinics);
 
 //==================================== Support ==============================
 router.post("/create-support-ticket", authenticateUser, supportControllers.create_support_ticket);

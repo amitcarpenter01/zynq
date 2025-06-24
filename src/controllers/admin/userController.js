@@ -13,8 +13,12 @@ export const get_users_managment = async (req, res) => {
                 profile_image: user.profile_image
                     ? `${process.env.APP_URL}${user.profile_image}`
                     : null,
-                face_scans: faceScanResults.filter(scan => 
-                     scan.user_id == user.user_id)
+                face_scans: faceScanResults.filter(scan =>
+                    scan.user_id == user.user_id).map(scan => ({
+                        ...scan,
+                        face: scan.face && !scan.face.startsWith("http") ? `${process.env.APP_URL}${scan.face}`:scan.face,
+                        pdf: scan.pdf ? `${process.env.APP_URL}${scan.pdf}` : scan.pdf
+                    }))
 
             }));
 
