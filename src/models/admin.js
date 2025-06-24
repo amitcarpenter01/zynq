@@ -236,11 +236,10 @@ export const get_clinic_managment = async () => {
                 c.ivo_registration_number, 
                 c.hsa_id,
 
-                -- ✅ Add role-based label
+                -- Label the user type
                 CASE 
                     WHEN zu.role_id = '2fc0b43c-3196-11f0-9e07-0e8e5d906eef' THEN 'Clinic'
-                    WHEN zu.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
-                    ELSE 'Clinic Doctor'
+                    WHEN zu.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
                 END AS user_type
 
             FROM tbl_clinics c
@@ -252,6 +251,11 @@ export const get_clinic_managment = async () => {
                 ON zu.id = c.zynq_user_id
 
             WHERE c.is_deleted = 0
+              AND zu.role_id IN (
+                  '2fc0b43c-3196-11f0-9e07-0e8e5d906eef',  -- Clinic
+                  '407595e3-3196-11f0-9e07-0e8e5d906eef'   -- Solo Doctor
+              )
+
             ORDER BY c.created_at DESC
         `);
     } catch (error) {
@@ -259,6 +263,7 @@ export const get_clinic_managment = async () => {
         throw new Error("Failed to get clinic latest data.");
     }
 };
+
 
 
 // export const get_clinic_managment = async () => {
