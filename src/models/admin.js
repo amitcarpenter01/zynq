@@ -3,12 +3,12 @@ import db from "../config/db.js";
 //======================================= Admin =========================================
 
 export const findEmail = async (email) => {
-    try {
-        return await db.query('SELECT * FROM `tbl_admin` WHERE email = ?', [email]);
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to get admin data.");
-    }
+    // try {
+    return await db.query('SELECT * FROM `tbl_admin` WHERE email = ?', [email]);
+    // } catch (error) {
+    //     console.error("Database Error:", error.message);
+    //     throw new Error("Failed to get admin data.");
+    // }
 };
 
 export const updateData = async (admin_id, token, fcm_token) => {
@@ -94,6 +94,19 @@ export const get_users_managment = async () => {
         throw new Error("Failed to get user latest data.");
     }
 };
+
+export const get_all_face_scan_results = async () => {
+    try {
+        const rows = await db.query(`SELECT * FROM tbl_face_scan_results`);
+        return rows;
+    } catch (error) {
+        console.error("Error fetching face scan results:", error);
+        throw error;
+    }
+};
+
+
+
 
 export const update_user_status = async (user_id, is_active) => {
     try {
@@ -194,14 +207,106 @@ export const insert_clinic = async (clinic) => {
     }
 };
 
+// export const get_clinic_managment = async () => {
+//     try {
+//         return await db.query(`SELECT tbl_clinics.clinic_id, tbl_clinics.clinic_name, tbl_clinics.org_number, tbl_clinics.email, tbl_clinics.mobile_number, tbl_clinics.address, tbl_clinics.email_sent_count, tbl_clinics.clinic_logo, tbl_clinics.clinic_description, tbl_clinics.website_url, tbl_clinics.profile_completion_percentage AS onboarding_progress, tbl_clinic_locations.city, tbl_clinic_locations.zip_code AS postal_code,tbl_clinics.ivo_registration_number , tbl_clinics.hsa_id FROM tbl_clinics LEFT JOIN tbl_clinic_locations ON tbl_clinic_locations.clinic_id = tbl_clinics.clinic_id WHERE tbl_clinics.is_deleted = 0 ORDER BY tbl_clinics.created_at DESC;`);
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to get clinic latest data.");
+//     }
+// };
+
 export const get_clinic_managment = async () => {
     try {
-        return await db.query(`SELECT tbl_clinics.clinic_id, tbl_clinics.clinic_name, tbl_clinics.org_number, tbl_clinics.email, tbl_clinics.mobile_number, tbl_clinics.address, tbl_clinics.email_sent_count, tbl_clinics.clinic_logo, tbl_clinics.clinic_description, tbl_clinics.website_url, tbl_clinics.profile_completion_percentage AS onboarding_progress, tbl_clinic_locations.city, tbl_clinic_locations.zip_code AS postal_code,tbl_clinics.ivo_registration_number , tbl_clinics.hsa_id FROM tbl_clinics LEFT JOIN tbl_clinic_locations ON tbl_clinic_locations.clinic_id = tbl_clinics.clinic_id WHERE tbl_clinics.is_deleted = 0 ORDER BY tbl_clinics.created_at DESC;`);
+        return await db.query(`
+            SELECT 
+                c.clinic_id, 
+                c.clinic_name, 
+                c.org_number, 
+                c.email, 
+                c.mobile_number, 
+                c.address, 
+                c.email_sent_count, 
+                c.clinic_logo, 
+                c.clinic_description, 
+                c.website_url, 
+                c.profile_completion_percentage AS onboarding_progress, 
+                cl.city, 
+                cl.zip_code AS postal_code,
+                c.ivo_registration_number, 
+                c.hsa_id,
+
+                -- Label the user type
+                CASE 
+                    WHEN zu.role_id = '2fc0b43c-3196-11f0-9e07-0e8e5d906eef' THEN 'Clinic'
+                    WHEN zu.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+                END AS user_type
+
+            FROM tbl_clinics c
+
+            LEFT JOIN tbl_clinic_locations cl 
+                ON cl.clinic_id = c.clinic_id
+
+            LEFT JOIN tbl_zqnq_users zu 
+                ON zu.id = c.zynq_user_id
+
+            WHERE c.is_deleted = 0
+              AND zu.role_id IN (
+                  '2fc0b43c-3196-11f0-9e07-0e8e5d906eef',  -- Clinic
+                  '407595e3-3196-11f0-9e07-0e8e5d906eef'   -- Solo Doctor
+              )
+
+            ORDER BY c.created_at DESC
+        `);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get clinic latest data.");
     }
 };
+
+// export const get_clinic_managment = async () => {
+//     try {
+//         return await db.query(`
+//             SELECT 
+//                 c.clinic_id, 
+//                 c.clinic_name, 
+//                 c.org_number, 
+//                 c.email, 
+//                 c.mobile_number, 
+//                 c.address, 
+//                 c.email_sent_count, 
+//                 c.clinic_logo, 
+//                 c.clinic_description, 
+//                 c.website_url, 
+//                 c.profile_completion_percentage AS onboarding_progress, 
+//                 cl.city, 
+//                 cl.zip_code AS postal_code,
+//                 c.ivo_registration_number, 
+//                 c.hsa_id,
+
+//                 -- ✅ Determine if user is solo doctor using tbl_zqnq_users
+//                 CASE 
+//                     WHEN zu.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN TRUE
+//                     ELSE FALSE
+//                 END AS is_solo_doctor
+
+//             FROM tbl_clinics c
+
+//             LEFT JOIN tbl_clinic_locations cl 
+//                 ON cl.clinic_id = c.clinic_id
+
+//             LEFT JOIN tbl_zqnq_users zu 
+//                 ON zu.id = c.zynq_user_id
+
+//             WHERE c.is_deleted = 0
+//             ORDER BY c.created_at DESC
+//         `);
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to get clinic latest data.");
+//     }
+// };
+
 
 export const get_clinic_treatments = async (clinic_id) => {
     return await db.query('SELECT tbl_clinic_treatments.clinic_treatment_id, tbl_clinic_treatments.clinic_id, tbl_treatments.name FROM tbl_clinic_treatments LEFT JOIN tbl_treatments ON tbl_treatments.treatment_id = tbl_clinic_treatments.treatment_id WHERE tbl_clinic_treatments.clinic_id = ? ORDER BY tbl_clinic_treatments.created_at DESC;', [clinic_id])
@@ -238,7 +343,8 @@ export const get_clinic_surgeries = async (clinic_id) => {
         SELECT 
             tbl_clinic_surgery.clinic_surgery_id, 
             tbl_clinic_surgery.clinic_id, 
-            tbl_surgery.name 
+            tbl_surgery.type,
+            tbl_surgery.swedish AS name 
         FROM tbl_clinic_surgery 
         LEFT JOIN tbl_surgery 
             ON tbl_surgery.surgery_id = tbl_clinic_surgery.surgery_id 
@@ -250,12 +356,12 @@ export const get_clinic_surgeries = async (clinic_id) => {
 export const get_clinic_aesthetic_devices = async (clinic_id) => {
     return await db.query(`
         SELECT 
-            tbl_clinic_aesthetic_devices.clinic_aesthetic_device_id, 
+            tbl_clinic_aesthetic_devices.clinic_aesthetic_devices_id, 
             tbl_clinic_aesthetic_devices.clinic_id, 
-            tbl_aesthetic_devices.name 
+            tbl_aesthetic_devices.device 
         FROM tbl_clinic_aesthetic_devices 
         LEFT JOIN tbl_aesthetic_devices 
-            ON tbl_aesthetic_devices.device_id = tbl_clinic_aesthetic_devices.device_id 
+            ON tbl_aesthetic_devices.aesthetic_device_id  = tbl_clinic_aesthetic_devices.clinic_aesthetic_devices_id 
         WHERE tbl_clinic_aesthetic_devices.clinic_id = ? 
         ORDER BY tbl_clinic_aesthetic_devices.created_at DESC
     `, [clinic_id]);
@@ -301,7 +407,8 @@ export const updateClinicCountAndEmailSent = async (clinic_id, email_sent_count,
 
 export const clinicSubscribed = async (clinic_id) => {
     try {
-        return await db.query('UPDATE `tbl_clinics` SET `is_invited`= 1 WHERE clinic_id = ?', [clinic_id]);
+        await db.query('UPDATE `tbl_clinics` SET `is_invited`= 1 WHERE clinic_id = ?', [clinic_id]);
+        return await db.query('SELECT * FROM `tbl_clinics` WHERE clinic_id = ?', [clinic_id])
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update clinic invited status.");
@@ -321,12 +428,48 @@ export const clinicUnsubscribed = async (clinic_id) => {
 
 export const get_doctors_management = async () => {
     try {
-        return await db.query('SELECT tbl_doctors.doctor_id, tbl_doctors.name, tbl_doctors.specialization, tbl_doctors.fee_per_session, tbl_doctors.phone, tbl_doctors.profile_image, tbl_doctors.rating, tbl_doctors.age, tbl_doctors.address, tbl_doctors.gender, tbl_doctors.experience_years, tbl_doctors.biography, tbl_doctors.profile_completion_percentage AS onboarding_progress, tbl_zqnq_users.email FROM `tbl_doctors` LEFT JOIN tbl_zqnq_users ON tbl_zqnq_users.id = tbl_doctors.zynq_user_id ORDER BY tbl_doctors.created_at DESC;');
+        return await db.query(`
+            SELECT 
+                d.doctor_id, 
+                d.name, 
+                d.specialization, 
+                d.fee_per_session, 
+                d.phone, 
+                d.profile_image, 
+                d.rating, 
+                d.age, 
+                d.address, 
+                d.gender, 
+                d.experience_years, 
+                d.biography, 
+                d.profile_completion_percentage AS onboarding_progress, 
+                u.email,
+
+                -- ✅ Add user type based on role_id
+                CASE 
+                    WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+                    WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
+                END AS user_type
+
+            FROM tbl_doctors d
+
+            LEFT JOIN tbl_zqnq_users u 
+                ON u.id = d.zynq_user_id
+
+            WHERE u.role_id IN (
+                '407595e3-3196-11f0-9e07-0e8e5d906eef',  -- Solo Doctor
+                '3677a3e6-3196-11f0-9e07-0e8e5d906eef'   -- Doctor
+            )
+
+            ORDER BY d.created_at DESC;
+        `);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor latest data.");
     }
 };
+
+
 
 export const get_doctor_experience = async (doctor_id) => {
     try {
@@ -459,7 +602,7 @@ export const get_doctor_surgeries = async (doctorId) => {
         return await db.query(`
             SELECT 
                 ds.*,
-                s.name 
+                s.type 
             FROM 
                 tbl_doctor_surgery ds
             INNER JOIN 
@@ -479,13 +622,13 @@ export const get_doctor_aesthetic_devices = async (doctorId) => {
         return await db.query(`
             SELECT 
                 dad.*,
-                ad.name 
+                ad.device 
             FROM 
                 tbl_doctor_aesthetic_devices dad
             INNER JOIN 
                 tbl_aesthetic_devices ad 
             ON 
-                dad.device_id = ad.device_id
+                dad.doctor_aesthetic_devices_id = ad.aesthetic_device_id 
             WHERE 
                 dad.doctor_id = ?`, [doctorId]);
     } catch (error) {
