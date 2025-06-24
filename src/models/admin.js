@@ -88,7 +88,7 @@ export const get_latest_clinic = async () => {
 //======================================= User Managment =========================================
 export const get_users_managment = async () => {
     try {
-        return await db.query(`SELECT tbl_users.*, COUNT(DISTINCT tbl_face_scan_results.face_scan_result_id) AS total_ai_scan_done, COUNT(DISTINCT tbl_appointments.appointment_id) AS total_appointment FROM tbl_users LEFT JOIN tbl_face_scan_results ON tbl_face_scan_results.user_id = tbl_users.user_id LEFT JOIN tbl_appointments ON tbl_appointments.patient_id = tbl_users.user_id WHERE tbl_users.is_verified = 1 GROUP BY tbl_users.user_id ORDER BY tbl_users.created_at DESC;`);
+        return await db.query(`SELECT tbl_users.*, COUNT(DISTINCT tbl_face_scan_results.face_scan_result_id) AS total_ai_scan_done, COUNT(DISTINCT tbl_appointments.appointment_id) AS total_appointment FROM tbl_users LEFT JOIN tbl_face_scan_results ON tbl_face_scan_results.user_id = tbl_users.user_id LEFT JOIN tbl_appointments ON tbl_appointments.user_id = tbl_users.user_id WHERE tbl_users.is_verified = 1 GROUP BY tbl_users.user_id ORDER BY tbl_users.created_at DESC;`);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get user latest data.");

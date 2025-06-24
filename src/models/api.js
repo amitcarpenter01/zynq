@@ -256,15 +256,31 @@ export const get_product_images = async (product_id) => {
 
 
 //======================================= Clinic =========================================
-export const getAllClinicsForUser = async () => {
+export const getAllClinicsForUser = async (ids = [],limit,offset) => {
     try {
-        return await db.query(`SELECT * FROM tbl_clinics WHERE profile_completion_percentage >= 50 ORDER BY created_at DESC`);
-    }
-    catch (error) {
+        let query = `
+            SELECT c.*
+            FROM tbl_clinics c
+            LEFT JOIN tbl_clinic_treatments tct ON c.clinic_id = tct.clinic_id
+            WHERE c.profile_completion_percentage >= 50
+        `;
+        let params = [];
+
+        if (ids.length > 0) {
+            const placeholders = ids.map(() => '?').join(', ');
+            query += ` AND tct.treatment_id IN (${placeholders})`;
+            params.push(...ids);
+        }
+
+        query += ` ORDER BY c.created_at DESC LIMIT ? OFFSET ?`;
+
+        return await db.query(query, [...params,limit,offset]);
+    } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch clinics.");
     }
-}
+};
+
 
 export const get_clinic_by_zynq_user_id = async (zynq_user_id) => {
     try {
