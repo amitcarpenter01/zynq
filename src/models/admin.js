@@ -264,8 +264,6 @@ export const get_clinic_managment = async () => {
     }
 };
 
-
-
 // export const get_clinic_managment = async () => {
 //     try {
 //         return await db.query(`
@@ -308,8 +306,6 @@ export const get_clinic_managment = async () => {
 //         throw new Error("Failed to get clinic latest data.");
 //     }
 // };
-
-
 
 
 export const get_clinic_treatments = async (clinic_id) => {
@@ -432,12 +428,48 @@ export const clinicUnsubscribed = async (clinic_id) => {
 
 export const get_doctors_management = async () => {
     try {
-        return await db.query('SELECT tbl_doctors.doctor_id, tbl_doctors.name, tbl_doctors.specialization, tbl_doctors.fee_per_session, tbl_doctors.phone, tbl_doctors.profile_image, tbl_doctors.rating, tbl_doctors.age, tbl_doctors.address, tbl_doctors.gender, tbl_doctors.experience_years, tbl_doctors.biography, tbl_doctors.profile_completion_percentage AS onboarding_progress, tbl_zqnq_users.email FROM `tbl_doctors` LEFT JOIN tbl_zqnq_users ON tbl_zqnq_users.id = tbl_doctors.zynq_user_id ORDER BY tbl_doctors.created_at DESC;');
+        return await db.query(`
+            SELECT 
+                d.doctor_id, 
+                d.name, 
+                d.specialization, 
+                d.fee_per_session, 
+                d.phone, 
+                d.profile_image, 
+                d.rating, 
+                d.age, 
+                d.address, 
+                d.gender, 
+                d.experience_years, 
+                d.biography, 
+                d.profile_completion_percentage AS onboarding_progress, 
+                u.email,
+
+                -- ✅ Add user type based on role_id
+                CASE 
+                    WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+                    WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
+                END AS user_type
+
+            FROM tbl_doctors d
+
+            LEFT JOIN tbl_zqnq_users u 
+                ON u.id = d.zynq_user_id
+
+            WHERE u.role_id IN (
+                '407595e3-3196-11f0-9e07-0e8e5d906eef',  -- Solo Doctor
+                '3677a3e6-3196-11f0-9e07-0e8e5d906eef'   -- Doctor
+            )
+
+            ORDER BY d.created_at DESC;
+        `);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor latest data.");
     }
 };
+
+
 
 export const get_doctor_experience = async (doctor_id) => {
     try {
