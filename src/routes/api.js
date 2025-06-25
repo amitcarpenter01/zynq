@@ -63,4 +63,10 @@ router.post("/get-all-clinics", authenticateUser, clinicControllers.get_all_clin
 router.post("/create-support-ticket", authenticateUser, supportControllers.create_support_ticket);
 router.get("/get-support-tickets", authenticateUser, supportControllers.get_support_tickets);
 
+
+// -------------------------------------slot managment------------------------------------------------//
+router.get('/getFutureDoctorSlots', authenticateUser, authControllers.getFutureDoctorSlots);
+
+router.post("/isUserOfflineOrOnline", authenticateUser, authControllers.isUserOfflineOrOnline);
+
 export default router;

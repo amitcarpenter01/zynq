@@ -265,12 +265,12 @@ export const get_doctor_consultation_fee = async (doctorId) => {
     }
 };
 
-export const update_availability = async (doctorId, availabilityData) => {
+export const update_availability = async (doctorId, availabilityData, clinic_id) => {
     try {
-        await db.query(`DELETE FROM tbl_doctor_availability WHERE doctor_id = ?`, [doctorId]);
-        const values = availabilityData.map(avail => [doctorId, avail.day_of_week, avail.start_time, avail.end_time, avail.closed]);
+        // await db.query(`DELETE FROM tbl_doctor_availability WHERE doctor_id = ?`, [doctorId]);
+        const values = availabilityData.map(avail => [doctorId, avail.day_of_week, avail.start_time, avail.end_time, avail.closed, avail.fee_per_session, clinic_id]);
         if (values.length > 0) {
-            return await db.query(`INSERT INTO tbl_doctor_availability (doctor_id, day_of_week, start_time, end_time,closed) VALUES ?`, [values]);
+            return await db.query(`INSERT INTO tbl_doctor_availability (doctor_id, day_of_week, start_time, end_time,closed,fee_per_session, clinic_id) VALUES ?`, [values]);
         }
         return null;
     } catch (error) {
@@ -278,6 +278,18 @@ export const update_availability = async (doctorId, availabilityData) => {
         throw new Error("Failed to update availability.");
     }
 };
+
+export const update_docter_availability = async (updatedFields, id) => {
+    const keys = Object.keys(updatedFields);
+    const values = Object.values(updatedFields);
+    const setClause = keys.map((key) => `${key} = ?`).join(", ");
+    values.push(id);
+    const query = `UPDATE tbl_doctor_availability SET ${setClause} WHERE doctor_availability_id = ?`;
+    return db.query(query, values);
+};
+
+
+
 
 export const get_doctor_availability = async (doctorId) => {
     try {
@@ -347,7 +359,7 @@ export const get_doctor_profile = async (doctorId) => {
         console.log("surgery", surgery);
         console.log("aestheticDevices", aestheticDevices);
 
-        return {    
+        return {
             ...mainUser,
             ...doctor,
             education,
@@ -675,3 +687,55 @@ export const get_doctor_aesthetic_devices = async (doctorId) => {
         throw new Error("Failed to get doctor's aesthetic devices.");
     }
 };
+
+export const fetchDocterAvibilityById = async (doctor_id) => {
+    try {
+        const result = await db.query('SELECT * FROM tbl_doctor_availability WHERE doctor_id = ? ORDER BY created_at DESC', [doctor_id]);
+        return result;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch support tickets.");
+    }
+}
+
+
+// -------------------------------------slot managment------------------------------------------------//
+
+
+
+export const insertDoctorAvailabilityModel = async (data) => {
+    return db.query("INSERT INTO tbl_doctor_availability SET ?", [data]);
+};
+
+export const fetchDoctorAvailabilityModel = async (doctor_id) => {
+    return db.query("SELECT * FROM tbl_doctor_availability WHERE doctor_id = ?", [doctor_id]);
+};
+
+export const fetchAppointmentsModel = async (doctor_id, date, start_time) => {
+    return db.query("SELECT * FROM tbl_appointments WHERE doctor_id = ? AND date = ? AND start_time = ?", [doctor_id, date, start_time]);
+};
+
+export const update_doctor_fee_per_session = async (doctorId, feePerSession) => {
+    try {
+
+        return await db.query(`UPDATE tbl_doctors SET fee_per_session = ? WHERE doctor_id = ?`, [feePerSession, doctorId]);
+
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update consultation fee.");
+    }
+};
+
+
+export const deleteDoctorAvailabilityByDoctorId = async (doctor_id) => {
+    return db.query("DELETE FROM tbl_doctor_availability WHERE doctor_id = ?", [doctor_id]);
+};
+
+export const update_doctor_is_online = async (doctorId, isOnline) => {
+    return db.query("UPDATE tbl_doctors SET isOnline = ? WHERE doctor_id = ?", [isOnline, doctorId]);
+};
+
+
+
+
+
