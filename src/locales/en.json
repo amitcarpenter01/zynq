@@ -184,6 +184,9 @@
     "RESPONSE_SENT_FAILED": "Response Sent Failed",
     "ENROLL_SUCCESSFUL": "Enroll Successful",
     "USER_ALREADY_ENROLLED": "User Already Enrolled",
-    "PERSONAL_DETAILS_ADDED":"Personal Details Added Successfully"
+    "USER_NOT_ENROLLED": "User Enrolled Failed",
+    "PERSONAL_DETAILS_ADDED":"Personal Details Added Successfully",
+    "CONTACT_DETAILS_UPDATED":"Contact Details Updated Successfully"
+   
  
 }

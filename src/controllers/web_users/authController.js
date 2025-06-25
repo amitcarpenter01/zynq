@@ -162,7 +162,7 @@ export const reset_password = async (req, res) => {
         const updateResult = await webModels.update_web_user_password(
             hashedPassword,
             newPassword,
-            null, 
+            null,
             null,
             webUser.id
         );
@@ -245,15 +245,21 @@ export const onboardingByRoleId = async (req, res) => {
         const { id, role_id } = value;
 
         const clinics = await dbOperations.getData('tbl_zqnq_users', `WHERE id = '${id}' `);
+        const doctors = await dbOperations.getData('tbl_doctors', `WHERE zynq_user_id = '${id}' `);
         if (clinics.length > 0) {
-           const update_role = await dbOperations.updateData('tbl_zqnq_users', { role_id: role_id }, `WHERE id = '${id}' `);
-           if (update_role.affectedRows > 0) {
-            return res.status(200).json({ success: true, message: "You have successfully updated your role" });
-           } else {
-            return handleError(res, 400, 'en', "Role update failed");
-           }
+            const update_role = await dbOperations.updateData('tbl_zqnq_users', { role_id: role_id }, `WHERE id = '${id}' `);
+            if (doctors.length == 0) {
+                const insert_doctor = await dbOperations.insertData('tbl_doctors', { zynq_user_id: id });
+            }
+            if (update_role.affectedRows > 0) {
+           
+                return handleSuccess(res, 200, 'en', "ENROLL_SUCCESSFUL");
+            } else {
+                return handleError(res, 400, 'en', "USER_NOT_ENROLLED");
+              
+            }
         } else {
-            return handleError(res, 400, 'en', "User not found");
+            return handleError(res, 400, 'en', "USER_NOT_FOUND");
         }
 
     } catch (error) {

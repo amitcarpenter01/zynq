@@ -43,7 +43,6 @@
     "node-cron": "^4.0.3",
     "nodemailer": "^6.10.0",
     "nodemailer-express-handlebars": "^7.0.0",
-    "nodemon": "^3.1.9",
     "openai": "^4.89.1",
     "path": "^0.12.7",
     "twilio": "^5.5.2",

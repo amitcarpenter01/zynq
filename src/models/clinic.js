@@ -430,7 +430,7 @@ export const getClinicAestheticDevicesLevel = async (clinic_id) => {
             `SELECT ad.* 
              FROM tbl_aesthetic_devices ad 
              INNER JOIN tbl_clinic_aesthetic_devices cad 
-             ON ad.aesthetic_device_id = cad.clinic_aesthetic_devices_id 
+             ON ad.aesthetic_device_id = cad.aesthetic_devices_id 
              WHERE cad.clinic_id = ? 
              ORDER BY ad.created_at DESC`,
             [clinic_id]
@@ -623,7 +623,7 @@ export const updateClinicAestheticDevices = async (device_ids, clinic_id) => {
 
         const values = device_ids.map(device_id => [clinic_id, device_id]);
         await db.query(
-            'INSERT INTO tbl_clinic_aesthetic_devices (clinic_id, device_id) VALUES ?',
+            'INSERT INTO tbl_clinic_aesthetic_devices (clinic_id, aesthetic_devices_id) VALUES ?',
             [values]
         );
     } catch (error) {

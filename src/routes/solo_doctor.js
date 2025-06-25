@@ -3,14 +3,28 @@ import express from 'express';
 const router = express.Router();
 import * as soloController from "../controllers//soloDoctor/profileController.js";
 import { authenticate } from '../middleware/web_user_auth.js';
-import { uploadCertificationFieldsTo, uploadFileTo,uploadFilesTo } from '../services/doctor_multer.js';
-import * as supportControllers from "../controllers/doctor/supportController.js";
+import { upload} from '../services/solo_multer.js';
+import { uploadCertificationFieldsTo, uploadFileTo } from '../services/doctor_multer.js';
+  export const uploadProfileAndLogo = upload.fields([
+    { name: 'profile', maxCount: 1 },
+    { name: 'logo', maxCount: 1 }
+  ]);
+  const uploadVariousFields = uploadCertificationFieldsTo([
+    { name: 'medical_council', maxCount: 1, subfolder: 'certifications' },
+    { name: 'deramatology_board', maxCount: 1, subfolder: 'certifications' },
+    { name: 'laser_safety', maxCount: 1, subfolder: 'certifications' },
+     { name: 'cosmetology_license', maxCount: 1, subfolder: 'certifications' },
+]);
 
 
+router.post("/add_personal_info",authenticate(['SOLO_DOCTOR']),uploadProfileAndLogo,  soloController.addPersonalInformation);
+router.post("/addContactInformation",authenticate(['SOLO_DOCTOR']),  soloController.addContactInformation);
+router.post("/addConsultationFeeAndAvailability",authenticate(['SOLO_DOCTOR']),  soloController.addConsultationFeeAndAvailability);
+router.post('/add_education_experience', authenticate(['SOLO_DOCTOR']),uploadVariousFields, soloController.addEducationAndExperienceInformation);
+router.post('/add_expertise', authenticate(['SOLO_DOCTOR']), soloController.addExpertise);
 
-
-router.post("/add_personal_info",uploadFileTo('profile_image'),  soloController.addPersonalInformation);
-// router.get("/get_profile", authenticate(['DOCTOR']), doctorController.getDoctorProfile);
+router.get("/get_profile", authenticate(['SOLO_DOCTOR']), soloController.getDoctorProfile);
+router.get("/getDoctorProfileByStatus/:status", authenticate(['SOLO_DOCTOR']), soloController.getDoctorProfileByStatus);
 
 // //======================================= Onboarding apis =========================================
 
@@ -25,7 +39,6 @@ router.post("/add_personal_info",uploadFileTo('profile_image'),  soloController.
 
 // router.post('/add_education_experience', authenticate(['DOCTOR']), uploadVariousFields, doctorController.addEducationAndExperienceInformation);
 
-// router.post('/add_expertise', authenticate(['DOCTOR']), doctorController.addExpertise);
 
 // router.post('/add_fee_availability', authenticate(['DOCTOR']), doctorController.addConsultationFeeAndAvailability);
 

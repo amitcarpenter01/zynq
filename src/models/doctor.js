@@ -270,7 +270,7 @@ export const update_availability = async (doctorId, availabilityData) => {
         await db.query(`DELETE FROM tbl_doctor_availability WHERE doctor_id = ?`, [doctorId]);
         const values = availabilityData.map(avail => [doctorId, avail.day_of_week, avail.start_time, avail.end_time, avail.closed]);
         if (values.length > 0) {
-            return await db.query(`INSERT INTO tbl_doctor_availability (doctor_id, day_of_week, start_time, end_time,closed) VALUES ?`, [values]);
+            return await db.query(`INSERT INTO tbl_doctor_availability (doctor_id, day, start_time, end_time,closed) VALUES ?`, [values]);
         }
         return null;
     } catch (error) {
