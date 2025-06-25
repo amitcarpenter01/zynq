@@ -183,5 +183,9 @@
     "RESPONSE_SENT_SUCCESSFULLY": "Response Sent Successfully",
     "RESPONSE_SENT_FAILED": "Response Sent Failed",
     "ENROLL_SUCCESSFUL": "Enroll Successful",
-    "USER_ALREADY_ENROLLED": "User Already Enrolled"
+    "USER_ALREADY_ENROLLED": "User Already Enrolled",
+    "AVAILABILITY_ADDED_SUCCESSFULLY": "Availability Added Successfully",
+    "FUTURE_DOCTOR_SLOTS": "Future Doctor Slots",
+    "NO_AVAILABILITY_FOUND": "No Availability Found",
+    "NO_SLOTS_FOUND": "No Slots Found"
 }

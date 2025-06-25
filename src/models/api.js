@@ -312,3 +312,8 @@ export const get_support_tickets_by_user_id = async (user_id) => {
         throw new Error("Failed to fetch support tickets.");
     }
 }
+
+
+export const update_user_is_online = async (user_id, isOnline) => {
+    return db.query("UPDATE tbl_users SET isOnline = ? WHERE user_id = ?", [isOnline, user_id]);
+};
