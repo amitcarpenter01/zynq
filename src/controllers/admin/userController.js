@@ -30,8 +30,6 @@ export const get_users_managment = async (req, res) => {
 };
 
 
-
-
 export const update_user_status = async (req, res) => {
     try {
         const schema = Joi.object({
@@ -61,3 +59,4 @@ export const update_user_status = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
+

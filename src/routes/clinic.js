@@ -65,6 +65,8 @@ router.get("/get-roles", authControllers.getAllRoles);
 //==================================== Doctor ==============================
 router.post("/send-doctor-invitation", authenticate(['CLINIC']), doctorControllers.sendDoctorInvitation);
 router.get("/get-all-doctors", authenticate(['CLINIC']), doctorControllers.getAllDoctors);
+
+router.get("/get-all-doctors/:clinic_id", authenticate(['CLINIC']), doctorControllers.getAllDoctorsById);
 router.post("/unlink-doctor", authenticate(['CLINIC']), doctorControllers.unlinkDoctor);
 router.get("/accept-invitation", doctorControllers.acceptInvitation);
 

@@ -100,7 +100,71 @@ export const create_web_user = async (userData) => {
 }
 
 
+export const getCallLogById = async (call_id) => {
+    const [rows] = await db.query(
+        `SELECT * FROM tbl_call_logs WHERE call_id = ?`,
+        [call_id]
+    );
+    return rows;
+};
+
+export const updateCallLogStatus = async (call_id, status) => {
+    return await db.query(
+        `UPDATE tbl_call_logs SET status = ?, created_at = NOW() WHERE call_id = ?`,
+        [status, call_id]
+    );
+};
+
+export const createOrUpdateCallLog = async ({
+  call_id,
+  sender_user_id,
+  sender_doctor_id,
+  receiver_user_id,
+  receiver_doctor_id,
+  status,
+  started_at
+}) => {
+  try {
+    await db.query(`
+      INSERT INTO tbl_call_logs (
+        call_id, sender_user_id, sender_doctor_id,
+        receiver_user_id, receiver_doctor_id, status, started_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        status = VALUES(status),
+        started_at = VALUES(started_at)
+    `, [
+      call_id,
+      sender_user_id,
+      sender_doctor_id,
+      receiver_user_id,
+      receiver_doctor_id,
+      status,
+      started_at
+    ]);
+  } catch (error) {
+    console.error("Error in createOrUpdateCallLog:", error);
+    throw error;
+  }
+};
 
 
 
+export const getAllCallLogs = async () => {
+  const [rows] = await db.query(`
+    SELECT 
+      call_id,
+      caller_id,
+      sender_user_id,
+      sender_doctor_id,
+      receiver_user_id,
+      receiver_doctor_id,
+      status,
+      started_at
+    FROM tbl_call_logs
+    ORDER BY started_at DESC
+  `);
+
+  return rows;
+};
 

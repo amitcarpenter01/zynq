@@ -40,6 +40,7 @@ export const getProfile = async (req, res) => {
         const treatments = await clinicModels.getClinicTreatments(clinic.clinic_id);
         clinic.treatments = treatments;
 
+        console.log('treatments', treatments);
         const operationHours = await clinicModels.getClinicOperationHours(clinic.clinic_id);
         clinic.operation_hours = operationHours;
 
@@ -272,7 +273,6 @@ export const onboardClinic = async (req, res) => {
         const [clinic] = await clinicModels.get_clinic_by_zynq_user_id(zynq_user_id);
         const clinic_id = clinic.clinic_id;
 
-
         if (uploadedFiles.length > 0) {
             uploadedFiles.forEach(async (file) => {
                 const [certificationType] = await clinicModels.getCertificateTypeByFileName(file.fieldname);
@@ -283,6 +283,8 @@ export const onboardClinic = async (req, res) => {
                 }
             });
         }
+
+        console.log('uploadedFiles', uploadedFiles)
 
         const [clinicLocation] = await clinicModels.getClinicLocation(clinic_id);
         if (clinicLocation) {

@@ -1,6 +1,7 @@
 import express from 'express';
 import { upload } from '../services/aws.s3.js';
 import { authenticateUser } from '../middleware/auth.js';
+import { authenticate } from '../middleware/web_user_auth.js';;
 import { uploadFile, uploadMultipleFiles } from '../services/multer.js';
 
 
@@ -51,5 +52,19 @@ router.get("/get-all-clinics", authenticateUser, clinicControllers.get_all_clini
 //==================================== Support ==============================
 router.post("/create-support-ticket", authenticateUser, supportControllers.create_support_ticket);
 router.get("/get-support-tickets", authenticateUser, supportControllers.get_support_tickets);
+
+
+router.post(
+  "/create-call-log-user",
+  authenticateUser,
+  authControllers.create_call_log_user
+);
+
+router.post(
+  "/create-call-log-doctor",
+  authenticate(['DOCTOR']),
+  authControllers.create_call_log_doctor
+);
+
 
 export default router;
