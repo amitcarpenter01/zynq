@@ -16,8 +16,6 @@ import * as supportControllers from "../controllers/api/supportController.js";
 import * as appointmentController from "../controllers/api/appointmentController.js";
 
 
-import * as appointmentController from "../controllers/api/appointmentController.js";
-
 import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 
 const router = express.Router();
