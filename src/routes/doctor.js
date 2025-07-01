@@ -81,7 +81,7 @@ router.get("/getDoctorProfileById", authenticate(['DOCTOR']), doctorController.g
 
 // -------------------------------------slot managment------------------------------------------------//
 
-router.post('/createDoctorAvailability', authenticate(['DOCTOR']), doctorController.createDoctorAvailability);
-router.post('/updateDoctorAvailability', authenticate(['DOCTOR']), doctorController.updateDoctorAvailability);
-router.get('/getMyAppointments',authenticate(['DOCTOR']), appointmentControllers.getMyAppointmentsDoctor);
+router.post('/createDoctorAvailability', authenticate(['DOCTOR','SOLO_DOCTOR']), doctorController.createDoctorAvailability);
+router.post('/updateDoctorAvailability', authenticate(['DOCTOR','SOLO_DOCTOR']), doctorController.updateDoctorAvailability);
+router.get('/getMyAppointments',authenticate(['DOCTOR','SOLO_DOCTOR']), appointmentControllers.getMyAppointmentsDoctor);
 export default router;
