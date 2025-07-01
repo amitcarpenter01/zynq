@@ -1,6 +1,7 @@
 import express from 'express';
 import { upload } from '../services/multer.js';
 import { authenticateUser } from '../middleware/auth.js';
+import { authenticate } from '../middleware/web_user_auth.js';;
 import { uploadFile, uploadMultipleFiles } from '../services/multer.js';
 
 
@@ -68,6 +69,18 @@ router.post("/create-support-ticket", authenticateUser, supportControllers.creat
 router.get("/get-support-tickets", authenticateUser, supportControllers.get_support_tickets);
 
 
+
+router.post(
+  "/create-call-log-user",
+  authenticateUser,
+  authControllers.create_call_log_user
+);
+
+router.post(
+  "/create-call-log-doctor",
+  authenticate(['DOCTOR']),
+  authControllers.create_call_log_doctor
+);
 // -------------------------------------slot managment------------------------------------------------//
 
 

@@ -3,7 +3,7 @@ import express from 'express';
 const router = express.Router();
 import * as webControllers from "../controllers/web_users/authController.js";
 import { authenticate } from '../middleware/web_user_auth.js';;
-
+import { authenticateUser } from '../middleware/auth.js';;
 // router.get("/get_profile", authenticate(['CLINIC','DOCTOR']), webControllers.getProfile);
 
 router.post("/login", webControllers.login_web_user);
@@ -14,5 +14,23 @@ router.get("/success-reset", webControllers.render_success_reset);
 router.post("/set-password", authenticate(['CLINIC', 'DOCTOR', 'SOLO_DOCTOR']), webControllers.set_password);
 router.post("/change-password", authenticate(['CLINIC', 'DOCTOR','SOLO_DOCTOR']), webControllers.change_password);
 router.post("/onboarding-by-role-id", webControllers.onboardingByRoleId);
+
+
+//=======================================Call-log=============================
+router.post(
+  "/create-call-log-user",
+  authenticateUser,
+  webControllers.create_call_log_user
+);
+
+
+router.post(
+  "/create-call-log-doctor",
+  authenticate(['DOCTOR']),
+  webControllers.create_call_log_doctor
+);
+
+
+router.get("/get-call-logs", authenticate, webControllers.get_all_call_logs);
 
 export default router;  
