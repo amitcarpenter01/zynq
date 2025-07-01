@@ -53,6 +53,7 @@ if (IS_LIVE) {
   server.listen(PORT, () => {
     console.log(`Server is working on ${APP_URL}`);
   });
+}
 
 
 
