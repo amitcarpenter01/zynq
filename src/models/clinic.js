@@ -431,7 +431,6 @@ export const getClinicAestheticDevicesLevel = async (clinic_id) => {
              FROM tbl_aesthetic_devices ad 
              INNER JOIN tbl_clinic_aesthetic_devices cad 
              ON ad.aesthetic_device_id = cad.aesthetic_devices_id 
-
              WHERE cad.clinic_id = ? 
              ORDER BY ad.created_at DESC`,
             [clinic_id]
@@ -1198,18 +1197,18 @@ export const get_issue_by_id = async (support_ticket_id) => {
         throw new Error("Failed to fetch clinic data.");
     }
 };
- 
+
 export const get_support_tickets_by_doctor_id_to_clinic = async (clinic_id) => {
     try {
         const result = await db.query('SELECT * FROM tbl_doctor_support_tickets WHERE clinic_id = ? ORDER BY created_at DESC', [clinic_id]);
- 
+
         return result;
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch support tickets.");
     }
 }
- 
+
 export const send_ticket_response = async (clinic_response, ticket_id) => {
     try {
         return await db.query(`UPDATE  tbl_doctor_support_tickets SET clinic_response = ? , responded_at = NOW() where support_ticket_id  = ? `, [clinic_response, ticket_id]);
@@ -1229,7 +1228,7 @@ export const getAllSkinCondition = async () => {
     }
 };
 
-export const getAllsurgery = async() =>{
+export const getAllsurgery = async () => {
     try {
         const surgeries = await db.query('SELECT * FROM tbl_surgery');
         return surgeries;
@@ -1239,7 +1238,7 @@ export const getAllsurgery = async() =>{
     }
 }
 
-export const getAllDevices = async() =>{
+export const getAllDevices = async () => {
     try {
         const devices = await db.query('SELECT * FROM tbl_aesthetic_devices')
         return devices;
@@ -1248,3 +1247,244 @@ export const getAllDevices = async() =>{
         throw new Error("Failed to fetch devices.");
     }
 }
+
+export const getClinicTreatmentsBulk = async (clinicIds) => {
+    const placeholders = clinicIds.map(() => '?').join(',');
+    //const query = `SELECT * FROM tbl_clinic_treatments WHERE clinic_id IN (${placeholders})`;
+
+    const query = `SELECT t.*, ct.* FROM tbl_treatments t INNER JOIN  tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id WHERE ct.clinic_id IN (${placeholders})`;
+    const results = await db.query(query, clinicIds);
+
+    const grouped = {};
+    results.forEach(row => {
+        if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
+        grouped[row.clinic_id].push(row);
+    });
+    return grouped;
+};
+
+export const getClinicOperationHoursBulk = async (clinicIds) => {
+    const placeholders = clinicIds.map(() => '?').join(',');
+    const query = `SELECT * FROM tbl_clinic_operation_hours WHERE clinic_id IN (${placeholders})`;
+    const results = await db.query(query, clinicIds);
+
+    const grouped = {};
+    results.forEach(row => {
+        if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
+        grouped[row.clinic_id].push(row);
+    });
+    return grouped;
+};
+
+export const getClinicSkinTypesBulk = async (clinicIds) => {
+    const placeholders = clinicIds.map(() => '?').join(',');
+    const query = `SELECT st.*,cst.* FROM tbl_skin_types st INNER JOIN
+    tbl_clinic_skin_types cst ON st.skin_type_id = cst.skin_type_id WHERE cst.clinic_id IN (${placeholders}) ORDER BY cst.created_at DESC`;
+    const results = await db.query(query, clinicIds);
+
+    const grouped = {};
+    results.forEach(row => {
+        if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
+        grouped[row.clinic_id].push(row);
+    });
+    return grouped;
+};
+
+export const getClinicSkinConditionBulk = async (clinicIds) => {
+    const placeholders = clinicIds.map(() => '?').join(',');
+    const query = `SELECT sc.*,csc.* FROM tbl_skin_conditions sc INNER JOIN  tbl_clinic_skin_condition csc ON  sc.skin_condition_id = csc.skin_condition_id WHERE csc.clinic_id IN (${placeholders})`;
+    const results = await db.query(query, clinicIds);
+
+    const grouped = {};
+    results.forEach(row => {
+        if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
+        grouped[row.clinic_id].push(row);
+    });
+    return grouped;
+};
+
+export const getClinicSurgeryBulk = async (clinicIds) => {
+    const placeholders = clinicIds.map(() => '?').join(',');
+    const query = `SELECT s.*,cs.* FROM tbl_surgery s INNER JOIN tbl_clinic_surgery cs ON s.surgery_id  = cs.surgery_id WHERE cs.clinic_id IN (${placeholders})`;
+    const results = await db.query(query, clinicIds);
+
+    const grouped = {};
+    results.forEach(row => {
+        if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
+        grouped[row.clinic_id].push(row);
+    });
+    return grouped;
+};
+
+export const getClinicAstheticDevicesBulk = async (clinicIds) => {
+    const placeholders = clinicIds.map(() => '?').join(',');
+    const query = `SELECT ad.*, cad.* FROM tbl_aesthetic_devices ad INNER JOIN  tbl_clinic_aesthetic_devices cad ON ad.aesthetic_device_id = cad.aesthetic_devices_id    WHERE cad.clinic_id IN (${placeholders})`;
+    const results = await db.query(query, clinicIds);
+
+    const grouped = {};
+    results.forEach(row => {
+        if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
+        grouped[row.clinic_id].push(row);
+    });
+    return grouped;
+};
+
+export const getClinicLocationsBulk = async (clinicIds) => {
+    const placeholders = clinicIds.map(() => '?').join(',');
+    const query = `SELECT * FROM tbl_clinic_locations WHERE clinic_id IN (${placeholders})`;
+    const results = await db.query(query, clinicIds);
+
+    const grouped = {};
+    results.forEach(row => {
+        if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
+        grouped[row.clinic_id].push(row);
+    });
+    return grouped;
+};
+
+export const getDoctorCertificationsBulk = async (doctorIds) => {
+    try {
+        const placeholders = doctorIds.map(() => '?').join(',');
+
+        const query = `SELECT c.*, ct.* 
+            FROM tbl_doctor_certification c
+            LEFT JOIN tbl_certification_type ct ON c.certification_type_id = ct.certification_type_id 
+            WHERE c.doctor_id IN (${placeholders}) ORDER BY c.created_at DESC`;
+        const results = await db.query(query, doctorIds);
+
+        const grouped = {};
+        results.forEach(row => {
+            if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+            grouped[row.doctor_id].push(row);
+        });
+        return grouped;
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch doctor certifications.");
+    }
+};
+
+export const getDoctorEducationBulk = async (doctorIds) => {
+    try {
+        const placeholders = doctorIds.map(() => '?').join(',');
+
+        const query = `SELECT * FROM tbl_doctor_educations WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
+        const results = await db.query(query, doctorIds);
+
+        const grouped = {};
+        results.forEach(row => {
+            if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+            grouped[row.doctor_id].push(row);
+        });
+        return grouped;
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch doctor education.");
+    }
+};
+
+export const getDoctorExperienceBulk = async (doctorIds) => {
+    try {
+        const placeholders = doctorIds.map(() => '?').join(',');
+
+        const query = `SELECT * FROM tbl_doctor_experiences WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
+        const results = await db.query(query, doctorIds);
+
+        const grouped = {};
+        results.forEach(row => {
+            if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+            grouped[row.doctor_id].push(row);
+        });
+        return grouped;
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch doctor education.");
+    }
+};
+
+export const getDoctorSkinTypesBulk = async (doctorIds) => {
+    try {
+        const placeholders = doctorIds.map(() => '?').join(',');
+
+        const query = `SELECT dst.*, st.* 
+            FROM tbl_doctor_skin_types dst 
+            LEFT JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id WHERE dst.doctor_id IN (${placeholders}) ORDER BY dst.created_at DESC`;
+        const results = await db.query(query, doctorIds);
+
+        const grouped = {};
+        results.forEach(row => {
+            if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+            grouped[row.doctor_id].push(row);
+        });
+        return grouped;
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch doctor education.");
+    }
+};
+
+export const getDoctorTreatmentsBulk = async (doctorIds) => {
+    try {
+        const placeholders = doctorIds.map(() => '?').join(',');
+
+        const query = `SELECT dt.*, t.* 
+            FROM tbl_doctor_treatments dt 
+            LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id  WHERE dt.doctor_id IN (${placeholders}) ORDER BY dt.created_at DESC`;
+        const results = await db.query(query, doctorIds);
+
+        const grouped = {};
+        results.forEach(row => {
+            if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+            grouped[row.doctor_id].push(row);
+        });
+        return grouped;
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch doctor education.");
+    }
+};
+
+
+export const getDoctorSkinConditionBulk = async (doctorIds) => {
+    const placeholders = doctorIds.map(() => '?').join(',');
+    const query = `SELECT sc.*,dsc.* FROM tbl_skin_conditions sc INNER JOIN  tbl_doctor_skin_condition dsc ON  sc.skin_condition_id = dsc.skin_condition_id WHERE dsc.doctor_id IN (${placeholders})`;
+    const results = await db.query(query, doctorIds);
+
+    const grouped = {};
+    results.forEach(row => {
+        if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+        grouped[row.doctor_id].push(row);
+    });
+    return grouped;
+};
+
+export const getDoctorSurgeryBulk = async (doctorIds) => {
+    const placeholders = doctorIds.map(() => '?').join(',');
+    const query = `SELECT s.*,ds.* FROM tbl_surgery s INNER JOIN tbl_doctor_surgery ds ON s.surgery_id  = ds.surgery_id WHERE ds.doctor_id IN (${placeholders})`;
+    const results = await db.query(query, doctorIds);
+
+    const grouped = {};
+    results.forEach(row => {
+        if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+        grouped[row.doctor_id].push(row);
+    });
+    return grouped;
+};
+
+export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
+    const placeholders = doctorIds.map(() => '?').join(',');
+    const query = `SELECT ad.*, dad.* FROM tbl_aesthetic_devices ad INNER JOIN  tbl_doctor_aesthetic_devices dad ON ad.aesthetic_device_id = dad.aesthetic_devices_id    WHERE dad.doctor_id IN (${placeholders})`;
+    const results = await db.query(query, doctorIds);
+
+    const grouped = {};
+    results.forEach(row => {
+        if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+        grouped[row.doctor_id].push(row);
+    });
+    return grouped;
+};

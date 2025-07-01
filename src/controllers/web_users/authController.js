@@ -20,7 +20,7 @@ const APP_URL = process.env.APP_URL;
 const image_logo = process.env.LOGO_URL;
 const WEB_JWT_SECRET = process.env.WEB_JWT_SECRET;
 const JWT_EXPIRY = process.env.JWT_EXPIRY;
-
+import dbOperations from '../../models/common.js';
 
 export const login_web_user = async (req, res) => {
     try {
@@ -366,5 +366,52 @@ export const get_all_call_logs = async (req, res) => {
     return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
   }
 };
+export const onboardingByRoleId = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            id: Joi.string().required(),
+            role_id: Joi.string().required(),
+        });
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const { id, role_id } = value;
+
+        const zynqUser = await dbOperations.getData('tbl_zqnq_users', `WHERE id = '${id}' `);
+
+        if (zynqUser.length > 0) {
+            const update_role = await dbOperations.updateData('tbl_zqnq_users', { role_id: role_id }, `WHERE id = '${id}' `);
+            if (role_id == '407595e3-3196-11f0-9e07-0e8e5d906eef') {
+                const insert_doctor = await dbOperations.insertData('tbl_doctors', { zynq_user_id: id });
+                const getDoctorId = await dbOperations.getSelectedColumn('doctor_id','tbl_doctors',  `where zynq_user_id ='${id}'`);
+                const getClinic = await dbOperations.getSelectedColumn('clinic_id', 'tbl_clinics', `where zynq_user_id ='${id}'`);
+      
+                const mapData =
+                {
+                    doctor_id: getDoctorId[0].doctor_id,
+                    clinic_id: getClinic[0].clinic_id,
+                    is_invitation_accepted :1
+                }
+
+                await dbOperations.insertData('tbl_doctor_clinic_map', mapData)
+            }
+
+            if (update_role.affectedRows > 0) {
+
+                return handleSuccess(res, 200, 'en', "ENROLL_SUCCESSFUL");
+            } else {
+                return handleError(res, 400, 'en', "USER_NOT_ENROLLED");
+
+            };
+        } else {
+            return handleError(res, 400, 'en', "USER_NOT_FOUND");
+        }
+
+    } catch (error) {
+        console.error("Onboarding By Role Id Error:", error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
+    }
+};
+
 
 

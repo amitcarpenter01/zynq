@@ -183,5 +183,17 @@
     "RESPONSE_SENT_SUCCESSFULLY": "Response Sent Successfully",
     "RESPONSE_SENT_FAILED": "Response Sent Failed",
     "ENROLL_SUCCESSFUL": "Enroll Successful",
-    "USER_ALREADY_ENROLLED": "User Already Enrolled"
+    "USER_ALREADY_ENROLLED": "User Already Enrolled",
+    "USER_NOT_ENROLLED": "User Enrolled Failed",
+    "PERSONAL_DETAILS_ADDED":"Personal Details Added Successfully",
+    "CONTACT_DETAILS_UPDATED":"Contact Details Updated Successfully",
+    "UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY": "Doctor Slots Updated Successfully",
+    "UPDATE_DOCTOR_AVAILABILITY_FAILED": "Doctor Slots Update Failed",
+    "AVAILABILITY_ADDED_SUCCESSFULLY": "Availability Added Successfully",
+    "FUTURE_DOCTOR_SLOTS": "Future Doctor Slots",
+    "NO_AVAILABILITY_FOUND": "No Availability Found",
+    "NO_SLOTS_FOUND": "No Slots Found",
+    "APPOINTMENT_BOOKED_SUCCESSFULLY":"Appointment Booked Successfully",
+    "SLOT_ALREADY_BOOKED":"The available Slot just got booked try with different Slot"
+
 }

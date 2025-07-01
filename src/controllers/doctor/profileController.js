@@ -3,13 +3,20 @@ import dotenv from "dotenv";
 import * as doctorModels from "../../models/doctor.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { update_onboarding_status } from "../../models/web_user.js";
-
+import { createChat, fetchChatById, insertChatUsersActive, toActivateUsers } from "../../models/chat.js";
+import { getIO, getUserSockets } from '../../utils/socketManager.js';
 
 dotenv.config();
 
 //const APP_URL = process.env.APP_URL;
 const APP_URL = process.env.LOCAL_APP_URL;
 const image_logo = process.env.LOGO_URL;
+
+
+
+
+
+
 
 export const addPersonalInformation = async (req, res) => {
     try {
@@ -186,16 +193,14 @@ export const addConsultationFeeAndAvailability = async (req, res) => {
             fee_per_session: Joi.number().positive().optional(),
             currency: Joi.string().min(1).max(10).default('USD').optional(),
             session_duration: Joi.string().optional(),
+            clinic_id: Joi.string().required(),
             availability: Joi.array().items(
                 Joi.object({
                     day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
-
                     start_time: Joi.string().required().allow(''),
                     end_time: Joi.string().required().allow(''),
-
-
-
-                    closed: Joi.number().integer().required()
+                    closed: Joi.number().integer().optional(),
+                    fee_per_session: Joi.number().positive().optional(),
                 })
             ).optional(),
         });
@@ -203,9 +208,9 @@ export const addConsultationFeeAndAvailability = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
         const doctorId = req.user.doctorData.doctor_id;
-        await doctorModels.update_consultation_fee(doctorId, value.fee_per_session, "USD", value.session_duration);
+        // await doctorModels.update_consultation_fee(doctorId, value.fee_per_session, "USD", value.session_duration);
         if (value.availability?.length > 0) {
-            await doctorModels.update_availability(doctorId, value.availability);
+            await doctorModels.update_availability(doctorId, value.availability, clinic_id);
         }
 
         const zynqUserId = req.user.id
@@ -244,7 +249,7 @@ export const getDoctorProfile = async (req, res) => {
         if (profileData.experience && profileData.experience.length > 0) filledFieldsCount++;
 
         // Expertise
-        const expertiseCategories = ['treatments', 'skinTypes', 'severityLevels','skinCondition','surgery','aestheticDevices'];
+        const expertiseCategories = ['treatments', 'skinTypes', 'severityLevels', 'skinCondition', 'surgery', 'aestheticDevices'];
         totalFieldsCount += expertiseCategories.length;
         expertiseCategories.forEach(category => {
             if (profileData[category] && profileData[category].length > 0) filledFieldsCount++;
@@ -522,9 +527,9 @@ export const editExpertise = async (req, res) => {
             treatment_ids: Joi.string().optional(),
             skin_type_ids: Joi.string().optional(),
             severity_levels_ids: Joi.string().optional(),
-            skin_condition_ids:Joi.string().optional(),
-            surgery_ids:Joi.string().optional(),
-            aesthetic_devices_ids:Joi.string().optional(),
+            skin_condition_ids: Joi.string().optional(),
+            surgery_ids: Joi.string().optional(),
+            aesthetic_devices_ids: Joi.string().optional(),
         });
 
         let language = 'en';
@@ -545,17 +550,17 @@ export const editExpertise = async (req, res) => {
             const severityLevelIds = value.severity_levels_ids.split(',').map(id => id.trim());
             await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
         }
-        if(value.skin_condition_ids !== undefined){
+        if (value.skin_condition_ids !== undefined) {
             const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
-            await doctorModels.update_doctor_skin_conditions(doctorId,skinConditionIds)
+            await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds)
         }
-        if(value.surgery_ids !== undefined){
+        if (value.surgery_ids !== undefined) {
             const surgeryIds = value.surgery_ids.split(',').map(id => id.trim());
-            await doctorModels.update_doctor_surgery(doctorId,surgeryIds)
+            await doctorModels.update_doctor_surgery(doctorId, surgeryIds)
         }
-        if(value.aesthetic_devices_ids !== undefined){
+        if (value.aesthetic_devices_ids !== undefined) {
             const aestheticDevicesIds = value.aesthetic_devices_ids.split(',').map(id => id.trim());
-            await doctorModels.update_doctor_aesthetic_devices(doctorId,aestheticDevicesIds)
+            await doctorModels.update_doctor_aesthetic_devices(doctorId, aestheticDevicesIds)
         }
 
         return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", {});
@@ -640,26 +645,29 @@ export const deleteCertification = async (req, res) => {
 
 export const editConsultationFeeAndAvailability = async (req, res) => {
     try {
-        const schema = Joi.object({
-            fee_per_session: Joi.number().positive().optional(),
-            currency: Joi.string().min(1).max(10).default('USD').optional(),
-            session_duration: Joi.string().optional(),
-            availability: Joi.array().items(
-                Joi.object({
-                    day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+        // const schema = Joi.object({
+        //     fee_per_session: Joi.number().positive().optional(),
+        //     currency: Joi.string().min(1).max(10).default('USD').optional(),
+        //     session_duration: Joi.string().optional(),
+        //     availability: Joi.array().items(
+        //         Joi.object({
+        //             day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
 
-                    start_time: Joi.string().required().allow(''),
-                    end_time: Joi.string().required().allow(''),
-                    closed: Joi.number().integer().required()
-                })
-            ).optional(),
-        });
+        //             start_time: Joi.string().required().allow(''),
+        //             end_time: Joi.string().required().allow(''),
+        //             closed: Joi.number().integer().required()
+        //         })
+        //     ).optional(),
+        // });
         const language = 'en'
-        const { error, value } = schema.validate(req.body);
-        if (error) return joiErrorHandle(res, error);
-        const doctorId = req.user.doctorData.doctor_id;
-        await doctorModels.update_consultation_fee(doctorId, value.fee_per_session, "USD", value.session_duration);
-        await doctorModels.update_availability(doctorId, value.availability);
+        // const { error, value } = schema.validate(req.body);
+        // if (error) return joiErrorHandle(res, error);
+        // const doctorId = req.user.doctorData.doctor_id;
+        let { doctor_availability_id } = req.params;
+
+        // await doctorModels.update_consultation_fee(doctorId, value.fee_per_session, "USD", value.session_duration);
+        // await doctorModels.update_docter_availability(doctorId, value.availability);
+        await doctorModels.update_docter_availability(req.body, doctor_availability_id);
         return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", {});
     } catch (error) {
         console.error(error);
@@ -847,3 +855,150 @@ export const getDoctorCertificatesWithPath = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
+
+// ======================================chat sections==========================================================//
+
+export const createUsersChat = async (req, res) => {
+    try {
+        const language = 'en';
+        const doctorId = req.user.doctorData.zynq_user_id
+        const { userId } = req.body;
+        let chatCreatedSuccessfully = await createChat(doctorId, userId);
+        if (!chatCreatedSuccessfully.insertId) {
+            return handleError(res, 400, 'en', "Failed To Create a chat");
+        }
+        let doctorUser = { chat_id: chatCreatedSuccessfully.insertId, userId: doctorId, isActive: 1 }
+        await insertChatUsersActive(doctorUser)
+        let user = { chat_id: chatCreatedSuccessfully.insertId, userId: userId, isActive: 0 }
+        await insertChatUsersActive(user)
+        return handleSuccess(res, 200, language, 'Chat created successfully');
+    } catch (error) {
+        console.error('Error in addMembersInGroup:', error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const fetchDocterAvibility = async (req, res) => {
+    try {
+        const language = 'en';
+        const doctorId = req.user.doctorData.doctor_id;
+        const listOfDocterAvibility = await doctorModels.fetchDocterAvibilityById(doctorId);
+        return handleSuccess(res, 200, language, "DOCTOR_AVIBILITY_FETCH_SUCCESSFULLY", listOfDocterAvibility);
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const getDoctorProfileById = async (req, res) => {
+    try {
+        const language = 'en';
+        const doctorId = req.query.doctor_id;
+        let listOfDocterAvibility = await doctorModels.get_doctor_by_zynquser_id(doctorId);
+        if (listOfDocterAvibility.length == 0) {
+            return handleError(res, 400, language, "DOCTOR_FETCH_SUCCESSFULLY", {});
+        }
+        if (listOfDocterAvibility[0].profile_image !== null || '') {
+            listOfDocterAvibility[0].profile_image = `${APP_URL}doctor/profile_images/${listOfDocterAvibility[0].profile_image}`;
+        }
+        return handleSuccess(res, 200, language, "DOCTOR_FETCH_SUCCESSFULLY", listOfDocterAvibility[0]);
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const isDocterOfflineOrOnline = async (req, res) => {
+    try {
+        const doctorId = req.user.doctorData.zynq_user_id;
+        const language = 'en';
+        let { isOnline } = req.body
+        // const io = getIO();
+        await doctorModels.update_doctor_is_online(doctorId, isOnline);
+        // await toActivateUsers(isOnline, chat_id, doctorId);
+        // io.to(doctorId).emit('isUsersOnlineOrOffline', isOnline);
+
+        return handleSuccess(res, 200, language, `DOCTOR ${isActive ? 'ONLINE' : 'OFFLINE'}`);
+
+    } catch (error) {
+        console.error('error', error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+
+
+// -------------------------------------slot managment------------------------------------------------//
+
+export const createDoctorAvailability = async (req, res) => {
+    try {
+        const doctor_id = req.user.doctorData.doctor_id;
+        const { days, fee_per_session } = req.body;
+        await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
+        await Promise.all(
+            days.map(dayObj => {
+                const day = dayObj.day.toLowerCase();
+                return Promise.all(
+                    dayObj.slots.map(async (slot) => {
+                        const availability = {
+                            doctor_id,
+                            day,
+                            start_time: slot.start_time,
+                            end_time: slot.end_time,
+                            slot_duration: slot.slot_duration,
+                            repeat: "weekly",
+                        };
+                        await doctorModels.insertDoctorAvailabilityModel(availability);
+                    })
+                );
+            })
+        );
+        const zynqUserId = req.user.id
+        await update_onboarding_status(5, zynqUserId);
+
+        return handleSuccess(res, 200, 'en', 'Availability_added_successfully');
+    } catch (err) {
+        console.error('Error creating availability:', err);
+        return handleError(res, 500, 'Failed to insert availability');
+    }
+};
+
+
+export const updateDoctorAvailability = async (req, res) => {
+    try {
+        const doctor_id = req.user.doctorData.doctor_id;
+        const { days, fee_per_session } = req.body;
+
+        if (fee_per_session) {
+            await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
+        }
+        await doctorModels.deleteDoctorAvailabilityByDoctorId(doctor_id);
+        await Promise.all(
+            days.map(dayObj => {
+                const day = dayObj.day.toLowerCase();
+                return Promise.all(
+                    dayObj.slots.map(async (slot) => {
+                        const availability = {
+                            doctor_id,
+                            day,
+                            start_time: slot.start_time,
+                            end_time: slot.end_time,
+                            slot_duration: slot.slot_duration,
+                            repeat: "weekly",
+                        };
+                        await doctorModels.insertDoctorAvailabilityModel(availability);
+                    })
+                );
+            })
+        );
+        const zynqUserId = req.user.id
+        await update_onboarding_status(5, zynqUserId);
+        return handleSuccess(res, 200, 'en', 'UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY');
+
+    } catch (err) {
+        console.error('Error updating availability:', err);
+        return handleError(res, 500, 'Failed to update availability');
+    }
+};
+
+
