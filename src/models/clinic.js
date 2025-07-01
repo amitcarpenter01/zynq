@@ -431,10 +431,6 @@ export const getClinicAestheticDevicesLevel = async (clinic_id) => {
              FROM tbl_aesthetic_devices ad 
              INNER JOIN tbl_clinic_aesthetic_devices cad 
              ON ad.aesthetic_device_id = cad.aesthetic_devices_id 
-<<<<<<< HEAD
-=======
-
->>>>>>> aa78bd0e8d1f3c7b4f8420e228d6c983e161c148
              WHERE cad.clinic_id = ? 
              ORDER BY ad.created_at DESC`,
             [clinic_id]
@@ -1344,7 +1340,6 @@ export const getClinicLocationsBulk = async (clinicIds) => {
         grouped[row.clinic_id].push(row);
     });
     return grouped;
-<<<<<<< Updated upstream
 };
 
 export const getDoctorCertificationsBulk = async (doctorIds) => {
@@ -1492,6 +1487,4 @@ export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
         grouped[row.doctor_id].push(row);
     });
     return grouped;
-=======
->>>>>>> Stashed changes
 };

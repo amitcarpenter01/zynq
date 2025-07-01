@@ -520,11 +520,11 @@ export const enroll_user = async (req, res) => {
 
 export const getFutureDoctorSlots = async (req, res) => {
     try {
-        
         const { doctor_id } = req.query;
         const today = dayjs();
         const oneMonthLater = today.add(1, 'month');
-        let availabilityRows = await doctorModels.fetchDoctorAvailabilityModel(doctor_id)
+
+        const availabilityRows = await doctorModels.fetchDoctorAvailabilityModel(doctor_id);
 
         if (availabilityRows.length === 0) {
             return handleError(res, 400, 'en', "NO_AVAILABILITY_FOUND", []);

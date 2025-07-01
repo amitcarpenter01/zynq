@@ -38,30 +38,23 @@ app.get("/", (req, res) => {
 });
 
 
-// if (IS_LIVE) {
-//   console.log("SSL is enabled");
-//   const sslOptions = {
-//     ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
-//     key: fs.readFileSync("/var/www/html/ssl/private.key"),
-//     cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
-//   };
+if (IS_LIVE) {
+  console.log("SSL is enabled");
+  const sslOptions = {
+    ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
+    key: fs.readFileSync("/var/www/html/ssl/private.key"),
+    cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
+  };
 
-//   https.createServer(sslOptions, app).listen(PORT, () => {
-//     console.log(`Server is working on ${APP_URL}`);
-//   });
-// } else {
-  server.listen(PORT, () => {
+  https.createServer(sslOptions, app).listen(PORT, () => {
     console.log(`Server is working on ${APP_URL}`);
   });
-<<<<<<< Updated upstream
 } else {
   server.listen(PORT, () => {
     console.log(`Server is working on ${APP_URL}`);
   });
-}
-=======
-// }
->>>>>>> Stashed changes
+
+
 
 
 

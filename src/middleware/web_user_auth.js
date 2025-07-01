@@ -75,7 +75,7 @@ export const authenticate = (allowedRoles = []) => {
                     return handleError(res, 401, 'en', "CLINIC_NOT_FOUND");
                 }
             }
-        
+
             req.user = user;
             next();
  

@@ -917,7 +917,9 @@ export const isDocterOfflineOrOnline = async (req, res) => {
         await doctorModels.update_doctor_is_online(doctorId, isOnline);
         // await toActivateUsers(isOnline, chat_id, doctorId);
         // io.to(doctorId).emit('isUsersOnlineOrOffline', isOnline);
+
         return handleSuccess(res, 200, language, `DOCTOR ${isActive ? 'ONLINE' : 'OFFLINE'}`);
+
     } catch (error) {
         console.error('error', error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
@@ -953,6 +955,7 @@ export const createDoctorAvailability = async (req, res) => {
         );
         const zynqUserId = req.user.id
         await update_onboarding_status(5, zynqUserId);
+
         return handleSuccess(res, 200, 'en', 'Availability_added_successfully');
     } catch (err) {
         console.error('Error creating availability:', err);
@@ -991,6 +994,7 @@ export const updateDoctorAvailability = async (req, res) => {
         const zynqUserId = req.user.id
         await update_onboarding_status(5, zynqUserId);
         return handleSuccess(res, 200, 'en', 'UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY');
+
     } catch (err) {
         console.error('Error updating availability:', err);
         return handleError(res, 500, 'Failed to update availability');
