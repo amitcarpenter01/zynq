@@ -917,7 +917,7 @@ export const isDocterOfflineOrOnline = async (req, res) => {
         await doctorModels.update_doctor_is_online(doctorId, isOnline);
         // await toActivateUsers(isOnline, chat_id, doctorId);
         // io.to(doctorId).emit('isUsersOnlineOrOffline', isOnline);
-        return handleSuccess(res, 200, language, `DOCTOR ${isActive ? 'ONLINE' : 'OFFLINE'}`);
+        return handleSuccess(res, 200, language, `DOCTOR ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
     } catch (error) {
         console.error('error', error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");

@@ -736,6 +736,37 @@ export const update_doctor_is_online = async (doctorId, isOnline) => {
 };
 
 
+// doctorModels.js
+// export const fetchAppointmentsBulkModel = async (doctor_id, start_date, end_date) => {
+//     const query = `
+//         SELECT date, start_time, COUNT(*) as count
+//         FROM tbl_appointments
+//         WHERE doctor_id = ?
+//         AND date BETWEEN ? AND ?
+//         GROUP BY date, start_time
+//     `;
+//     const results = await db.query(query, [doctor_id, start_date, end_date]);
+//     return results;
+// };
+
+export const fetchAppointmentsBulkModel = async (doctorId, fromDate, toDate) => {
+    try {
+        const query = `
+            SELECT start_time 
+            FROM tbl_appointments 
+            WHERE doctor_id = ? 
+              AND start_time >= ? 
+              AND start_time <= ?
+        `;
+        return await db.query(query, [doctorId, `${fromDate} 00:00:00`, `${toDate} 23:59:59`]);
+    } catch (error) {
+        console.error("DB Error in fetchAppointmentsBulkModel:", error);
+        throw error;
+    }
+};
+
+
+
 
 
 

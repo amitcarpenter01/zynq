@@ -52,5 +52,10 @@ router.post('/delete-products-managment', productControllers.delete_products_man
 router.get('/get-all-support-tickets', supportControllers.get_all_support_tickets);
 router.post('/admin-response-to-support-ticket', supportControllers.admin_response_to_support_ticket);
 
+// -------------------------------------slot managment------------------------------------------------//
+
+
+
+
 
 export default router;

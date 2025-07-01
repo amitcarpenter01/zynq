@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken"
 import * as userModels from "../../models/api.js";
+import * as clinicModels from "../../models/clinic.js";
 import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
@@ -26,7 +27,7 @@ export const get_all_doctors = async (req, res) => {
         if (!doctors || doctors.length === 0) {
             return handleError(res, 404, 'en', "NO_DOCTORS_FOUND");
         }
-        
+
         for (const doctor of doctors) {
             const availability = await userModels.getDoctorAvailability(doctor.doctor_id);
             doctor.availability = availability || null;
@@ -55,6 +56,67 @@ export const get_all_doctors = async (req, res) => {
             doctor.skin_types = skinTypes || [];
 
             const treatments = await userModels.getDoctorTreatments(doctor.doctor_id);
+            doctor.treatments = treatments || [];
+        }
+        doctors.forEach(doctor => {
+            if (doctor.profile_image && !doctor.profile_image.startsWith('http')) {
+                doctor.profile_image = `${APP_URL}doctor/profile_images/${doctor.profile_image}`;
+            }
+        });
+
+        return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", doctors);
+
+    } catch (error) {
+        console.error("Error fetching doctors:", error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const get_all_doctors_by_clinic_id = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            clinic_id: Joi.string().required(),
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        let { clinic_id } = value;
+        const doctors = await clinicModels.get_all_doctors_by_clinic_id(clinic_id);
+        if (!doctors || doctors.length === 0) {
+            return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", []);
+        }
+        for (const doctor of doctors) {
+           
+
+            // Get doctor certifications
+            const certifications = await clinicModels.getDoctorCertifications(doctor.doctor_id);
+            certifications.forEach(certification => {
+                if (certification.upload_path && !certification.upload_path.startsWith('http')) {
+                    certification.upload_path = `${APP_URL}/doctors/certifications/${certification.upload_path}`;
+                }
+            });
+            doctor.certifications = certifications || [];
+
+
+            // Get doctor education history
+            const education = await clinicModels.getDoctorEducation(doctor.doctor_id);
+            doctor.education = education || [];
+
+            // Get doctor work experience
+            const experience = await clinicModels.getDoctorExperience(doctor.doctor_id);
+            doctor.experience = experience || [];
+
+            // Get doctor reviews
+            const reviews = await clinicModels.getDoctorReviews(doctor.doctor_id);
+            doctor.reviews = reviews || [];
+
+            // Get doctor skin types
+            const skinTypes = await clinicModels.getDoctorSkinTypes(doctor.doctor_id);
+            doctor.skin_types = skinTypes || [];
+
+            // Get doctor treatments
+            const treatments = await clinicModels.getDoctorTreatments(doctor.doctor_id);
             doctor.treatments = treatments || [];
         }
         doctors.forEach(doctor => {

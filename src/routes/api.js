@@ -12,6 +12,7 @@ import * as doctorControllers from "../controllers/api/doctorController.js";
 import * as productControllers from "../controllers/api/productController.js";
 import * as clinicControllers from "../controllers/api/clinicController.js";
 import * as supportControllers from "../controllers/api/supportController.js";
+import * as appointmentController from "../controllers/api/appointmentController.js";
 import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 
 const router = express.Router();
@@ -65,8 +66,16 @@ router.get("/get-support-tickets", authenticateUser, supportControllers.get_supp
 
 
 // -------------------------------------slot managment------------------------------------------------//
+
+router.post("/get-all-doctors-by-clinic", authenticateUser, doctorControllers.get_all_doctors_by_clinic_id);
+
 router.get('/getFutureDoctorSlots', authenticateUser, authControllers.getFutureDoctorSlots);
 
 router.post("/isUserOfflineOrOnline", authenticateUser, authControllers.isUserOfflineOrOnline);
+
+router.post('/bookAppointment', authenticateUser, appointmentController.bookAppointment);
+
+router.get('/getMyAppointments', authenticateUser, appointmentController.getMyAppointmentsUser);
+
 
 export default router;

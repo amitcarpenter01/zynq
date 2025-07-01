@@ -5,6 +5,7 @@ import * as doctorController from "../controllers/doctor/profileController.js";
 import { authenticate } from '../middleware/web_user_auth.js';
 import { uploadCertificationFieldsTo, uploadFileTo } from '../services/doctor_multer.js';
 import * as supportControllers from "../controllers/doctor/supportController.js";
+import * as appointmentControllers from "../controllers/doctor/appointmentController.js";
 
 
 router.get("/get_profile", authenticate(['DOCTOR']), doctorController.getDoctorProfile);
@@ -81,5 +82,5 @@ router.get("/getDoctorProfileById", authenticate(['DOCTOR']), doctorController.g
 
 router.post('/createDoctorAvailability', authenticate(['DOCTOR']), doctorController.createDoctorAvailability);
 router.post('/updateDoctorAvailability', authenticate(['DOCTOR']), doctorController.updateDoctorAvailability);
-
+router.get('/getMyAppointments',authenticate(['DOCTOR']), appointmentControllers.getMyAppointmentsDoctor);
 export default router;
