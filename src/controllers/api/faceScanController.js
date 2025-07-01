@@ -32,11 +32,18 @@ export const add_face_scan_result = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const { skin_type, skin_concerns, details, scoreInfo ,aiAnalysisResult} = value;
+        const { skin_type, skin_concerns, details, scoreInfo, aiAnalysisResult } = value;
 
         // const face = req.file?.location || '';
-        const face = req.file ? req.file.filename : '';
 
+
+        let face = null;
+        let pdf = null;
+
+        if (req.files) {
+            if (req.files["file"]) face = req.files["file"][0].filename;
+            if (req.files["pdf"]) pdf = req.files["pdf"][0].filename;
+        }
 
         const new_face_scan_data = {
             user_id: user.user_id,
@@ -44,6 +51,7 @@ export const add_face_scan_result = async (req, res) => {
             skin_concerns,
             details,
             face,
+            pdf,
             scoreInfo,
             aiAnalysisResult
         };
@@ -63,6 +71,7 @@ export const get_face_scan_history = async (req, res) => {
         if (!scan_hostory) return handleError(res, 404, 'en', "SCAN_HISTORY_NOT_FOUND");
         scan_hostory.forEach(item => {
             if (item.face && !item.face.startsWith("http")) item.face = `${APP_URL}${item.face}`;
+            if (item.pdf && !item.pdf.startsWith("http")) item.pdf = `${APP_URL}${item.pdf}`;
         });
         return handleSuccess(res, 200, 'en', "SCAN_HISTORY_DATA", scan_hostory);
     } catch (error) {

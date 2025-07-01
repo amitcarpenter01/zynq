@@ -23,57 +23,67 @@ const image_logo = process.env.LOGO_URL;
 
 export const get_all_clinics = async (req, res) => {
     try {
-        const language = req.user.language || 'en';
-        const clinics = await apiModels.getAllClinicsForUser();
+        const { limit = 10, page = 1 } = req.query;
+        const schema = Joi.object({
+            treatment_ids: Joi.string().optional().allow(''),
+        });
 
-            
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+        const { treatment_ids } = value;
+        let treatment_ids_array = []
+        if (treatment_ids) {
+            treatment_ids_array = treatment_ids.split(',')
+        }
+        const language = req.user.language || 'en';
+
+        const offset = (page - 1) * limit;
+
+        const clinics = await apiModels.getAllClinicsForUser(treatment_ids_array, limit, offset);
+        console.log("clinics", clinics)
+
         if (!clinics || clinics.length === 0) {
             return handleError(res, 404, language, "NO_CLINICS_FOUND");
         }
 
-        const processedClinics = await Promise.all(clinics.map(async (clinic) => {
-            const [clinicLocation] = await clinicModels.getClinicLocation(clinic.clinic_id);
-            
-            const [
-                treatments,
-                operationHours, 
-                equipments,
-                skinTypes,
-                severityLevels,
-                documents
-            ] = await Promise.all([
-                clinicModels.getClinicTreatments(clinic.clinic_id),
-                clinicModels.getClinicOperationHours(clinic.clinic_id),
-                clinicModels.getClinicEquipments(clinic.clinic_id),
-                clinicModels.getClinicSkinTypes(clinic.clinic_id),
-                clinicModels.getClinicSeverityLevels(clinic.clinic_id),
-                clinicModels.getClinicDocuments(clinic.clinic_id)
-            ]);
 
-            const processedDocuments = documents.map(doc => ({
-                ...doc,
-                file_url: doc.file_url && !doc.file_url.startsWith("http") 
-                    ? `${APP_URL}${doc.file_url}`
-                    : doc.file_url
-            }));
+
+        const clinicIds = clinics.map(c => c.clinic_id);
+
+        const allTreatments = await clinicModels.getClinicTreatmentsBulk(clinicIds);
+
+        const allOperationHours = await clinicModels.getClinicOperationHoursBulk(clinicIds);
+
+        const allSkinTypes = await clinicModels.getClinicSkinTypesBulk(clinicIds);
+
+        const allSkinCondition = await clinicModels.getClinicSkinConditionBulk(clinicIds);
+
+        const allSurgery = await clinicModels.getClinicSurgeryBulk(clinicIds);
+
+        const allAstheticDevices = await clinicModels.getClinicAstheticDevicesBulk(clinicIds);
+
+        const allLocations = await clinicModels.getClinicLocationsBulk(clinicIds);
+
+        const processedClinics = clinics.map(clinic => {
 
             return {
                 ...clinic,
-                location: clinicLocation || null,
-                treatments: treatments || [],
-                operation_hours: operationHours || [],
-                equipments: equipments || [], 
-                skin_types: skinTypes || [],
-                severity_levels: severityLevels || [],
-                documents: processedDocuments || [],
+                location: allLocations[clinic.clinic_id] || null,
+                treatments: allTreatments[clinic.clinic_id] || [],
+                operation_hours: allOperationHours[clinic.clinic_id] || [],
+                skin_types: allSkinTypes[clinic.clinic_id] || [],
+                allSkinCondition: allSkinCondition[clinic.clinic_id] || [],
+                allSurgery: allSurgery[clinic.clinic_id] || [],
+                allAstheticDevices: allAstheticDevices[clinic.clinic_id] || [],
                 clinic_logo: clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")
                     ? `${APP_URL}clinic/logo/${clinic.clinic_logo}`
                     : clinic.clinic_logo
             };
-        }));
+        });
+
 
         return handleSuccess(res, 200, language, "CLINIC_PROFILE_FETCHED", processedClinics);
-      
+
 
     } catch (error) {
         console.error("Error fetching doctors:", error);

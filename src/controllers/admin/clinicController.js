@@ -172,6 +172,8 @@ export const add_clinic_managment = async (req, res) => {
 
 export const get_clinic_managment = async (req, res) => {
     try {
+        console.log('fgjgkgj');
+        
         const clinics = await adminModels.get_clinic_managment();
 
         if (!clinics || clinics.length === 0) {
@@ -202,6 +204,7 @@ export const get_clinic_managment = async (req, res) => {
                 };
             })
         );
+console.log('fullClinicData',fullClinicData);
 
         return handleSuccess(res, 200, 'en', "Fetch clinic management successfully", { clinics: fullClinicData });
 

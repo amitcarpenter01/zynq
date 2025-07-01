@@ -21,6 +21,50 @@ dotenv.config();
 const APP_URL = process.env.APP_URL;
 const image_logo = process.env.LOGO_URL;
 
+import * as doctorModels from "../../models/doctor.js";
+
+// -------------------------------------slot managment------------------------------------------------//
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js';
+import pkg from 'rrule';
+const { RRule } = pkg;
+dayjs.extend(utc);
+dayjs.extend(isSameOrBefore);
+
+export const weekdayMap = {
+    sunday: RRule.SU,
+    monday: RRule.MO,
+    tuesday: RRule.TU,
+    wednesday: RRule.WE,
+    thursday: RRule.TH,
+    friday: RRule.FR,
+    saturday: RRule.SA,
+};
+
+export function generateSlots(startTime, endTime, duration, date) {
+    const slots = [];
+
+    let current = dayjs.utc(`${date} ${startTime}`);
+    const end = dayjs.utc(`${date} ${endTime}`);
+
+    while (current.add(duration, 'minute').isSameOrBefore(end)) {
+        const slotStart = current;
+        const slotEnd = current.add(duration, 'minute');
+
+        slots.push({
+            start_time: slotStart.toISOString(),
+            end_time: slotEnd.toISOString(),
+        });
+        current = slotEnd;
+    }
+    return slots;
+}
+
+
+
+// ------------------------------------slot end------------------------------------------------//
+
 
 // export const login_with_mobile = async (req, res) => {
 //     try {
@@ -424,7 +468,7 @@ export const enroll_user = async (req, res) => {
             mobile_number,
             udid
         }
-        await apiModels.enroll_user(user_data); 
+        await apiModels.enroll_user(user_data);
 
         if (application_type == "android") {
             const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
@@ -467,6 +511,135 @@ export const enroll_user = async (req, res) => {
 
     } catch (error) {
         console.error('Error in enroll:', error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+
+// -------------------------------------slot managment------------------------------------------------//
+
+export const getFutureDoctorSlots = async (req, res) => {
+    try {
+        
+        const { doctor_id } = req.query;
+        const today = dayjs();
+        const oneMonthLater = today.add(1, 'month');
+        let availabilityRows = await doctorModels.fetchDoctorAvailabilityModel(doctor_id)
+
+        if (availabilityRows.length === 0) {
+            return handleError(res, 400, 'en', "NO_AVAILABILITY_FOUND", []);
+        }
+
+        // 1. Generate all possible future dates per availability
+        let allSlotData = [];
+
+        for (const availability of availabilityRows) {
+            const rruleDay = weekdayMap[availability.day.toLowerCase()];
+            if (!rruleDay) continue;
+
+            const rule = new RRule({
+                freq: RRule.WEEKLY,
+                byweekday: [rruleDay],
+                dtstart: today.toDate(),
+                until: oneMonthLater.toDate()
+            });
+
+            const upcomingDates = rule.all();
+
+            for (const dateObj of upcomingDates) {
+                const formattedDate = dayjs.utc(dateObj).format('YYYY-MM-DD');
+                const slots = generateSlots(
+                    availability.start_time,
+                    availability.end_time,
+                    availability.slot_duration,
+                    formattedDate
+                );
+
+                slots.forEach(slot => {
+                    allSlotData.push({
+                        date: formattedDate,
+                        day: availability.day.toLowerCase(),
+                        ...slot
+                    });
+                });
+            }
+        }
+
+        if (allSlotData.length === 0) {
+            return handleError(res, 400, 'en', "NO_SLOTS_FOUND", []);
+        }
+
+        // 2. Bulk fetch all appointments for doctor in the next 1 month
+        const bookedAppointmentsRaw = await doctorModels.fetchAppointmentsBulkModel(
+            doctor_id,
+            today.format('YYYY-MM-DD'),
+            oneMonthLater.format('YYYY-MM-DD')
+        );
+        console.log("bookedAppointmentsRaw", bookedAppointmentsRaw);
+
+        const result = bookedAppointmentsRaw.map(app => {
+            // Convert local Date object (from MySQL) to local string
+            const localFormatted = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
+
+            // Parse that string as if it was in UTC
+            const fixedUTC = dayjs.utc(localFormatted).toISOString();
+
+            return {
+                ...app,
+                start_time: fixedUTC,
+            };
+        });
+        // Example result format: [{date: '2025-06-28', time: '10:00', count: 1}, ...]
+
+        console.log("result", result)
+
+        const bookedAppointments = Array.isArray(result) ? result : [];
+
+        const bookedMap = {};
+        // for (const app of bookedAppointments) {
+        //     const key = `${app.date}_${app.time}`;
+        //     bookedMap[key] = app.count;
+        // }
+        for (const app of bookedAppointments) {
+            const key = `${app.start_time}`;
+            bookedMap[key] = app.count || 1;
+        }
+
+        console.log("bookedMap", bookedMap)
+
+        // 3. Assign status in-memory
+        const resultWithStatus = allSlotData.map(slot => {
+            // const key = `${slot.date}_${slot.start_time}`;
+            // const status = bookedMap[key] > 0 ? 'booked' : 'available';
+            const key = slot.start_time;
+            const status = bookedMap[key] > 0 ? 'booked' : 'available';
+            return {
+                // date: slot.date,
+                // day: slot.day,
+                start_time: slot.start_time,
+                end_time: slot.end_time,
+                status
+            };
+        });
+
+        return handleSuccess(res, 200, 'en', "FUTURE_DOCTOR_SLOTS", resultWithStatus);
+    } catch (err) {
+        console.error('Error fetching future slots:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const isUserOfflineOrOnline = async (req, res) => {
+    try {
+        const { user_id, language } = req.user;
+        let { isOnline } = req.body
+        // const io = getIO();
+        await doctorModels.update_doctor_is_online(user_id, isOnline);
+        // await toActivateUsers(isOnline, chat_id, doctorId);
+        // io.to(doctorId).emit('isUsersOnlineOrOffline', isOnline);
+        return handleSuccess(res, 200, language, `USER ${isActive ? 'ONLINE' : 'OFFLINE'}`);
+    } catch (error) {
+        console.error('error', error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };

@@ -244,20 +244,32 @@ export const onboardingByRoleId = async (req, res) => {
 
         const { id, role_id } = value;
 
-        const clinics = await dbOperations.getData('tbl_zqnq_users', `WHERE id = '${id}' `);
-        const doctors = await dbOperations.getData('tbl_doctors', `WHERE zynq_user_id = '${id}' `);
-        if (clinics.length > 0) {
+        const zynqUser = await dbOperations.getData('tbl_zqnq_users', `WHERE id = '${id}' `);
+
+        if (zynqUser.length > 0) {
             const update_role = await dbOperations.updateData('tbl_zqnq_users', { role_id: role_id }, `WHERE id = '${id}' `);
-            if (doctors.length == 0) {
+            if (role_id == '407595e3-3196-11f0-9e07-0e8e5d906eef') {
                 const insert_doctor = await dbOperations.insertData('tbl_doctors', { zynq_user_id: id });
+                const getDoctorId = await dbOperations.getSelectedColumn('doctor_id','tbl_doctors',  `where zynq_user_id ='${id}'`);
+                const getClinic = await dbOperations.getSelectedColumn('clinic_id', 'tbl_clinics', `where zynq_user_id ='${id}'`);
+      
+                const mapData =
+                {
+                    doctor_id: getDoctorId[0].doctor_id,
+                    clinic_id: getClinic[0].clinic_id,
+                    is_invitation_accepted :1
+                }
+
+                await dbOperations.insertData('tbl_doctor_clinic_map', mapData)
             }
+
             if (update_role.affectedRows > 0) {
-           
+
                 return handleSuccess(res, 200, 'en', "ENROLL_SUCCESSFUL");
             } else {
                 return handleError(res, 400, 'en', "USER_NOT_ENROLLED");
-              
-            }
+
+            };
         } else {
             return handleError(res, 400, 'en', "USER_NOT_FOUND");
         }

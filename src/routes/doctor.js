@@ -5,6 +5,7 @@ import * as doctorController from "../controllers/doctor/profileController.js";
 import { authenticate } from '../middleware/web_user_auth.js';
 import { uploadCertificationFieldsTo, uploadFileTo } from '../services/doctor_multer.js';
 import * as supportControllers from "../controllers/doctor/supportController.js";
+import * as appointmentControllers from "../controllers/doctor/appointmentController.js";
 
 
 router.get("/get_profile", authenticate(['DOCTOR']), doctorController.getDoctorProfile);
@@ -17,7 +18,7 @@ const uploadVariousFields = uploadCertificationFieldsTo([
     { name: 'medical_council', maxCount: 1, subfolder: 'certifications' },
     { name: 'deramatology_board', maxCount: 1, subfolder: 'certifications' },
     { name: 'laser_safety', maxCount: 1, subfolder: 'certifications' },
-     { name: 'cosmetology_license', maxCount: 1, subfolder: 'certifications' },
+    { name: 'cosmetology_license', maxCount: 1, subfolder: 'certifications' },
 ]);
 
 router.post('/add_education_experience', authenticate(['DOCTOR']), uploadVariousFields, doctorController.addEducationAndExperienceInformation);
@@ -56,7 +57,7 @@ router.delete('/delete_certification/:doctor_certification_id', authenticate(['D
 // Expertise
 router.post("/edit_expertise", authenticate(['DOCTOR']), doctorController.editExpertise);
 
-router.post('/edit_fee_availability', authenticate(['DOCTOR']), doctorController.editConsultationFeeAndAvailability);
+router.post('/edit_fee_availability/:doctor_availability_id', authenticate(['DOCTOR']), doctorController.editConsultationFeeAndAvailability);
 
 router.get("/get_linked_clinics", authenticate(['DOCTOR']), doctorController.getLinkedClinics);
 
@@ -71,6 +72,16 @@ router.get("/get-support-tickets-by-doctor-id-to-clinic", authenticate(['DOCTOR'
 
 
 router.get("/get_doctor_certificates_path", authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.getDoctorCertificatesWithPath);
+router.get("/get_doctor_certificates_path", authenticate(['DOCTOR']), doctorController.getDoctorCertificatesWithPath);
+router.post("/createChat", authenticate(['DOCTOR']), doctorController.createUsersChat);
+router.get("/fetch_docter_avibility", authenticate(['DOCTOR']), doctorController.fetchDocterAvibility);
+router.post("/isDocterOfflineOrOnline", authenticate(['DOCTOR']), doctorController.isDocterOfflineOrOnline);
+router.get("/getDoctorProfileById", authenticate(['DOCTOR']), doctorController.getDoctorProfileById);
 
 
+// -------------------------------------slot managment------------------------------------------------//
+
+router.post('/createDoctorAvailability', authenticate(['DOCTOR']), doctorController.createDoctorAvailability);
+router.post('/updateDoctorAvailability', authenticate(['DOCTOR']), doctorController.updateDoctorAvailability);
+router.get('/getMyAppointments',authenticate(['DOCTOR']), appointmentControllers.getMyAppointmentsDoctor);
 export default router;
