@@ -583,6 +583,8 @@ export const create_call_log_doctor = async (req, res) => {
     } catch (error) {
         console.error("Error in create_call_log_doctor:", error);
         return handleError(res, 500, 'en', error.message);
+    }
+}
 // -------------------------------------slot managment------------------------------------------------//
 
 export const getFutureDoctorSlots = async (req, res) => {

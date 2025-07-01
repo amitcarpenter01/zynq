@@ -35,7 +35,7 @@ export const getAppointmentsByUserId = async (user_id) => {
 
 export const getAppointmentsByDoctorId = async (doctor_id) => {
     const results = await db.query(`
-        SELECT a.*, u.* FROM tbl_appointments a INNER JOIN tbl_users u ON a.user_id = u.user_id  
+        SELECT a.*, u.* , c.clinic_name FROM tbl_appointments a INNER JOIN tbl_users u ON a.user_id = u.user_id  INNER JOIN tbl_clinics c ON a.clinic_id = c.clinic_id 
         WHERE a.doctor_id = ?
         ORDER BY  start_time ASC
     `, [doctor_id]);
