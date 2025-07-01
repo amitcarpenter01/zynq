@@ -1412,7 +1412,7 @@ export const getDoctorSkinTypesBulk = async (doctorIds) => {
 
         const query = `SELECT dst.*, st.* 
             FROM tbl_doctor_skin_types dst 
-            LEFT JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id WHERE dst.doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
+            LEFT JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id WHERE dst.doctor_id IN (${placeholders}) ORDER BY dst.created_at DESC`;
         const results = await db.query(query, doctorIds);
 
         const grouped = {};
@@ -1434,7 +1434,7 @@ export const getDoctorTreatmentsBulk = async (doctorIds) => {
 
         const query = `SELECT dt.*, t.* 
             FROM tbl_doctor_treatments dt 
-            LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id  WHERE dt.doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
+            LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id  WHERE dt.doctor_id IN (${placeholders}) ORDER BY dt.created_at DESC`;
         const results = await db.query(query, doctorIds);
 
         const grouped = {};
@@ -1452,9 +1452,9 @@ export const getDoctorTreatmentsBulk = async (doctorIds) => {
 
 
 export const getDoctorSkinConditionBulk = async (doctorIds) => {
-    const placeholders = clinicIds.map(() => '?').join(',');
+    const placeholders = doctorIds.map(() => '?').join(',');
     const query = `SELECT sc.*,dsc.* FROM tbl_skin_conditions sc INNER JOIN  tbl_doctor_skin_condition dsc ON  sc.skin_condition_id = dsc.skin_condition_id WHERE dsc.doctor_id IN (${placeholders})`;
-    const results = await db.query(query, clinicIds);
+    const results = await db.query(query, doctorIds);
 
     const grouped = {};
     results.forEach(row => {
@@ -1465,9 +1465,9 @@ export const getDoctorSkinConditionBulk = async (doctorIds) => {
 };
 
 export const getDoctorSurgeryBulk = async (doctorIds) => {
-    const placeholders = clinicIds.map(() => '?').join(',');
-    const query = `SELECT s.*,cs.* FROM tbl_surgery s INNER JOIN tbl_clinic_surgery cs ON s.surgery_id  = cs.surgery_id WHERE cs.doctor_id IN (${placeholders})`;
-    const results = await db.query(query, clinicIds);
+    const placeholders = doctorIds.map(() => '?').join(',');
+    const query = `SELECT s.*,ds.* FROM tbl_surgery s INNER JOIN tbl_doctor_surgery ds ON s.surgery_id  = ds.surgery_id WHERE ds.doctor_id IN (${placeholders})`;
+    const results = await db.query(query, doctorIds);
 
     const grouped = {};
     results.forEach(row => {
@@ -1478,9 +1478,9 @@ export const getDoctorSurgeryBulk = async (doctorIds) => {
 };
 
 export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
-    const placeholders = clinicIds.map(() => '?').join(',');
-    const query = `SELECT ad.*, cad.* FROM tbl_aesthetic_devices ad INNER JOIN  tbl_clinic_aesthetic_devices cad ON ad.aesthetic_device_id = cad.aesthetic_devices_id    WHERE cad.doctor_id IN (${placeholders})`;
-    const results = await db.query(query, clinicIds);
+    const placeholders = doctorIds.map(() => '?').join(',');
+    const query = `SELECT ad.*, dad.* FROM tbl_aesthetic_devices ad INNER JOIN  tbl_doctor_aesthetic_devices dad ON ad.aesthetic_device_id = dad.aesthetic_devices_id    WHERE dad.doctor_id IN (${placeholders})`;
+    const results = await db.query(query, doctorIds);
 
     const grouped = {};
     results.forEach(row => {

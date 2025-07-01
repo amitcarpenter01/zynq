@@ -86,46 +86,49 @@ export const get_all_doctors_by_clinic_id = async (req, res) => {
         if (!doctors || doctors.length === 0) {
             return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", []);
         }
-        for (const doctor of doctors) {
-           
 
-            // Get doctor certifications
-            const certifications = await clinicModels.getDoctorCertifications(doctor.doctor_id);
-            certifications.forEach(certification => {
-                if (certification.upload_path && !certification.upload_path.startsWith('http')) {
-                    certification.upload_path = `${APP_URL}/doctors/certifications/${certification.upload_path}`;
-                }
-            });
-            doctor.certifications = certifications || [];
+        const doctorIds = doctors.map(doc => doc.doctor_id);
 
+        const [allCertificates, allEducation, allExperience, allSkinTypes, allTreatments, allSkinCondition, allSurgery, allAstheticDevices] = await Promise.all([
+            clinicModels.getDoctorCertificationsBulk(doctorIds),
+            clinicModels.getDoctorEducationBulk(doctorIds),
+            clinicModels.getDoctorExperienceBulk(doctorIds),
+            clinicModels.getDoctorSkinTypesBulk(doctorIds),
+            clinicModels.getDoctorTreatmentsBulk(doctorIds),
+            clinicModels.getDoctorSkinConditionBulk(doctorIds),
+            clinicModels.getDoctorSurgeryBulk(doctorIds),
+            clinicModels.getDoctorAstheticDevicesBulk(doctorIds)
+        ]);
 
-            // Get doctor education history
-            const education = await clinicModels.getDoctorEducation(doctor.doctor_id);
-            doctor.education = education || [];
+        const processedDoctors = doctors.map(doctor => {
 
-            // Get doctor work experience
-            const experience = await clinicModels.getDoctorExperience(doctor.doctor_id);
-            doctor.experience = experience || [];
-
-            // Get doctor reviews
-            const reviews = await clinicModels.getDoctorReviews(doctor.doctor_id);
-            doctor.reviews = reviews || [];
-
-            // Get doctor skin types
-            const skinTypes = await clinicModels.getDoctorSkinTypes(doctor.doctor_id);
-            doctor.skin_types = skinTypes || [];
-
-            // Get doctor treatments
-            const treatments = await clinicModels.getDoctorTreatments(doctor.doctor_id);
-            doctor.treatments = treatments || [];
-        }
-        doctors.forEach(doctor => {
-            if (doctor.profile_image && !doctor.profile_image.startsWith('http')) {
-                doctor.profile_image = `${APP_URL}doctor/profile_images/${doctor.profile_image}`;
-            }
+            return {
+                ...doctor,
+                treatments: allTreatments[doctor.doctor_id] || [],
+                skin_types: allSkinTypes[doctor.doctor_id] || [],
+                allSkinCondition: allSkinCondition[doctor.doctor_id] || [],
+                allSurgery: allSurgery[doctor.doctor_id] || [],
+                allAstheticDevices: allAstheticDevices[doctor.doctor_id] || [],
+                allEducation: allEducation[doctor.doctor_id] || [],
+                allExperience: allExperience[doctor.doctor_id] || [],
+                allCertificates: allCertificates[doctor.doctor_id] || [],
+                doctor_logo: doctor.profile_image && !doctor.profile_image.startsWith('http')
+                    ? `${APP_URL}doctor/profile_images/${doctor.profile_image}`
+                    : doctor.profile_image
+            };
         });
 
-        return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", doctors);
+        processedDoctors.forEach(doctor => {
+            doctor.allCertificates.forEach(certification => {
+                if (certification.upload_path && !certification.upload_path.startsWith('http')) {
+                    certification.upload_path = `${APP_URL}doctors/certifications/${certification.upload_path}`;
+                }
+                return certification;
+            });
+            return doctor
+        })
+
+        return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", processedDoctors);
 
     } catch (error) {
         console.error("Error fetching doctors:", error);
