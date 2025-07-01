@@ -518,7 +518,6 @@ export const enroll_user = async (req, res) => {
 
 // -------------------------------------slot managment------------------------------------------------//
 
-
 export const getFutureDoctorSlots = async (req, res) => {
     try {
         const { doctor_id } = req.query;
@@ -526,6 +525,7 @@ export const getFutureDoctorSlots = async (req, res) => {
         const oneMonthLater = today.add(1, 'month');
 
         const availabilityRows = await doctorModels.fetchDoctorAvailabilityModel(doctor_id);
+
         if (availabilityRows.length === 0) {
             return handleError(res, 400, 'en', "NO_AVAILABILITY_FOUND", []);
         }

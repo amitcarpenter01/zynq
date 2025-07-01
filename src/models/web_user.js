@@ -79,7 +79,7 @@ export const update_onboarding_status = async (status, id) => {
         console.error("Database Error:", error.message);
 
     }
-}
+};
 
 export const update_web_user_password_set = async (password, show_password, id) => {
     try {

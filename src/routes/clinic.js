@@ -69,17 +69,16 @@ router.post("/unlink-doctor", authenticate(['CLINIC']), doctorControllers.unlink
 router.get("/accept-invitation", doctorControllers.acceptInvitation);
 
 //==================================== Product ==============================
-router.post("/add-product", authenticate(['CLINIC']), uploadProductImage, productControllers.addProduct);
-router.get("/get-all-products", authenticate(['CLINIC']), productControllers.getAllProducts);
-router.post("/update-product", authenticate(['CLINIC']), uploadProductImage, productControllers.updateProduct);
-router.delete("/delete-product/:product_id", authenticate(['CLINIC']), productControllers.deleteProduct);
-router.delete("/delete-product-image/:product_image_id", authenticate(['CLINIC']), productControllers.deleteProductImage);
-router.post("/get-product-by-id", authenticate(['CLINIC']), productControllers.getProductById);
-
+router.post("/add-product", authenticate(['CLINIC','SOLO_DOCTOR']), uploadProductImage, productControllers.addProduct);
+router.get("/get-all-products", authenticate(['CLINIC','SOLO_DOCTOR']), productControllers.getAllProducts);
+router.post("/update-product", authenticate(['CLINIC','SOLO_DOCTOR']), uploadProductImage, productControllers.updateProduct);
+router.delete("/delete-product/:product_id", authenticate(['CLINIC','SOLO_DOCTOR']), productControllers.deleteProduct);
+router.delete("/delete-product-image/:product_image_id", authenticate(['CLINIC','SOLO_DOCTOR']), productControllers.deleteProductImage);
+router.post("/get-product-by-id", authenticate(['CLINIC','SOLO_DOCTOR']), productControllers.getProductById);
 
 //==================================== Support ==============================
-router.post("/create-support-ticket", authenticate(['CLINIC']), supportControllers.create_support_ticket);
-router.get("/get-support-tickets", authenticate(['CLINIC']), supportControllers.get_support_tickets_by_clinic_id);
+router.post("/create-support-ticket", authenticate(['CLINIC','SOLO_DOCTOR']), supportControllers.create_support_ticket);
+router.get("/get-support-tickets", authenticate(['CLINIC','SOLO_DOCTOR']), supportControllers.get_support_tickets_by_clinic_id);
 router.get("/get-support-tickets-to-clinic", authenticate(['CLINIC']), supportControllers.get_support_tickets_by_doctor_id_to_clinic);
 router.post("/send-response-to-doctor", authenticate(['CLINIC']), supportControllers.send_response_to_doctor);
 
