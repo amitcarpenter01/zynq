@@ -37,6 +37,7 @@ export const addProduct = async (req, res) => {
             how_to_use: Joi.string().optional().allow('', null),
             ingredients: Joi.string().optional().allow('', null),
             stock: Joi.number().optional().allow('', null),
+            treatment_ids: Joi.string().optional().allow('', null),
         });
 
         const { error, value } = schema.validate(req.body);
@@ -49,7 +50,15 @@ export const addProduct = async (req, res) => {
             return handleError(res, 404, "en", "CLINIC_NOT_FOUND");
         }
 
-        const product_id = uuidv4();
+        const { treatment_ids } = value;
+        delete value.treatment_ids;
+
+        let treatment_ids_array = []
+        if (treatment_ids) {
+            treatment_ids_array = treatment_ids.split(',')
+        }
+
+        let product_id = uuidv4();
         const productData = {
             product_id: product_id,
             clinic_id: clinic.clinic_id,
@@ -61,6 +70,10 @@ export const addProduct = async (req, res) => {
         const [product] = await clinicModels.get_product_by_id(product_id);
         if (!product) {
             return handleError(res, 404, "en", "PRODUCT_NOT_FOUND");
+        }
+
+        if (treatment_ids_array.length > 0) {
+            await clinicModels.insertProductTreatments(treatment_ids_array, product.product_id);
         }
 
 
@@ -154,6 +167,7 @@ export const updateProduct = async (req, res) => {
             benefit_text: Joi.string().optional().allow('', null),
             how_to_use: Joi.string().optional().allow('', null),
             ingredients: Joi.string().optional().allow('', null),
+            treatment_ids: Joi.string().optional().allow('', null),
             stock: Joi.number().optional().allow('', null),
         });
 
@@ -164,6 +178,14 @@ export const updateProduct = async (req, res) => {
         const [clinic] = await clinicModels.get_clinic_by_zynq_user_id(req.user.id);
         if (!clinic) {
             return handleError(res, 404, "en", "CLINIC_NOT_FOUND");
+        }
+
+        const { treatment_ids } = value;
+        delete value.treatment_ids;
+
+        let treatment_ids_array = []
+        if (treatment_ids) {
+            treatment_ids_array = treatment_ids.split(',')
         }
 
         const [product] = await clinicModels.get_product_by_id(value.product_id);
@@ -182,6 +204,7 @@ export const updateProduct = async (req, res) => {
         }
 
         await clinicModels.updateProduct(value, product.product_id);
+        await clinicModels.updateProductTreatments(treatment_ids_array, product.product_id);
 
         return handleSuccess(res, 200, "en", "PRODUCT_UPDATED_SUCCESSFULLY");
     } catch (error) {
@@ -235,6 +258,7 @@ export const deleteProduct = async (req, res) => {
 
         await clinicModels.deleteProductImageByProductId(value.product_id);
         await clinicModels.deleteProduct(value.product_id);
+        await clinicModels.deleteProductTreatments(value.product_id);
 
         return handleSuccess(res, 200, "en", "PRODUCT_DELETED_SUCCESSFULLY");
 

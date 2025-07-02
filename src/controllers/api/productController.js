@@ -24,11 +24,9 @@ export const getAllProducts = async (req, res) => {
     try {
 
         let products = await apiModels.get_all_products_for_user();
-
         if (products.length === 0) {
             return handleError(res, 404, "en", "NO_PRODUCTS_FOUND");
         }
-    
 
         products = await Promise.all(products.map(async (product) => {
             const productImages = await apiModels.get_product_images(product.product_id);
