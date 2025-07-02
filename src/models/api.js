@@ -234,15 +234,45 @@ export const getDoctorTreatments = async (doctor_id) => {
 
 
 //======================================= Product =========================================
-export const get_all_products_for_user = async () => {
+export const get_all_products_for_user = async (treatment_ids = []) => {
     try {
-        return await db.query(`SELECT * FROM tbl_products ORDER BY created_at DESC`);
-    }
-    catch (error) {
+        let params = [];
+        let treatmentFilterClause = '';
+
+        if (treatment_ids.length > 0) {
+            const placeholders = treatment_ids.map(() => '?').join(', ');
+            treatmentFilterClause = `WHERE pt.treatment_id IN (${placeholders})`;
+            params.push(...treatment_ids);
+        }
+
+        const query = `
+            SELECT
+                p.*,
+                IF(COUNT(t.treatment_id), JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'treatment_id', t.treatment_id,
+                        'name',         t.name,
+                        'swedish',      t.swedish,
+                        'application',  t.application,
+                        'type',         t.type,
+                        'technology',   t.technology,
+                        'created_at',   t.created_at
+                    )
+                ), JSON_ARRAY()) AS treatments
+            FROM tbl_products AS p
+            LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
+            LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
+            ${treatmentFilterClause}
+            GROUP BY p.product_id
+            ORDER BY p.created_at DESC
+        `;
+
+        return await db.query(query, params);
+    } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch products.");
+        throw new Error("Failed to fetch products with treatments.");
     }
-}
+};
 
 export const get_product_images = async (product_id) => {
     try {
@@ -256,7 +286,7 @@ export const get_product_images = async (product_id) => {
 
 
 //======================================= Clinic =========================================
-export const getAllClinicsForUser = async (ids = [],limit,offset) => {
+export const getAllClinicsForUser = async (ids = [], limit, offset) => {
     try {
         let query = `
             SELECT c.*
@@ -274,7 +304,7 @@ export const getAllClinicsForUser = async (ids = [],limit,offset) => {
 
         query += ` ORDER BY c.created_at DESC LIMIT ? OFFSET ?`;
 
-        return await db.query(query, [...params,limit,offset]);
+        return await db.query(query, [...params, limit, offset]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch clinics.");

@@ -22,11 +22,23 @@ const image_logo = process.env.LOGO_URL;
 
 export const getAllProducts = async (req, res) => {
     try {
+        const schema = Joi.object({
+            treatment_ids: Joi.string().optional().allow(''),
+        });
 
-        let products = await apiModels.get_all_products_for_user();
+        const { error, value } = schema.validate(req.body);
+                if (error) return joiErrorHandle(res, error);
+        const { treatment_ids } = value;
+        let treatment_ids_array = []
+        if (treatment_ids) {
+            treatment_ids_array = treatment_ids.split(',')
+        }
+
+        let products = await apiModels.get_all_products_for_user(treatment_ids_array);
         if (products.length === 0) {
             return handleError(res, 404, "en", "NO_PRODUCTS_FOUND");
         }
+
 
         products = await Promise.all(products.map(async (product) => {
             const productImages = await apiModels.get_product_images(product.product_id);
