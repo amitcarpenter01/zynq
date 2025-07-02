@@ -97,5 +97,6 @@ router.post('/bookAppointment', authenticateUser, appointmentController.bookAppo
 
 router.get('/getMyAppointments', authenticateUser, appointmentController.getMyAppointmentsUser);
 
+router.get('/completeAppointment', appointmentController.completeAppointment);
 
 export default router;
