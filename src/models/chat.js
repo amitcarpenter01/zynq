@@ -92,3 +92,9 @@ export const getUserChatsList = async (userId) => {
 export const toActivateUsers = async (isActive, chat_id, doctorId) => {
     return await db.query(`UPDATE tbl_user_active SET isActive = ? WHERE userId = ? AND chat_id = ?`, [isActive, doctorId, chat_id]);
 }
+
+export const getCallLogs = async (senderId, receiverId) => {
+    console.log('senderId, receiverId', senderId, receiverId);
+    
+    return await db.query(`SELECT * FROM tbl_call_logs WHERE sender_user_id = ? OR sender_doctor_id = ? OR receiver_user_id = ? OR receiver_doctor_id = ?`, [senderId, senderId, receiverId, receiverId]);
+}

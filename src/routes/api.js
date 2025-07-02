@@ -41,22 +41,23 @@ router.post("/get-prompt", aiPromptControllers.get_prompt_data_by_prompt_type);
 
 //==================================== Face Scan ==============================
 const uploadVariousFields = uploadCertificationFieldsTo([
-    { name: 'file', maxCount: 1, subfolder: 'certifications' },
-    { name: 'pdf', maxCount: 1, subfolder: 'certifications' },
+  { name: 'file', maxCount: 1, subfolder: 'certifications' },
+  { name: 'pdf', maxCount: 1, subfolder: 'certifications' },
 
 ]);
 
 // router.post("/add-face-scan-result", authenticateUser, upload.single("file"), faceScanControllers.add_face_scan_result);
 router.post("/add-face-scan-result", authenticateUser, upload.fields([
-    { name: 'file', maxCount: 1 },
-    { name: 'pdf', maxCount: 1 }
+  { name: 'file', maxCount: 1 },
+  { name: 'pdf', maxCount: 1 }
 ]), faceScanControllers.add_face_scan_result);
 router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_face_scan_history);
 
 
 
 //==================================== Doctor ==============================
-router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors);
+// router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors);
+router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors_in_app_side);
 
 // //==================================== Product ==============================
 router.get("/get-all-products", authenticateUser, productControllers.getAllProducts);
@@ -70,11 +71,7 @@ router.get("/get-support-tickets", authenticateUser, supportControllers.get_supp
 
 
 
-router.post(
-  "/create-call-log-user",
-  authenticateUser,
-  authControllers.create_call_log_user
-);
+router.post("/create-call-log-user", authenticateUser, authControllers.create_call_log_user);
 
 router.post(
   "/create-call-log-doctor",
