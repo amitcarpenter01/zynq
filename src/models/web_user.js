@@ -3,6 +3,8 @@ import db from "../config/db.js";
 //======================================= Auth =========================================
 
 export const get_web_user_by_id = async (id) => {
+    console.log('id', id);
+
     try {
         return await db.query(`SELECT
             u.*, 
@@ -116,16 +118,16 @@ export const updateCallLogStatus = async (call_id, status) => {
 };
 
 export const createOrUpdateCallLog = async ({
-  call_id,
-  sender_user_id,
-  sender_doctor_id,
-  receiver_user_id,
-  receiver_doctor_id,
-  status,
-  started_at
+    call_id,
+    sender_user_id,
+    sender_doctor_id,
+    receiver_user_id,
+    receiver_doctor_id,
+    status,
+    started_at
 }) => {
-  try {
-    await db.query(`
+    try {
+        await db.query(`
       INSERT INTO tbl_call_logs (
         call_id, sender_user_id, sender_doctor_id,
         receiver_user_id, receiver_doctor_id, status, started_at
@@ -134,24 +136,24 @@ export const createOrUpdateCallLog = async ({
         status = VALUES(status),
         started_at = VALUES(started_at)
     `, [
-      call_id,
-      sender_user_id,
-      sender_doctor_id,
-      receiver_user_id,
-      receiver_doctor_id,
-      status,
-      started_at
-    ]);
-  } catch (error) {
-    console.error("Error in createOrUpdateCallLog:", error);
-    throw error;
-  }
+            call_id,
+            sender_user_id,
+            sender_doctor_id,
+            receiver_user_id,
+            receiver_doctor_id,
+            status,
+            started_at
+        ]);
+    } catch (error) {
+        console.error("Error in createOrUpdateCallLog:", error);
+        throw error;
+    }
 };
 
 
 
 export const getAllCallLogs = async () => {
-  const [rows] = await db.query(`
+    const [rows] = await db.query(`
     SELECT 
       call_id,
       caller_id,
@@ -165,6 +167,14 @@ export const getAllCallLogs = async () => {
     ORDER BY started_at DESC
   `);
 
-  return rows;
+    return rows;
 };
 
+export const get_user_by_id = async (id) => {
+    return await db.query(`SELECT * FROM tbl_users WHERE user_id = ?`, [id]);
+
+};
+
+export const getWebUserById = async (id) => {
+    return await db.query(`SELECT * FROM tbl_zqnq_users WHERE id = ?`, [id]);
+};

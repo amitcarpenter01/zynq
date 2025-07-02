@@ -2,7 +2,7 @@ import Joi from "joi";
 import dotenv from "dotenv";
 import * as doctorModels from "../../models/doctor.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
-import { update_onboarding_status } from "../../models/web_user.js";
+import { get_web_user_by_id, update_onboarding_status } from "../../models/web_user.js";
 import { createChat, fetchChatById, insertChatUsersActive, toActivateUsers } from "../../models/chat.js";
 import { getIO, getUserSockets } from '../../utils/socketManager.js';
 
@@ -150,9 +150,9 @@ export const addExpertise = async (req, res) => {
         const schema = Joi.object({
             treatment_ids: Joi.string().required(),
             skin_type_ids: Joi.string().required(),
-            skin_condition_ids:Joi.string().required(),
-            surgery_ids:Joi.string().required(),
-            aesthetic_devices_ids:Joi.string().required(),
+            skin_condition_ids: Joi.string().required(),
+            surgery_ids: Joi.string().required(),
+            aesthetic_devices_ids: Joi.string().required(),
             //severity_levels_ids: Joi.string().required(),
         });
 
@@ -173,9 +173,9 @@ export const addExpertise = async (req, res) => {
         await doctorModels.update_doctor_treatments(doctorId, treatmentIds);
         await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
         //await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
-        await doctorModels.update_doctor_skin_conditions(doctorId,skinConditionIds);
-        await doctorModels.update_doctor_surgery(doctorId,surgeryIds);
-        await doctorModels.update_doctor_aesthetic_devices(doctorId,aestheticDevicesIds);
+        await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
+        await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
+        await doctorModels.update_doctor_aesthetic_devices(doctorId, aestheticDevicesIds);
 
 
         const zynqUserId = req.user.id
@@ -918,7 +918,7 @@ export const isDocterOfflineOrOnline = async (req, res) => {
         // await toActivateUsers(isOnline, chat_id, doctorId);
         // io.to(doctorId).emit('isUsersOnlineOrOffline', isOnline);
 
-        return handleSuccess(res, 200, language, `DOCTOR ${isActive ? 'ONLINE' : 'OFFLINE'}`);
+        return handleSuccess(res, 200, language, `DOCTOR ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
 
     } catch (error) {
         console.error('error', error);
@@ -1002,3 +1002,21 @@ export const updateDoctorAvailability = async (req, res) => {
 };
 
 
+export const get_docter_profile = async (req, res) => {
+    try {
+        const language = 'en';
+        const doctorId = req.user.doctorData.zynq_user_id;
+
+        // let profileData = await get_web_user_by_id(doctorId);
+        // if (profileData && profileData.profile_image && !profileData.profile_image.startsWith("http")) {
+        //     profileData.profile_image = `${APP_URL}doctor/profile_images/${profileData.profile_image}`;
+        // }
+        let data={
+            id: doctorId,
+        }
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", data);
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};

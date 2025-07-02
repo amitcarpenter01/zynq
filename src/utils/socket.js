@@ -3,9 +3,11 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv'
 // import { NotificationTypes } from "./constant.js";
 // import { createNotificationMessage, sendNotification, updateOnlineStatus } from "./user_helper.js";
-import { createChat, fetchActiveChatsUsers, fetchChatById, fetchMessages, fetchMessagesById, getAdminChatsList, getChatBetweenUsers, getUserChats, getUserChatsList, saveMessage } from "../models/chat.js";
+import { createChat, fetchActiveChatsUsers, fetchChatById, fetchMessages, fetchMessagesById, getAdminChatsList, getCallLogs, getChatBetweenUsers, getUserChats, getUserChatsList, saveMessage } from "../models/chat.js";
 import * as doctorModels from "../models/doctor.js";
 import { getUserSockets, setIO } from "./socketManager.js";
+import { handleError } from "./responseHandler.js";
+import { get_user_by_id, get_web_user_by_id } from "../models/web_user.js";
 dotenv.config();
 const SECRET_KEY = process.env.AUTH_SECRETKEY;
 const USER_JWT_SECRET = process.env.USER_JWT_SECRET;
@@ -26,6 +28,7 @@ const initializeSocket = (server) => {
     io.on("connection", async (socket) => {
         const authHeader = socket.handshake.headers.authorization;
         const userType = socket.handshake.headers['user-type'];
+
         if (!authHeader) {
             console.log("Authorization header is missing");
             socket.emit('unauthorized', {
@@ -46,8 +49,7 @@ const initializeSocket = (server) => {
         }
         let loggedUserId = decoded.id;
         socket.join(loggedUserId.toString());
-        // const roomName = loggedUserId.toString().trim();
-        // socket.join(roomName);
+
 
         socket.on('user_connected', async () => {
             try {
@@ -78,24 +80,59 @@ const initializeSocket = (server) => {
         socket.on("fetch_messages", async ({ chatId }) => {
             try {
                 let senderId = decoded.id;
+
                 const messages = await fetchMessages(chatId);
                 let fetchChatsUsers = await fetchChatById(chatId);
                 let receiverId = fetchChatsUsers.map(chat =>
                     chat.userId_1 === senderId ? chat.userId_2 : chat.userId_1
                 );
+
                 let listOfDocterAvibility = await doctorModels.get_doctor_by_zynquser_id(receiverId);
                 if (listOfDocterAvibility.length == 0) {
-                    return handleError(res, 400, language, "DOCTOR_FETCH_SUCCESSFULLY", {});
+                    // socket.emit("error", "Doctor not found");
+                    return { statusCode: 400, message: "DOCTOR_FETCH_SUCCESSFULLY", success: false, data: {} };
                 }
-                if (listOfDocterAvibility[0].profile_image !== null || '') {
+
+                if (listOfDocterAvibility && listOfDocterAvibility[0].profile_image !== null || '') {
                     listOfDocterAvibility[0].profile_image = `${APP_URL}doctor/profile_images/${listOfDocterAvibility[0].profile_image}`;
                 }
                 if (messages.length > 0) {
                     messages.map(message => {
+                        console.log('message', message.sender_id == senderId);
+
                         message.isOwnMessage = message.sender_id === senderId ? true : false;
                     });
                 }
-                socket.emit("chat_history", messages);
+
+                const callLogs = await getCallLogs(senderId, receiverId);
+
+                const formattedCallLogs = callLogs.map((log, index) => ({
+                    id: 100000 + index,
+                    chat_id: 0,
+                    sender_id: log.sender_user_id,
+                    message: 'null',
+                    message_type: 'text',
+                    is_read: 0,
+                    createdAt: new Date(log.created_at),
+                    updatedAt: null,
+                    isOwnMessage: true,
+                    isType: 'callLog',
+                    status: log.status
+                }));
+
+                const formattedMessages = messages.map((msg) => ({
+                    ...msg,
+                    isType: 'message',
+                    status: null
+                }));
+
+                const mergedData = [...formattedMessages, ...formattedCallLogs].sort((a, b) => {
+                    const dateA = a.createdAt || a.updatedAt;
+                    const dateB = b.createdAt || b.updatedAt;
+                    return new Date(dateA) - new Date(dateB);
+                });
+                // socket.emit("chat_history", messages);
+                socket.emit("chat_history", mergedData);
                 socket.emit("chat_details", listOfDocterAvibility[0]);
 
             } catch (error) {
@@ -117,7 +154,8 @@ const initializeSocket = (server) => {
                 let result = await saveMessage(chatId, senderId, message, messageType);
                 const messageId = result.insertId;
                 const messageDetails = await fetchMessagesById(messageId);
-                messageDetails[0].isOwnMessage = messageDetails[0].senderId === senderId ? messageDetails[0].isOwnMessage = true : false;
+
+                messageDetails[0].isOwnMessage = messageDetails[0].senderId === senderId ? messageDetails[0].isOwnMessage = false : true;
                 // const chats = await getUserChats(receiverId);
                 // ----------------------------------------notification code ---------------------------comments----------------//
                 // let isActiveUsersOrNot = await fetchActiveChatsUsers(receiverId)
@@ -144,13 +182,78 @@ const initializeSocket = (server) => {
                 if (userType == 1) {
                     chats = await getAdminChatsList(receiverId);
                 } else {
-                    chats = await getUserChatsList(receiverId);
+                    chats = await getAdminChatsList(receiverId[0]);
                 }
                 io.in(receiverId).emit("chat_list", chats);
 
                 // }
             } catch (error) {
                 console.error("❌ send_message error:", error.message);
+                socket.emit("error", error.message);
+            }
+        });
+
+        socket.on("fetch_docter_messages", async ({ chatId }) => {
+            try {
+                let senderId = decoded.id;
+                console.log('senderId', senderId);
+                
+                const messages = await fetchMessages(chatId);
+                let fetchChatsUsers = await fetchChatById(chatId);
+                let receiverId = fetchChatsUsers.map(chat =>
+                    chat.userId_1 === senderId ? chat.userId_2 : chat.userId_1
+                );
+                let listOfUserAvibility = await get_user_by_id(receiverId[0]);
+                if (listOfUserAvibility.length == 0) {
+                    return { statusCode: 400, message: "DOCTOR_FETCH_SUCCESSFULLY", success: false, data: {} };
+                }
+
+                if (listOfUserAvibility && listOfUserAvibility[0].profile_image !== null || '') {
+                    listOfUserAvibility[0].profile_image = `${APP_URL}doctor/profile_images/${listOfUserAvibility[0].profile_image}`;
+                }
+                if (messages.length > 0) {
+                    messages.map(message => {
+                        message.isOwnMessage = message.sender_id === senderId ? false : true;
+                    });
+                }
+                console.log('senderId, receiverId', senderId, receiverId);
+
+                const callLogs = await getCallLogs(senderId, receiverId[0]);
+                console.log('callLogs', callLogs);
+
+                const formattedCallLogs = callLogs.map((log, index) => ({
+                    id: 100000 + index,
+                    chat_id: 0,
+                    sender_id: log.sender_user_id,
+                    message: 'null',
+                    message_type: 'text',
+                    is_read: 0,
+                    createdAt: new Date(log.created_at),
+                    updatedAt: null,
+                    isOwnMessage: true,
+                    isType: 'callLog',
+                    status: log.status
+                }));
+
+                const formattedMessages = messages.map((msg) => ({
+                    ...msg,
+                    isType: 'message',
+                    status: null
+                }));
+
+                const mergedData = [...formattedMessages, ...formattedCallLogs].sort((a, b) => {
+                    const dateA = a.createdAt || a.updatedAt;
+                    const dateB = b.createdAt || b.updatedAt;
+                    return new Date(dateA) - new Date(dateB);
+                });
+                console.log('mergedData', mergedData);
+
+                // socket.emit("chat_history", messages);
+                socket.emit("chat_docter_history", mergedData);
+                socket.emit("chat_details", listOfUserAvibility[0]);
+
+            } catch (error) {
+                console.log('error', error);
                 socket.emit("error", error.message);
             }
         });

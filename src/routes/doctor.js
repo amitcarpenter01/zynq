@@ -84,4 +84,7 @@ router.get("/getDoctorProfileById", authenticate(['DOCTOR']), doctorController.g
 router.post('/createDoctorAvailability', authenticate(['DOCTOR','SOLO_DOCTOR']), doctorController.createDoctorAvailability);
 router.post('/updateDoctorAvailability', authenticate(['DOCTOR','SOLO_DOCTOR']), doctorController.updateDoctorAvailability);
 router.get('/getMyAppointments',authenticate(['DOCTOR','SOLO_DOCTOR']), appointmentControllers.getMyAppointmentsDoctor);
+
+router.get("/get_docter_profile", authenticate(['DOCTOR','SOLO_DOCTOR']), doctorController.get_docter_profile);
+
 export default router;
