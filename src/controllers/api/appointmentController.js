@@ -85,3 +85,23 @@ export const getMyAppointmentsUser = async (req, res) => {
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
+
+export const completeAppointment = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            appointment_id: Joi.string().required(),
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const { appointment_id } = value;
+
+        await appointmentModel.markAppointmentAsCompleted(appointment_id);
+
+        return handleSuccess(res, 200, "en", "APPOINTMENT_MARKED_AS_COMPLETED");
+    } catch (error) {
+        console.error("Error marking appointment as completed:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
+}

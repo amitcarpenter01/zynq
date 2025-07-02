@@ -15,7 +15,7 @@ export const checkIfSlotAlreadyBooked = async (doctor_id, start_time) => {
             SELECT appointment_id FROM tbl_appointments
             WHERE doctor_id = ? AND  start_time = ?
         `, [doctor_id, start_time]);
-        console.log("result",result)
+        console.log("result", result)
         return result;
     } catch (error) {
         console.error("Database Error in checkIfSlotAlreadyBooked:", error.message);
@@ -41,3 +41,12 @@ export const getAppointmentsByDoctorId = async (doctor_id) => {
     `, [doctor_id]);
     return results;
 };
+
+export const markAppointmentAsCompleted = async (appointment_id) => {
+    try {
+        return await db.query(`UPDATE tbl_appointments SET status = 'Completed' WHERE appointment_id = ?`, [appointment_id]);
+    } catch (error) {
+        console.error("Database Error in updating appointment status to completed:", error.message);
+        throw error;
+    }
+}
