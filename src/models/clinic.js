@@ -1050,10 +1050,32 @@ export const insertProduct = async (productData) => {
 
 export const get_all_products = async (clinic_id) => {
     try {
-        const result = await db.query('SELECT * FROM tbl_products WHERE clinic_id = ? ORDER BY created_at DESC', [clinic_id]);
+        const result = await db.query(
+            `
+            SELECT
+                p.*,
+                IF(COUNT(t.treatment_id), JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'treatment_id', t.treatment_id,
+                        'name',         t.name,
+                        'swedish',      t.swedish,
+                        'application',  t.application,
+                        'type',         t.type,
+                        'technology',   t.technology,
+                        'created_at',   t.created_at
+                    )
+                ), JSON_ARRAY()) AS treatments
+            FROM tbl_products AS p
+            LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
+            LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
+            WHERE p.clinic_id = ?
+            GROUP BY p.product_id
+            ORDER BY p.created_at DESC
+            `,
+            [clinic_id]
+        );
         return result;
-    }
-    catch (error) {
+    } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch all products.");
     }
@@ -1061,12 +1083,33 @@ export const get_all_products = async (clinic_id) => {
 
 export const get_product_by_id = async (product_id) => {
     try {
-        const result = await db.query('SELECT * FROM tbl_products WHERE product_id = ?', [product_id]);
+        const result = await db.query(
+            `
+            SELECT
+                p.*,
+                IF(COUNT(t.treatment_id), JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'treatment_id', t.treatment_id,
+                        'name',         t.name,
+                        'swedish',      t.swedish,
+                        'application',  t.application,
+                        'type',         t.type,
+                        'technology',   t.technology,
+                        'created_at',   t.created_at
+                    )
+                ), JSON_ARRAY()) AS treatments
+            FROM tbl_products AS p
+            LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
+            LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
+            WHERE p.product_id = ?
+            GROUP BY p.product_id
+            `,
+            [product_id]
+        );
         return result;
-    }
-    catch (error) {
+    } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch product by id.");
+        throw new Error("Failed to fetch product by product id.");
     }
 };
 
@@ -1155,6 +1198,57 @@ export const deleteProductImage = async (product_image_id) => {
     catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to delete product image.");
+    }
+};
+
+export const insertProductTreatments = async (treatment_ids_array, product_id) => {
+    try {
+        const values = treatment_ids_array.map(treatment_id => [product_id, treatment_id]);
+
+        const result = await db.query(
+            `INSERT INTO tbl_product_treatments (product_id, treatment_id) VALUES ?`,
+            [values]
+        );
+
+        return result;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to insert product treatments.");
+    }
+};
+
+export const updateProductTreatments = async (treatment_ids_array, product_id) => {
+    try {
+        await db.query(
+            `DELETE FROM tbl_product_treatments WHERE product_id = ?`,
+            [product_id]
+        );
+
+        if (treatment_ids_array.length > 0) {
+            const values = treatment_ids_array.map(treatment_id => [product_id, treatment_id]);
+
+            const result = await db.query(
+                `INSERT INTO tbl_product_treatments (product_id, treatment_id) VALUES ?`,
+                [values]
+            );
+
+            return result;
+        }
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update product treatments.");
+    }
+};
+
+export const deleteProductTreatments = async (product_id) => {
+    try {
+        await db.query(
+            `DELETE FROM tbl_product_treatments WHERE product_id = ?`,
+            [product_id]
+        );
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to delete product treatments.");
     }
 };
 
