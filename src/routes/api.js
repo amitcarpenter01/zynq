@@ -83,7 +83,6 @@ router.post(
 
 router.post("/get-all-doctors-by-clinic", authenticateUser, doctorControllers.get_all_doctors_by_clinic_id);
 
-
 router.post("/get-all-doctors-by-clinic", authenticateUser, doctorControllers.get_all_doctors_by_clinic_id);
 
 router.get('/getFutureDoctorSlots', authenticateUser, authControllers.getFutureDoctorSlots);
@@ -97,5 +96,7 @@ router.get('/getMyAppointments', authenticateUser, appointmentController.getMyAp
 router.patch('/update-appointment-status', appointmentController.updateAppointmentStatus);
 
 router.get('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
+
+router.patch('/reschedule-appointment', authenticateUser, appointmentController.rescheduleAppointment);
 
 export default router;

@@ -146,7 +146,7 @@ export const getAppointmentsById = async (req, res) => {
 
         let { appointment_id } = value;
 
-        const appointments = await appointmentModel.getAppointmentsById(userId,appointment_id);
+        const appointments = await appointmentModel.getAppointmentsById(userId, appointment_id);
 
         const now = dayjs.utc();
 
@@ -174,6 +174,42 @@ export const getAppointmentsById = async (req, res) => {
         return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
     } catch (error) {
         console.error("Error fetching user appointments:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const rescheduleAppointment = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            doctor_id: Joi.string().required(),
+            appointment_id: Joi.string().required(),
+            start_time: Joi.string().required(),
+            end_time: Joi.string().required(),
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const { doctor_id, appointment_id, start_time, end_time } = value;
+
+        const existing = await appointmentModel.checkIfSlotAlreadyBooked(doctor_id, start_time);
+
+        if (existing.length > 0) {
+            return handleError(res, 400, "en", "SLOT_ALREADY_BOOKED");
+        }
+
+        const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
+        const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
+
+        const result = await appointmentModel.rescheduleAppointment(appointment_id, normalizedStart, normalizedEnd);
+
+        if (result.affectedRows === 0) {
+            return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+        }
+
+        return handleSuccess(res, 200, "en", "APPOINTMENT_RESCHEDULED");
+    } catch (error) {
+        console.error("Error rescheduling appointment:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
