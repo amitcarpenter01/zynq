@@ -51,50 +51,121 @@ export const fetchActiveChatsUsers = async (id) => {
     return db.query(`SELECT * FROM tbl_user_active WHERE userId = ? `, [id]);
 };
 
-export const getAdminChatsList = async (userId) => {
-    return await db.query(
-        `SELECT 
-            c.*, 
-            u.user_id ,
-            u.full_name,
-            u.profile_image
-         FROM tbl_chats c
-         JOIN tbl_users u 
-           ON u.user_id = CASE 
-               WHEN c.userId_1 = ? THEN c.userId_2
-               ELSE c.userId_1
-           END
-         WHERE c.userId_1 = ? OR c.userId_2 = ?
-         ORDER BY c.updatedAt DESC`,
-        [userId, userId, userId]
-    );
-}
+// export const getAdminChatsList = async (userId) => {
+//     return await db.query(
+//         `SELECT 
+//             c.*, 
+//             u.user_id ,
+//             u.full_name,
+//             u.profile_image
+//          FROM tbl_chats c
+//          JOIN tbl_users u 
+//            ON u.user_id = CASE 
+//                WHEN c.userId_1 = ? THEN c.userId_2
+//                ELSE c.userId_1
+//            END
+//          WHERE c.userId_1 = ? OR c.userId_2 = ?
+//          ORDER BY c.createdAt DESC`,
+//         [userId, userId, userId]
+//     );
+// }
 
-export const getUserChatsList = async (userId) => {
-    return await db.query(
-        `SELECT 
-            c.*, 
-            d.zynq_user_id ,
-            d.name,
-            d.profile_image
-         FROM tbl_chats c
-         JOIN tbl_doctors d 
-           ON d.zynq_user_id = CASE 
-               WHEN c.userId_1 = ? THEN c.userId_2
-               ELSE c.userId_1
-           END
-         WHERE c.userId_1 = ? OR c.userId_2 = ?
-         ORDER BY c.updatedAt DESC`,
-        [userId, userId, userId]
-    );
-}
+// export const getUserChatsList = async (userId) => {
+//     return await db.query(
+//         `SELECT 
+//             c.*, 
+//             d.zynq_user_id ,
+//             d.name,
+//             d.profile_image
+//          FROM tbl_chats c
+//          JOIN tbl_doctors d 
+//            ON d.zynq_user_id = CASE 
+//                WHEN c.userId_1 = ? THEN c.userId_2
+//                ELSE c.userId_1
+//            END
+//          WHERE c.userId_1 = ? OR c.userId_2 = ?
+//          ORDER BY c.createdAt DESC`,
+//         [userId, userId, userId]
+//     );
+// }
 
 export const toActivateUsers = async (isActive, chat_id, doctorId) => {
     return await db.query(`UPDATE tbl_user_active SET isActive = ? WHERE userId = ? AND chat_id = ?`, [isActive, doctorId, chat_id]);
 }
 
 export const getCallLogs = async (senderId, receiverId) => {
-    console.log('senderId, receiverId', senderId, receiverId);
-    
     return await db.query(`SELECT * FROM tbl_call_logs WHERE sender_user_id = ? OR sender_doctor_id = ? OR receiver_user_id = ? OR receiver_doctor_id = ?`, [senderId, senderId, receiverId, receiverId]);
 }
+
+
+// ---------------------------------------update chat query---------------------------------------
+
+export const getUserChatsList = async (userId) => {
+    return await db.query(
+        `SELECT 
+            c.*, 
+            d.zynq_user_id,
+            d.name,
+            d.profile_image,
+            m.message AS last_message,
+            m.createdAt AS last_message_at
+         FROM tbl_chats c
+         JOIN tbl_doctors d 
+           ON d.zynq_user_id = CASE 
+               WHEN c.userId_1 = ? THEN c.userId_2
+               ELSE c.userId_1
+           END
+         LEFT JOIN (
+             SELECT m1.*
+             FROM tbl_message m1
+             INNER JOIN (
+                 SELECT chat_id, MAX(createdAt) AS max_createdAt
+                 FROM tbl_message
+                 GROUP BY chat_id
+             ) m2
+             ON m1.chat_id = m2.chat_id AND m1.createdAt = m2.max_createdAt
+         ) m
+           ON m.chat_id = c.id
+         WHERE c.userId_1 = ? OR c.userId_2 = ?
+         ORDER BY m.createdAt DESC`,
+        [userId, userId, userId]
+    );
+};
+
+export const getAdminChatsList = async (userId) => {
+    return await db.query(
+        `SELECT 
+            c.*, 
+            u.user_id,
+            u.full_name,
+            u.profile_image,
+            m.message AS last_message,
+            m.createdAt AS last_message_at
+         FROM tbl_chats c
+         JOIN tbl_users u 
+           ON u.user_id = CASE 
+               WHEN c.userId_1 = ? THEN c.userId_2
+               ELSE c.userId_1
+           END
+         LEFT JOIN (
+             SELECT m1.*
+             FROM tbl_message m1
+             INNER JOIN (
+                 SELECT chat_id, MAX(createdAt) AS max_createdAt
+                 FROM tbl_message
+                 GROUP BY chat_id
+             ) m2
+             ON m1.chat_id = m2.chat_id AND m1.createdAt = m2.max_createdAt
+         ) m
+           ON m.chat_id = c.id
+         WHERE c.userId_1 = ? OR c.userId_2 = ?
+         ORDER BY m.createdAt DESC`,
+        [userId, userId, userId]
+    );
+};
+
+
+
+
+
+
