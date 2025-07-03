@@ -4,17 +4,23 @@ import * as appointmentModel from '../../models/appointment.js';
 import * as doctorModel from '../../models/doctor.js';
 import * as chatModel from '../../models/chat.js';
 import dayjs from 'dayjs';
+import { getDocterByDocterId } from '../../models/doctor.js';
+import { getChatBetweenUsers } from '../../models/chat.js';
 const APP_URL = process.env.APP_URL;
 export const getMyAppointmentsDoctor = async (req, res) => {
-    console.log('true')
     try {
+        const userId = req.user.user_id;
         const doctorId = req.user.doctorData.doctor_id;
 
         const now = dayjs.utc();
 
         const appointments = await appointmentModel.getAppointmentsByDoctorId(doctorId);
 
-        const result = appointments.map(app => {
+        const result = await Promise.all(appointments.map(async (app) => {
+
+            const doctor = await getDocterByDocterId(app.doctor_id);
+            let chatId = await getChatBetweenUsers(userId, doctor[0].zynq_user_id);
+            app.chatId = chatId.length > 0 ? chatId[0].id : null;
             // Convert local Date object (from MySQL) to local string
             const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
             const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
@@ -34,7 +40,7 @@ export const getMyAppointmentsDoctor = async (req, res) => {
                 end_time: dayjs.utc(localFormattedEnd).toISOString(),
                 videoCallOn
             };
-        });
+        }));
 
         return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
     } catch (error) {

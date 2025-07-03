@@ -144,6 +144,7 @@ const initializeSocket = (server) => {
         socket.on("send_message", async ({ chatId, message, messageType }) => {
             try {
                 let senderId = decoded.id;
+                
                 let ids = [senderId];
                 let fetchChatsUsers = await fetchChatById(chatId);
                 let receiverId = fetchChatsUsers.map(chat =>
@@ -154,8 +155,12 @@ const initializeSocket = (server) => {
                 let result = await saveMessage(chatId, senderId, message, messageType);
                 const messageId = result.insertId;
                 const messageDetails = await fetchMessagesById(messageId);
-
-                messageDetails[0].isOwnMessage = messageDetails[0].senderId === senderId ? messageDetails[0].isOwnMessage = false : true;
+                if(userType == 1){  
+                    messageDetails[0].isOwnMessage = messageDetails[0].sender_id === senderId ? false : true;
+                }else{
+                    messageDetails[0].isOwnMessage = messageDetails[0].sender_id === senderId ? true : false;
+                }
+                // messageDetails[0].isOwnMessage = messageDetails[0].sender_id === senderId ? messageDetails[0].isOwnMessage = false : true;
                 // const chats = await getUserChats(receiverId);
                 // ----------------------------------------notification code ---------------------------comments----------------//
                 // let isActiveUsersOrNot = await fetchActiveChatsUsers(receiverId)
