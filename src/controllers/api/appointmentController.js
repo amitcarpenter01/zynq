@@ -56,8 +56,6 @@ export const getMyAppointmentsUser = async (req, res) => {
         const userId = req.user.user_id;
         const appointments = await appointmentModel.getAppointmentsByUserId(userId);
 
-        const now = dayjs.utc();
-
         const result = appointments.map(app => {
 
             const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
@@ -67,15 +65,10 @@ export const getMyAppointmentsUser = async (req, res) => {
                 app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
             }
 
-            const startUTC = dayjs.utc(localFormattedStart);
-            const endUTC = dayjs.utc(localFormattedEnd);
-            const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
-
             return {
                 ...app,
                 start_time: dayjs.utc(localFormattedStart).toISOString(),
                 end_time: dayjs.utc(localFormattedEnd).toISOString(),
-                videoCallOn
             };
         });
 
