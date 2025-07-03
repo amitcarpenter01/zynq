@@ -292,7 +292,6 @@ export const getAllClinicsForUser = async (ids = [], limit, offset) => {
            SELECT DISTINCT c.*
             FROM tbl_clinics c
 LEFT JOIN tbl_clinic_treatments tct ON c.clinic_id = tct.clinic_id
-WHERE c.profile_completion_percentage >= 50
         `;
         let params = [];
 
