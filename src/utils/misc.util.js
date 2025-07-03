@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import { isEmpty } from "./user_helper.js";
 
 export const getTreatmentIDsByUserID = async (UserID) => {
     const result = await db.query(`
@@ -20,8 +21,7 @@ export const getTreatmentIDsByUserID = async (UserID) => {
         return [];
     }
 
-
-    if (!AIAnalysisResult.skinIssues || !Array.isArray(AIAnalysisResult.skinIssues)) {
+    if (isEmpty(AIAnalysisResult?.skinIssues)) {
         return [];
     }
 
