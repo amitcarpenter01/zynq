@@ -10,6 +10,7 @@ import * as doctorControllers from "../controllers/clinic/doctorController.js";
 import * as productControllers from "../controllers/clinic/productController.js";
 import * as authControllerWeb from "../controllers/web_users/authController.js";
 import * as supportControllers from "../controllers/clinic/supportController.js";
+import * as appointmentControllers from "../controllers/clinic/appointmentController.js"
 
 
 const router = express.Router();
@@ -85,6 +86,9 @@ router.get("/get-support-tickets-to-clinic", authenticate(['CLINIC']), supportCo
 router.post("/send-response-to-doctor", authenticate(['CLINIC']), supportControllers.send_response_to_doctor);
 
 
+// -------------------------------------slot managment------------------------------------------------//
+
+router.get('/getMyAppointments',authenticate(['CLINIC','SOLO_DOCTOR']), appointmentControllers.getMyAppointmentsClinic);
 
 
 export default router;

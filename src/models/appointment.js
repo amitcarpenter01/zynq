@@ -42,6 +42,40 @@ export const getAppointmentsByDoctorId = async (doctor_id) => {
     return results;
 };
 
+export const getAppointmentsByClinicId = async (clinic_id) => {
+    const results = await db.query(`
+        SELECT 
+            a.*, 
+            c.clinic_name,
+            u.user_id,
+            u.email,
+            u.full_name,
+            u.age,
+            u.gender,
+            u.mobile_number,
+            u.fcm_token,
+            u.profile_image,
+            u.language,
+            u.is_verified,
+            u.is_active,
+            u.is_push_notification_on,
+            u.is_location_on,
+            u.created_at,
+            u.updated_at,
+            u.latitude,
+            u.longitude,
+            u.udid,
+            u.isOnline
+        FROM tbl_appointments a 
+        INNER JOIN tbl_users u ON a.user_id = u.user_id  
+        INNER JOIN tbl_clinics c ON a.clinic_id = c.clinic_id 
+        WHERE a.clinic_id = ?
+        ORDER BY a.start_time ASC
+    `, [clinic_id]);
+
+    return results;
+};
+
 export const updateAppointmentStatus = async (appointment_id, status) => {
     try {
         return await db.query(
