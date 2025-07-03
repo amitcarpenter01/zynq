@@ -233,6 +233,141 @@ export const change_password = async (req, res) => {
     }
 };
 
+// export const create_Call_log = async (req, res) => {
+//   try {
+//     const {
+//       call_id,
+//       receiver_user_id,
+//       receiver_doctor_id,
+//       status
+//     } = req.body;
+
+//     const { id: caller_id, role_name, doctorData } = req.user;
+
+//     if (!call_id || !status || (!receiver_user_id && !receiver_doctor_id)) {
+//       return res.status(400).json({ message: "Missing required fields" });
+//     }
+
+//     let sender_user_id = null;
+//     let sender_doctor_id = null;
+
+//     // ✅ Identify caller role
+//     if (role_name === 'DOCTOR') {
+//       sender_doctor_id = doctorData?.doctor_id;
+//     } else if (role_name === 'USER') {
+//       sender_user_id = caller_id;
+//     } else {
+//       return res.status(403).json({ message: "Unauthorized role" });
+//     }
+
+//     // ✅ Create or update call log
+//     await webModels.createOrUpdateCallLog({
+//       call_id,
+//       caller_id,
+//       sender_user_id,
+//       sender_doctor_id,
+//       receiver_user_id,
+//       receiver_doctor_id,
+//       status
+//     });
+
+//     return handleSuccess(res, 200, 'en', "Call log saved successfully");
+//   } catch (error) {
+//     console.error("Error in create_Call_log:", error);
+//     return handleError(res, 500, 'en', error.message);
+//   }
+// };
+
+export const create_call_log_user = async (req, res) => {
+  try {
+    const {
+      call_id,
+      receiver_doctor_id,
+      status,
+      started_at // ← Accept started_at from frontend
+    } = req.body;
+
+    const { id: sender_user_id, role_name } = req.user;
+    console.log('req.user', req.user);
+    
+
+    if (role_name !== 'USER') {
+      return handleError(res, 403, 'en', "Only users can access this endpoint");
+    }
+
+    if (!call_id || !status || !receiver_doctor_id || !started_at) {
+      return handleError(res, 400, 'en', "Missing required fields");
+    }
+
+    await webModels.createOrUpdateCallLog({
+      call_id,
+      caller_id: sender_user_id,
+      sender_user_id,
+      sender_doctor_id: null,
+      receiver_user_id: null,
+      receiver_doctor_id,
+      status,
+      started_at // ← Pass to model
+    });
+
+    return handleSuccess(res, 200, 'en', "Call log created by user");
+  } catch (error) {
+    console.error("Error in create_call_log_user:", error);
+    return handleError(res, 500, 'en', error.message);
+  }
+};
+
+export const create_call_log_doctor = async (req, res) => {
+  try {
+    const {
+      call_id,
+      receiver_user_id,
+      status,
+      started_at // <-- New field from frontend
+    } = req.body;
+
+    const { id: caller_id, role_name, doctorData } = req.user;
+
+    if (role_name !== 'DOCTOR') {
+      return handleError(res, 403, 'en', "Only doctors can access this endpoint");
+    }
+
+    if (!call_id || !status || !receiver_user_id || !started_at) {
+      return handleError(res, 400, 'en', "Missing required fields");
+    }
+
+    const sender_doctor_id = doctorData?.doctor_id;
+
+    await webModels.createOrUpdateCallLog({
+      call_id,
+      caller_id,
+      sender_user_id: null,
+      sender_doctor_id,
+      receiver_user_id,
+      receiver_doctor_id: null,
+      status,
+      started_at // Pass to model
+    });
+
+    return handleSuccess(res, 200, 'en', "Call log created by doctor");
+  } catch (error) {
+    console.error("Error in create_call_log_doctor:", error);
+    return handleError(res, 500, 'en', error.message);
+  }
+};
+
+
+
+export const get_all_call_logs = async (req, res) => {
+  try {
+    const logs = await webModels.getAllCallLogs();
+
+    return handleSuccess(res, 200, 'en', "Fetched all call logs successfully", { logs });
+  } catch (error) {
+    console.error("Error fetching call logs:", error);
+    return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
+  }
+};
 export const onboardingByRoleId = async (req, res) => {
     try {
         const schema = Joi.object({
@@ -310,9 +445,6 @@ export const verifyRoleSelected = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
-
-
-
 
 
 

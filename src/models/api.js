@@ -234,15 +234,45 @@ export const getDoctorTreatments = async (doctor_id) => {
 
 
 //======================================= Product =========================================
-export const get_all_products_for_user = async () => {
+export const get_all_products_for_user = async (treatment_ids = []) => {
     try {
-        return await db.query(`SELECT * FROM tbl_products ORDER BY created_at DESC`);
-    }
-    catch (error) {
+        let params = [];
+        let treatmentFilterClause = '';
+
+        if (treatment_ids.length > 0) {
+            const placeholders = treatment_ids.map(() => '?').join(', ');
+            treatmentFilterClause = `WHERE pt.treatment_id IN (${placeholders})`;
+            params.push(...treatment_ids);
+        }
+
+        const query = `
+            SELECT
+                p.*,
+                IF(COUNT(t.treatment_id), JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'treatment_id', t.treatment_id,
+                        'name',         t.name,
+                        'swedish',      t.swedish,
+                        'application',  t.application,
+                        'type',         t.type,
+                        'technology',   t.technology,
+                        'created_at',   t.created_at
+                    )
+                ), JSON_ARRAY()) AS treatments
+            FROM tbl_products AS p
+            LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
+            LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
+            ${treatmentFilterClause}
+            GROUP BY p.product_id
+            ORDER BY p.created_at DESC
+        `;
+
+        return await db.query(query, params);
+    } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch products.");
+        throw new Error("Failed to fetch products with treatments.");
     }
-}
+};
 
 export const get_product_images = async (product_id) => {
     try {
@@ -256,13 +286,12 @@ export const get_product_images = async (product_id) => {
 
 
 //======================================= Clinic =========================================
-export const getAllClinicsForUser = async (ids = [],limit,offset) => {
+export const getAllClinicsForUser = async (ids = [], limit, offset) => {
     try {
         let query = `
-            SELECT c.*
+           SELECT DISTINCT c.*
             FROM tbl_clinics c
-            LEFT JOIN tbl_clinic_treatments tct ON c.clinic_id = tct.clinic_id
-            WHERE c.profile_completion_percentage >= 50
+LEFT JOIN tbl_clinic_treatments tct ON c.clinic_id = tct.clinic_id
         `;
         let params = [];
 
@@ -274,7 +303,7 @@ export const getAllClinicsForUser = async (ids = [],limit,offset) => {
 
         query += ` ORDER BY c.created_at DESC LIMIT ? OFFSET ?`;
 
-        return await db.query(query, [...params,limit,offset]);
+        return await db.query(query, [...params, limit, offset]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch clinics.");
@@ -316,4 +345,81 @@ export const get_support_tickets_by_user_id = async (user_id) => {
 
 export const update_user_is_online = async (user_id, isOnline) => {
     return db.query("UPDATE tbl_users SET isOnline = ? WHERE user_id = ?", [isOnline, user_id]);
+};
+
+export const fetchAllCallLogsWithDetails = async () => {
+    try {
+        const result = await db.query(`
+      SELECT
+        cl.*,
+ 
+        su.user_id AS su_id, su.full_name AS su_name, su.mobile_number AS su_mobile,
+        ru.user_id AS ru_id, ru.full_name AS ru_name, ru.mobile_number AS ru_mobile,
+ 
+        sd.doctor_id AS sd_id, sd.name AS sd_name, sd.specialization AS sd_specialization,
+        rd.doctor_id AS rd_id, rd.name AS rd_name, rd.specialization AS rd_specialization
+ 
+      FROM tbl_call_logs cl
+      LEFT JOIN tbl_users su ON cl.sender_user_id = su.user_id
+      LEFT JOIN tbl_users ru ON cl.receiver_user_id = ru.user_id
+      LEFT JOIN tbl_doctors sd ON cl.sender_doctor_id = sd.doctor_id
+      LEFT JOIN tbl_doctors rd ON cl.receiver_doctor_id = rd.doctor_id
+ 
+      ORDER BY cl.created_at DESC
+    `);
+
+        return Array.isArray(result) ? result : result;
+    } catch (error) {
+        console.error('❌ SQL ERROR:', error);
+        throw new Error("Database error while fetching call logs.");
+    }
+};
+
+export const get_all_appointments = async () => {
+    try {
+        const result = await db.query(`
+            SELECT
+                a.appointment_id,
+                a.start_time,
+                a.end_time,
+                a.type,
+                a.status,
+ 
+                u.user_id AS user_id,
+                u.full_name AS user_name,
+                u.mobile_number AS user_mobile,
+                u.email AS email,
+                u.age AS age,
+                u.gender AS gender,
+                u.profile_image AS user_profile_image,
+ 
+                d.doctor_id AS doctor_id,
+                d.name AS doctor_name,
+                d.age AS age,
+                d.address,
+                d.biography,
+                d.profile_image AS doctor_image,
+                d.experience_years,
+                d.rating,
+                d.phone,
+                d.fee_per_session,
+ 
+                c.clinic_id AS clinic_id,
+                c.clinic_name,
+                c.email AS clinic_email,
+                c.mobile_number AS clinic_mobile,
+                c.address
+ 
+            FROM tbl_appointments a
+            LEFT JOIN tbl_users u ON a.user_id = u.user_id
+            LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+            LEFT JOIN tbl_clinics c ON a.clinic_id = c.clinic_id
+            ORDER BY a.created_at DESC
+        `);
+
+        return Array.isArray(result) ? result : result;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch appointments");
+    }
 };

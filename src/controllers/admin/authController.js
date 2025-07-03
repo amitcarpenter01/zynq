@@ -250,3 +250,111 @@ export const login_with_mobile = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
+
+export const get_all_call_logs = async (req, res) => {
+  try {
+    const rows = await apiModels.fetchAllCallLogsWithDetails();
+ 
+    if (!Array.isArray(rows)) {
+      throw new Error("rows is not an array");
+    }
+ 
+    const callLogs = rows.map(row => ({
+      call_id: row.call_id,
+      status: row.status,
+      started_at: row.started_at,
+      created_at: row.created_at,
+ 
+      sender: row.su_id
+        ? {
+            type: "user",
+            user_id: row.su_id,
+            full_name: row.su_name,
+            mobile_number: row.su_mobile
+          }
+        : {
+            type: "doctor",
+            doctor_id: row.sd_id,
+            name: row.sd_name,
+            specialization: row.sd_specialization
+          },
+ 
+      receiver: row.ru_id
+        ? {
+            type: "user",
+            user_id: row.ru_id,
+            full_name: row.ru_name,
+            mobile_number: row.ru_mobile
+          }
+        : {
+            type: "doctor",
+            doctor_id: row.rd_id,
+            name: row.rd_name,
+            specialization: row.rd_specialization
+          }
+    }));
+ 
+    return handleSuccess(res, 200, 'en', 'Call logs fetched successfully', callLogs);
+  } catch (error) {
+    console.error('❌ Error fetching call logs:', error);
+    return handleError(res, 500, 'en', error.message || 'Something went wrong');
+  }
+};
+ 
+export const get_all_appointments = async (req, res) => {
+    try {
+        const appointments = await apiModels.get_all_appointments();
+ 
+        if (!Array.isArray(appointments) || appointments.length === 0) {
+            return handleSuccess(res, 200, 'en', "No appointments found", { appointments: [] });
+        }
+ 
+        const formatted = appointments.map(row => ({
+            appointment_id: row.appointment_id,
+            start_time: row.start_time,
+            end_time: row.end_time,
+            type: row.type,
+            status: row.status,
+ 
+            user: {
+                user_id: row.user_id,
+                full_name: row.user_name,
+                mobile_number: row.user_mobile,
+                email: row.email,
+                age: row.age,
+                gender: row.gender,
+                profile_image: row.user_profile_image
+                    ? process.env.APP_URL + "user/profile_images/" + row.user_profile_image
+                    : null,
+            },
+ 
+            doctor: {
+                doctor_id: row.doctor_id,
+                name: row.doctor_name,
+                age: row.age,
+                address: row.address,
+                biography: row.biography,
+                experience_years: row.experience_years,
+                rating: row.rating,
+                phone: row.phone,
+                fee_per_session: row.fee_per_session,
+                profile_image: row.doctor_image
+                    ? process.env.APP_URL + "doctor/profile_images/" + row.doctor_image
+                    : null,
+            },
+ 
+            clinic: {
+                clinic_id: row.clinic_id,
+                clinic_name: row.clinic_name,
+                email: row.clinic_email,
+                mobile_number: row.clinic_mobile,
+                address: row.address,
+            }
+        }));
+ 
+        return handleSuccess(res, 200, 'en', "Appointments fetched successfully", formatted);
+    } catch (error) {
+        console.error("❌ Error fetching appointments:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR " + error.message);
+    }
+};

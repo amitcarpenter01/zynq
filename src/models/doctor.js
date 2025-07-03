@@ -766,7 +766,47 @@ export const fetchAppointmentsBulkModel = async (doctorId, fromDate, toDate) => 
 };
 
 
-
-
-
+export const createOrUpdateCallLog = async ({
+  call_id,
+  sender_user_id,
+  sender_doctor_id,
+  receiver_user_id,
+  receiver_doctor_id,
+  status,
+  started_at
+}) => {
+  try {
+    await db.query(`
+      INSERT INTO tbl_call_logs (
+        call_id, sender_user_id, sender_doctor_id,
+        receiver_user_id, receiver_doctor_id, status, started_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        status = VALUES(status),
+        started_at = VALUES(started_at)
+    `, [
+      call_id,
+      sender_user_id,
+      sender_doctor_id,
+      receiver_user_id,
+      receiver_doctor_id,
+      status,
+      started_at
+    ]);
+  } catch (error) {
+    console.error("Error in createOrUpdateCallLog:", error);
+    throw error;
+  }
+};
+ 
+export const getDocterByDocterId = async (doctor_id) => {
+    try {
+        const result = await db.query('SELECT * FROM tbl_doctors WHERE doctor_id = ?', [doctor_id]);
+        return result;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch support tickets.");
+    }
+}
+ 
 

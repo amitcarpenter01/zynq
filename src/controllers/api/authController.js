@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken"
 import * as apiModels from "../../models/api.js";
+import * as webModels from "../../models/web_user.js";
 import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken, generateVerificationLink } from "../../utils/user_helper.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
@@ -515,16 +516,84 @@ export const enroll_user = async (req, res) => {
     }
 };
 
+export const create_call_log_user = async (req, res) => {
+  const {
+    call_id,
+    receiver_doctor_id,
+    status,
+    started_at
+  } = req.body;
+ 
+  const { userData } = req.user;
+ 
+  console.log('req.user', req.user)
+ 
+  if (!call_id || !status || !receiver_doctor_id || !started_at) {
+    return handleError(res, 400, 'en', "Missing required fields");
+  }
+ 
+  const sender_user_id = req.user?.user_id || req.user?.id;
+ 
+  console.log('sender_user_id', sender_user_id)
+ 
+  await webModels.createOrUpdateCallLog({
+    call_id,
+    sender_user_id,
+    sender_doctor_id: null,
+    receiver_user_id: null,
+    receiver_doctor_id,
+    status,
+    started_at
+  });
+ 
+  return handleSuccess(res, 200, 'en', "Call log created by user");
+};
+export const create_call_log_doctor = async (req, res) => {
+    try {
+        const {
+            call_id,
+            receiver_user_id,
+            status,
+            started_at // <-- New field from frontend
+        } = req.body;
 
+        const { role_name, doctorData } = req.user;
+
+        if (role_name !== 'DOCTOR') {
+            return handleError(res, 403, 'en', "Only doctors can access this endpoint");
+        }
+
+        if (!call_id || !status || !receiver_user_id || !started_at) {
+            return handleError(res, 400, 'en', "Missing required fields");
+        }
+
+        const sender_doctor_id = doctorData?.doctor_id;
+
+        await webModels.createOrUpdateCallLog({
+            call_id,
+            sender_user_id: null,
+            sender_doctor_id,
+            receiver_user_id,
+            receiver_doctor_id: null,
+            status,
+            started_at // Pass to model
+        });
+
+        return handleSuccess(res, 200, 'en', "Call log created by doctor");
+    } catch (error) {
+        console.error("Error in create_call_log_doctor:", error);
+        return handleError(res, 500, 'en', error.message);
+    }
+}
 // -------------------------------------slot managment------------------------------------------------//
 
 export const getFutureDoctorSlots = async (req, res) => {
     try {
-        
         const { doctor_id } = req.query;
         const today = dayjs();
         const oneMonthLater = today.add(1, 'month');
-        let availabilityRows = await doctorModels.fetchDoctorAvailabilityModel(doctor_id)
+
+        const availabilityRows = await doctorModels.fetchDoctorAvailabilityModel(doctor_id);
 
         if (availabilityRows.length === 0) {
             return handleError(res, 400, 'en', "NO_AVAILABILITY_FOUND", []);

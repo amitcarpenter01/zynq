@@ -2,7 +2,7 @@ import Joi from "joi";
 import dotenv from "dotenv";
 import * as doctorModels from "../../models/doctor.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
-import { update_onboarding_status } from "../../models/web_user.js";
+import { get_web_user_by_id, update_onboarding_status } from "../../models/web_user.js";
 import { createChat, fetchChatById, insertChatUsersActive, toActivateUsers } from "../../models/chat.js";
 import { getIO, getUserSockets } from '../../utils/socketManager.js';
 
@@ -150,9 +150,9 @@ export const addExpertise = async (req, res) => {
         const schema = Joi.object({
             treatment_ids: Joi.string().required(),
             skin_type_ids: Joi.string().required(),
-            skin_condition_ids:Joi.string().required(),
-            surgery_ids:Joi.string().required(),
-            aesthetic_devices_ids:Joi.string().required(),
+            skin_condition_ids: Joi.string().required(),
+            surgery_ids: Joi.string().required(),
+            aesthetic_devices_ids: Joi.string().required(),
             //severity_levels_ids: Joi.string().required(),
         });
 
@@ -173,9 +173,9 @@ export const addExpertise = async (req, res) => {
         await doctorModels.update_doctor_treatments(doctorId, treatmentIds);
         await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
         //await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
-        await doctorModels.update_doctor_skin_conditions(doctorId,skinConditionIds);
-        await doctorModels.update_doctor_surgery(doctorId,surgeryIds);
-        await doctorModels.update_doctor_aesthetic_devices(doctorId,aestheticDevicesIds);
+        await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
+        await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
+        await doctorModels.update_doctor_aesthetic_devices(doctorId, aestheticDevicesIds);
 
 
         const zynqUserId = req.user.id
@@ -917,7 +917,9 @@ export const isDocterOfflineOrOnline = async (req, res) => {
         await doctorModels.update_doctor_is_online(doctorId, isOnline);
         // await toActivateUsers(isOnline, chat_id, doctorId);
         // io.to(doctorId).emit('isUsersOnlineOrOffline', isOnline);
-        return handleSuccess(res, 200, language, `DOCTOR ${isActive ? 'ONLINE' : 'OFFLINE'}`);
+
+        return handleSuccess(res, 200, language, `DOCTOR ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
+
     } catch (error) {
         console.error('error', error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
@@ -953,6 +955,7 @@ export const createDoctorAvailability = async (req, res) => {
         );
         const zynqUserId = req.user.id
         await update_onboarding_status(5, zynqUserId);
+
         return handleSuccess(res, 200, 'en', 'Availability_added_successfully');
     } catch (err) {
         console.error('Error creating availability:', err);
@@ -991,6 +994,7 @@ export const updateDoctorAvailability = async (req, res) => {
         const zynqUserId = req.user.id
         await update_onboarding_status(5, zynqUserId);
         return handleSuccess(res, 200, 'en', 'UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY');
+
     } catch (err) {
         console.error('Error updating availability:', err);
         return handleError(res, 500, 'Failed to update availability');
@@ -998,3 +1002,59 @@ export const updateDoctorAvailability = async (req, res) => {
 };
 
 
+export const get_docter_profile = async (req, res) => {
+    try {
+        const language = 'en';
+        const doctorId = req.user.doctorData.zynq_user_id;
+
+        // let profileData = await get_web_user_by_id(doctorId);
+        // if (profileData && profileData.profile_image && !profileData.profile_image.startsWith("http")) {
+        //     profileData.profile_image = `${APP_URL}doctor/profile_images/${profileData.profile_image}`;
+        // }
+        let data = {
+            id: doctorId,
+        }
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", data);
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const create_call_log_doctor = async (req, res) => {
+    try {
+        const {
+            call_id,
+            receiver_user_id,
+            status,
+            started_at // <-- New field from frontend
+        } = req.body;
+
+        const { role_name, doctorData } = req.user;
+
+        if (role_name !== 'DOCTOR') {
+            return handleError(res, 403, 'en', "Only doctors can access this endpoint");
+        }
+
+        if (!call_id || !status || !receiver_user_id || !started_at) {
+            return handleError(res, 400, 'en', "Missing required fields");
+        }
+
+        const sender_doctor_id = doctorData?.doctor_id;
+
+        await doctorModels.createOrUpdateCallLog({
+            call_id,
+            sender_user_id: null,
+            sender_doctor_id,
+            receiver_user_id,
+            receiver_doctor_id: null,
+            status,
+            started_at // Pass to model
+        });
+
+        return handleSuccess(res, 200, 'en', "Call log created by doctor");
+    } catch (error) {
+        console.error("Error in create_call_log_doctor:", error);
+        return handleError(res, 500, 'en', error.message);
+    }
+}
