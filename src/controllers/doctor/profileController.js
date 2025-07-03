@@ -5,7 +5,7 @@ import { handleError, handleSuccess, joiErrorHandle } from "../../utils/response
 import { get_web_user_by_id, update_onboarding_status } from "../../models/web_user.js";
 import { createChat, fetchChatById, insertChatUsersActive, toActivateUsers } from "../../models/chat.js";
 import { getIO, getUserSockets } from '../../utils/socketManager.js';
-
+import dbOperations from '../../models/common.js';
 dotenv.config();
 
 //const APP_URL = process.env.APP_URL;
@@ -955,7 +955,7 @@ export const createDoctorAvailability = async (req, res) => {
         );
         const zynqUserId = req.user.id
         await update_onboarding_status(5, zynqUserId);
-
+        await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
         return handleSuccess(res, 200, 'en', 'Availability_added_successfully');
     } catch (err) {
         console.error('Error creating availability:', err);
@@ -993,6 +993,7 @@ export const updateDoctorAvailability = async (req, res) => {
         );
         const zynqUserId = req.user.id
         await update_onboarding_status(5, zynqUserId);
+        await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
         return handleSuccess(res, 200, 'en', 'UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY');
 
     } catch (err) {
