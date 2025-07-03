@@ -87,4 +87,14 @@ router.get('/getMyAppointments',authenticate(['DOCTOR','SOLO_DOCTOR']), appointm
 
 router.get("/get_docter_profile", authenticate(['DOCTOR','SOLO_DOCTOR']), doctorController.get_docter_profile);
 
+
+
+// -------------------------------------Get logs------------------------------------------------//
+
+router.post(
+    '/create-call-log-doctor',
+    authenticate(['DOCTOR', 'SOLO_DOCTOR']),
+    doctorController.create_call_log_doctor
+);
+
 export default router;
