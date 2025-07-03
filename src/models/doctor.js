@@ -765,6 +765,40 @@ export const fetchAppointmentsBulkModel = async (doctorId, fromDate, toDate) => 
     }
 };
 
+export const createOrUpdateCallLog = async ({
+  call_id,
+  sender_user_id,
+  sender_doctor_id,
+  receiver_user_id,
+  receiver_doctor_id,
+  status,
+  started_at
+}) => {
+  try {
+    await db.query(`
+      INSERT INTO tbl_call_logs (
+        call_id, sender_user_id, sender_doctor_id,
+        receiver_user_id, receiver_doctor_id, status, started_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        status = VALUES(status),
+        started_at = VALUES(started_at)
+    `, [
+      call_id,
+      sender_user_id,
+      sender_doctor_id,
+      receiver_user_id,
+      receiver_doctor_id,
+      status,
+      started_at
+    ]);
+  } catch (error) {
+    console.error("Error in createOrUpdateCallLog:", error);
+    throw error;
+  }
+};
+ 
+
 
 
 

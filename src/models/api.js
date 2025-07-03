@@ -347,3 +347,77 @@ export const get_support_tickets_by_user_id = async (user_id) => {
 export const update_user_is_online = async (user_id, isOnline) => {
     return db.query("UPDATE tbl_users SET isOnline = ? WHERE user_id = ?", [isOnline, user_id]);
 };
+
+export const fetchAllCallLogsWithDetails = async () => {
+    try {
+        const result = await db.query(`
+      SELECT
+        cl.*,
+ 
+        su.user_id AS su_id, su.full_name AS su_name, su.mobile_number AS su_mobile,
+        ru.user_id AS ru_id, ru.full_name AS ru_name, ru.mobile_number AS ru_mobile,
+ 
+        sd.doctor_id AS sd_id, sd.name AS sd_name, sd.specialization AS sd_specialization,
+        rd.doctor_id AS rd_id, rd.name AS rd_name, rd.specialization AS rd_specialization
+ 
+      FROM tbl_call_logs cl
+      LEFT JOIN tbl_users su ON cl.sender_user_id = su.user_id
+      LEFT JOIN tbl_users ru ON cl.receiver_user_id = ru.user_id
+      LEFT JOIN tbl_doctors sd ON cl.sender_doctor_id = sd.doctor_id
+      LEFT JOIN tbl_doctors rd ON cl.receiver_doctor_id = rd.doctor_id
+ 
+      ORDER BY cl.created_at DESC
+    `);
+ 
+        return Array.isArray(result) ? result : result;
+    } catch (error) {
+        console.error('❌ SQL ERROR:', error);
+        throw new Error("Database error while fetching call logs.");
+    }
+};
+ 
+export const get_all_appointments = async () => {
+    try {
+        const result = await db.query(`
+      SELECT
+        a.appointment_id,
+        a.start_time,
+        a.end_time,
+        a.type,
+        a.status,
+ 
+        u.user_id AS user_id,
+        u.full_name AS user_name,
+        u.mobile_number AS user_mobile,
+        u.email AS email,
+        u.age AS age,
+        u.gender AS gender,
+ 
+        d.doctor_id AS doctor_id,
+        d.name AS doctor_name,
+        d.age AS age,
+        d.address,
+        d.biography,
+        d.profile_image AS doctor_image,
+ 
+        c.clinic_id AS clinic_id,
+        c.clinic_name,
+        c.email AS clinic_email,
+        c.mobile_number AS clinic_mobile,
+        c.address
+ 
+      FROM tbl_appointments a
+      LEFT JOIN tbl_users u ON a.user_id = u.user_id
+      LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+      LEFT JOIN tbl_clinics c ON a.clinic_id = c.clinic_id
+      ORDER BY a.created_at DESC
+    `);
+ 
+        // Always return array
+        return Array.isArray(result) ? result : result;
+ 
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch appointments");
+    }
+};
