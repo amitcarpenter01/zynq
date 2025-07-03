@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 import jwt from "jsonwebtoken"
 import * as apiModels from "../../models/api.js";
 import { sendEmail } from "../../services/send_email.js";
-import { generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
+import { generateAccessToken, generatePassword, generateVerificationLink, splitIDs } from "../../utils/user_helper.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { fileURLToPath } from 'url';
 
@@ -27,14 +27,11 @@ export const getAllProducts = async (req, res) => {
         });
 
         const { error, value } = schema.validate(req.body);
-                if (error) return joiErrorHandle(res, error);
-        const { treatment_ids } = value;
-        let treatment_ids_array = []
-        if (treatment_ids) {
-            treatment_ids_array = treatment_ids.split(',')
-        }
+        if (error) return joiErrorHandle(res, error);
 
-        let products = await apiModels.get_all_products_for_user(treatment_ids_array);
+        const treatment_ids = splitIDs(value.treatment_ids);
+
+        let products = await apiModels.get_all_products_for_user({ treatment_ids });
         if (products.length === 0) {
             return handleError(res, 404, "en", "NO_PRODUCTS_FOUND");
         }
