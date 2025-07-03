@@ -4,6 +4,8 @@ import * as appointmentModel from '../../models/appointment.js';
 import dayjs from 'dayjs';
 import { createChat, getChatBetweenUsers } from '../../models/chat.js';
 import { getDocterByDocterId } from '../../models/doctor.js';
+import { apiError, apiHandler, apiResponse } from '../../utils/api.util.js';
+import messages from '../../utils/messages.util.js';
 const APP_URL = process.env.APP_URL;
 
 export const bookAppointment = async (req, res) => {
@@ -178,38 +180,23 @@ export const getAppointmentsById = async (req, res) => {
     }
 };
 
-export const rescheduleAppointment = async (req, res) => {
-    try {
-        const schema = Joi.object({
-            doctor_id: Joi.string().required(),
-            appointment_id: Joi.string().required(),
-            start_time: Joi.string().required(),
-            end_time: Joi.string().required(),
-        });
+export const rescheduleAppointment = apiHandler(async (req, res) => {
+    const { doctor_id, appointment_id, start_time, end_time } = req.body;
 
-        const { error, value } = schema.validate(req.body);
-        if (error) return joiErrorHandle(res, error);
+    const existing = await appointmentModel.checkIfSlotAlreadyBooked(doctor_id, start_time);
 
-        const { doctor_id, appointment_id, start_time, end_time } = value;
-
-        const existing = await appointmentModel.checkIfSlotAlreadyBooked(doctor_id, start_time);
-
-        if (existing.length > 0) {
-            return handleError(res, 400, "en", "SLOT_ALREADY_BOOKED");
-        }
-
-        const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
-        const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
-
-        const result = await appointmentModel.rescheduleAppointment(appointment_id, normalizedStart, normalizedEnd);
-
-        if (result.affectedRows === 0) {
-            return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
-        }
-
-        return handleSuccess(res, 200, "en", "APPOINTMENT_RESCHEDULED");
-    } catch (error) {
-        console.error("Error rescheduling appointment:", error);
-        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    if (existing.length > 0) {
+        return apiError(messages.CUSTOM_ERROR, "Slot Already Booked", null, res);
     }
-};
+
+    const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
+    const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
+
+    const result = await appointmentModel.rescheduleAppointment(appointment_id, normalizedStart, normalizedEnd);
+
+    if (result.affectedRows === 0) {
+        return apiError(messages.NOT_FOUND, "Appointment", null, res);
+    }
+
+    return apiResponse(messages.UPDATE_SUCCESS, "Appointment Schedule", null, res);
+});

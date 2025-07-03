@@ -3,7 +3,7 @@ import { upload } from '../services/multer.js';
 import { authenticateUser } from '../middleware/auth.js';
 import { authenticate } from '../middleware/web_user_auth.js';;
 import { uploadFile, uploadMultipleFiles } from '../services/multer.js';
-
+import { validate } from '../middleware/validation.middleware.js';
 
 //==================================== Import Controllers ==============================
 import * as authControllers from "../controllers/api/authController.js";
@@ -18,6 +18,9 @@ import * as appointmentController from "../controllers/api/appointmentController
 
 
 import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
+
+//==================================== Import Validations ==============================
+import { rescheduleAppointmentSchema } from '../validations/appointment.validation.js';
 
 const router = express.Router();
 
@@ -97,6 +100,6 @@ router.patch('/update-appointment-status', appointmentController.updateAppointme
 
 router.get('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
 
-router.patch('/reschedule-appointment', authenticateUser, appointmentController.rescheduleAppointment);
+router.patch('/reschedule-appointment', authenticateUser, validate(rescheduleAppointmentSchema, "body"), appointmentController.rescheduleAppointment);
 
 export default router;
