@@ -1011,7 +1011,7 @@ export const get_docter_profile = async (req, res) => {
         // if (profileData && profileData.profile_image && !profileData.profile_image.startsWith("http")) {
         //     profileData.profile_image = `${APP_URL}doctor/profile_images/${profileData.profile_image}`;
         // }
-        let data={
+        let data = {
             id: doctorId,
         }
         return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", data);
@@ -1020,3 +1020,41 @@ export const get_docter_profile = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
+
+export const create_call_log_doctor = async (req, res) => {
+    try {
+        const {
+            call_id,
+            receiver_user_id,
+            status,
+            started_at // <-- New field from frontend
+        } = req.body;
+
+        const { role_name, doctorData } = req.user;
+
+        if (role_name !== 'DOCTOR') {
+            return handleError(res, 403, 'en', "Only doctors can access this endpoint");
+        }
+
+        if (!call_id || !status || !receiver_user_id || !started_at) {
+            return handleError(res, 400, 'en', "Missing required fields");
+        }
+
+        const sender_doctor_id = doctorData?.doctor_id;
+
+        await doctorModels.createOrUpdateCallLog({
+            call_id,
+            sender_user_id: null,
+            sender_doctor_id,
+            receiver_user_id,
+            receiver_doctor_id: null,
+            status,
+            started_at // Pass to model
+        });
+
+        return handleSuccess(res, 200, 'en', "Call log created by doctor");
+    } catch (error) {
+        console.error("Error in create_call_log_doctor:", error);
+        return handleError(res, 500, 'en', error.message);
+    }
+}

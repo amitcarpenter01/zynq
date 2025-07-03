@@ -517,37 +517,35 @@ export const enroll_user = async (req, res) => {
 };
 
 export const create_call_log_user = async (req, res) => {
-    const {
-      call_id,
-      receiver_doctor_id,
-      status,
-      started_at
-    } = req.body;
-   
-    const { userData } = req.user;
-   
-    console.log('req.user', req.user)
-   
-    // if (!call_id || !status || !receiver_doctor_id || !started_at) {
-    //   return handleError(res, 400, 'en', "Missing required fields");
-    // }
-   
-    const sender_user_id = req.user?.user_id || req.user?.id;
-   
-    console.log('sender_user_id', sender_user_id)
-   
-    await webModels.createOrUpdateCallLog({
-      call_id,
-      sender_user_id,
-      sender_doctor_id: null,
-      receiver_user_id: null,
-      receiver_doctor_id,
-      status,
-      started_at
-    });
-   
-    return handleSuccess(res, 200, 'en', "Call log created by user");
-  };
+  const {
+    call_id,
+    receiver_doctor_id,
+    status,
+    started_at
+  } = req.body;
+ 
+  const { userData } = req.user;
+ 
+  console.log('req.user', req.user)
+ 
+  if (!call_id || !status || !receiver_doctor_id || !started_at) {
+    return handleError(res, 400, 'en', "Missing required fields");
+  }
+ 
+  const sender_user_id = userData?.user_id;
+ 
+  await webModels.createOrUpdateCallLog({
+    call_id,
+    sender_user_id,
+    sender_doctor_id: null,
+    receiver_user_id: null,
+    receiver_doctor_id,
+    status,
+    started_at
+  });
+ 
+  return handleSuccess(res, 200, 'en', "Call log created by user");
+};
 
 export const create_call_log_doctor = async (req, res) => {
     try {
