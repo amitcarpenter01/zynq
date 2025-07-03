@@ -14,5 +14,6 @@ router.get("/success-reset", webControllers.render_success_reset);
 router.post("/set-password", authenticate(['CLINIC', 'DOCTOR', 'SOLO_DOCTOR']), webControllers.set_password);
 router.post("/change-password", authenticate(['CLINIC', 'DOCTOR','SOLO_DOCTOR']), webControllers.change_password);
 router.post("/onboarding-by-role-id", webControllers.onboardingByRoleId);
+router.post("/verifyRoleSelected", webControllers.verifyRoleSelected);
 
 export default router;  

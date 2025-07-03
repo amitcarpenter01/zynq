@@ -1344,7 +1344,6 @@ export const getClinicLocationsBulk = async (clinicIds) => {
         grouped[row.clinic_id].push(row);
     });
     return grouped;
-<<<<<<< Updated upstream
 };
 
 export const getDoctorCertificationsBulk = async (doctorIds) => {
@@ -1492,6 +1491,4 @@ export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
         grouped[row.doctor_id].push(row);
     });
     return grouped;
-=======
->>>>>>> Stashed changes
 };

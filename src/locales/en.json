@@ -194,6 +194,8 @@
     "NO_AVAILABILITY_FOUND": "No Slots Found",
     "NO_SLOTS_FOUND": "No Slots Found",
     "UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY": "Doctor Slots Updated Successfully",
-    "UPDATE_DOCTOR_AVAILABILITY_FAILED": "Doctor Slots Update Failed"
+    "UPDATE_DOCTOR_AVAILABILITY_FAILED": "Doctor Slots Update Failed",
+    "ROLE_ALREADY_SELECTED": "Role Already Selected",
+    "ROLE_NOT_SELECTED": "Role Not Selected"
     
 }
