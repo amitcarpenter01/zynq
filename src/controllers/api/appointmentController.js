@@ -36,7 +36,7 @@ export const bookAppointment = async (req, res) => {
             clinic_id,
             end_time: normalizedEnd,
             type,
-            status: 'Upcoming'
+            status: 'Scheduled'
         };
 
         await appointmentModel.insertAppointment(appointmentData);
@@ -109,3 +109,48 @@ export const completeAppointment = async (req, res) => {
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 }
+
+
+export const getAppointmentsById = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const schema = Joi.object({
+            appointment_id: Joi.string().required(),
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        let { appointment_id } = value;
+
+        const appointments = await appointmentModel.getAppointmentsById(userId,appointment_id);
+
+        const now = dayjs.utc();
+
+        const result = appointments.map(app => {
+
+            const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
+            const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
+
+            if (app.profile_image && !app.profile_image.startsWith('http')) {
+                app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
+            }
+
+            const startUTC = dayjs.utc(localFormattedStart);
+            const endUTC = dayjs.utc(localFormattedEnd);
+            const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
+
+            return {
+                ...app,
+                start_time: dayjs.utc(localFormattedStart).toISOString(),
+                end_time: dayjs.utc(localFormattedEnd).toISOString(),
+                videoCallOn
+            };
+        });
+
+        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
+    } catch (error) {
+        console.error("Error fetching user appointments:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
+};

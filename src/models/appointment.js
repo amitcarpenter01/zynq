@@ -50,3 +50,22 @@ export const markAppointmentAsCompleted = async (appointment_id) => {
         throw error;
     }
 }
+
+
+export const getAppointmentsById = async (user_id,appointment_id) => {
+    const results = await db.query(` 
+        SELECT a.*,d.*,zu.email FROM tbl_appointments a INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+        INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+        WHERE a.user_id = ? AND a.appointment_id  = ?
+    `, [user_id,appointment_id]);
+    return results;
+};
+
+export const getAppointmentByIdForDoctor = async (doctor_id,appointment_id) => {
+    const results = await db.query(`
+        SELECT a.*, u.* , c.clinic_name FROM tbl_appointments a INNER JOIN tbl_users u ON a.user_id = u.user_id  INNER JOIN tbl_clinics c ON a.clinic_id = c.clinic_id 
+        WHERE a.doctor_id = ? AND a.appointment_id  = ?
+        ORDER BY  start_time ASC
+    `, [doctor_id,appointment_id]);
+    return results;
+};
