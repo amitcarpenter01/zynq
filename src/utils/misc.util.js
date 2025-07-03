@@ -25,8 +25,13 @@ export const getTreatmentIDsByUserID = async (UserID) => {
         return [];
     }
 
-    const treatmentIDs = AIAnalysisResult.skinIssues
-        .flatMap(issue => issue.recommendedTreatmentsIds || []);
+    const treatmentIDs = [
+        ...new Set(
+            (AIAnalysisResult?.skinIssues || [])
+                .flatMap(issue => issue.recommendedTreatmentsIds || [])
+        )
+    ];
+
 
     return treatmentIDs;
 };
