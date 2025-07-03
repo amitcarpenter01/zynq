@@ -798,7 +798,16 @@ export const createOrUpdateCallLog = async ({
   }
 };
  
-
+export const getDocterByDocterId = async (doctor_id) => {
+    try {
+        const result = await db.query('SELECT * FROM tbl_doctors WHERE doctor_id = ?', [doctor_id]);
+        return result;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch support tickets.");
+    }
+}
+ 
 
 
 
