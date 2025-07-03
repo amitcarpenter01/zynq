@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config()
 const app = express();
-const server = http.createServer(app);
+// const server = http.createServer(app);
 const PORT = process.env.PORT;
 const APP_URL = process.env.APP_URL;
 const IS_LIVE = process.env.IS_LIVE === "false";
@@ -26,7 +26,7 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use('/', express.static(path.join(__dirname, 'src/uploads')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'src/views'));
-initializeSocket(server);
+// initializeSocket(server);
 
 (async () => {
   configureApp(app);
@@ -38,30 +38,24 @@ app.get("/", (req, res) => {
 });
 
 
-// if (IS_LIVE) {
-//   console.log("SSL is enabled");
-//   const sslOptions = {
-//     ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
-//     key: fs.readFileSync("/var/www/html/ssl/private.key"),
-//     cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
-//   };
+if (IS_LIVE) {
+  console.log("SSL is enabled");
+  const sslOptions = {
+    ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
+    key: fs.readFileSync("/var/www/html/ssl/private.key"),
+    cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
+  };
 
-//   https.createServer(sslOptions, app).listen(PORT, () => {
-//     console.log(`Server is working on ${APP_URL}`);
-//   });
-// } else {
-  server.listen(PORT, () => {
+  https.createServer(sslOptions, app).listen(PORT, () => {
     console.log(`Server is working on ${APP_URL}`);
   });
-<<<<<<< Updated upstream
 } else {
   server.listen(PORT, () => {
     console.log(`Server is working on ${APP_URL}`);
   });
 }
-=======
-// }
->>>>>>> Stashed changes
+
+
 
 
 
@@ -72,4 +66,23 @@ app.get("/", (req, res) => {
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+
+
+// let server;
+// if (IS_LIVE) {
+//   console.log("SSL is enabled");
+
+//   const sslOptions = {
+//     ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
+//     key: fs.readFileSync("/var/www/html/ssl/private.key"),
+//     cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
+//   };
+
+//   server = https.createServer(sslOptions, app);
+// } else {
+//   server = http.createServer(app);
+// }
+
+// // ✅ Attach socket to the actual server
+// initializeSocket(server);
 
