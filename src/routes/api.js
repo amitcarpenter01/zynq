@@ -100,6 +100,6 @@ router.patch('/update-appointment-status', appointmentController.updateAppointme
 
 router.get('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
 
-router.patch('/reschedule-appointment', authenticateUser, validate(rescheduleAppointmentSchema, "body"), appointmentController.rescheduleAppointment);
+router.patch('/appointment/reschedule', authenticateUser, validate(rescheduleAppointmentSchema, "body"), appointmentController.rescheduleAppointment);
 
 export default router;
