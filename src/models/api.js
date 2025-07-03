@@ -289,10 +289,10 @@ export const get_product_images = async (product_id) => {
 export const getAllClinicsForUser = async (ids = [], limit, offset) => {
     try {
         let query = `
-            SELECT c.*
+           SELECT DISTINCT c.*
             FROM tbl_clinics c
-            LEFT JOIN tbl_clinic_treatments tct ON c.clinic_id = tct.clinic_id
-            WHERE c.profile_completion_percentage >= 50
+LEFT JOIN tbl_clinic_treatments tct ON c.clinic_id = tct.clinic_id
+WHERE c.profile_completion_percentage >= 50
         `;
         let params = [];
 
@@ -368,14 +368,14 @@ export const fetchAllCallLogsWithDetails = async () => {
  
       ORDER BY cl.created_at DESC
     `);
- 
+
         return Array.isArray(result) ? result : result;
     } catch (error) {
         console.error('❌ SQL ERROR:', error);
         throw new Error("Database error while fetching call logs.");
     }
 };
- 
+
 export const get_all_appointments = async () => {
     try {
         const result = await db.query(`
@@ -417,11 +417,10 @@ export const get_all_appointments = async () => {
             LEFT JOIN tbl_clinics c ON a.clinic_id = c.clinic_id
             ORDER BY a.created_at DESC
         `);
- 
+
         return Array.isArray(result) ? result : result;
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch appointments");
     }
 };
- 
