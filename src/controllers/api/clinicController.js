@@ -24,7 +24,7 @@ const image_logo = process.env.LOGO_URL;
 
 export const get_all_clinics = async (req, res) => {
     try {
-        const { limit = 100, page = 1 } = req.query;
+        const { limit = 10, page = 1 } = req.query;
         const schema = Joi.object({
             treatment_ids: Joi.string().optional().allow(''),
             skin_condition_ids: Joi.string().optional().allow(''),
