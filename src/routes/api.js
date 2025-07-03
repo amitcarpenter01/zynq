@@ -96,4 +96,6 @@ router.get('/getMyAppointments', authenticateUser, appointmentController.getMyAp
 
 router.get('/completeAppointment', appointmentController.completeAppointment);
 
+router.get('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
+
 export default router;

@@ -532,7 +532,9 @@ export const create_call_log_user = async (req, res) => {
     return handleError(res, 400, 'en', "Missing required fields");
   }
  
-  const sender_user_id = userData?.user_id;
+  const sender_user_id = req.user?.user_id || req.user?.id;
+ 
+  console.log('sender_user_id', sender_user_id)
  
   await webModels.createOrUpdateCallLog({
     call_id,
@@ -546,7 +548,6 @@ export const create_call_log_user = async (req, res) => {
  
   return handleSuccess(res, 200, 'en', "Call log created by user");
 };
-
 export const create_call_log_doctor = async (req, res) => {
     try {
         const {
