@@ -42,11 +42,14 @@ export const getAppointmentsByDoctorId = async (doctor_id) => {
     return results;
 };
 
-export const markAppointmentAsCompleted = async (appointment_id) => {
+export const updateAppointmentStatus = async (appointment_id, status) => {
     try {
-        return await db.query(`UPDATE tbl_appointments SET status = 'Completed' WHERE appointment_id = ?`, [appointment_id]);
+        return await db.query(
+            `UPDATE tbl_appointments SET status = ? WHERE appointment_id = ?`,
+            [status, appointment_id]
+        );
     } catch (error) {
-        console.error("Database Error in updating appointment status to completed:", error.message);
+        console.error("Database Error in updating appointment status:", error.message);
         throw error;
     }
-}
+};

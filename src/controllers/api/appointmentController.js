@@ -86,26 +86,30 @@ export const getMyAppointmentsUser = async (req, res) => {
     }
 };
 
-export const completeAppointment = async (req, res) => {
+export const updateAppointmentStatus = async (req, res) => {
     try {
         const schema = Joi.object({
             appointment_id: Joi.string().required(),
+            status: Joi.string()
+                .required()
+                .valid('Scheduled', 'Completed', 'Rescheduled', 'Ongoing')
         });
+
 
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const { appointment_id } = value;
+        const { appointment_id, status } = value;
 
-        const result = await appointmentModel.markAppointmentAsCompleted(appointment_id);
+        const result = await appointmentModel.updateAppointmentStatus(appointment_id, status);
 
         if (result.affectedRows === 0) {
             return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
         }
 
-        return handleSuccess(res, 200, "en", "APPOINTMENT_MARKED_AS_COMPLETED");
+        return handleSuccess(res, 200, "en", "APPOINTMENT_STATUS_UPDATED");
     } catch (error) {
-        console.error("Error marking appointment as completed:", error);
+        console.error("Error updating appointment status:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 }
