@@ -12,19 +12,23 @@ export const getMyAppointmentsDoctor = async (req, res) => {
 
         const result = appointments.map(app => {
             // Convert local Date object (from MySQL) to local string
-            const localFormatted = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
+            const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
+            const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
 
             if (app.profile_image && !app.profile_image.startsWith('http')) {
                 app.profile_image = `${APP_URL}${app.profile_image}`;
             }
 
-            // Parse that string as if it was in UTC
-            const fixedUTC = dayjs.utc(localFormatted).toISOString();
+
+            const startUTC = dayjs.utc(localFormattedStart);
+            const endUTC = dayjs.utc(localFormattedEnd);
+            const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
 
             return {
                 ...app,
-                start_time: fixedUTC,
-                end_time: dayjs.utc(dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss")).toISOString()
+                start_time: dayjs.utc(localFormattedStart).toISOString(),
+                end_time: dayjs.utc(localFormattedEnd).toISOString(),
+                videoCallOn
             };
         });
 
