@@ -265,7 +265,7 @@ export const addExpertise = async (req, res) => {
         await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
         await doctorModels.update_doctor_aesthetic_devices(doctorId, aestheticDevicesIds);
 
-        if (treatmentIds.length > 0) {
+        if(treatmentIds.length > 0){
             const treatmentsData = await clinicModels.getClinicTreatments(clinic_id);
             if (treatmentsData) {
                 await clinicModels.updateClinicTreatments(treatmentIds, clinic_id);
@@ -441,7 +441,7 @@ export const getDoctorProfile = async (req, res) => {
         clinic.surgeries_level = surgeries;
 
         const aestheticDevices = await clinicModels.getClinicAestheticDevicesLevel(clinic.clinic_id);
-
+        
         clinic.aestheticDevices = aestheticDevices;
 
         const skin_Conditions = await clinicModels.getClinicSkinConditionsLevel(clinic.clinic_id);
@@ -461,7 +461,7 @@ export const getDoctorProfile = async (req, res) => {
         }
 
         // Get profile for clinic ends
-        console.log(clinic);
+console.log(clinic);
         return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, clinic, completionPercentage });
     } catch (error) {
         console.error(error);
@@ -558,7 +558,7 @@ export const getDoctorProfileByStatus = async (req, res) => {
         // const profileData = await doctorModels.get_doctor_profile(doctorId);
         // Personal Details
         if (status == 1) {
-            [profileData] = await dbOperations.getData('tbl_doctors', `WHERE zynq_user_id = '${zynqUserId}' `);
+             [profileData] = await dbOperations.getData('tbl_doctors', `WHERE zynq_user_id = '${zynqUserId}' `);
             var [clinic] = await dbOperations.getSelectedColumn('clinic_logo, clinic_name , clinic_id ,mobile_number,address,clinic_description,ivo_registration_number,hsa_id,address', 'tbl_clinics', `WHERE zynq_user_id = '${zynqUserId}' `);
             if (!clinic) {
                 return handleError(res, 404, "en", "CLINIC_NOT_FOUND");
@@ -576,9 +576,6 @@ export const getDoctorProfileByStatus = async (req, res) => {
                 clinic.clinic_logo = `${APP_URL}solo_doctor/${clinic.clinic_logo}`;
             }
 
-            const soloDoctor = await doctorModels.getSoloDoctorByZynqUserId(zynqUserId);
-            profileData.on_boarding_status = soloDoctor[0].on_boarding_status;
-
         } else if (status == 2) {
             const clinicData = await dbOperations.getSelectedColumn('address, website_url, mobile_number', 'tbl_clinics', `WHERE zynq_user_id = '${zynqUserId}' `);
             const [clinicLocation] = await clinicModels.getClinicLocation(clinicId);
@@ -587,9 +584,6 @@ export const getDoctorProfileByStatus = async (req, res) => {
             clinic['address'] = clinicData[0].address;
             clinic['website_url'] = clinicData[0].website_url;
             clinic['mobile_number'] = clinicData[0].mobile_number;
-
-            const soloDoctor = await doctorModels.getSoloDoctorByZynqUserId(zynqUserId);
-            clinic.on_boarding_status = soloDoctor[0].on_boarding_status;
 
         } else if (status == 3) {
             const certifications = await doctorModels.get_doctor_certifications(doctorId);
@@ -608,8 +602,6 @@ export const getDoctorProfileByStatus = async (req, res) => {
             profileData.certifications = certifications || [];
             profileData.education = education || [];
             profileData.experience = experience || [];
-            const soloDoctor = await doctorModels.getSoloDoctorByZynqUserId(zynqUserId);
-            profileData.on_boarding_status = soloDoctor[0].on_boarding_status;
 
         } else if (status == 4) {
             console.log("clinicId", clinicId);
@@ -634,22 +626,12 @@ export const getDoctorProfileByStatus = async (req, res) => {
 
             const skin_Conditions = await clinicModels.getClinicSkinConditionsLevel(clinicId);
             clinic.skin_Conditions = skin_Conditions;
-
-            const soloDoctor = await doctorModels.getSoloDoctorByZynqUserId(zynqUserId);
-            clinic.on_boarding_status = soloDoctor[0].on_boarding_status;
-
         } else if (status == 5) {
-            const operationHours = await dbOperations.getData('tbl_doctor_availability', `WHERE doctor_id = '${doctorId}' `); (clinic.clinic_id);
+            const operationHours = await dbOperations.getData('tbl_doctor_availability', `WHERE doctor_id = '${doctorId}' `);(clinic.clinic_id);
             const doctorSessions = await dbOperations.getSelectedColumn('fee_per_session, session_duration', 'tbl_doctors', `WHERE doctor_id = '${doctorId}' `);
             clinic.operation_hours = operationHours;
             clinic.doctorSessions = doctorSessions;
-
-            const soloDoctor = await doctorModels.getSoloDoctorByZynqUserId(zynqUserId);
-            clinic.on_boarding_status = soloDoctor[0].on_boarding_status;   
-
-
         }
-
 
         totalFieldsCount += 1;
         if (profileData.certifications && profileData.certifications.length > 0) filledFieldsCount++;

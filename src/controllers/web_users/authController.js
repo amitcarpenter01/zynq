@@ -432,7 +432,7 @@ export const verifyRoleSelected = async (req, res) => {
 
         if (zynqUser.length > 0) {
             if(zynqUser[0].role_selected == 1){
-                return handleError(res, 400, 'en', "ROLE_ALREADY_SELECTED");
+                return handleError(res, 200, 'en', "ROLE_ALREADY_SELECTED");
             }else{
                 return handleSuccess(res, 200, 'en', "ROLE_NOT_SELECTED");
             }
