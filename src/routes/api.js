@@ -94,7 +94,7 @@ router.post('/bookAppointment', authenticateUser, appointmentController.bookAppo
 
 router.get('/getMyAppointments', authenticateUser, appointmentController.getMyAppointmentsUser);
 
-router.get('/completeAppointment', appointmentController.completeAppointment);
+router.get('/update-appointment-status', appointmentController.updateAppointmentStatus);
 
 router.get('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
 
