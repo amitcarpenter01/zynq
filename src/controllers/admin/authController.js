@@ -323,7 +323,9 @@ export const get_all_appointments = async (req, res) => {
                 email: row.email,
                 age: row.age,
                 gender: row.gender,
-                profile_image: row.profile_image,
+                profile_image: row.user_profile_image
+                    ? process.env.APP_URL + "user/profile_images/" + row.user_profile_image
+                    : null,
             },
  
             doctor: {
@@ -332,18 +334,21 @@ export const get_all_appointments = async (req, res) => {
                 age: row.age,
                 address: row.address,
                 biography: row.biography,
+                experience_years: row.experience_years,
+                rating: row.rating,
+                phone: row.phone,
+                fee_per_session: row.fee_per_session,
                 profile_image: row.doctor_image
                     ? process.env.APP_URL + "doctor/profile_images/" + row.doctor_image
                     : null,
             },
- 
  
             clinic: {
                 clinic_id: row.clinic_id,
                 clinic_name: row.clinic_name,
                 email: row.clinic_email,
                 mobile_number: row.clinic_mobile,
- 
+                address: row.address,
             }
         }));
  
@@ -353,4 +358,3 @@ export const get_all_appointments = async (req, res) => {
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
- 
