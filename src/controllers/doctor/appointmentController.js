@@ -8,6 +8,8 @@ export const getMyAppointmentsDoctor = async (req, res) => {
     try {
         const doctorId = req.user.doctorData.doctor_id;
 
+        const now = dayjs.utc();
+
         const appointments = await appointmentModel.getAppointmentsByDoctorId(doctorId);
 
         const result = appointments.map(app => {
