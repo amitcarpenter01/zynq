@@ -97,7 +97,11 @@ export const completeAppointment = async (req, res) => {
 
         const { appointment_id } = value;
 
-        await appointmentModel.markAppointmentAsCompleted(appointment_id);
+        const result = await appointmentModel.markAppointmentAsCompleted(appointment_id);
+
+        if (result.affectedRows === 0) {
+            return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+        }
 
         return handleSuccess(res, 200, "en", "APPOINTMENT_MARKED_AS_COMPLETED");
     } catch (error) {
