@@ -96,4 +96,6 @@ router.get('/getMyAppointments', authenticateUser, appointmentController.getMyAp
 
 router.patch('/update-appointment-status', appointmentController.updateAppointmentStatus);
 
+router.get('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
+
 export default router;

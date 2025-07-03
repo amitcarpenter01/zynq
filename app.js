@@ -69,19 +69,19 @@ app.get("/", (req, res) => {
 
 
 let server;
-// if (IS_LIVE) {
-//   console.log("SSL is enabled");
+if (IS_LIVE) {
+  console.log("SSL is enabled");
 
-//   const sslOptions = {
-//     ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
-//     key: fs.readFileSync("/var/www/html/ssl/private.key"),
-//     cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
-//   };
+  const sslOptions = {
+    ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
+    key: fs.readFileSync("/var/www/html/ssl/private.key"),
+    cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
+  };
 
-//   server = https.createServer(sslOptions, app);
-// } else {
+  server = https.createServer(sslOptions, app);
+} else {
   server = http.createServer(app);
-// }
+}
 
 // ✅ Attach socket to the actual server
 initializeSocket(server);
