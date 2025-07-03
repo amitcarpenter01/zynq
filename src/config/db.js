@@ -48,7 +48,7 @@ handleDisconnect();
 function makeDb() {
   return {
     async query(sql, args) {
-      // console.log("Executing query:", sql);
+      console.log("Executing query:", sql);
       if (!connection || connection.state === 'disconnected') {
         console.warn('⚠️ Connection lost. Reconnecting...');
         handleDisconnect();

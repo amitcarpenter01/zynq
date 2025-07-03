@@ -38,22 +38,22 @@ app.get("/", (req, res) => {
 });
 
 
-// if (IS_LIVE) {
-//   console.log("SSL is enabled");
-//   const sslOptions = {
-//     ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
-//     key: fs.readFileSync("/var/www/html/ssl/private.key"),
-//     cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
-//   };
+if (IS_LIVE) {
+  console.log("SSL is enabled");
+  const sslOptions = {
+    ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
+    key: fs.readFileSync("/var/www/html/ssl/private.key"),
+    cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
+  };
 
-//   https.createServer(sslOptions, app).listen(PORT, () => {
-//     console.log(`Server is working on ${APP_URL}`);
-//   });
-// } else {
-//   server.listen(PORT, () => {
-//     console.log(`Server is working on ${APP_URL}`);
-//   });
-// }
+  https.createServer(sslOptions, app).listen(PORT, () => {
+    console.log(`Server is working on ${APP_URL}`);
+  });
+} else {
+  server.listen(PORT, () => {
+    console.log(`Server is working on ${APP_URL}`);
+  });
+}
 
 
 
@@ -68,25 +68,21 @@ app.get("/", (req, res) => {
 
 
 
-let server;
-if (IS_LIVE) {
-  console.log("SSL is enabled");
+// let server;
+// if (IS_LIVE) {
+//   console.log("SSL is enabled");
 
-  const sslOptions = {
-    ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
-    key: fs.readFileSync("/var/www/html/ssl/private.key"),
-    cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
-  };
+//   const sslOptions = {
+//     ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
+//     key: fs.readFileSync("/var/www/html/ssl/private.key"),
+//     cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
+//   };
 
-  server = https.createServer(sslOptions, app);
-} else {
-  server = http.createServer(app);
-}
+//   server = https.createServer(sslOptions, app);
+// } else {
+//   server = http.createServer(app);
+// }
 
-// ✅ Attach socket to the actual server
-initializeSocket(server);
+// // ✅ Attach socket to the actual server
+// initializeSocket(server);
 
-// ✅ Start server
-server.listen(PORT, () => {
-  console.log(`Server is working on ${APP_URL}`);
-});
