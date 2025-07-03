@@ -452,11 +452,10 @@ export const get_all_appointments = async () => {
             LEFT JOIN tbl_clinics c ON a.clinic_id = c.clinic_id
             ORDER BY a.created_at DESC
         `);
- 
+
         return Array.isArray(result) ? result : result;
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch appointments");
     }
 };
- 

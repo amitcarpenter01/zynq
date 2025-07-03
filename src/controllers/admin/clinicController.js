@@ -325,7 +325,7 @@ export const subscribed = async (req, res) => {
 
         const gwetClinic = await adminModels.clinicSubscribed(is_subscribed);
 
-        return res.redirect(`http://localhost:4200/choose-role?id=${gwetClinic[0].zynq_user_id}`);
+        return res.redirect(`https://51.21.123.99/choose-role?id=${gwetClinic[0].zynq_user_id}`);
     } catch (error) {
         console.error("clinic unsubscribed Error:", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);

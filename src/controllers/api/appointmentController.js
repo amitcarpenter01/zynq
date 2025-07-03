@@ -2,6 +2,8 @@ import Joi from 'joi';
 import { handleError, handleSuccess, joiErrorHandle } from '../../utils/responseHandler.js';
 import * as appointmentModel from '../../models/appointment.js';
 import dayjs from 'dayjs';
+import { createChat, getChatBetweenUsers } from '../../models/chat.js';
+import { getDocterByDocterId } from '../../models/doctor.js';
 const APP_URL = process.env.APP_URL;
 
 export const bookAppointment = async (req, res) => {
@@ -39,9 +41,23 @@ export const bookAppointment = async (req, res) => {
             status: 'Scheduled'
         };
 
-        await appointmentModel.insertAppointment(appointmentData);
 
-        return handleSuccess(res, 201, "en", "APPOINTMENT_BOOKED_SUCCESSFULLY");
+        let result = await appointmentModel.insertAppointment(appointmentData);
+        let user_id = req.user.user_id
+        const doctor = await getDocterByDocterId(doctor_id);
+        let chatId = await getChatBetweenUsers(user_id, doctor[0].zynq_user_id);
+        console.log('chatId', chatId);
+
+        if (chatId.length > 0) {
+            return handleSuccess(res, 201, "en", "APPOINTMENT_BOOKED_SUCCESSFULLY");
+        } else {
+            let doctorId = doctor[0].zynq_user_id
+            let chatCreatedSuccessfully = await createChat(user_id, doctorId);
+            if (!chatCreatedSuccessfully.insertId) {
+                return handleError(res, 400, 'en', "Failed To Create a chat");
+            }
+            return handleSuccess(res, 201, "en", "APPOINTMENT_BOOKED_SUCCESSFULLY");
+        }
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
             return handleError(res, 400, "en", "SLOT_ALREADY_BOOKED");
@@ -55,9 +71,14 @@ export const getMyAppointmentsUser = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const appointments = await appointmentModel.getAppointmentsByUserId(userId);
+      
+        const now = dayjs.utc();
 
-        const result = appointments.map(app => {
-
+        const result = await Promise.all(appointments.map(async (app) => {
+            const doctor = await getDocterByDocterId(app.doctor_id);
+            let chatId = await getChatBetweenUsers(userId, doctor[0].zynq_user_id);
+            app.chatId = chatId.length > 0 ? chatId[0].id : null;
+          
             const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
             const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
 
@@ -70,7 +91,7 @@ export const getMyAppointmentsUser = async (req, res) => {
                 start_time: dayjs.utc(localFormattedStart).toISOString(),
                 end_time: dayjs.utc(localFormattedEnd).toISOString(),
             };
-        });
+        }));
 
         return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
     } catch (error) {

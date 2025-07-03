@@ -765,6 +765,7 @@ export const fetchAppointmentsBulkModel = async (doctorId, fromDate, toDate) => 
     }
 };
 
+
 export const createOrUpdateCallLog = async ({
   call_id,
   sender_user_id,
@@ -808,8 +809,4 @@ export const getDocterByDocterId = async (doctor_id) => {
     }
 }
  
-
-
-
-
 
