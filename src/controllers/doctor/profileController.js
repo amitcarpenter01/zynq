@@ -933,7 +933,7 @@ export const isDocterOfflineOrOnline = async (req, res) => {
 export const createDoctorAvailability = async (req, res) => {
     try {
         const doctor_id = req.user.doctorData.doctor_id;
-        const { days, fee_per_session,dr_type } = req.body;
+        const { days, fee_per_session, dr_type } = req.body;
         await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
         await Promise.all(
             days.map(dayObj => {
@@ -954,8 +954,8 @@ export const createDoctorAvailability = async (req, res) => {
             })
         );
         const zynqUserId = req.user.id
-         // -------------------1 for solo doctor and 2 for doctor
-         if (dr_type == 1) {
+        // -------------------1 for solo doctor and 2 for doctor
+        if (dr_type == 1) {
             await update_onboarding_status(5, zynqUserId);
         } else {
             await update_onboarding_status(4, zynqUserId);
@@ -972,7 +972,7 @@ export const createDoctorAvailability = async (req, res) => {
 export const updateDoctorAvailability = async (req, res) => {
     try {
         const doctor_id = req.user.doctorData.doctor_id;
-        const { days, fee_per_session } = req.body;
+        const { days, fee_per_session,dr_type } = req.body;
 
         if (fee_per_session) {
             await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
@@ -997,7 +997,11 @@ export const updateDoctorAvailability = async (req, res) => {
             })
         );
         const zynqUserId = req.user.id
-        await update_onboarding_status(5, zynqUserId);
+        if (dr_type == 1) {
+            await update_onboarding_status(5, zynqUserId);
+        } else {
+            await update_onboarding_status(4, zynqUserId);
+        }
         await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
         return handleSuccess(res, 200, 'en', 'UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY');
 
