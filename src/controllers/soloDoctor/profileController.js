@@ -402,7 +402,7 @@ export const getDoctorProfile = async (req, res) => {
 
 
         if (profileData && profileData.profile_image && !profileData.profile_image.startsWith("http")) {
-            profileData.profile_image = `${APP_URL}solo_doctor/${profileData.profile_image}`;
+            profileData.profile_image = `${APP_URL}doctor/profile_images/${profileData.profile_image}`;
         }
         console.log("profileData.certifications", profileData.certifications)
 
@@ -458,7 +458,7 @@ export const getDoctorProfile = async (req, res) => {
         clinic.documents = documents;
 
         if (clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")) {
-            clinic.clinic_logo = `${APP_URL}solo_doctor/${clinic.clinic_logo}`;
+            clinic.clinic_logo = `${APP_URL}clinic/logo/${clinic.clinic_logo}`;
         }
 
         // Get profile for clinic ends
