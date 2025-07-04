@@ -691,5 +691,19 @@ export const getDoctorProfileByStatus = async (req, res) => {
     }
 };
 
+export const updateOnboardingStatus = async (req, res) => {
+    try {
+        const {statusId} = req.query;
+        await update_onboarding_status(statusId, req.user.id);
+        return handleSuccess(res, 200, 'en', "ONBOARDING_STATUS_UPDATED");
+    } catch (err) {
+        console.error('Error updating availability:', err);
+        return handleError(res, 500, 'Failed to update availability');
+    }
+};
+ 
+
+ 
+
 
 
