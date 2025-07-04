@@ -21,6 +21,7 @@ const image_logo = process.env.LOGO_URL;
 const WEB_JWT_SECRET = process.env.WEB_JWT_SECRET;
 const JWT_EXPIRY = process.env.JWT_EXPIRY;
 import dbOperations from '../../models/common.js';
+import { get_doctor_by_zynq_user_id } from "../../models/doctor.js";
 
 export const login_web_user = async (req, res) => {
     try {
@@ -63,10 +64,17 @@ export const login_web_user = async (req, res) => {
         await webModels.update_jwt_token(token, existingWebUser.id);
         const [user_data] = await webModels.get_web_user_by_id(existingWebUser.id);
         const [get_clinic] = await clinicModels.get_clinic_by_zynq_user_id(existingWebUser.id);
+        const [get_doctor] = await get_doctor_by_zynq_user_id(existingWebUser.id);
+
         if (get_clinic) {
             const form_stage = get_clinic.form_stage;
             user_data.form_stage = form_stage;
             user_data.is_onboarded = get_clinic.is_onboarded;
+            user_data.clinic_name = get_clinic.clinic_name;   
+        }
+
+        if (get_doctor) {
+            user_data.doctor_name = get_doctor.name;
         }
 
         return handleSuccess(res, 200, language, "LOGIN_SUCCESSFUL", user_data);
