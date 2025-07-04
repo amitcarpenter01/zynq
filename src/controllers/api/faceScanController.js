@@ -56,8 +56,8 @@ export const add_face_scan_result = async (req, res) => {
             aiAnalysisResult
         };
 
-        await apiModels.add_face_scan_data(new_face_scan_data);
-        return handleSuccess(res, 200, language, "SCAN_DATA_ADDED");
+        const id  = await apiModels.add_face_scan_data(new_face_scan_data);
+        return handleSuccess(res, 200, language, "SCAN_DATA_ADDED",id.insertId);
 
     } catch (error) {
         console.error("Internal Error:", error);
