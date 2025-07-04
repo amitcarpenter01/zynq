@@ -207,6 +207,10 @@ const initializeSocket = (server) => {
                 } else {
                     senderChats = await getUserChatsList(messageDetails[0].sender_id);
                 }
+                senderChats.map(chat => {
+                    chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
+                    return chat;
+                });
                 io.to(messageDetails[0].sender_id).emit("chat_list", senderChats);
 
                 // }
