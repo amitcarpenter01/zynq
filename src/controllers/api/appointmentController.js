@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { handleError, handleSuccess, joiErrorHandle } from '../../utils/responseHandler.js';
+import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from '../../utils/responseHandler.js';
 import * as appointmentModel from '../../models/appointment.js';
 import dayjs from 'dayjs';
 import { createChat, getChatBetweenUsers } from '../../models/chat.js';
@@ -178,7 +178,7 @@ export const getAppointmentsById = async (req, res) => {
     }
 };
 
-export const rescheduleAppointment = apiHandler(async (req, res) => {
+export const rescheduleAppointment = asyncHandler(async (req, res) => {
     const { doctor_id, appointment_id, start_time, end_time } = req.body;
 
     const existing = await appointmentModel.checkIfSlotAlreadyBooked(doctor_id, start_time);

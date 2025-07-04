@@ -2,6 +2,7 @@ import { handleError, handleSuccess } from '../../utils/responseHandler.js';
 import * as appointmentModel from '../../models/appointment.js';
 import dayjs from 'dayjs';
 import { isEmpty } from '../../utils/user_helper.js';
+import { asyncHandler } from "../../utils/responseHandler.js"
 const APP_URL = process.env.APP_URL;
 
 export const getMyAppointmentsClinic = asyncHandler(async (req, res) => {
