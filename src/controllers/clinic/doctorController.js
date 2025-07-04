@@ -238,48 +238,50 @@ export const sendDoctorInvitation = async (req, res) => {
                 const [createdDoctor] = await clinicModels.get_doctor_by_zynq_user_id(newWebUser.id);
                 doctor = createdDoctor;
                 doctor_id = doctor.doctor_id;
-            }
 
-            const [doctorClinicMapForCreate] = await clinicModels.get_doctor_clinic_map_by_both(doctor_id, req.user.clinicData.clinic_id);
-            if (!doctorClinicMapForCreate) {
-                const clinicMapData = {
-                    doctor_id,
-                    clinic_id: req.user.clinicData.clinic_id,
-                    assigned_at: new Date(),
+                const [doctorClinicMapForCreate] = await clinicModels.get_doctor_clinic_map_by_both(doctor_id, req.user.clinicData.clinic_id);
+                if (!doctorClinicMapForCreate) {
+                    const clinicMapData = {
+                        doctor_id,
+                        clinic_id: req.user.clinicData.clinic_id,
+                        assigned_at: new Date(),
+                    };
+                    await clinicModels.create_doctor_clinic_map(clinicMapData);
+                }
+
+                const [doctorClinicMap] = await clinicModels.get_doctor_clinic_map_by_both(doctor_id, req.user.clinicData.clinic_id);
+                const invitation_id = doctorClinicMap?.map_id;
+
+                let sendPassword = password;
+                if (!password && existingUser) {
+                    sendPassword = existingUser.show_password;
+                }
+
+                const emailHtml = await ejs.renderFile(emailTemplatePath, {
+                    clinic_name: req.user.clinicData.clinic_name,
+                    clinic_org_number: req.user.clinicData.org_number,
+                    clinic_city: get_location.city,
+                    clinic_street_address: get_location.street_address,
+                    clinic_state: get_location.state,
+                    clinic_zip: get_location.zip_code,
+                    clinic_phone: req.user.clinicData.mobile_number,
+                    clinic_email: req.user.clinicData.email,
+                    email,
+                    password: sendPassword,
+                    image_logo,
+                    invitation_id,
+                    invitation_link: `${APP_URL}clinic/accept-invitation?invitation_id=${invitation_id}`,
+                });
+
+                const emailOptions = {
+                    to: email,
+                    subject: "Doctor Invitation",
+                    html: emailHtml,
                 };
-                await clinicModels.create_doctor_clinic_map(clinicMapData);
+                await sendEmail(emailOptions);
             }
 
-            const [doctorClinicMap] = await clinicModels.get_doctor_clinic_map_by_both(doctor_id, req.user.clinicData.clinic_id);
-            const invitation_id = doctorClinicMap?.map_id;
 
-            let sendPassword = password;
-            if (!password && existingUser) {
-                sendPassword = existingUser.show_password;
-            }
-
-            const emailHtml = await ejs.renderFile(emailTemplatePath, {
-                clinic_name: req.user.clinicData.clinic_name,
-                clinic_org_number: req.user.clinicData.org_number,
-                clinic_city: get_location.city,
-                clinic_street_address: get_location.street_address,
-                clinic_state: get_location.state,
-                clinic_zip: get_location.zip_code,
-                clinic_phone: req.user.clinicData.mobile_number,
-                clinic_email: req.user.clinicData.email,
-                email,
-                password: sendPassword,
-                image_logo,
-                invitation_id,
-                invitation_link: `${APP_URL}clinic/accept-invitation?invitation_id=${invitation_id}`,
-            });
-
-            const emailOptions = {
-                to: email,
-                subject: "Doctor Invitation",
-                html: emailHtml,
-            };
-            await sendEmail(emailOptions);
         }
         return handleSuccess(res, 200, 'en', "INVITATION_SENT_SUCCESSFULLY");
 

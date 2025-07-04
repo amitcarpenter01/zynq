@@ -383,6 +383,7 @@ export const onboardingByRoleId = async (req, res) => {
 
         if (zynqUser.length > 0) {
             const update_role = await dbOperations.updateData('tbl_zqnq_users', { role_id: role_id }, `WHERE id = '${id}' `);
+            const updateRoleSelected = await dbOperations.updateData('tbl_zqnq_users', { role_selected: 1 }, `WHERE id = '${id}' `);
             if (role_id == '407595e3-3196-11f0-9e07-0e8e5d906eef') {
                 const insert_doctor = await dbOperations.insertData('tbl_doctors', { zynq_user_id: id });
                 const getDoctorId = await dbOperations.getSelectedColumn('doctor_id','tbl_doctors',  `where zynq_user_id ='${id}'`);
@@ -405,6 +406,36 @@ export const onboardingByRoleId = async (req, res) => {
                 return handleError(res, 400, 'en', "USER_NOT_ENROLLED");
 
             };
+        } else {
+            return handleError(res, 400, 'en', "USER_NOT_FOUND");
+        }
+
+    } catch (error) {
+        console.error("Onboarding By Role Id Error:", error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
+    }
+};
+
+
+export const verifyRoleSelected = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            id: Joi.string().required(),
+            
+        });
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const { id } = value;
+
+        const zynqUser = await dbOperations.getData('tbl_zqnq_users', `WHERE id = '${id}' `);
+
+        if (zynqUser.length > 0) {
+            if(zynqUser[0].role_selected == 1){
+                return handleError(res, 200, 'en', "ROLE_ALREADY_SELECTED");
+            }else{
+                return handleSuccess(res, 200, 'en', "ROLE_NOT_SELECTED");
+            }
         } else {
             return handleError(res, 400, 'en', "USER_NOT_FOUND");
         }
