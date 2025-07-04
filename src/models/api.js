@@ -423,3 +423,14 @@ export const get_all_appointments = async () => {
         throw new Error("Failed to fetch appointments");
     }
 };
+
+
+export const fetchZynqUserByUserId = async (user_id) => {
+    try {
+        return await db.query(`SELECT * FROM tbl_zqnq_users WHERE id = ?`, [user_id]);
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch clinic.");
+    }
+}
