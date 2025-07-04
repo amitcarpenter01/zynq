@@ -575,11 +575,11 @@ export const getDoctorProfileByStatus = async (req, res) => {
                 if (profileData[field]) filledFieldsCount++;
             });
             if (profileData && profileData.profile_image && !profileData.profile_image.startsWith("http")) {
-                profileData.profile_image = `${APP_URL}solo_doctor/${profileData.profile_image}`;
+                profileData.profile_image = `${APP_URL}doctor/profile_images/${profileData.profile_image}`;
             }
 
             if (clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")) {
-                clinic.clinic_logo = `${APP_URL}solo_doctor/${clinic.clinic_logo}`;
+                clinic.clinic_logo = `${APP_URL}clinic/logo/${clinic.clinic_logo}`;
             }
 
             const zynqUser = await fetchZynqUserByUserId(zynqUserId);
