@@ -10,6 +10,7 @@ export const bookAppointment = async (req, res) => {
     try {
         const schema = Joi.object({
             doctor_id: Joi.string().required(),
+            report_id: Joi.string().required(),
             clinic_id: Joi.string().required(),
             start_time: Joi.string().isoDate().required(),
             end_time: Joi.string().isoDate().required(),
@@ -19,7 +20,7 @@ export const bookAppointment = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        let { doctor_id, start_time, end_time, type, clinic_id } = value;
+        let { doctor_id, start_time, end_time, type, clinic_id ,report_id} = value;
 
 
         // Check before inserting (optional, for nicer UX)
@@ -36,6 +37,7 @@ export const bookAppointment = async (req, res) => {
             doctor_id,
             start_time: normalizedStart,
             clinic_id,
+            report_id:report_id,
             end_time: normalizedEnd,
             type,
             status: 'Scheduled'
@@ -85,6 +87,11 @@ export const getMyAppointmentsUser = async (req, res) => {
             if (app.profile_image && !app.profile_image.startsWith('http')) {
                 app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
             }
+
+            if (app.pdf && !app.pdf.startsWith('http')) {
+                app.pdf = `${APP_URL}${app.pdf}`;
+            }
+
 
             const startUTC = dayjs.utc(localFormattedStart);
             const endUTC = dayjs.utc(localFormattedEnd);
