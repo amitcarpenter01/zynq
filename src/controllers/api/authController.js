@@ -43,6 +43,25 @@ export const weekdayMap = {
     saturday: RRule.SA,
 };
 
+// export function generateSlots(startTime, endTime, duration, date) {
+//     const slots = [];
+
+//     let current = dayjs.utc(`${date} ${startTime}`);
+//     const end = dayjs.utc(`${date} ${endTime}`);
+
+//     while (current.add(duration, 'minute').isSameOrBefore(end)) {
+//         const slotStart = current;
+//         const slotEnd = current.add(duration, 'minute');
+
+//         slots.push({
+//             start_time: slotStart.toISOString(),
+//             end_time: slotEnd.toISOString(),
+//         });
+//         current = slotEnd;
+//     }
+//     return slots;
+// }
+
 export function generateSlots(startTime, endTime, duration, date) {
     const slots = [];
 
@@ -54,11 +73,13 @@ export function generateSlots(startTime, endTime, duration, date) {
         const slotEnd = current.add(duration, 'minute');
 
         slots.push({
-            start_time: slotStart.toISOString(),
-            end_time: slotEnd.toISOString(),
+            start_time: slotStart.format("YYYY-MM-DD HH:mm:ss"),
+            end_time: slotEnd.format("YYYY-MM-DD HH:mm:ss"),
         });
+
         current = slotEnd;
     }
+
     return slots;
 }
 
