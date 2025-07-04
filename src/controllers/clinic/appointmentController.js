@@ -1,21 +1,17 @@
-import Joi from 'joi';
-import { handleError, handleSuccess, joiErrorHandle } from '../../utils/responseHandler.js';
+import { handleError, handleSuccess } from '../../utils/responseHandler.js';
 import * as appointmentModel from '../../models/appointment.js';
 import dayjs from 'dayjs';
-import { createChat, getChatBetweenUsers } from '../../models/chat.js';
-import { getDocterByDocterId } from '../../models/doctor.js';
-import { apiError, apiHandler, apiResponse } from '../../utils/api.util.js';
-import messages from '../../utils/messages.util.js';
 import { isEmpty } from '../../utils/user_helper.js';
 const APP_URL = process.env.APP_URL;
 
-export const getMyAppointmentsClinic = apiHandler(async (req, res) => {
+export const getMyAppointmentsClinic = asyncHandler(async (req, res) => {
     const clinicId = req.user.clinicData.clinic_id;
     const now = dayjs.utc();
+
     const appointments = await appointmentModel.getAppointmentsByClinicId(clinicId);
 
     if (isEmpty(appointments)) {
-        return apiError(messages.NOT_FOUND, "Appointments", null, res);
+        return handleError(res, 404, "en", "APPOINTMENTS_NOT_FOUND");
     }
 
     const result = appointments.map((app) => {
@@ -38,5 +34,5 @@ export const getMyAppointmentsClinic = apiHandler(async (req, res) => {
         };
     });
 
-    return apiResponse(messages.FETCH, "Appointments", result, res);
+    return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED_SUCCESSFULLY", result);
 });
