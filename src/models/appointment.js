@@ -26,7 +26,7 @@ export const checkIfSlotAlreadyBooked = async (doctor_id, start_time) => {
 export const getAppointmentsByUserId = async (user_id) => {
     const results = await db.query(` 
         SELECT a.*,d.*,zu.email,r.pdf FROM tbl_appointments a INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
-        INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id INNER JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
+        INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
         WHERE a.user_id = ?
         ORDER BY  start_time ASC
     `, [user_id]);
@@ -67,7 +67,7 @@ export const getAppointmentsById = async (user_id,appointment_id) => {
 
 export const getAppointmentByIdForDoctor = async (doctor_id,appointment_id) => {
     const results = await db.query(`
-        SELECT a.*, u.* , c.clinic_name , r.pdf FROM tbl_appointments a INNER JOIN tbl_users u ON a.user_id = u.user_id  INNER JOIN tbl_clinics c ON a.clinic_id = c.clinic_id INNER JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id
+        SELECT a.*, u.* , c.clinic_name , r.pdf FROM tbl_appointments a INNER JOIN tbl_users u ON a.user_id = u.user_id  INNER JOIN tbl_clinics c ON a.clinic_id = c.clinic_id LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id
         WHERE a.doctor_id = ? AND a.appointment_id  = ?
         ORDER BY  start_time ASC
     `, [doctor_id,appointment_id]);
