@@ -38,6 +38,13 @@ export const login_web_user = async (req, res) => {
 
         const { email, password, fcm_token } = value;
 
+        const roleSelectedStatus = await dbOperations.getSelectedColumn('role_selected, role_id', 'tbl_zqnq_users', `WHERE email = '${email}'`);(email);
+        if (roleSelectedStatus.length > 0) {
+            if (roleSelectedStatus[0].role_selected === 0 && roleSelectedStatus[0].role_id !== "3677a3e6-3196-11f0-9e07-0e8e5d906eef") {
+                return handleError(res, 400, language, "ROLE_TYPE_NOT_SELECTED");
+            }
+        }
+
         const [existingWebUser] = await webModels.get_web_user_by_email(email);
         if (!existingWebUser) {
             return handleError(res, 400, language, "CLINIC_NOT_FOUND");
