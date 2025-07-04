@@ -810,3 +810,13 @@ export const getDocterByDocterId = async (doctor_id) => {
 }
  
 
+export const getSoloDoctorByZynqUserId = async (zynq_user_id) => {
+    try {
+        const result = await db.query('SELECT * FROM tbl_zqnq_users WHERE id = ?', [zynq_user_id]);
+        return result;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch support tickets.");
+    }
+}
+

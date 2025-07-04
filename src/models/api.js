@@ -234,19 +234,12 @@ export const getDoctorTreatments = async (doctor_id) => {
 
 
 //======================================= Product =========================================
-export const get_all_products_for_user = async (treatment_ids = []) => {
+export const get_all_products_for_user = async ({
+    treatment_ids = []
+}) => {
     try {
-        let params = [];
-        let treatmentFilterClause = '';
-
-        if (treatment_ids.length > 0) {
-            const placeholders = treatment_ids.map(() => '?').join(', ');
-            treatmentFilterClause = `WHERE pt.treatment_id IN (${placeholders})`;
-            params.push(...treatment_ids);
-        }
-
-        const query = `
-            SELECT
+        let query = `
+            SELECT 
                 p.*,
                 IF(COUNT(t.treatment_id), JSON_ARRAYAGG(
                     JSON_OBJECT(
@@ -262,17 +255,25 @@ export const get_all_products_for_user = async (treatment_ids = []) => {
             FROM tbl_products AS p
             LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
             LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
-            ${treatmentFilterClause}
-            GROUP BY p.product_id
-            ORDER BY p.created_at DESC
+            WHERE 1=1
         `;
+
+        const params = [];
+
+        if (treatment_ids.length > 0) {
+            query += ` AND pt.treatment_id IN (${treatment_ids.map(() => '?').join(', ')})`;
+            params.push(...treatment_ids);
+        }
+
+        query += ` GROUP BY p.product_id ORDER BY p.created_at DESC`;
 
         return await db.query(query, params);
     } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch products with treatments.");
+        console.error("Database Error in getAllProductsForUser:", error.message);
+        throw new Error("Failed to fetch products.");
     }
 };
+
 
 export const get_product_images = async (product_id) => {
     try {
@@ -286,31 +287,65 @@ export const get_product_images = async (product_id) => {
 
 
 //======================================= Clinic =========================================
-export const getAllClinicsForUser = async (ids = [], limit, offset) => {
+export const getAllClinicsForUser = async ({
+    treatment_ids = [],
+    skin_condition_ids = [],
+    aesthetic_device_ids = [],
+    skin_type_ids = [],
+    limit,
+    offset
+}) => {
+    console.log('Filters →', {
+        treatment_ids,
+        skin_condition_ids,
+        aesthetic_device_ids,
+        skin_type_ids,
+        limit,
+        offset
+    });
+
     try {
         let query = `
-            SELECT c.*
+            SELECT DISTINCT c.*
             FROM tbl_clinics c
-            LEFT JOIN tbl_clinic_treatments tct ON c.clinic_id = tct.clinic_id
+            LEFT JOIN tbl_clinic_treatments ct ON c.clinic_id = ct.clinic_id
+            LEFT JOIN tbl_clinic_skin_condition csc ON c.clinic_id = csc.clinic_id
+            LEFT JOIN tbl_clinic_aesthetic_devices cad ON c.clinic_id = cad.clinic_id
+            LEFT JOIN tbl_clinic_skin_types cskt ON c.clinic_id = cskt.clinic_id
             WHERE c.profile_completion_percentage >= 50
         `;
-        let params = [];
 
-        if (ids.length > 0) {
-            const placeholders = ids.map(() => '?').join(', ');
-            query += ` AND tct.treatment_id IN (${placeholders})`;
-            params.push(...ids);
+        const params = [];
+
+        if (treatment_ids.length > 0) {
+            query += ` AND ct.treatment_id IN (${treatment_ids.map(() => '?').join(', ')})`;
+            params.push(...treatment_ids);
+        }
+
+        if (skin_condition_ids.length > 0) {
+            query += ` AND csc.skin_condition_id IN (${skin_condition_ids.map(() => '?').join(', ')})`;
+            params.push(...skin_condition_ids);
+        }
+
+        if (aesthetic_device_ids.length > 0) {
+            query += ` AND cad.aesthetic_devices_id IN (${aesthetic_device_ids.map(() => '?').join(', ')})`;
+            params.push(...aesthetic_device_ids);
+        }
+
+        if (skin_type_ids.length > 0) {
+            query += ` AND cskt.skin_type_id IN (${skin_type_ids.map(() => '?').join(', ')})`;
+            params.push(...skin_type_ids);
         }
 
         query += ` ORDER BY c.created_at DESC LIMIT ? OFFSET ?`;
+        params.push(Number(limit), Number(offset));
 
-        return await db.query(query, [...params, limit, offset]);
+        return await db.query(query, params);
     } catch (error) {
-        console.error("Database Error:", error.message);
+        console.error("Database Error in getAllClinicsForUser:", error.message);
         throw new Error("Failed to fetch clinics.");
     }
 };
-
 
 export const get_clinic_by_zynq_user_id = async (zynq_user_id) => {
     try {
@@ -368,14 +403,14 @@ export const fetchAllCallLogsWithDetails = async () => {
  
       ORDER BY cl.created_at DESC
     `);
- 
+
         return Array.isArray(result) ? result : result;
     } catch (error) {
         console.error('❌ SQL ERROR:', error);
         throw new Error("Database error while fetching call logs.");
     }
 };
- 
+
 export const get_all_appointments = async () => {
     try {
         const result = await db.query(`
@@ -417,11 +452,10 @@ export const get_all_appointments = async () => {
             LEFT JOIN tbl_clinics c ON a.clinic_id = c.clinic_id
             ORDER BY a.created_at DESC
         `);
- 
+
         return Array.isArray(result) ? result : result;
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch appointments");
     }
 };
- 

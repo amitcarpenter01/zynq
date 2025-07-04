@@ -189,6 +189,8 @@
     "CONTACT_DETAILS_UPDATED":"Contact Details Updated Successfully",
     "UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY": "Doctor Slots Updated Successfully",
     "UPDATE_DOCTOR_AVAILABILITY_FAILED": "Doctor Slots Update Failed",
+    "ROLE_ALREADY_SELECTED": "Role Already Selected",
+    "ROLE_NOT_SELECTED": "Role Not Selected",
     "AVAILABILITY_ADDED_SUCCESSFULLY": "Availability Added Successfully",
     "FUTURE_DOCTOR_SLOTS": "Future Doctor Slots",
     "NO_AVAILABILITY_FOUND": "No Availability Found",

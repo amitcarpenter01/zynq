@@ -88,13 +88,17 @@ export const getMyAppointmentsUser = async (req, res) => {
 
             const startUTC = dayjs.utc(localFormattedStart);
             const endUTC = dayjs.utc(localFormattedEnd);
-            const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
+            //const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
+            const videoCallOn =
+                app.status !== 'Completed' &&
+                now.isAfter(startUTC) &&
+                now.isBefore(endUTC);
 
             return {
                 ...app,
                 start_time: dayjs.utc(localFormattedStart).toISOString(),
                 end_time: dayjs.utc(localFormattedEnd).toISOString(),
-                videoCallOn
+                videoCallOn,
             };
         }));
 

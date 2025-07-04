@@ -11,6 +11,7 @@ import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { fileURLToPath } from 'url';
+import { splitIDs } from "../../utils/user_helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,27 +27,28 @@ export const get_all_clinics = async (req, res) => {
         const { limit = 10, page = 1 } = req.query;
         const schema = Joi.object({
             treatment_ids: Joi.string().optional().allow(''),
+            skin_condition_ids: Joi.string().optional().allow(''),
+            aesthetic_device_ids: Joi.string().optional().allow(''),
+            skin_type_ids: Joi.string().optional().allow(''),
         });
 
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
-        const { treatment_ids } = value;
-        let treatment_ids_array = []
-        if (treatment_ids) {
-            treatment_ids_array = treatment_ids.split(',')
-        }
+
+        const treatment_ids = splitIDs(value.treatment_ids);
+        const skin_condition_ids = splitIDs(value.skin_condition_ids);
+        const aesthetic_device_ids = splitIDs(value.aesthetic_device_ids);
+        const skin_type_ids = splitIDs(value.skin_type_ids);
+
         const language = req.user.language || 'en';
 
         const offset = (page - 1) * limit;
 
-        const clinics = await apiModels.getAllClinicsForUser(treatment_ids_array, limit, offset);
-        console.log("clinics", clinics)
+        const clinics = await apiModels.getAllClinicsForUser({ treatment_ids, skin_condition_ids, aesthetic_device_ids, limit, offset });
 
         if (!clinics || clinics.length === 0) {
             return handleError(res, 404, language, "NO_CLINICS_FOUND");
         }
-
-
 
         const clinicIds = clinics.map(c => c.clinic_id);
 

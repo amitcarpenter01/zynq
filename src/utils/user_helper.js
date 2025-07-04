@@ -91,3 +91,9 @@ export const isEmpty = (value) => {
     if (typeof value === 'object') return Object.keys(value).length === 0;
     return false;
 };
+
+export const splitIDs = (str = "") =>
+    str
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean);

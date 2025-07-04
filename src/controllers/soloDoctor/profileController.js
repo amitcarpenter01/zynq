@@ -631,11 +631,7 @@ export const getDoctorProfileByStatus = async (req, res) => {
             const doctorSessions = await dbOperations.getSelectedColumn('fee_per_session, session_duration', 'tbl_doctors', `WHERE doctor_id = '${doctorId}' `);
             clinic.operation_hours = operationHours;
             clinic.doctorSessions = doctorSessions;
-
-
-
         }
-
 
         totalFieldsCount += 1;
         if (profileData.certifications && profileData.certifications.length > 0) filledFieldsCount++;
