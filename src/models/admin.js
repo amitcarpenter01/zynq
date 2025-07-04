@@ -361,7 +361,7 @@ export const get_clinic_aesthetic_devices = async (clinic_id) => {
             tbl_aesthetic_devices.device 
         FROM tbl_clinic_aesthetic_devices 
         LEFT JOIN tbl_aesthetic_devices 
-            ON tbl_aesthetic_devices.aesthetic_device_id  = tbl_clinic_aesthetic_devices.clinic_aesthetic_devices_id 
+            ON tbl_aesthetic_devices.aesthetic_device_id  = tbl_clinic_aesthetic_devices.aesthetic_devices_id 
         WHERE tbl_clinic_aesthetic_devices.clinic_id = ? 
         ORDER BY tbl_clinic_aesthetic_devices.created_at DESC
     `, [clinic_id]);
