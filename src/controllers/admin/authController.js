@@ -348,6 +348,11 @@ export const get_all_appointments = async (req, res) => {
                 email: row.clinic_email,
                 mobile_number: row.clinic_mobile,
                 address: row.address,
+            },
+
+            scanReport: {
+                face_scan_result_id: row.face_scan_result_id,
+                pdf: row.pdf ? process.env.APP_URL + row.pdf : null
             }
         }));
 

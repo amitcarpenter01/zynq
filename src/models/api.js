@@ -408,12 +408,16 @@ export const get_all_appointments = async () => {
                 c.clinic_name,
                 c.email AS clinic_email,
                 c.mobile_number AS clinic_mobile,
-                c.address
+                c.address,
+
+                fcr.face_scan_result_id,
+                fcr.pdf
  
             FROM tbl_appointments a
             LEFT JOIN tbl_users u ON a.user_id = u.user_id
             LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
             LEFT JOIN tbl_clinics c ON a.clinic_id = c.clinic_id
+            LEFT JOIN tbl_face_scan_results fcr ON fcr.face_scan_result_id = a.report_id
             ORDER BY a.created_at DESC
         `);
 
