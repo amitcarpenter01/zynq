@@ -205,7 +205,7 @@ const initializeSocket = (server) => {
                 if (userType == 1) {
                     senderChats = await getAdminChatsList(messageDetails[0].sender_id);
                 } else {
-                    senderChats = await getUserChatsList(messageDetails[0].sender_id);
+                    senderChats = await getAdminChatsList(messageDetails[0].sender_id);
                 }
                 senderChats.map(chat => {
                     chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
