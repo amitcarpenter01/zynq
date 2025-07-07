@@ -201,7 +201,7 @@ export const rescheduleAppointment = async (appointment_id, start_time, end_time
     }
 };
 
-export const rateAppointment = async ({ appointment_id, clinic_id, doctor_id, user_id, rating, review }) => {
+export const insertAppointmentRating = async ({ appointment_id, clinic_id, doctor_id, user_id, rating, review }) => {
     try {
         return await db.query(`INSERT INTO tbl_appointment_ratings (appointment_id, clinic_id, doctor_id, user_id, rating, review) VALUES (?, ?, ?, ?, ?, ?)`, [appointment_id, clinic_id, doctor_id, user_id, rating, review]);
     } catch (error) {

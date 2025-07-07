@@ -223,7 +223,7 @@ export const rateAppointment = asyncHandler(async (req, res) => {
     if (isEmpty(appointmentData)) {
         return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
     }
-    const result = await appointmentModel.rateAppointment(
+    const result = await appointmentModel.insertAppointmentRating(
         { appointment_id, clinic_id: appointmentData[0].clinic_id, doctor_id: appointmentData[0].doctor_id, user_id: req.user.user_id, rating, review }
     );
 
