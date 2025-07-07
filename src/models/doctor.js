@@ -830,7 +830,7 @@ export const getDoctorByDoctorID = async (doctor_id) => {
             WHERE d.doctor_id = ? ORDER BY dcm.created_at DESC`;
 
         const result = await db.query(query, [doctor_id]);
-        console.log(result)
+
         return result;
     }
     catch (error) {

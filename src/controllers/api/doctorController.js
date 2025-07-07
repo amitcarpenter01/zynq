@@ -204,9 +204,10 @@ export const get_all_doctors_in_app_side = async (req, res) => {
 
 export const getSingleDoctor = asyncHandler(async (req, res) => {
     const { doctor_id } = req.params;
-    const { user_id } = req.user.user_id;
-    console.log('doctor_id', doctor_id);
-    const doctor = await doctorModels.getDoctorByDoctorID(doctor_id);
+    const { user_id } = req.user;
+
+    const doctorResult = await doctorModels.getDoctorByDoctorID(doctor_id);
+    const doctor = doctorResult?.[0];
 
     if (!doctor) {
         return handleSuccess(res, 200, 'en', "DOCTOR_NOT_FOUND", null);
@@ -227,13 +228,13 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         clinicModels.getDoctorAstheticDevicesBulk([doctor_id])
     ]);
 
-    let chatId = await getChatBetweenUsers(user_id, doctor.zynq_user_id);
-    console.log("doctor - ", doctor)
+    const chat = await getChatBetweenUsers(user_id, doctor.zynq_user_id);
+
     const processedDoctor = {
         latitude: null,
         longitude: null,
-        ...doctor[0],
-        chatId: chatId.length > 0 ? chatId[0].id : null,
+        ...doctor,
+        chatId: chat?.[0]?.id || null,
         treatments: allTreatments[doctor_id] || [],
         skin_types: allSkinTypes[doctor_id] || [],
         allSkinCondition: allSkinCondition[doctor_id] || [],
@@ -243,15 +244,18 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         allExperience: allExperience[doctor_id] || [],
         allCertificates: (allCertificates[doctor_id] || []).map(cert => ({
             ...cert,
-            upload_path: cert.upload_path && !cert.upload_path.startsWith('http')
-                ? `${APP_URL}doctor/certifications/${cert.upload_path}`
-                : cert.upload_path
+            upload_path: cert.upload_path
+                ? (cert.upload_path.startsWith('http')
+                    ? cert.upload_path
+                    : `${APP_URL}doctor/certifications/${cert.upload_path}`)
+                : null
         })),
-        doctor_logo: doctor.profile_image && !doctor.profile_image.startsWith('http')
-            ? `${APP_URL}doctor/profile_images/${doctor.profile_image}`
-            : doctor.profile_image
+        doctor_logo: doctor.profile_image
+            ? (doctor.profile_image.startsWith('http')
+                ? doctor.profile_image
+                : `${APP_URL}doctor/profile_images/${doctor.profile_image}`)
+            : null
     };
 
     return handleSuccess(res, 200, 'en', "DOCTOR_FETCHED_SUCCESSFULLY", processedDoctor);
-
-})
+});
