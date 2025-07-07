@@ -191,40 +191,27 @@ const initializeSocket = (server) => {
                 ids.forEach(id => {
                     io.to(id).emit("new_message", messageDetails[0]);
                 });
-                let chats;
-                if (userType == 1) {
-                    chats = await getAdminChatsList(receiverId);
-                } else {
-                    chats = await getAdminChatsList(receiverId[0]);
-                }
-                io.in(receiverId).emit("chat_list", chats);
+                // let chats;
+                // if (userType == 1) {
+                //     chats = await getAdminChatsList(receiverId);
+                // } else {
+                //     chats = await getAdminChatsList(receiverId[0]);
+                // }
+                // io.in(receiverId).emit("chat_list", chats);
 
                 // Optional: Update sender chat list also
                 let senderChats;
                 if (userType == 1) {
                     senderChats = await getAdminChatsList(messageDetails[0].sender_id);
-                    // senderChats.map(chat => {
-                    //     chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
-                    //     return chat;
-                    // });
-                    // console.log('senderChats>>>>>>>>>>>>', senderChats);
-                    // io.to(messageDetails[0].sender_id).emit("chat_list", senderChats);
                 } else {
-                    senderChats = await getAdminChatsList(receiverId[0]);
-                    // senderChats = await getUserChatsList(messageDetails[0].sender_id);
-                    // senderChats.map(chat => {
-                    //     chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
-                    //     return chat;
-                    // });
-                    // console.log('senderChats>>>>>>>>>>>>', senderChats);
-                    // io.to(messageDetails[0].sender_id).emit("chat_list", senderChats);
+                    senderChats = await getUserChatsList(messageDetails[0].sender_id);
                 }
                 senderChats.map(chat => {
                     chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
                     return chat;
                 });
                 console.log('senderChats>>>>>>>>>>>>', senderChats);
-                io.to(messageDetails[0].sender_id).emit("chat_list", senderChats);
+                io.to(senderId).emit("chat_list", senderChats);
 
                 // }
             } catch (error) {
