@@ -4,7 +4,7 @@ import * as appointmentModel from '../../models/appointment.js';
 import dayjs from 'dayjs';
 import { createChat, getChatBetweenUsers } from '../../models/chat.js';
 import { getDocterByDocterId } from '../../models/doctor.js';
-import { isEmpty } from 'bullmq';
+import { isEmpty } from '../../utils/user_helper.js';
 const APP_URL = process.env.APP_URL;
 
 export const bookAppointment = async (req, res) => {
