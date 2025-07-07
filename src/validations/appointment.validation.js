@@ -3,6 +3,7 @@ import {
   stringValidation,
   idValidation,
   dateValidation,
+  numberValidation,
 } from "../utils/joi.util.js";
 
 export const rescheduleAppointmentSchema = joi.object({
@@ -14,6 +15,6 @@ export const rescheduleAppointmentSchema = joi.object({
 
 export const rateAppointmentSchema = joi.object({
   appointment_id: idValidation,
-  rating: joi.number().min(1).max(5).required(),
-  review: stringValidation
+  rating: numberValidation.min(1).max(5),
+  review: stringValidation.optional()
 });

@@ -100,6 +100,6 @@ router.get('/getMyAppointmentById', authenticateUser, appointmentController.getA
 
 router.patch('/appointment/reschedule', authenticateUser, validate(rescheduleAppointmentSchema, "body"), appointmentController.rescheduleAppointment);
 
-// router.post('/appointment/rating', authenticateUser, validate(rateAppointmentSchema, "body"), appointmentController.rateAppointment);
+router.post('/appointment/ratings', authenticateUser, validate(rateAppointmentSchema, "body"), appointmentController.rateAppointment);
 
 export default router;

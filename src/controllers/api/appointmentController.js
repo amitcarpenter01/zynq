@@ -4,6 +4,7 @@ import * as appointmentModel from '../../models/appointment.js';
 import dayjs from 'dayjs';
 import { createChat, getChatBetweenUsers } from '../../models/chat.js';
 import { getDocterByDocterId } from '../../models/doctor.js';
+import { isEmpty } from 'bullmq';
 const APP_URL = process.env.APP_URL;
 
 export const bookAppointment = async (req, res) => {
@@ -20,7 +21,7 @@ export const bookAppointment = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        let { doctor_id, start_time, end_time, type, clinic_id ,report_id} = value;
+        let { doctor_id, start_time, end_time, type, clinic_id, report_id } = value;
 
 
         // Check before inserting (optional, for nicer UX)
@@ -37,7 +38,7 @@ export const bookAppointment = async (req, res) => {
             doctor_id,
             start_time: normalizedStart,
             clinic_id,
-            report_id:report_id,
+            report_id: report_id,
             end_time: normalizedEnd,
             type,
             status: 'Scheduled'
@@ -217,15 +218,18 @@ export const rescheduleAppointment = asyncHandler(async (req, res) => {
 export const rateAppointment = asyncHandler(async (req, res) => {
     const { appointment_id, rating, review } = req.body;
 
+    const appointmentData = await appointmentModel.getAppointmentDataByAppointmentID(appointment_id);
+
+    if (isEmpty(appointmentData)) {
+        return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+    }
     const result = await appointmentModel.rateAppointment(
-        appointment_id,
-        rating,
-        review
+        { appointment_id, clinic_id: appointmentData[0].clinic_id, doctor_id: appointmentData[0].doctor_id, user_id: req.user.user_id, rating, review }
     );
 
     if (result.affectedRows === 0) {
-        return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+        return handleError(res, 404, "en", "ERROR_RATING_APPOINTMENT");
     }
 
-    return handleSuccess(res, 200, "en", "APPOINTMENT_RESCHEDULED_SUCCESSFULLY");
+    return handleSuccess(res, 200, "en", "APPOINTMENT_RATED_SUCCESSFULLY");
 });

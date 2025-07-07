@@ -164,28 +164,45 @@ export const getAppointmentsById = async (user_id, appointment_id) => {
     return results;
 };
 
+export const getAppointmentDataByAppointmentID = async (appointment_id) => {
+    try {
+        const results = await db.query(` 
+            SELECT doctor_id, clinic_id FROM tbl_appointments WHERE appointment_id  = ?
+        `, [appointment_id]);
+        return results;
+    } catch (error) {
+        console.error("Database Error in getAppointmentDataByAppointmentID:", error.message);
+        throw error;
+
+    }
+};
+
 export const getAppointmentByIdForDoctor = async (doctor_id, appointment_id) => {
-    const results = await db.query(`
-        SELECT a.*, u.* , c.clinic_name , r.pdf FROM tbl_appointments a INNER JOIN tbl_users u ON a.user_id = u.user_id  INNER JOIN tbl_clinics c ON a.clinic_id = c.clinic_id LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id
-        WHERE a.doctor_id = ? AND a.appointment_id  = ?
-        ORDER BY  start_time ASC
-    `, [doctor_id, appointment_id]);
-    return results;
+    try {
+        const results = await db.query(`
+         SELECT a.*, u.* , c.clinic_name , r.pdf FROM tbl_appointments a INNER JOIN tbl_users u ON a.user_id = u.user_id  INNER JOIN tbl_clinics c ON a.clinic_id = c.clinic_id LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id
+         WHERE a.doctor_id = ? AND a.appointment_id  = ?
+         ORDER BY  start_time ASC
+     `, [doctor_id, appointment_id]);
+        return results;
+    } catch (error) {
+        console.error("Database Error in getAppointmentByIdForDoctor:", error.message);
+        throw error;
+
+    }
 };
 
 export const rescheduleAppointment = async (appointment_id, start_time, end_time) => {
     try {
-        return await db.query(`UPDATE tbl_appointments SET start_time = ?, end_time = ? WHERE appointment_id = ?`, [start_time, end_time, appointment_id]);
+        return await db.query(`UPDATE tbl_appointments SET start_time = ?, end_time = ?, status = "Rescheduled" WHERE appointment_id = ?`, [start_time, end_time, appointment_id]);
     } catch (error) {
         console.error("Database Error in rescheduling appointment:", error.message);
         throw error;
     }
 };
 
-export const rateAppointment = async (appointment_id, rating, review) => {
+export const rateAppointment = async ({ appointment_id, clinic_id, doctor_id, user_id, rating, review }) => {
     try {
-        doctor_id = "r";
-        clinic_id = "er";
         return await db.query(`INSERT INTO tbl_appointment_ratings (appointment_id, clinic_id, doctor_id, user_id, rating, review) VALUES (?, ?, ?, ?, ?, ?)`, [appointment_id, clinic_id, doctor_id, user_id, rating, review]);
     } catch (error) {
         console.error("Database Error in rating appointment:", error.message);
