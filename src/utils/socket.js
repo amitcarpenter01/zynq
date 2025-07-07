@@ -203,15 +203,19 @@ const initializeSocket = (server) => {
                 let senderChats;
                 if (userType == 1) {
                     senderChats = await getAdminChatsList(messageDetails[0].sender_id);
+                    senderChats.map(chat => {
+                        chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
+                        return chat;
+                    });
+                    io.to(senderId).emit("chat_list", senderChats);
                 } else {
-                    senderChats = await getUserChatsList(messageDetails[0].sender_id);
+                    senderChats = await getAdminChatsList(receiverId[0]);
+                    senderChats.map(chat => {
+                        chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
+                        return chat;
+                    });
+                    io.to(receiverId[0]).emit("chat_list", senderChats);
                 }
-                senderChats.map(chat => {
-                    chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
-                    return chat;
-                });
-                console.log('senderChats>>>>>>>>>>>>', senderChats);
-                io.to(senderId).emit("chat_list", senderChats);
 
                 // }
             } catch (error) {
