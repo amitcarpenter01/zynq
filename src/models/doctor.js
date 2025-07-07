@@ -355,9 +355,7 @@ export const get_doctor_profile = async (doctorId) => {
         const surgery = await get_doctor_surgeries(doctorId);
         const aestheticDevices = await get_doctor_aesthetic_devices(doctorId)
 
-        console.log("skinCondition", skinCondition);
-        console.log("surgery", surgery);
-        console.log("aestheticDevices", aestheticDevices);
+        console.log("aestheticModel", aestheticDevices);
 
         return {
             ...mainUser,
@@ -679,7 +677,7 @@ export const get_doctor_aesthetic_devices = async (doctorId) => {
             FROM 
                 tbl_doctor_aesthetic_devices dad
             LEFT JOIN 
-                tbl_aesthetic_devices ad ON dad.doctor_aesthetic_devices_id  = ad.aesthetic_device_id
+                tbl_aesthetic_devices ad ON dad.aesthetic_devices_id  = ad.aesthetic_device_id
             WHERE 
                 dad.doctor_id = ?`, [doctorId]);
     } catch (error) {

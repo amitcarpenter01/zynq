@@ -5,6 +5,7 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
+import { v4 as uuidv4 } from 'uuid';
 import * as apiModels from "../../models/api.js";
 import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken } from "../../utils/user_helper.js";
@@ -44,9 +45,11 @@ export const add_face_scan_result = async (req, res) => {
             if (req.files["file"]) face = req.files["file"][0].filename;
             if (req.files["pdf"]) pdf = req.files["pdf"][0].filename;
         }
+        const face_scan_result_id = uuidv4(); // Generate UUID
 
         const new_face_scan_data = {
             user_id: user.user_id,
+            face_scan_result_id:face_scan_result_id,
             skin_type,
             skin_concerns,
             details,
@@ -56,8 +59,9 @@ export const add_face_scan_result = async (req, res) => {
             aiAnalysisResult
         };
 
-        await apiModels.add_face_scan_data(new_face_scan_data);
-        return handleSuccess(res, 200, language, "SCAN_DATA_ADDED");
+        const id  = await apiModels.add_face_scan_data(new_face_scan_data);
+        console.log("id>>>>>>>>>>>>>>>>",id)
+        return handleSuccess(res, 200, language, "SCAN_DATA_ADDED",{id : face_scan_result_id});
 
     } catch (error) {
         console.error("Internal Error:", error);

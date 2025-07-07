@@ -6,6 +6,7 @@ import * as clinicModels from "../../models/clinic.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { update_onboarding_status } from "../../models/web_user.js";
 import dbOperations from '../../models/common.js';
+import { fetchZynqUserByUserId } from "../../models/api.js";
 
 dotenv.config();
 
@@ -265,7 +266,7 @@ export const addExpertise = async (req, res) => {
         await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
         await doctorModels.update_doctor_aesthetic_devices(doctorId, aestheticDevicesIds);
 
-        if(treatmentIds.length > 0){
+        if (treatmentIds.length > 0) {
             const treatmentsData = await clinicModels.getClinicTreatments(clinic_id);
             if (treatmentsData) {
                 await clinicModels.updateClinicTreatments(treatmentIds, clinic_id);
@@ -401,7 +402,7 @@ export const getDoctorProfile = async (req, res) => {
 
 
         if (profileData && profileData.profile_image && !profileData.profile_image.startsWith("http")) {
-            profileData.profile_image = `${APP_URL}solo_doctor/${profileData.profile_image}`;
+            profileData.profile_image = `${APP_URL}doctor/profile_images/${profileData.profile_image}`;
         }
         console.log("profileData.certifications", profileData.certifications)
 
@@ -441,7 +442,7 @@ export const getDoctorProfile = async (req, res) => {
         clinic.surgeries_level = surgeries;
 
         const aestheticDevices = await clinicModels.getClinicAestheticDevicesLevel(clinic.clinic_id);
-        
+
         clinic.aestheticDevices = aestheticDevices;
 
         const skin_Conditions = await clinicModels.getClinicSkinConditionsLevel(clinic.clinic_id);
@@ -457,11 +458,11 @@ export const getDoctorProfile = async (req, res) => {
         clinic.documents = documents;
 
         if (clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")) {
-            clinic.clinic_logo = `${APP_URL}solo_doctor/${clinic.clinic_logo}`;
+            clinic.clinic_logo = `${APP_URL}clinic/logo/${clinic.clinic_logo}`;
         }
 
         // Get profile for clinic ends
-console.log(clinic);
+        console.log(clinic);
         return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, clinic, completionPercentage });
     } catch (error) {
         console.error(error);
@@ -473,6 +474,8 @@ export const createDoctorAvailability = async (req, res) => {
     try {
         const doctor_id = req.user.doctorData.doctor_id;
         const { days, fee_per_session } = req.body;
+        console.log('req.body', req.body);
+
         await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
         await Promise.all(
             days.map(dayObj => {
@@ -493,6 +496,9 @@ export const createDoctorAvailability = async (req, res) => {
             })
         );
         const zynqUserId = req.user.id
+        console.log('zynqUserId', zynqUserId);
+
+       
         await update_onboarding_status(5, zynqUserId);
         await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
         return handleSuccess(res, 200, 'en', 'Availability_added_successfully');
@@ -558,7 +564,7 @@ export const getDoctorProfileByStatus = async (req, res) => {
         // const profileData = await doctorModels.get_doctor_profile(doctorId);
         // Personal Details
         if (status == 1) {
-             [profileData] = await dbOperations.getData('tbl_doctors', `WHERE zynq_user_id = '${zynqUserId}' `);
+            [profileData] = await dbOperations.getData('tbl_doctors', `WHERE zynq_user_id = '${zynqUserId}' `);
             var [clinic] = await dbOperations.getSelectedColumn('clinic_logo, clinic_name , clinic_id ,mobile_number,address,clinic_description,ivo_registration_number,hsa_id,address', 'tbl_clinics', `WHERE zynq_user_id = '${zynqUserId}' `);
             if (!clinic) {
                 return handleError(res, 404, "en", "CLINIC_NOT_FOUND");
@@ -569,12 +575,15 @@ export const getDoctorProfileByStatus = async (req, res) => {
                 if (profileData[field]) filledFieldsCount++;
             });
             if (profileData && profileData.profile_image && !profileData.profile_image.startsWith("http")) {
-                profileData.profile_image = `${APP_URL}solo_doctor/${profileData.profile_image}`;
+                profileData.profile_image = `${APP_URL}doctor/profile_images/${profileData.profile_image}`;
             }
 
             if (clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")) {
-                clinic.clinic_logo = `${APP_URL}solo_doctor/${clinic.clinic_logo}`;
+                clinic.clinic_logo = `${APP_URL}clinic/logo/${clinic.clinic_logo}`;
             }
+
+            const zynqUser = await fetchZynqUserByUserId(zynqUserId);
+            profileData.on_boarding_status = zynqUser[0].on_boarding_status;
 
         } else if (status == 2) {
             const clinicData = await dbOperations.getSelectedColumn('address, website_url, mobile_number', 'tbl_clinics', `WHERE zynq_user_id = '${zynqUserId}' `);
@@ -584,6 +593,9 @@ export const getDoctorProfileByStatus = async (req, res) => {
             clinic['address'] = clinicData[0].address;
             clinic['website_url'] = clinicData[0].website_url;
             clinic['mobile_number'] = clinicData[0].mobile_number;
+
+            const zynqUser = await fetchZynqUserByUserId(zynqUserId);
+            clinic.on_boarding_status = zynqUser[0].on_boarding_status;
 
         } else if (status == 3) {
             const certifications = await doctorModels.get_doctor_certifications(doctorId);
@@ -602,6 +614,9 @@ export const getDoctorProfileByStatus = async (req, res) => {
             profileData.certifications = certifications || [];
             profileData.education = education || [];
             profileData.experience = experience || [];
+
+            const zynqUser = await fetchZynqUserByUserId(zynqUserId);
+            profileData.on_boarding_status = zynqUser[0].on_boarding_status;
 
         } else if (status == 4) {
             console.log("clinicId", clinicId);
@@ -626,11 +641,18 @@ export const getDoctorProfileByStatus = async (req, res) => {
 
             const skin_Conditions = await clinicModels.getClinicSkinConditionsLevel(clinicId);
             clinic.skin_Conditions = skin_Conditions;
+
+            const zynqUser = await fetchZynqUserByUserId(zynqUserId);
+            clinic.on_boarding_status = zynqUser[0].on_boarding_status;
+
         } else if (status == 5) {
-            const operationHours = await dbOperations.getData('tbl_doctor_availability', `WHERE doctor_id = '${doctorId}' `);(clinic.clinic_id);
+            const operationHours = await dbOperations.getData('tbl_doctor_availability', `WHERE doctor_id = '${doctorId}' `); (clinic.clinic_id);
             const doctorSessions = await dbOperations.getSelectedColumn('fee_per_session, session_duration', 'tbl_doctors', `WHERE doctor_id = '${doctorId}' `);
             clinic.operation_hours = operationHours;
             clinic.doctorSessions = doctorSessions;
+
+            const zynqUser = await fetchZynqUserByUserId(zynqUserId);
+            clinic.on_boarding_status = zynqUser[0].on_boarding_status;
         }
 
         totalFieldsCount += 1;
@@ -668,6 +690,20 @@ export const getDoctorProfileByStatus = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
+
+export const updateOnboardingStatus = async (req, res) => {
+    try {
+        const {statusId} = req.query;
+        await update_onboarding_status(statusId, req.user.id);
+        return handleSuccess(res, 200, 'en', "ONBOARDING_STATUS_UPDATED");
+    } catch (err) {
+        console.error('Error updating availability:', err);
+        return handleError(res, 500, 'Failed to update availability');
+    }
+};
+ 
+
+ 
 
 
 

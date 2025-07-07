@@ -77,6 +77,10 @@ export const getMyAppointmentById = async (req, res) => {
                 app.profile_image = `${APP_URL}${app.profile_image}`;
             }
 
+            if (app.pdf && !app.pdf.startsWith('http')) {
+                app.pdf = `${APP_URL}${app.pdf}`;
+            }
+
 
             const startUTC = dayjs.utc(localFormattedStart);
             const endUTC = dayjs.utc(localFormattedEnd);

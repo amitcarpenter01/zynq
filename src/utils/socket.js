@@ -153,7 +153,6 @@ const initializeSocket = (server) => {
         socket.on("send_message", async ({ chatId, message, messageType }) => {
             try {
                 let senderId = decoded.id;
-
                 let ids = [senderId];
                 let fetchChatsUsers = await fetchChatById(chatId);
                 let receiverId = fetchChatsUsers.map(chat =>
@@ -204,10 +203,28 @@ const initializeSocket = (server) => {
                 let senderChats;
                 if (userType == 1) {
                     senderChats = await getAdminChatsList(messageDetails[0].sender_id);
+                    senderChats.map(chat => {
+                        chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
+                        return chat;
+                    });
+                    console.log('senderChats>>>>>>>>>>>>', senderChats);
+                    io.to(messageDetails[0].sender_id).emit("chat_list", senderChats);
                 } else {
+                    // senderChats = await getAdminChatsList(receiverId[0]);
                     senderChats = await getUserChatsList(messageDetails[0].sender_id);
+                    senderChats.map(chat => {
+                        chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
+                        return chat;
+                    });
+                    console.log('senderChats>>>>>>>>>>>>', senderChats);
+                    io.to(messageDetails[0].sender_id).emit("chat_list", senderChats);
                 }
-                io.to(messageDetails[0].sender_id).emit("chat_list", senderChats);
+                // senderChats.map(chat => {
+                //     chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
+                //     return chat;
+                // });
+                // console.log('senderChats>>>>>>>>>>>>', senderChats);
+                // io.to(messageDetails[0].sender_id).emit("chat_list", senderChats);
 
                 // }
             } catch (error) {
