@@ -44,7 +44,7 @@ export const get_all_clinics = async (req, res) => {
 
         const offset = (page - 1) * limit;
 
-        const clinics = await apiModels.getAllClinicsForUser({ treatment_ids, skin_condition_ids, aesthetic_device_ids, limit, offset });
+        const clinics = await apiModels.getAllClinicsForUser({ treatment_ids, skin_condition_ids, aesthetic_device_ids, skin_type_ids, limit, offset });
 
         if (!clinics || clinics.length === 0) {
             return handleError(res, 404, language, "NO_CLINICS_FOUND");
