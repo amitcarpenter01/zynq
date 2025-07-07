@@ -21,7 +21,7 @@ import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 
 //==================================== Import Validations ==============================
 import { rescheduleAppointmentSchema } from '../validations/appointment.validation.js';
-
+import { getSingleDoctorSchema } from '../validations/doctor.validation.js';
 const router = express.Router();
 
 
@@ -61,7 +61,7 @@ router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_f
 //==================================== Doctor ==============================
 // router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors);
 router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors_in_app_side);
-
+router.get("/doctor/get/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
 // //==================================== Product ==============================
 router.post("/get-all-products", authenticateUser, productControllers.getAllProducts);
 
@@ -83,8 +83,6 @@ router.post(
 );
 // -------------------------------------slot managment------------------------------------------------//
 
-
-router.post("/get-all-doctors-by-clinic", authenticateUser, doctorControllers.get_all_doctors_by_clinic_id);
 
 router.post("/get-all-doctors-by-clinic", authenticateUser, doctorControllers.get_all_doctors_by_clinic_id);
 

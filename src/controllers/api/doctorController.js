@@ -7,9 +7,10 @@ import dotenv from "dotenv";
 import jwt from "jsonwebtoken"
 import * as userModels from "../../models/api.js";
 import * as clinicModels from "../../models/clinic.js";
+import * as doctorModels from "../../models/doctor.js";
 import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
-import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { fileURLToPath } from 'url';
 import { fetchChatById, getChatBetweenUsers } from "../../models/chat.js";
 
@@ -199,3 +200,58 @@ export const get_all_doctors_in_app_side = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
+
+
+export const getSingleDoctor = asyncHandler(async (req, res) => {
+    const { doctor_id } = req.params;
+    const { user_id } = req.user.user_id;
+    console.log('doctor_id', doctor_id);
+    const doctor = await doctorModels.getDoctorByDoctorID(doctor_id);
+
+    if (!doctor) {
+        return handleSuccess(res, 200, 'en', "DOCTOR_NOT_FOUND", null);
+    }
+
+    const [
+        allCertificates, allEducation, allExperience,
+        allSkinTypes, allTreatments, allSkinCondition,
+        allSurgery, allAstheticDevices
+    ] = await Promise.all([
+        clinicModels.getDoctorCertificationsBulk([doctor_id]),
+        clinicModels.getDoctorEducationBulk([doctor_id]),
+        clinicModels.getDoctorExperienceBulk([doctor_id]),
+        clinicModels.getDoctorSkinTypesBulk([doctor_id]),
+        clinicModels.getDoctorTreatmentsBulk([doctor_id]),
+        clinicModels.getDoctorSkinConditionBulk([doctor_id]),
+        clinicModels.getDoctorSurgeryBulk([doctor_id]),
+        clinicModels.getDoctorAstheticDevicesBulk([doctor_id])
+    ]);
+
+    let chatId = await getChatBetweenUsers(user_id, doctor.zynq_user_id);
+    console.log("doctor - ", doctor)
+    const processedDoctor = {
+        latitude: null,
+        longitude: null,
+        ...doctor[0],
+        chatId: chatId.length > 0 ? chatId[0].id : null,
+        treatments: allTreatments[doctor_id] || [],
+        skin_types: allSkinTypes[doctor_id] || [],
+        allSkinCondition: allSkinCondition[doctor_id] || [],
+        allSurgery: allSurgery[doctor_id] || [],
+        allAstheticDevices: allAstheticDevices[doctor_id] || [],
+        allEducation: allEducation[doctor_id] || [],
+        allExperience: allExperience[doctor_id] || [],
+        allCertificates: (allCertificates[doctor_id] || []).map(cert => ({
+            ...cert,
+            upload_path: cert.upload_path && !cert.upload_path.startsWith('http')
+                ? `${APP_URL}doctor/certifications/${cert.upload_path}`
+                : cert.upload_path
+        })),
+        doctor_logo: doctor.profile_image && !doctor.profile_image.startsWith('http')
+            ? `${APP_URL}doctor/profile_images/${doctor.profile_image}`
+            : doctor.profile_image
+    };
+
+    return handleSuccess(res, 200, 'en', "DOCTOR_FETCHED_SUCCESSFULLY", processedDoctor);
+
+})
