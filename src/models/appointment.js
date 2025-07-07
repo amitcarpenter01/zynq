@@ -180,3 +180,14 @@ export const rescheduleAppointment = async (appointment_id, start_time, end_time
         throw error;
     }
 };
+
+export const rateAppointment = async (appointment_id, rating, review) => {
+    try {
+        doctor_id = "r";
+        clinic_id = "er";
+        return await db.query(`INSERT INTO tbl_appointment_ratings (appointment_id, clinic_id, doctor_id, user_id, rating, review) VALUES (?, ?, ?, ?, ?, ?)`, [appointment_id, clinic_id, doctor_id, user_id, rating, review]);
+    } catch (error) {
+        console.error("Database Error in rating appointment:", error.message);
+        throw error;
+    }
+};

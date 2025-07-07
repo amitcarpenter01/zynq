@@ -206,3 +206,19 @@ export const rescheduleAppointment = asyncHandler(async (req, res) => {
 
     return handleSuccess(res, 200, "en", "APPOINTMENT_RESCHEDULED_SUCCESSFULLY");
 });
+
+export const rateAppointment = asyncHandler(async (req, res) => {
+    const { appointment_id, rating, review } = req.body;
+
+    const result = await appointmentModel.rateAppointment(
+        appointment_id,
+        rating,
+        review
+    );
+
+    if (result.affectedRows === 0) {
+        return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+    }
+
+    return handleSuccess(res, 200, "en", "APPOINTMENT_RESCHEDULED_SUCCESSFULLY");
+});

@@ -20,7 +20,7 @@ import * as appointmentController from "../controllers/api/appointmentController
 import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 
 //==================================== Import Validations ==============================
-import { rescheduleAppointmentSchema } from '../validations/appointment.validation.js';
+import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validations/appointment.validation.js';
 import { getSingleDoctorSchema } from '../validations/doctor.validation.js';
 const router = express.Router();
 
@@ -99,5 +99,7 @@ router.patch('/update-appointment-status', appointmentController.updateAppointme
 router.get('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
 
 router.patch('/appointment/reschedule', authenticateUser, validate(rescheduleAppointmentSchema, "body"), appointmentController.rescheduleAppointment);
+
+// router.post('/appointment/rating', authenticateUser, validate(rateAppointmentSchema, "body"), appointmentController.rateAppointment);
 
 export default router;
