@@ -177,7 +177,7 @@ export const getAllDoctors = async ({
             query += ' ' + joins.join(' ');
         }
 
-        query += ` WHERE d.profile_completion_percentage >= 0`;
+        query += ` WHERE d.profile_completion_percentage >= 50`;
 
         if (filters.length > 0) {
             query += ` AND ${filters.join(' AND ')}`;

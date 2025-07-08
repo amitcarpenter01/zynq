@@ -1639,3 +1639,16 @@ export const getDoctorSeverityLevelsBulk = async (doctorIds) => {
         throw new Error("Failed to fetch doctor severity levels.");
     }
 };
+
+export const getChatsBetweenUserAndDoctors = async (userId, doctorUserIds) => {
+    if (!doctorUserIds.length) return [];
+
+    return await db.query(
+        `SELECT * FROM tbl_chats 
+         WHERE 
+           (userId_1 = ? AND userId_2 IN (?)) 
+           OR 
+           (userId_2 = ? AND userId_1 IN (?))`,
+        [userId, doctorUserIds, userId, doctorUserIds]
+    );
+};

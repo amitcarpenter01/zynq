@@ -1,26 +1,16 @@
 import Joi from "joi";
-import ejs from 'ejs';
-import path from "path";
-import crypto from "crypto";
-import bcrypt from "bcrypt";
+
 import dotenv from "dotenv";
-import jwt from "jsonwebtoken"
 import * as userModels from "../../models/api.js";
 import * as clinicModels from "../../models/clinic.js";
 import * as doctorModels from "../../models/doctor.js";
-import { sendEmail } from "../../services/send_email.js";
-import { generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
-import { fileURLToPath } from 'url';
-import { fetchChatById, getChatBetweenUsers } from "../../models/chat.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { getChatBetweenUsers } from "../../models/chat.js";
 
 dotenv.config();
 
 const APP_URL = process.env.APP_URL;
-const image_logo = process.env.LOGO_URL;
 
 
 export const get_all_doctors = async (req, res) => {
@@ -145,13 +135,24 @@ export const get_all_doctors_by_clinic_id = async (req, res) => {
 
 
 
+const formatImagePath = (path, folder) =>
+    path?.startsWith('http') ? path : `${APP_URL}${folder}/${path}`;
+
+const formatCertifications = (certs) =>
+    (certs || []).map(cert => ({
+        ...cert,
+        upload_path: formatImagePath(cert.upload_path, 'doctors/certifications')
+    }));
+
+const toMap = (obj) => new Map(Object.entries(obj || {}));
+
 export const get_all_doctors_in_app_side = asyncHandler(async (req, res) => {
     const { user_id } = req.user;
 
     const {
         filters = {},
-        sort = { by: 'nearest', order: 'asc' },
-        pagination = { page: 1, limit: 20 }
+        sort = { by: 'default', order: 'desc' },
+        pagination = { page: 1, limit: 10 }
     } = req.body;
 
     const {
@@ -166,19 +167,6 @@ export const get_all_doctors_in_app_side = asyncHandler(async (req, res) => {
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
-    const {
-        latitude: userLatitude = null,
-        longitude: userLongitude = null,
-        language = 'en'
-    } = req.user;
-
-    let effectiveSort = { ...sort };
-
-    if (effectiveSort.by === 'nearest' && (!userLatitude || !userLongitude)) {
-        console.warn("User selected 'nearest' but no location found, falling back to default sort.");
-        effectiveSort = { by: 'default', order: 'desc' };
-    }
-
     const doctors = await userModels.getAllDoctors({
         treatment_ids,
         skin_condition_ids,
@@ -186,18 +174,17 @@ export const get_all_doctors_in_app_side = asyncHandler(async (req, res) => {
         skin_type_ids,
         surgery_ids,
         min_rating,
-        sort: effectiveSort,
-        userLatitude,
-        userLongitude,
+        sort,
         limit,
         offset
     });
+
     if (!doctors?.length) {
         return handleError(res, 404, 'en', "NO_DOCTORS_FOUND");
     }
+
     const doctorIds = doctors.map(doc => doc.doctor_id);
 
-    // Bulk fetch all related data
     const [
         allAvailability,
         allCertificates,
@@ -206,49 +193,56 @@ export const get_all_doctors_in_app_side = asyncHandler(async (req, res) => {
         allReviews,
         allSeverityLevels,
         allSkinTypes,
-        allTreatments
+        allTreatments,
+        allChats
     ] = await Promise.all([
-        clinicModels.getDoctorAvailabilityBulk?.(doctorIds),  // add this if not present
+        clinicModels.getDoctorAvailabilityBulk?.(doctorIds),
         clinicModels.getDoctorCertificationsBulk(doctorIds),
         clinicModels.getDoctorEducationBulk(doctorIds),
         clinicModels.getDoctorExperienceBulk(doctorIds),
-        clinicModels.getDoctorReviewsBulk?.(doctorIds),       // optional - implement if needed
-        clinicModels.getDoctorSeverityLevelsBulk?.(doctorIds),// optional - implement if needed
+        clinicModels.getDoctorReviewsBulk?.(doctorIds),
+        clinicModels.getDoctorSeverityLevelsBulk?.(doctorIds),
         clinicModels.getDoctorSkinTypesBulk(doctorIds),
-        clinicModels.getDoctorTreatmentsBulk(doctorIds)
+        clinicModels.getDoctorTreatmentsBulk(doctorIds),
+        clinicModels.getChatsBetweenUserAndDoctors(user_id, doctorIds) // 🆕 optimized bulk chat
     ]);
 
-    const enrichedDoctors = await Promise.all(doctors.map(async (doctor) => {
-        const chat = await getChatBetweenUsers(user_id, doctor.zynq_user_id);
+    // Mapify all result sets
+    const availabilityMap = toMap(allAvailability);
+    const certMap = toMap(allCertificates);
+    const eduMap = toMap(allEducation);
+    const expMap = toMap(allExperience);
+    const reviewsMap = toMap(allReviews);
+    const severityMap = toMap(allSeverityLevels);
+    const skinTypeMap = toMap(allSkinTypes);
+    const treatmentMap = toMap(allTreatments);
 
-        const certifications = allCertificates[doctor.doctor_id] || [];
-        certifications.forEach(cert => {
-            if (cert.upload_path && !cert.upload_path.startsWith('http')) {
-                cert.upload_path = `${APP_URL}doctors/certifications/${cert.upload_path}`;
-            }
-        });
+    // Mapify chats by doctor zynq_user_id
+    const chatMap = new Map();
+    (allChats || []).forEach(chat => {
+        const doctorUserId = chat.other_user_id; // or chat.doctor_user_id depending on schema
+        chatMap.set(doctorUserId, chat);
+    });
 
-        if (doctor.profile_image && !doctor.profile_image.startsWith('http')) {
-            doctor.profile_image = `${APP_URL}doctor/profile_images/${doctor.profile_image}`;
-        }
-
+    const enrichedDoctors = doctors.map((doctor) => {
         return {
             ...doctor,
-            chatId: chat?.[0]?.id || null,
-            availability: allAvailability?.[doctor.doctor_id] || [],
-            certifications,
-            education: allEducation[doctor.doctor_id] || [],
-            experience: allExperience[doctor.doctor_id] || [],
-            reviews: allReviews?.[doctor.doctor_id] || [],
-            severity_levels: allSeverityLevels?.[doctor.doctor_id] || [],
-            skin_types: allSkinTypes[doctor.doctor_id] || [],
-            treatments: allTreatments[doctor.doctor_id] || []
+            chatId: chatMap.get(doctor.zynq_user_id)?.id || null,
+            profile_image: formatImagePath(doctor.profile_image, 'doctor/profile_images'),
+            availability: availabilityMap.get(doctor.doctor_id) || [],
+            certifications: formatCertifications(certMap.get(doctor.doctor_id)),
+            education: eduMap.get(doctor.doctor_id) || [],
+            experience: expMap.get(doctor.doctor_id) || [],
+            reviews: reviewsMap.get(doctor.doctor_id) || [],
+            severity_levels: severityMap.get(doctor.doctor_id) || [],
+            skin_types: skinTypeMap.get(doctor.doctor_id) || [],
+            treatments: treatmentMap.get(doctor.doctor_id) || []
         };
-    }));
-
+    });
 
     return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", enrichedDoctors);
 });
+
 
 
 export const getSingleDoctor = asyncHandler(async (req, res) => {
