@@ -124,21 +124,89 @@ export const get_face_scan_history = async (user_id) => {
 
 
 //======================================= Doctor =========================================
-export const getAllDoctors = async () => {
+export const getAllDoctors = async ({
+    treatment_ids = [],
+    skin_condition_ids = [],
+    aesthetic_device_ids = [],
+    skin_type_ids = [],
+    surgery_ids = [],
+    min_rating = null,
+    sort = { by: 'default', order: 'desc' },
+    limit,
+    offset
+}) => {
     try {
-        const doctors = await db.query(`
-            SELECT d.*, z.email 
-            FROM tbl_doctors d
-            LEFT JOIN tbl_zqnq_users z ON d.zynq_user_id = z.id 
-            WHERE d.profile_completion_percentage >= 50 
-            ORDER BY d.created_at DESC `);
+        const params = [];
 
-        return doctors;
+        const needsRating = min_rating !== null || sort.by === 'rating';
+
+        const selectFields = [
+            'd.*',
+            'zu.email',
+            needsRating ? 'ROUND(AVG(ar.rating), 2) AS avg_rating' : null
+        ].filter(Boolean).join(', ');
+
+        let query = `
+            SELECT ${selectFields}
+            FROM tbl_doctors d
+            LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+        `;
+
+        if (needsRating) {
+            query += ` LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id`;
+        }
+
+        const joins = [];
+        const filters = [];
+
+        const addJoinAndFilter = (ids, joinTable, joinAlias, joinField) => {
+            if (ids.length > 0) {
+                joins.push(`LEFT JOIN ${joinTable} ${joinAlias} ON d.doctor_id = ${joinAlias}.doctor_id`);
+                filters.push(`${joinAlias}.${joinField} IN (${ids.map(() => '?').join(', ')})`);
+                params.push(...ids);
+            }
+        };
+
+        addJoinAndFilter(treatment_ids, 'tbl_doctor_treatments', 'dt', 'treatment_id');
+        addJoinAndFilter(skin_condition_ids, 'tbl_doctor_skin_condition', 'dsc', 'skin_condition_id');
+        addJoinAndFilter(aesthetic_device_ids, 'tbl_doctor_aesthetic_devices', 'dad', 'aesthetic_devices_id');
+        addJoinAndFilter(skin_type_ids, 'tbl_doctor_skin_types', 'dst', 'skin_type_id');
+        addJoinAndFilter(surgery_ids, 'tbl_doctor_surgery', 'ds', 'surgery_id');
+
+        if (joins.length > 0) {
+            query += ' ' + joins.join(' ');
+        }
+
+        query += ` WHERE d.profile_completion_percentage >= 0`;
+
+        if (filters.length > 0) {
+            query += ` AND ${filters.join(' AND ')}`;
+        }
+
+        if (needsRating) {
+            query += ` GROUP BY d.doctor_id`;
+        }
+
+        if (min_rating !== null) {
+            query += ` HAVING avg_rating >= ?`;
+            params.push(min_rating);
+        }
+
+        if (sort.by === 'rating') {
+            query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
+        } else {
+            query += ` ORDER BY d.created_at DESC`;
+        }
+
+        query += ` LIMIT ? OFFSET ?`;
+        params.push(Number(limit), Number(offset));
+
+        return await db.query(query, params);
     } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch all doctors.");
+        console.error("Database Error in getAllDoctors:", error.message);
+        throw new Error("Failed to fetch doctors.");
     }
-}
+};
 
 export const getDoctorAvailability = async (doctor_id) => {
     try {
@@ -231,7 +299,6 @@ export const getDoctorTreatments = async (doctor_id) => {
         throw new Error("Failed to fetch doctor treatments.");
     }
 };
-
 
 //======================================= Product =========================================
 export const get_all_products_for_user = async ({
