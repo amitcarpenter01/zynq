@@ -30,7 +30,9 @@ const joiMessages = {
     "object.base": ":key must be an object",
 };
 
-const idValidation = joi.string().trim().required()
+const idValidation = joi.string().trim().required().uuid()
+
+const idArrayValidation = joi.array().items(idValidation).optional();
 
 const emailValidation = joi.string().trim().required().email();
 
@@ -47,6 +49,10 @@ const decimalValidation = joi.number().required();
 const booleanValidation = joi.boolean().required();
 
 const objectValidation = joi.object().required().unknown();
+
+const orderValidation = joi.string().valid('asc', 'desc').default('asc');
+
+const ratingValidation = joi.number().min(0).max(5).required();
 
 const populateMessage = (error) => {
     let errorDetails = error.details[0];
@@ -94,5 +100,8 @@ export {
     decimalValidation,
     booleanValidation,
     objectValidation,
+    orderValidation,
+    ratingValidation,
+    idArrayValidation,
     populateMessage,
 };

@@ -22,6 +22,8 @@ import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 //==================================== Import Validations ==============================
 import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validations/appointment.validation.js';
 import { getSingleDoctorSchema } from '../validations/doctor.validation.js';
+import { getAllClinicsSchema } from '../validations/clinic.validation.js';
+
 const router = express.Router();
 
 
@@ -66,7 +68,7 @@ router.get("/doctor/get/:doctor_id", authenticateUser, validate(getSingleDoctorS
 router.post("/get-all-products", authenticateUser, productControllers.getAllProducts);
 
 // ==================================== Clinic ==============================
-router.post("/get-all-clinics", authenticateUser, clinicControllers.get_all_clinics);
+router.post("/get-all-clinics", authenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_all_clinics);
 
 //==================================== Support ==============================
 router.post("/create-support-ticket", authenticateUser, supportControllers.create_support_ticket);
