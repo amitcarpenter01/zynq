@@ -96,7 +96,7 @@ router.get('/getMyAppointments', authenticateUser, appointmentController.getMyAp
 
 router.patch('/update-appointment-status', appointmentController.updateAppointmentStatus);
 
-router.get('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
+router.post('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
 
 router.patch('/appointment/reschedule', authenticateUser, validate(rescheduleAppointmentSchema, "body"), appointmentController.rescheduleAppointment);
 

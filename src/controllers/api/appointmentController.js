@@ -160,6 +160,8 @@ export const getAppointmentsById = async (req, res) => {
 
         const appointments = await appointmentModel.getAppointmentsById(userId, appointment_id);
 
+        if (isEmpty(appointments)) return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+
         const now = dayjs.utc();
 
         const result = appointments.map(app => {
