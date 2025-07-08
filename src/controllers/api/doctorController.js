@@ -144,62 +144,111 @@ export const get_all_doctors_by_clinic_id = async (req, res) => {
 };
 
 
-export const get_all_doctors_in_app_side = async (req, res) => {
-    try {
-        const { user_id } = req.user;
 
-        const doctors = await userModels.getAllDoctors();
-        if (!doctors || doctors.length === 0) {
-            return handleError(res, 404, 'en', "NO_DOCTORS_FOUND");
-        }
+export const get_all_doctors_in_app_side = asyncHandler(async (req, res) => {
+    const { user_id } = req.user;
 
-        for (const doctor of doctors) {
-            let chatId = await getChatBetweenUsers(user_id, doctor.zynq_user_id);
-            doctor.chatId = chatId.length > 0 ? chatId[0].id : null;
+    const {
+        filters = {},
+        sort = { by: 'nearest', order: 'asc' },
+        pagination = { page: 1, limit: 20 }
+    } = req.body;
 
-            const availability = await userModels.getDoctorAvailability(doctor.doctor_id);
-            doctor.availability = availability || null;
+    const {
+        treatment_ids = [],
+        skin_condition_ids = [],
+        aesthetic_device_ids = [],
+        skin_type_ids = [],
+        surgery_ids = [],
+        min_rating = null
+    } = filters;
 
-            const certifications = await userModels.getDoctorCertifications(doctor.doctor_id);
-            certifications.forEach(certification => {
-                if (certification.upload_path && !certification.upload_path.startsWith('http')) {
-                    certification.upload_path = `${APP_URL}doctors/certifications/${certification.upload_path}`;
-                }
-            });
-            doctor.certifications = certifications || [];
+    const { page, limit } = pagination;
+    const offset = (page - 1) * limit;
 
-            const education = await userModels.getDoctorEducation(doctor.doctor_id);
-            doctor.education = education || [];
+    const {
+        latitude: userLatitude = null,
+        longitude: userLongitude = null,
+        language = 'en'
+    } = req.user;
 
-            const experience = await userModels.getDoctorExperience(doctor.doctor_id);
-            doctor.experience = experience || [];
+    let effectiveSort = { ...sort };
 
-            const reviews = await userModels.getDoctorReviews(doctor.doctor_id);
-            doctor.reviews = reviews || [];
+    if (effectiveSort.by === 'nearest' && (!userLatitude || !userLongitude)) {
+        console.warn("User selected 'nearest' but no location found, falling back to default sort.");
+        effectiveSort = { by: 'default', order: 'desc' };
+    }
 
-            const severityLevels = await userModels.getDoctorSeverityLevels(doctor.doctor_id);
-            doctor.severity_levels = severityLevels || [];
+    const doctors = await userModels.getAllDoctors({
+        treatment_ids,
+        skin_condition_ids,
+        aesthetic_device_ids,
+        skin_type_ids,
+        surgery_ids,
+        min_rating,
+        sort: effectiveSort,
+        userLatitude,
+        userLongitude,
+        limit,
+        offset
+    });
+    if (!doctors?.length) {
+        return handleError(res, 404, 'en', "NO_DOCTORS_FOUND");
+    }
+    const doctorIds = doctors.map(doc => doc.doctor_id);
 
-            const skinTypes = await userModels.getDoctorSkinTypes(doctor.doctor_id);
-            doctor.skin_types = skinTypes || [];
+    // Bulk fetch all related data
+    const [
+        allAvailability,
+        allCertificates,
+        allEducation,
+        allExperience,
+        allReviews,
+        allSeverityLevels,
+        allSkinTypes,
+        allTreatments
+    ] = await Promise.all([
+        clinicModels.getDoctorAvailabilityBulk?.(doctorIds),  // add this if not present
+        clinicModels.getDoctorCertificationsBulk(doctorIds),
+        clinicModels.getDoctorEducationBulk(doctorIds),
+        clinicModels.getDoctorExperienceBulk(doctorIds),
+        clinicModels.getDoctorReviewsBulk?.(doctorIds),       // optional - implement if needed
+        clinicModels.getDoctorSeverityLevelsBulk?.(doctorIds),// optional - implement if needed
+        clinicModels.getDoctorSkinTypesBulk(doctorIds),
+        clinicModels.getDoctorTreatmentsBulk(doctorIds)
+    ]);
 
-            const treatments = await userModels.getDoctorTreatments(doctor.doctor_id);
-            doctor.treatments = treatments || [];
-        }
-        doctors.forEach(doctor => {
-            if (doctor.profile_image && !doctor.profile_image.startsWith('http')) {
-                doctor.profile_image = `${APP_URL}doctor/profile_images/${doctor.profile_image}`;
+    const enrichedDoctors = await Promise.all(doctors.map(async (doctor) => {
+        const chat = await getChatBetweenUsers(user_id, doctor.zynq_user_id);
+
+        const certifications = allCertificates[doctor.doctor_id] || [];
+        certifications.forEach(cert => {
+            if (cert.upload_path && !cert.upload_path.startsWith('http')) {
+                cert.upload_path = `${APP_URL}doctors/certifications/${cert.upload_path}`;
             }
         });
-        console.log('doctors', doctors);
 
-        return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", doctors);
+        if (doctor.profile_image && !doctor.profile_image.startsWith('http')) {
+            doctor.profile_image = `${APP_URL}doctor/profile_images/${doctor.profile_image}`;
+        }
 
-    } catch (error) {
-        console.error("Error fetching doctors:", error);
-        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
-    }
-};
+        return {
+            ...doctor,
+            chatId: chat?.[0]?.id || null,
+            availability: allAvailability?.[doctor.doctor_id] || [],
+            certifications,
+            education: allEducation[doctor.doctor_id] || [],
+            experience: allExperience[doctor.doctor_id] || [],
+            reviews: allReviews?.[doctor.doctor_id] || [],
+            severity_levels: allSeverityLevels?.[doctor.doctor_id] || [],
+            skin_types: allSkinTypes[doctor.doctor_id] || [],
+            treatments: allTreatments[doctor.doctor_id] || []
+        };
+    }));
+
+
+    return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", enrichedDoctors);
+});
 
 
 export const getSingleDoctor = asyncHandler(async (req, res) => {
