@@ -40,7 +40,6 @@ export const authenticate = (allowedRoles = []) => {
             }
  
             const userRole = user.role_name;
-            console.log("userRole", userRole);
  
             if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
                 return handleError(res, 401, 'en', "ACCESS_DENIED");
