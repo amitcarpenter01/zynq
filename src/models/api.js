@@ -208,6 +208,91 @@ export const getAllDoctors = async ({
     }
 };
 
+export const getAllRecommendedDoctors = async ({
+    treatment_ids = [],
+    skin_condition_ids = [],
+    aesthetic_device_ids = [],
+    skin_type_ids = [],
+    surgery_ids = [],
+    min_rating = null,
+    sort = { by: 'default', order: 'desc' },
+    limit,
+    offset
+}) => {
+    try {
+        const params = [];
+
+        const needsRating = min_rating !== null || sort.by === 'rating';
+
+        const selectFields = [
+            'd.*',
+            'zu.email',
+            'dm.clinic_id', // clinic_id from mapping table
+            needsRating ? 'ROUND(AVG(ar.rating), 2) AS avg_rating' : null
+        ].filter(Boolean).join(', ');
+
+        let query = `
+            SELECT ${selectFields}
+            FROM tbl_doctors d
+            LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+            LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
+        `;
+
+        if (needsRating) {
+            query += ` LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id`;
+        }
+
+        const joins = [];
+        const filters = [];
+
+        const addJoinAndFilter = (ids, joinTable, joinAlias, joinField) => {
+            if (ids.length > 0) {
+                joins.push(`LEFT JOIN ${joinTable} ${joinAlias} ON d.doctor_id = ${joinAlias}.doctor_id`);
+                filters.push(`${joinAlias}.${joinField} IN (${ids.map(() => '?').join(', ')})`);
+                params.push(...ids);
+            }
+        };
+
+        addJoinAndFilter(treatment_ids, 'tbl_doctor_treatments', 'dt', 'treatment_id');
+        addJoinAndFilter(skin_condition_ids, 'tbl_doctor_skin_condition', 'dsc', 'skin_condition_id');
+        addJoinAndFilter(aesthetic_device_ids, 'tbl_doctor_aesthetic_devices', 'dad', 'aesthetic_devices_id');
+        addJoinAndFilter(skin_type_ids, 'tbl_doctor_skin_types', 'dst', 'skin_type_id');
+        addJoinAndFilter(surgery_ids, 'tbl_doctor_surgery', 'ds', 'surgery_id');
+
+        if (joins.length > 0) {
+            query += ' ' + joins.join(' ');
+        }
+
+        query += ` WHERE d.profile_completion_percentage >= 0`;
+
+        if (filters.length > 0) {
+            query += ` AND ${filters.join(' AND ')}`;
+        }
+
+        // Group by doctor and clinic to allow duplicates across clinics
+        query += ` GROUP BY d.doctor_id, dm.clinic_id`;
+
+        if (min_rating !== null) {
+            query += ` HAVING avg_rating >= ?`;
+            params.push(min_rating);
+        }
+
+        if (sort.by === 'rating') {
+            query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
+        } else {
+            query += ` ORDER BY d.created_at DESC`;
+        }
+
+        query += ` LIMIT ? OFFSET ?`;
+        params.push(Number(limit) || 10, Number(offset) || 0);
+
+        return await db.query(query, params);
+    } catch (error) {
+        console.error("Database Error in getAllDoctors:", error.message);
+        throw new Error("Failed to fetch doctors.");
+    }
+};
+
 export const getDoctorAvailability = async (doctor_id) => {
     try {
         const availability = await db.query('SELECT * FROM tbl_doctor_availability WHERE doctor_id = ? ORDER BY created_at DESC', [doctor_id]);

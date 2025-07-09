@@ -243,7 +243,102 @@ export const get_all_doctors_in_app_side = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", enrichedDoctors);
 });
 
+export const get_recommended_doctors = asyncHandler(async (req, res) => {
+    const { user_id } = req.user;
 
+    const {
+        filters = {},
+        sort = { by: 'default', order: 'desc' },
+        pagination = { page: 1, limit: 10 }
+    } = req.body;
+
+    const {
+        treatment_ids = [],
+        skin_condition_ids = [],
+        aesthetic_device_ids = [],
+        skin_type_ids = [],
+        surgery_ids = [],
+        min_rating = null
+    } = filters;
+
+    const { page, limit } = pagination;
+    const offset = (page - 1) * limit;
+
+    const doctors = await userModels.getAllRecommendedDoctors({
+        treatment_ids,
+        skin_condition_ids,
+        aesthetic_device_ids,
+        skin_type_ids,
+        surgery_ids,
+        min_rating,
+        sort,
+        limit,
+        offset
+    });
+
+    if (!doctors?.length) {
+        return handleError(res, 404, 'en', "NO_DOCTORS_FOUND");
+    }
+
+    const doctorIds = doctors.map(doc => doc.doctor_id);
+
+    const [
+        allAvailability,
+        allCertificates,
+        allEducation,
+        allExperience,
+        allReviews,
+        allSeverityLevels,
+        allSkinTypes,
+        allTreatments,
+        allChats
+    ] = await Promise.all([
+        clinicModels.getDoctorAvailabilityBulk?.(doctorIds),
+        clinicModels.getDoctorCertificationsBulk(doctorIds),
+        clinicModels.getDoctorEducationBulk(doctorIds),
+        clinicModels.getDoctorExperienceBulk(doctorIds),
+        clinicModels.getDoctorReviewsBulk?.(doctorIds),
+        clinicModels.getDoctorSeverityLevelsBulk?.(doctorIds),
+        clinicModels.getDoctorSkinTypesBulk(doctorIds),
+        clinicModels.getDoctorTreatmentsBulk(doctorIds),
+        clinicModels.getChatsBetweenUserAndDoctors(user_id, doctorIds) // 🆕 optimized bulk chat
+    ]);
+
+    // Mapify all result sets
+    const availabilityMap = toMap(allAvailability);
+    const certMap = toMap(allCertificates);
+    const eduMap = toMap(allEducation);
+    const expMap = toMap(allExperience);
+    const reviewsMap = toMap(allReviews);
+    const severityMap = toMap(allSeverityLevels);
+    const skinTypeMap = toMap(allSkinTypes);
+    const treatmentMap = toMap(allTreatments);
+
+    // Mapify chats by doctor zynq_user_id
+    const chatMap = new Map();
+    (allChats || []).forEach(chat => {
+        const doctorUserId = chat.other_user_id; // or chat.doctor_user_id depending on schema
+        chatMap.set(doctorUserId, chat);
+    });
+
+    const enrichedDoctors = doctors.map((doctor) => {
+        return {
+            ...doctor,
+            chatId: chatMap.get(doctor.zynq_user_id)?.id || null,
+            profile_image: formatImagePath(doctor.profile_image, 'doctor/profile_images'),
+            availability: availabilityMap.get(doctor.doctor_id) || [],
+            certifications: formatCertifications(certMap.get(doctor.doctor_id)),
+            education: eduMap.get(doctor.doctor_id) || [],
+            experience: expMap.get(doctor.doctor_id) || [],
+            reviews: reviewsMap.get(doctor.doctor_id) || [],
+            severity_levels: severityMap.get(doctor.doctor_id) || [],
+            skin_types: skinTypeMap.get(doctor.doctor_id) || [],
+            treatments: treatmentMap.get(doctor.doctor_id) || []
+        };
+    });
+
+    return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", enrichedDoctors);
+});
 
 export const getSingleDoctor = asyncHandler(async (req, res) => {
     const { doctor_id } = req.params;
