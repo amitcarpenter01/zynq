@@ -6,6 +6,9 @@ import { authenticate } from '../middleware/web_user_auth.js';
 import { uploadCertificationFieldsTo, uploadFileTo } from '../services/doctor_multer.js';
 import * as supportControllers from "../controllers/doctor/supportController.js";
 import * as appointmentControllers from "../controllers/doctor/appointmentController.js";
+import { validate } from '../middleware/validation.middleware.js';
+import { rescheduleAppointmentSchema } from '../validations/appointment.validation.js';
+import { authenticateAdmin } from '../middleware/auth.js';
 
 
 router.get("/get_profile", authenticate(['DOCTOR']), doctorController.getDoctorProfile);
@@ -88,6 +91,7 @@ router.get('/getMyAppointments',authenticate(['DOCTOR','SOLO_DOCTOR']), appointm
 router.post('/getMyAppointmentById', authenticate(['DOCTOR','SOLO_DOCTOR']), appointmentControllers.getMyAppointmentById);
 
 router.get("/get_docter_profile", authenticate(['DOCTOR','SOLO_DOCTOR']), doctorController.get_docter_profile);
+router.patch('/appointment/reschedule',authenticateAdmin, validate(rescheduleAppointmentSchema, "body"), appointmentControllers.rescheduleAppointment);
 
 
 

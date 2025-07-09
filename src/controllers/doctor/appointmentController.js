@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { handleError, handleSuccess, joiErrorHandle } from '../../utils/responseHandler.js';
+import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from '../../utils/responseHandler.js';
 import * as appointmentModel from '../../models/appointment.js';
 import * as doctorModel from '../../models/doctor.js';
 import * as chatModel from '../../models/chat.js';
@@ -86,8 +86,8 @@ export const getMyAppointmentById = async (req, res) => {
             const endUTC = dayjs.utc(localFormattedEnd);
             const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
 
-            const doctor = await  doctorModel.getDocterByDocterId(app.doctor_id);
-            console.log("doctor",doctor)
+            const doctor = await doctorModel.getDocterByDocterId(app.doctor_id);
+            console.log("doctor", doctor)
             let chatId = await chatModel.getChatBetweenUsers(app.user_id, doctor[0].zynq_user_id);
             // console.log('chatId', chatId);
 
@@ -96,11 +96,11 @@ export const getMyAppointmentById = async (req, res) => {
                 ...app,
                 start_time: dayjs.utc(localFormattedStart).toISOString(),
                 end_time: dayjs.utc(localFormattedEnd).toISOString(),
-                chatId : chatId.length>0 ? chatId : null,
+                chatId: chatId.length > 0 ? chatId : null,
                 videoCallOn
             };
         }));
-        console.log("result",result)
+        console.log("result", result)
 
         return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result[0]);
     } catch (error) {
@@ -108,3 +108,28 @@ export const getMyAppointmentById = async (req, res) => {
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
+
+export const rescheduleAppointment = asyncHandler(async (req, res) => {
+    const { doctor_id, appointment_id, start_time, end_time } = req.body;
+
+    const existing = await appointmentModel.checkIfSlotAlreadyBooked(doctor_id, start_time);
+
+    if (existing.length > 0) {
+        return handleError(res, 400, "en", "SLOT_ALREADY_BOOKED");
+    }
+
+    const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
+    const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
+
+    const result = await appointmentModel.rescheduleAppointment(
+        appointment_id,
+        normalizedStart,
+        normalizedEnd
+    );
+
+    if (result.affectedRows === 0) {
+        return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+    }
+
+    return handleSuccess(res, 200, "en", "APPOINTMENT_RESCHEDULED_SUCCESSFULLY");
+});

@@ -149,6 +149,7 @@ export const updateAppointmentStatus = async (req, res) => {
 export const getAppointmentsById = async (req, res) => {
     try {
         const userId = req.user.user_id;
+
         const schema = Joi.object({
             appointment_id: Joi.string().required(),
         });
@@ -156,15 +157,19 @@ export const getAppointmentsById = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        let { appointment_id } = value;
-
+        const { appointment_id } = value;
         const appointments = await appointmentModel.getAppointmentsById(userId, appointment_id);
 
-        if (isEmpty(appointments)) return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+        if (isEmpty(appointments))
+            return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
 
         const now = dayjs.utc();
 
-        const result = appointments.map(app => {
+        const result = await Promise.all(appointments.map(async (app) => {
+            const doctor = await getDocterByDocterId(app.doctor_id);
+            const chatId = await getChatBetweenUsers(userId, doctor[0].zynq_user_id);
+
+            app.chatId = chatId.length > 0 ? chatId[0].id : null;
 
             const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
             const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
@@ -173,49 +178,32 @@ export const getAppointmentsById = async (req, res) => {
                 app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
             }
 
+            if (app.pdf && !app.pdf.startsWith('http')) {
+                app.pdf = `${APP_URL}${app.pdf}`;
+            }
+
             const startUTC = dayjs.utc(localFormattedStart);
             const endUTC = dayjs.utc(localFormattedEnd);
-            const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
+
+            const videoCallOn =
+                app.status !== 'Completed' &&
+                now.isAfter(startUTC) &&
+                now.isBefore(endUTC);
 
             return {
                 ...app,
-                start_time: dayjs.utc(localFormattedStart).toISOString(),
-                end_time: dayjs.utc(localFormattedEnd).toISOString(),
-                videoCallOn
+                start_time: startUTC.toISOString(),
+                end_time: endUTC.toISOString(),
+                videoCallOn,
             };
-        });
+        }));
 
-        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
+        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result[0]);
     } catch (error) {
-        console.error("Error fetching user appointments:", error);
+        console.error("Error fetching appointment by ID:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
-
-export const rescheduleAppointment = asyncHandler(async (req, res) => {
-    const { doctor_id, appointment_id, start_time, end_time } = req.body;
-
-    const existing = await appointmentModel.checkIfSlotAlreadyBooked(doctor_id, start_time);
-
-    if (existing.length > 0) {
-        return handleError(res, 400, "en", "SLOT_ALREADY_BOOKED");
-    }
-
-    const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
-    const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
-
-    const result = await appointmentModel.rescheduleAppointment(
-        appointment_id,
-        normalizedStart,
-        normalizedEnd
-    );
-
-    if (result.affectedRows === 0) {
-        return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
-    }
-
-    return handleSuccess(res, 200, "en", "APPOINTMENT_RESCHEDULED_SUCCESSFULLY");
-});
 
 export const rateAppointment = asyncHandler(async (req, res) => {
     const { appointment_id, rating, review } = req.body;
