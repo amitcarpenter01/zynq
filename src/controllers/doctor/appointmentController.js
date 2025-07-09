@@ -6,6 +6,7 @@ import * as chatModel from '../../models/chat.js';
 import dayjs from 'dayjs';
 import { getDocterByDocterId } from '../../models/doctor.js';
 import { getChatBetweenUsers } from '../../models/chat.js';
+import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 const APP_URL = process.env.APP_URL;
 export const getMyAppointmentsDoctor = async (req, res) => {
     try {
@@ -120,7 +121,6 @@ export const rescheduleAppointment = asyncHandler(async (req, res) => {
 
     const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
     const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
-
     const result = await appointmentModel.rescheduleAppointment(
         appointment_id,
         normalizedStart,
@@ -130,6 +130,17 @@ export const rescheduleAppointment = asyncHandler(async (req, res) => {
     if (result.affectedRows === 0) {
         return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
     }
+
+    const [appointmentData] = await appointmentModel.getAppointmentDataByAppointmentID(appointment_id)
+
+    await sendNotification({
+        userData: req.user,
+        type: "APPOINTMENT",
+        type_id: appointment_id,
+        notification_type: NOTIFICATION_MESSAGES.appointment_rescheduled,
+        receiver_id: appointmentData.user_id,
+        receiver_type: "USER"
+    });
 
     return handleSuccess(res, 200, "en", "APPOINTMENT_RESCHEDULED_SUCCESSFULLY");
 });
