@@ -1,6 +1,7 @@
 import db from '../config/db.js';
 import { validateSchema } from '../middleware/validation.middleware.js';
 import { extractUserData } from '../utils/misc.util.js';
+import { isEmpty } from '../utils/user_helper.js';
 import { sendNotificationSchema } from '../validations/notification.validation.js';
 // import admin from 'firebase-admin';
 
@@ -32,7 +33,7 @@ export const NOTIFICATION_MESSAGES = {
     })
 };
 
-const getNotificationContent = (notification_type, fullName) => {
+const getNotificationContent = (notification_type, full_name) => {
     let template;
 
     if (typeof notification_type === 'object' && typeof notification_type.getBody === 'function') {
@@ -42,10 +43,10 @@ const getNotificationContent = (notification_type, fullName) => {
     }
 
     const title = typeof template.title === 'function'
-        ? template.title(fullName)
+        ? template.title(full_name)
         : template.title;
 
-    const body = template.getBody(fullName);
+    const body = template.getBody(full_name);
 
     return { title, body };
 };
@@ -126,14 +127,22 @@ export const pushToFCM = async (message) => {
 
 /**
  * Sends a notification, stores it in the DB, and optionally pushes via FCM.
- *
+ * @example
+ * await sendNotification({
+ *   userData: req.user,
+ *   type: "APPOINTMENT",
+ *   type_id: appointment_id,
+ *   notification_type: NOTIFICATION_MESSAGES.appointment_rescheduled,
+ *   receiver_id: doctor_id,
+ *   receiver_type: "DOCTOR"
+ * });
  * @param {Object} params
- * @param {Object} params.userData - Sender's user object (from req.user)
- * @param {string} params.type - Notification category (e.g. 'Appointment')
- * @param {string} params.type_id - Associated item ID (e.g. appointment ID)
- * @param {string|Object} params.notification_type - Type from NOTIFICATION_MESSAGES or custom message object
- * @param {string} params.receiver_type - Role of the receiver (e.g. 'USER', 'DOCTOR', SOLO_DOCTOR, 'CLINIC', 'ADMIN')
- * @param {string} params.receiver_id - ID of the receiver (e.g. user ID, doctor ID, clinic ID, admin ID)
+ * @param {Object} params.userData - Sender's user object (typically from req.user)
+ * @param {string} params.type - Notification category (e.g., 'APPOINTMENT')
+ * @param {string} params.type_id - Associated item ID (e.g., appointment ID)
+ * @param {string|Object} params.notification_type - Type from NOTIFICATION_MESSAGES or a custom message object
+ * @param {string} params.receiver_type - Role of the receiver (e.g., 'USER', 'DOCTOR', 'CLINIC', 'ADMIN')
+ * @param {string} params.receiver_id - ID of the receiver (e.g., user ID, doctor ID, clinic ID, admin ID)
  */
 export const sendNotification = async ({
     userData,
@@ -144,46 +153,51 @@ export const sendNotification = async ({
     receiver_id,
 }) => {
 
-    validateSchema(sendNotificationSchema, {
-        userData,
-        type,
-        type_id,
-        notification_type,
-        receiver_type,
-        receiver_id,
-    });
+    try {
+        validateSchema(sendNotificationSchema, {
+            userData,
+            type,
+            type_id,
+            notification_type,
+            receiver_type,
+            receiver_id,
+        });
 
-    const { sender_id, sender_type, fullName, token } = extractUserData(userData);
-    const { title, body } = getNotificationContent(notification_type, fullName);
+        const { sender_id, sender_type, full_name, token } = extractUserData(userData);
+        const { title, body } = getNotificationContent(notification_type, full_name);
 
-    await insertUserNotification({
-        sender_id,
-        sender_type,
-        receiver_id,
-        receiver_type,
-        type,
-        type_id,
-        notification_type,
-        title,
-        body
-    });
+        await insertUserNotification({
+            sender_id,
+            sender_type,
+            receiver_id,
+            receiver_type,
+            type,
+            type_id,
+            notification_type,
+            title,
+            body
+        });
 
-    const payload = buildNotificationPayload({
-        type,
-        type_id,
-        notification_type,
-        sender_id,
-        sender_type,
-        receiver_id,
-        receiver_type,
-        token,
-        title,
-        body
-    });
+        const payload = buildNotificationPayload({
+            type,
+            type_id,
+            notification_type,
+            sender_id,
+            sender_type,
+            receiver_id,
+            receiver_type,
+            token,
+            title,
+            body
+        });
 
-    console.log("payload", payload);
+        console.log("payload", payload);
 
-    // if (token) {
-    //     await pushToFCM(payload);
-    // }
+        if (!isEmpty(token)) {
+            await pushToFCM(payload);
+        }
+    } catch (error) {
+        console.error('Error in sendNotification:', error);
+        throw error;
+    }
 };
