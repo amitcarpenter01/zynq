@@ -30,7 +30,7 @@ const joiMessages = {
     "object.base": ":key must be an object",
 };
 
-const idValidation = joi.string().trim().required().uuid()
+const idValidation = joi.string().trim().required()
 
 const idArrayValidation = joi.array().items(idValidation).optional();
 
