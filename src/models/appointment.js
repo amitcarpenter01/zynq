@@ -156,13 +156,25 @@ export const updateAppointmentStatus = async (appointment_id, status) => {
 
 
 export const getAppointmentsById = async (user_id, appointment_id) => {
-    const results = await db.query(` 
-        SELECT a.*,d.*,zu.email FROM tbl_appointments a INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+    const results = await db.query(`
+        SELECT 
+            a.*,
+            d.*,
+            zu.email,
+            r.pdf,
+            c.clinic_name
+        FROM tbl_appointments a
+        INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
         INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
-        WHERE a.user_id = ? AND a.appointment_id  = ?
+        LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id = a.report_id
+        INNER JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
+        WHERE a.user_id = ? AND a.appointment_id = ?
     `, [user_id, appointment_id]);
+
     return results;
 };
+
+
 
 export const getAppointmentDataByAppointmentID = async (appointment_id) => {
     try {
