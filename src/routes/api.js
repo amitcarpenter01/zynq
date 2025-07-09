@@ -13,6 +13,7 @@ import * as doctorControllers from "../controllers/api/doctorController.js";
 import * as productControllers from "../controllers/api/productController.js";
 import * as clinicControllers from "../controllers/api/clinicController.js";
 import * as supportControllers from "../controllers/api/supportController.js";
+import * as treatmentControllers from "../controllers/api/treatmentController.js";
 
 import * as appointmentController from "../controllers/api/appointmentController.js";
 
@@ -23,6 +24,7 @@ import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validations/appointment.validation.js';
 import { getSingleDoctorSchema, getAllDoctorsSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema } from '../validations/clinic.validation.js';
+import { getTreatmentsByConcernSchema } from '../validations/treatment.validation.js';
 
 const router = express.Router();
 
@@ -100,8 +102,10 @@ router.patch('/update-appointment-status', appointmentController.updateAppointme
 
 router.post('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
 
-router.patch('/appointment/reschedule', authenticateUser, validate(rescheduleAppointmentSchema, "body"), appointmentController.rescheduleAppointment);
-
 router.post('/appointment/ratings', authenticateUser, validate(rateAppointmentSchema, "body"), appointmentController.rateAppointment);
+
+// -------------------------------------General------------------------------------------------//
+
+router.get('/treatments/concern/:concern_id', authenticateUser, validate(getTreatmentsByConcernSchema, "params"), treatmentControllers.getTreatmentsByConcern);
 
 export default router;

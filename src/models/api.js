@@ -576,3 +576,12 @@ export const fetchZynqUserByUserId = async (user_id) => {
         throw new Error("Failed to fetch clinic.");
     }
 }
+
+export const getTreatmentsByConcernId = async (concern_id) => {
+    try {
+        return await db.query("SELECT * FROM tbl_treatments WHERE concern_id = ?", [concern_id]);
+    } catch (error) {
+        console.error("Database Error in getTreatmentsByConcernId:", error.message);
+        throw error;
+    }
+};
