@@ -22,10 +22,10 @@ export const authenticate = (allowedRoles = []) => {
             if (tokenParts[0] !== 'Bearer' || tokenParts[1] === 'null' || !tokenParts[1]) {
                 return handleError(res, 401, 'en', "UNAUTHMISSINGTOKEN");
             }
- 
+
             const token = tokenParts[1];
             let decodedToken;
- 
+            
             try {
                 decodedToken = jwt.verify(token, WEB_JWT_SECRET);
             } catch (err) {
@@ -77,6 +77,7 @@ export const authenticate = (allowedRoles = []) => {
             }
 
             req.user = user;
+            req.user.role = userRole;
             next();
  
         } catch (error) {

@@ -35,6 +35,7 @@ export const authenticateUser = async (req, res, next) => {
             return handleError(res, 404, 'en', "USER_NOT_FOUND")
         }
         req.user = user;
+        req.user.role = "USER";
         next();
     } catch (error) {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR")
@@ -68,6 +69,8 @@ export const authenticateAdmin = async (req, res, next) => {
         }
 
         req.admin = admin;
+        req.user = admin;
+        req.user.role = "ADMIN";
         next();
     } catch (error) {
         console.error("Admin auth error:", error);
