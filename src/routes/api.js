@@ -1,6 +1,6 @@
 import express from 'express';
 import { upload } from '../services/multer.js';
-import { authenticateUser } from '../middleware/auth.js';
+import { authenticateAdmin, authenticateUser } from '../middleware/auth.js';
 import { authenticate } from '../middleware/web_user_auth.js';;
 import { uploadFile, uploadMultipleFiles } from '../services/multer.js';
 import { validate } from '../middleware/validation.middleware.js';
@@ -25,6 +25,7 @@ import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validatio
 import { getSingleDoctorSchema, getAllDoctorsSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema } from '../validations/clinic.validation.js';
 import { getTreatmentsByConcernSchema } from '../validations/treatment.validation.js';
+import { getNotifications } from '../controllers/api/notificationController.js';
 
 const router = express.Router();
 
@@ -108,5 +109,12 @@ router.post('/appointment/ratings', authenticateUser, validate(rateAppointmentSc
 // -------------------------------------General------------------------------------------------//
 
 router.get('/treatments/concern/:concern_id', authenticateUser, validate(getTreatmentsByConcernSchema, "params"), treatmentControllers.getTreatmentsByConcern);
+
+// -------------------------------------Notifications------------------------------------------------//
+
+
+router.get('/admin/notifications/get', authenticateAdmin, getNotifications);
+router.get('/user/notifications/get', authenticateUser, getNotifications);
+router.get('/zynq-user/notifications/get', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getNotifications);
 
 export default router;
