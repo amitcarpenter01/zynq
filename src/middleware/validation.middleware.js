@@ -22,4 +22,12 @@ const validateMultiple = (schema, types) => (req, res, next) => {
     next();
 };
 
-export { validate, validateMultiple };
+const validateSchema = (schema, data) => {
+    const { error, value } = schema.validate(data);
+    if (error) {
+        throw new Error(populateMessage(error));
+    }
+    return value;
+};
+
+export { validate, validateMultiple, validateSchema };
