@@ -30,13 +30,11 @@ const joiMessages = {
     "object.base": ":key must be an object",
 };
 
-const idValidation = joi.string().trim().required()
+const stringValidation = joi.string().trim().required()
 
-const idArrayValidation = joi.array().items(idValidation).optional();
+const idArrayValidation = joi.array().items(stringValidation).optional();
 
 const emailValidation = joi.string().trim().required().email();
-
-const stringValidation = joi.string().trim().required();
 
 const dateValidation = joi.string().isoDate().required();
 
@@ -91,9 +89,8 @@ const populateMessage = (error) => {
 
 export {
     joiMessages,
-    idValidation,
-    emailValidation,
     stringValidation,
+    emailValidation,
     dateValidation,
     pastDateValidation,
     numberValidation,

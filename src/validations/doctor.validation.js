@@ -1,14 +1,14 @@
 import joi from "joi";
 import {
   idArrayValidation,
-  idValidation,
+  stringValidation,
   numberValidation,
   orderValidation,
   ratingValidation,
 } from "../utils/joi.util.js";
 
 export const getSingleDoctorSchema = joi.object({
-  doctor_id: idValidation,
+  doctor_id: stringValidation,
 });
 
 export const getAllDoctorsSchema = joi.object({

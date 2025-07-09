@@ -1,7 +1,6 @@
 import Joi from "joi";
 import {
   stringValidation,
-  idValidation,
   dateValidation,
   numberValidation,
   orderValidation,

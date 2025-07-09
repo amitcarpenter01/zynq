@@ -1,8 +1,8 @@
 import joi from "joi";
 import {
-  idValidation,
+  stringValidation,
 } from "../utils/joi.util.js";
 
 export const getTreatmentsByConcernSchema = joi.object({
-  concern_id: idValidation,
+  concern_id: stringValidation,
 });
