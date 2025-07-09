@@ -52,7 +52,7 @@ const orderValidation = joi.string().valid('asc', 'desc').default('asc');
 
 const ratingValidation = joi.number().min(0).max(5).required();
 
-const userTypeValidation = joi.string().valid('USER', 'DOCTOR', 'ADMIN', 'SOLO_DOCTOR', 'CLINIC').required();
+const userTypeValidation = joi.string().valid('USER', 'DOCTOR', 'ADMIN', 'CLINIC').required();
 
 const populateMessage = (error) => {
     let errorDetails = error.details[0];

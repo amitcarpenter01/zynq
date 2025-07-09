@@ -42,33 +42,39 @@ export const extractUserData = (userData) => {
     }
 
     const sender_type = userData.role;
-    const full_name = userData.name || userData.full_name || 'Someone';
     const token = userData.fcm_token || null;
 
-    if (sender_type === 'DOCTOR' || sender_type === 'SOLO_DOCTOR') {
-        const sender_id = userData?.doctorData?.doctor_id;
-        if (!sender_id) throw new Error("Doctor ID not found in userData");
-        return { sender_id, sender_type, full_name, token };
+    let sender_id, full_name;
+
+    switch (sender_type) {
+        case 'DOCTOR':
+        case 'SOLO_DOCTOR':
+            sender_id = userData?.doctorData?.doctor_id;
+            full_name = userData?.doctorData?.name || "Someone";
+            break;
+
+        case 'CLINIC':
+            sender_id = userData?.clinicData?.clinic_id;
+            full_name = userData?.clinicData?.clinic_name || "Someone";
+            break;
+
+        case 'USER':
+            sender_id = userData?.user_id;
+            full_name = userData?.full_name || "Someone";
+            break;
+
+        case 'ADMIN':
+            sender_id = userData?.admin_id;
+            full_name = userData?.full_name || "Someone";
+            break;
+
+        default:
+            throw new Error("Unsupported role");
     }
 
-    if (sender_type === 'CLINIC') {
-        const sender_id = userData?.clinicData?.clinic_id;
-        if (!sender_id) throw new Error("Clinic ID not found in userData");
-        return { sender_id, sender_type, full_name, token };
+    if (!sender_id) {
+        throw new Error(`${sender_type} ID not found in userData`);
     }
 
-    if (sender_type === 'USER') {
-        const sender_id = userData?.user_id;
-        if (!sender_id) throw new Error("User ID not found in userData");
-        return { sender_id, sender_type, full_name, token };
-    }
-
-    if (sender_type === 'ADMIN') {
-        const sender_id = userData?.admin_id;
-        if (!sender_id) throw new Error("Admin ID not found in userData");
-        return { sender_id, sender_type, full_name, token };
-    }
-
-    throw new Error("Unsupported role for ID extraction");
+    return { sender_id, sender_type, full_name, token };
 };
-

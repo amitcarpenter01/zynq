@@ -191,13 +191,11 @@ export const sendNotification = async ({
             body
         });
 
-        console.log("payload", payload);
-
         if (!isEmpty(token)) {
             await pushToFCM(payload);
         }
     } catch (error) {
         console.error('Error in sendNotification:', error);
-        throw error;
+        // throw error;
     }
 };
