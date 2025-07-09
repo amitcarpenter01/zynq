@@ -8,7 +8,6 @@ import * as supportControllers from "../controllers/doctor/supportController.js"
 import * as appointmentControllers from "../controllers/doctor/appointmentController.js";
 import { validate } from '../middleware/validation.middleware.js';
 import { rescheduleAppointmentSchema } from '../validations/appointment.validation.js';
-import { authenticateAdmin } from '../middleware/auth.js';
 
 
 router.get("/get_profile", authenticate(['DOCTOR']), doctorController.getDoctorProfile);
@@ -55,7 +54,7 @@ router.post('/add_certification', authenticate(['DOCTOR']), uploadVariousFields,
 
 router.put('/edit_certification', authenticate(['DOCTOR']), uploadFileTo('certifications'), doctorController.editCertification);
 
-router.delete('/delete_certification/:doctor_certification_id', authenticate(['DOCTOR','SOLO_DOCTOR']), doctorController.deleteCertification);
+router.delete('/delete_certification/:doctor_certification_id', authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.deleteCertification);
 
 // Expertise
 router.post("/edit_expertise", authenticate(['DOCTOR']), doctorController.editExpertise);
@@ -84,14 +83,14 @@ router.get("/getDoctorProfileById", authenticate(['DOCTOR']), doctorController.g
 
 // -------------------------------------slot managment------------------------------------------------//
 
-router.post('/createDoctorAvailability', authenticate(['DOCTOR','SOLO_DOCTOR']), doctorController.createDoctorAvailability);
-router.post('/updateDoctorAvailability', authenticate(['DOCTOR','SOLO_DOCTOR']), doctorController.updateDoctorAvailability);
-router.get('/getMyAppointments',authenticate(['DOCTOR','SOLO_DOCTOR']), appointmentControllers.getMyAppointmentsDoctor);
+router.post('/createDoctorAvailability', authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.createDoctorAvailability);
+router.post('/updateDoctorAvailability', authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.updateDoctorAvailability);
+router.get('/getMyAppointments', authenticate(['DOCTOR', 'SOLO_DOCTOR']), appointmentControllers.getMyAppointmentsDoctor);
 
-router.post('/getMyAppointmentById', authenticate(['DOCTOR','SOLO_DOCTOR']), appointmentControllers.getMyAppointmentById);
+router.post('/getMyAppointmentById', authenticate(['DOCTOR', 'SOLO_DOCTOR']), appointmentControllers.getMyAppointmentById);
 
-router.get("/get_docter_profile", authenticate(['DOCTOR','SOLO_DOCTOR']), doctorController.get_docter_profile);
-router.patch('/appointment/reschedule',authenticateAdmin, validate(rescheduleAppointmentSchema, "body"), appointmentControllers.rescheduleAppointment);
+router.get("/get_docter_profile", authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.get_docter_profile);
+router.patch('/appointment/reschedule', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(rescheduleAppointmentSchema, "body"), appointmentControllers.rescheduleAppointment);
 
 
 
