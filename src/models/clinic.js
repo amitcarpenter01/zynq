@@ -1664,7 +1664,7 @@ export const insertClinicImages = async (clinicId, imageFilenames = []) => {
     const params = imageFilenames.flatMap(filename => [clinicId, filename]);
 
     const query = `
-        INSERT INTO clinic_images (clinic_id, image_url)
+        INSERT INTO tbl_clinic_images (clinic_id, image_url)
         VALUES ${values}
     `;
 
@@ -1674,7 +1674,7 @@ export const insertClinicImages = async (clinicId, imageFilenames = []) => {
 export const getClinicImages = async (clinic_id) => {
     try {
         const rows = await db.query(
-            `SELECT clinic_image_id, image_url FROM clinic_images WHERE clinic_id = ?`,
+            `SELECT clinic_image_id, image_url FROM tbl_clinic_images WHERE clinic_id = ?`,
             [clinic_id]
         );
         return rows;
@@ -1689,7 +1689,7 @@ export const deleteClinicImageById = async (clinic_image_id, clinic_id) => {
         console.log('clinic_image_id', clinic_image_id, 'clinic_id', clinic_id);
         // 1. Get image_url first
         const rows = await db.query(
-            `SELECT image_url FROM clinic_images WHERE clinic_image_id = ? AND clinic_id = ?`,
+            `SELECT image_url FROM tbl_clinic_images WHERE clinic_image_id = ? AND clinic_id = ?`,
             [clinic_image_id, clinic_id]
         );
 
@@ -1703,7 +1703,7 @@ export const deleteClinicImageById = async (clinic_image_id, clinic_id) => {
         }
 
         const result = await db.query(
-            `DELETE FROM clinic_images WHERE clinic_image_id = ? AND clinic_id = ?`,
+            `DELETE FROM tbl_clinic_images WHERE clinic_image_id = ? AND clinic_id = ?`,
             [clinic_image_id, clinic_id]
         );
 
