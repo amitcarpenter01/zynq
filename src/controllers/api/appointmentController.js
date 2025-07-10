@@ -6,6 +6,8 @@ import { createChat, getChatBetweenUsers } from '../../models/chat.js';
 import { getDocterByDocterId } from '../../models/doctor.js';
 import { isEmpty } from '../../utils/user_helper.js';
 const APP_URL = process.env.APP_URL;
+import { v4 as uuidv4 } from 'uuid';
+import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 
 export const bookAppointment = async (req, res) => {
     try {
@@ -33,7 +35,9 @@ export const bookAppointment = async (req, res) => {
         const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
         const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
 
+        const appointment_id = uuidv4();
         const appointmentData = {
+            appointment_id,
             user_id: req.user.user_id,
             doctor_id,
             start_time: normalizedStart,
@@ -46,10 +50,20 @@ export const bookAppointment = async (req, res) => {
 
 
         let result = await appointmentModel.insertAppointment(appointmentData);
+
         let user_id = req.user.user_id
         const doctor = await getDocterByDocterId(doctor_id);
         let chatId = await getChatBetweenUsers(user_id, doctor[0].zynq_user_id);
-        console.log('chatId', chatId);
+
+
+        await sendNotification({
+            userData: req.user,
+            type: "APPOINTMENT",
+            type_id: appointment_id,
+            notification_type: NOTIFICATION_MESSAGES.appointment_booked,
+            receiver_id: doctor_id,
+            receiver_type: "DOCTOR"
+        })
 
         if (chatId.length > 0) {
             return handleSuccess(res, 201, "en", "APPOINTMENT_BOOKED_SUCCESSFULLY");
