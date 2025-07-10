@@ -59,6 +59,23 @@ export const addPersonalInformation = async (req, res) => {
             clinicData.clinic_logo = req.files.logo[0].filename
         }
 
+        const uploadedFiles = req.files || {};
+        const clinicImageFiles = [];
+
+        if (Array.isArray(uploadedFiles.files) && uploadedFiles.files.length > 0) {
+            for (const file of uploadedFiles.files) {
+                const fileName = file.filename;
+                clinicImageFiles.push(fileName);
+            }
+
+            if (clinicImageFiles.length > 0) {
+                await clinicModels.insertClinicImages(req?.user?.clinicData?.clinic_id, clinicImageFiles);
+            }
+        }
+
+
+
+
         const doctorResult = await dbOperations.getData('tbl_doctors', `where zynq_user_id = '${zynqUserId}' `);
         const getClinicData = await dbOperations.getData('tbl_clinics', `WHERE zynq_user_id = '${zynqUserId}' `);
         if (getClinicData.length == 0) {
@@ -498,7 +515,7 @@ export const createDoctorAvailability = async (req, res) => {
         const zynqUserId = req.user.id
         console.log('zynqUserId', zynqUserId);
 
-       
+
         await update_onboarding_status(5, zynqUserId);
         await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
         return handleSuccess(res, 200, 'en', 'Availability_added_successfully');
@@ -693,7 +710,7 @@ export const getDoctorProfileByStatus = async (req, res) => {
 
 export const updateOnboardingStatus = async (req, res) => {
     try {
-        const {statusId} = req.query;
+        const { statusId } = req.query;
         await update_onboarding_status(statusId, req.user.id);
         return handleSuccess(res, 200, 'en', "ONBOARDING_STATUS_UPDATED");
     } catch (err) {
@@ -701,9 +718,9 @@ export const updateOnboardingStatus = async (req, res) => {
         return handleError(res, 500, 'Failed to update availability');
     }
 };
- 
 
- 
+
+
 
 
 

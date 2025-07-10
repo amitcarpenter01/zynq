@@ -11,6 +11,8 @@ import * as productControllers from "../controllers/clinic/productController.js"
 import * as authControllerWeb from "../controllers/web_users/authController.js";
 import * as supportControllers from "../controllers/clinic/supportController.js";
 import * as appointmentControllers from "../controllers/clinic/appointmentController.js"
+import { validate } from '../middleware/validation.middleware.js';
+import { deleteClinicImageSchema } from '../validations/clinic.validation.js';
 
 
 const router = express.Router();
@@ -43,7 +45,7 @@ const uploadProductImage = uploadDynamicClinicFiles(getProductFields);
 router.get("/get-profile", authenticate(['CLINIC', 'DOCTOR']), authControllers.getProfile);
 router.post("/onboard-clinic", authenticate(['CLINIC']), uploadDynamicClinicFiles(getFieldsFn), authControllers.onboardClinic);
 router.post("/update-clinic", authenticate(['CLINIC']), uploadDynamicClinicFiles(getFieldsFn), authControllers.updateClinic);
-
+router.delete("/images/:clinic_image_id", authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(deleteClinicImageSchema, "params"),authControllers.deleteClinicImage);
 
 
 //==================================== Get Data For Onboarding ==============================

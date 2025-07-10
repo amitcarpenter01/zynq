@@ -29,7 +29,10 @@ const storage = multer.diskStorage({
       targetDir = path.join(__dirname, '../uploads/doctor/profile_images');
     } else if (file.fieldname === 'logo') {
       targetDir = path.join(__dirname, '../uploads/clinic/logo');
-    } else {
+    } else if (file.fieldname === 'files') {
+      targetDir = path.join(__dirname, '../uploads/clinic/files')
+    }
+    else {
       return cb(new Error('Invalid file field name'), null);
     }
 
