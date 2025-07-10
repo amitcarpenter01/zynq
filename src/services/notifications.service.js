@@ -1,5 +1,6 @@
 import db from '../config/db.js';
 import { validateSchema } from '../middleware/validation.middleware.js';
+import { buildFullImageUrl } from '../utils/misc.util.js';
 import { isEmpty } from '../utils/user_helper.js';
 import { sendNotificationSchema } from '../validations/notification.validation.js';
 // import admin from 'firebase-admin';
@@ -96,7 +97,6 @@ const getNotificationContent = (notification_type, full_name) => {
 const buildNotificationPayload = ({
     type,
     type_id,
-    notification_type,
     sender_id,
     sender_type,
     receiver_id,
@@ -113,7 +113,6 @@ const buildNotificationPayload = ({
         receiverType: receiver_type,
         type,
         type_id,
-        notification_type
     },
     token: token || ''
 });
@@ -125,15 +124,14 @@ const insertUserNotification = async ({
     receiver_type,
     type,
     type_id = null,
-    notification_type,
     title,
     body
 }) => {
     try {
         const result = await db.query(
             `INSERT INTO tbl_notifications 
-             (sender_id, sender_type, receiver_id, receiver_type, type, type_id, notification_type, title, body) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             (sender_id, sender_type, receiver_id, receiver_type, type, type_id, title, body) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 sender_id,
                 sender_type,
@@ -141,7 +139,6 @@ const insertUserNotification = async ({
                 receiver_type,
                 type,
                 type_id,
-                notification_type,
                 title,
                 body
             ]
@@ -215,7 +212,6 @@ export const sendNotification = async ({
             receiver_type,
             type,
             type_id,
-            notification_type,
             title,
             body
         });
@@ -223,7 +219,6 @@ export const sendNotification = async ({
         const payload = buildNotificationPayload({
             type,
             type_id,
-            notification_type,
             sender_id,
             sender_type,
             receiver_id,
@@ -242,20 +237,112 @@ export const sendNotification = async ({
     }
 };
 
+const groupSenderIdsByType = (notifications) => {
+    const senderMap = new Map();
+    for (const notif of notifications) {
+        if (!senderMap.has(notif.sender_type)) {
+            senderMap.set(notif.sender_type, new Set());
+        }
+        senderMap.get(notif.sender_type).add(notif.sender_id);
+    }
+    return senderMap;
+};
+
+const fetchSenderDetailsByType = async (senderMap) => {
+    const senderDetails = {};
+
+    const queries = Array.from(senderMap.entries()).map(async ([type, ids]) => {
+        const idList = Array.from(ids);
+        if (idList.length === 0) return;
+
+        let table, idCol, nameCol = "name", imageCol = "profile_image";
+
+        switch (type) {
+            case "USER":
+                table = "tbl_users";
+                idCol = "user_id";
+                nameCol = "full_name";
+                imageCol = "profile_image";
+                break;
+            case "DOCTOR":
+            case "SOLO_DOCTOR":
+                table = "tbl_doctors";
+                idCol = "doctor_id";
+                nameCol = "name";
+                imageCol = "profile_image";
+                break;
+            case "CLINIC":
+                table = "tbl_clinics";
+                idCol = "clinic_id";
+                nameCol = "clinic_name";
+                imageCol = "clinic_logo";
+                break;
+            case "ADMIN":
+                table = "tbl_admin";
+                idCol = "admin_id";
+                nameCol = "full_name";
+                imageCol = "profile_image";
+                break;
+            default:
+                return;
+        }
+
+        const rows = await db.query(
+            `SELECT ${idCol} AS sender_id, ${nameCol} AS sender_name, ${imageCol} AS sender_profile_image
+             FROM ${table}
+             WHERE ${idCol} IN (?)`,
+            [idList]
+        );
+
+        return { type, rows };
+    });
+
+    const results = await Promise.all(queries);
+
+    for (const result of results) {
+        if (!result) continue;
+        const { type, rows } = result;
+        for (const row of rows) {
+            senderDetails[`${type}:${row.sender_id}`] = {
+                sender_name: row.sender_name,
+                sender_profile_image: buildFullImageUrl(type, row.sender_profile_image),
+            };
+        }
+    }
+
+
+    return senderDetails;
+};
+
+const enrichNotifications = (notifications, senderDetails) => {
+    return notifications.map(n => ({
+        ...n,
+        ...(senderDetails[`${n.sender_type}:${n.sender_id}`] || {
+            sender_name: null,
+            sender_profile_image: null
+        })
+    }));
+};
+
 export const getUserNotifications = async (userData) => {
     try {
         const { user_id: receiver_id } = extractUserData(userData);
-        console.log('receiver_id', receiver_id)
+
         const notifications = await db.query(
-            `SELECT 
-                *
-             FROM tbl_notifications
+            `SELECT * FROM tbl_notifications
              WHERE receiver_id = ?
              ORDER BY created_at DESC`,
             [receiver_id]
         );
 
-        return notifications;
+        if (notifications.length === 0) return [];
+
+        const senderMap = groupSenderIdsByType(notifications);
+        const senderDetails = await fetchSenderDetailsByType(senderMap);
+        const enrichedNotifications = enrichNotifications(notifications, senderDetails);
+
+        return enrichedNotifications;
+
     } catch (error) {
         console.error('Error in getUserNotifications:', error);
         throw new Error('Failed to fetch notifications');
