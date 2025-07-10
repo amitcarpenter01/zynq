@@ -10,6 +10,7 @@ import * as clinicControllers from "../controllers/admin/clinicController.js";
 import * as doctorControllers from "../controllers/admin/doctorController.js";
 import * as productControllers from "../controllers/admin/productController.js";
 import * as supportControllers from "../controllers/admin/supportController.js";
+import { getNotifications } from '../controllers/api/notificationController.js';
 const router = express.Router();
 
 //==================================== Authentication ==============================
@@ -60,6 +61,8 @@ router.get('/call-logs',  authenticateAdmin,authControllers.get_all_call_logs);
  
 router.get('/getAllappointments',authenticateAdmin, authControllers.get_all_appointments);
 
+//==================================== Notifications ==============================
 
+router.get('/admin/notifications/get', authenticateAdmin, getNotifications);
 
 export default router;

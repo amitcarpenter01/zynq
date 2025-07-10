@@ -112,9 +112,6 @@ router.get('/treatments/concern/:concern_id', authenticateUser, validate(getTrea
 
 // -------------------------------------Notifications------------------------------------------------//
 
-
-router.get('/admin/notifications/get', authenticateAdmin, getNotifications);
 router.get('/user/notifications/get', authenticateUser, getNotifications);
-router.get('/zynq-user/notifications/get', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getNotifications);
 
 export default router;
