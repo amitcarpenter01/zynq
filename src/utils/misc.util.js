@@ -1,7 +1,6 @@
 import db from "../config/db.js";
 import { isEmpty } from "./user_helper.js";
-import dotenv from "dotenv";
-dotenv.config();
+
 
 export const getTreatmentIDsByUserID = async (UserID) => {
     const result = await db.query(`
@@ -38,22 +37,4 @@ export const getTreatmentIDsByUserID = async (UserID) => {
     return treatmentIDs;
 };
 
-export const buildFullImageUrl = (senderType, imageFileName) => {
-    if (!imageFileName) return null;
-
-    const baseUrl = process.env.APP_URL;
-
-    switch (senderType) {
-        case "DOCTOR":
-        case "SOLO_DOCTOR":
-            return `${baseUrl}doctor/profile_images/${imageFileName}`;
-        case "CLINIC":
-            return `${baseUrl}clinic/logo/${imageFileName}`;
-        case "USER":
-        case "ADMIN":
-            return `${baseUrl}${imageFileName}`;
-        default:
-            return null;
-    }
-};
 

@@ -1,9 +1,10 @@
 import db from '../config/db.js';
 import { validateSchema } from '../middleware/validation.middleware.js';
-import { buildFullImageUrl } from '../utils/misc.util.js';
 import { isEmpty } from '../utils/user_helper.js';
 import { sendNotificationSchema } from '../validations/notification.validation.js';
 // import admin from 'firebase-admin';
+import dotenv from "dotenv";
+dotenv.config();
 
 export const extractUserData = (userData) => {
     if (!userData || !userData.role) {
@@ -46,6 +47,25 @@ export const extractUserData = (userData) => {
     }
 
     return { user_id, role, full_name, token };
+};
+
+export const buildFullImageUrl = (senderType, imageFileName) => {
+    if (!imageFileName) return null;
+
+    const baseUrl = process.env.APP_URL;
+
+    switch (senderType) {
+        case "DOCTOR":
+        case "SOLO_DOCTOR":
+            return `${baseUrl}doctor/profile_images/${imageFileName}`;
+        case "CLINIC":
+            return `${baseUrl}clinic/logo/${imageFileName}`;
+        case "USER":
+        case "ADMIN":
+            return `${baseUrl}${imageFileName}`;
+        default:
+            return null;
+    }
 };
 
 export const NOTIFICATION_MESSAGES = {
