@@ -96,6 +96,10 @@ router.get('/getMyAppointments', authenticateUser, appointmentController.getMyAp
 
 router.patch('/update-appointment-status', appointmentController.updateAppointmentStatus);
 
-router.get('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
+router.post('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
+
+router.post('/get_treatments_by_concern_id', faceScanControllers.get_treatments_by_concern_id);
+
+router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
 
 export default router;
