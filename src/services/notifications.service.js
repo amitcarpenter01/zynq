@@ -259,11 +259,11 @@ export const sendNotification = async ({
 
 const groupSenderIdsByType = (notifications) => {
     const senderMap = new Map();
-    for (const notif of notifications) {
-        if (!senderMap.has(notif.sender_type)) {
-            senderMap.set(notif.sender_type, new Set());
+    for (const notification of notifications) {
+        if (!senderMap.has(notification.sender_type)) {
+            senderMap.set(notification.sender_type, new Set());
         }
-        senderMap.get(notif.sender_type).add(notif.sender_id);
+        senderMap.get(notification.sender_type).add(notification.sender_id);
     }
     return senderMap;
 };
