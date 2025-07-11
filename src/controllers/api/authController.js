@@ -497,7 +497,7 @@ export const enroll_user = async (req, res) => {
 
         if (application_type == "android") {
             const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
-            const emailHtml = await ejs.renderFile(emailTemplatePath, { image_logo, email, android_app_link, application_type: "android",full_name });
+            const emailHtml = await ejs.renderFile(emailTemplatePath, { image_logo, email, android_app_link, application_type: "android",full_name,mobile_number });
 
             const emailOptions = {
                 to: email,
@@ -510,7 +510,7 @@ export const enroll_user = async (req, res) => {
 
         if (application_type == "ios") {
             const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
-            const emailHtml = await ejs.renderFile(emailTemplatePath, { udid, image_logo, email, ios_app_link, application_type: "ios" ,full_name});
+            const emailHtml = await ejs.renderFile(emailTemplatePath, { udid, image_logo, email, ios_app_link, application_type: "ios" ,full_name,mobile_number});
 
             const emailOptions = {
                 to: email,
@@ -523,7 +523,7 @@ export const enroll_user = async (req, res) => {
 
         if (application_type == "both") {
             const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
-            const emailHtml = await ejs.renderFile(emailTemplatePath, { udid, image_logo, email, android_app_link, ios_app_link, application_type: "both",full_name });
+            const emailHtml = await ejs.renderFile(emailTemplatePath, { udid, image_logo, email, android_app_link, ios_app_link, application_type: "both",full_name ,mobile_number});
             const emailOptions = {
                 to: email,
                 subject: "Enroll Your Account",
