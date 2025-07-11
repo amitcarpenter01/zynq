@@ -2,148 +2,88 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Welcome to ZYNQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Verify Your Account</title>
+  <style type="text/css">
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
-
     body {
+      text-align: center;
       margin: 0;
-      padding: 0;
-      background-color: #f9f5fb;
+      padding-top: 30px;
+      padding-bottom: 10px;
+      background-color: #f2f4f6;
+      color: #000000;
       font-family: 'Poppins', sans-serif;
     }
-
-    .container {
-      max-width: 620px;
-      margin: 40px auto;
-      background: #fff;
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-    }
-
-    .header {
-      background: linear-gradient(135deg, #efc8ec, #fbe8f5);
-      padding: 40px 20px;
-      text-align: center;
-    }
-
-    .header img {
-      width: 150px;
-      height: auto;
-    }
-
-    .body {
-      padding: 35px 40px;
-      text-align: center;
-    }
-
-    h1 {
-      font-size: 22px;
-      color: #333333;
-      font-weight: 600;
-      margin-bottom: 20px;
-    }
-
-    p {
-      font-size: 14px;
-      color: #555555;
-      line-height: 1.7;
-      margin: 10px 0;
-    }
-
-    .highlight {
-      color: #d65a8a;
-      font-weight: 600;
-    }
-
-    .table {
-      margin: 25px auto;
-      text-align: left;
-      width: 100%;
-    }
-
-    .table td {
-      padding: 10px 0;
-      font-size: 14px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .table td:first-child {
-      font-weight: 500;
-      width: 150px;
-      color: #444;
-    }
-
-    a {
-      color: #d65a8a;
-      text-decoration: none;
-    }
-
-    .footer {
-      background: #2b2b2b;
-      color: white;
-      text-align: center;
-      padding: 25px;
-    }
-
-    .footer a {
-      color: #fff;
-      font-size: 13px;
-      text-decoration: underline;
-    }
+    a { text-decoration: none !important; color: #0000EE; }
+    .link { text-decoration: underline !important; }
+    p { font-size: 15px; line-height: 24px; font-weight: 300; color: #000000; }
+    h1 { font-size: 22px; line-height: 24px; font-weight: normal; color: #000000; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <img src="<%= image_logo %>" alt="ZYNQ Logo">
-    </div>
+  <div>
+    <table align="center" width="100%" style="max-width: 620px; background-color: #ffffff;">
+      <tr>
+        <td style="padding: 15px;">
+          <img src="<%= image_logo %>" alt="Logo" width="180" height="85" style="width: 180px; height: 85px; object-fit: contain;">
+        </td>
+      </tr>
+    </table>
 
-    <div class="body">
-      <h1>Welcome to ZYNQ!</h1>
-      <p><strong><%= email %></strong>, we just saw your first interaction and we’re excited to onboard you 🎉</p>
-      <p>You're now officially part of the <span class="highlight">ZYNQ</span> family — where next-gen skin diagnostics meets professional aesthetic care.</p>
+    <table align="center" width="100%" style="max-width: 620px; background-color: #ffffff;">
+      <tr>
+        <td style="padding: 30px;">
+          <p style="text-align:left; font-size: 22px; font-weight: 600; line-height: 30px;">
+            Great News! Your ZYNQ Early Access is <span style="color:#0AD000">Confirmed!</span>
+          </p>
 
-      <p>Here are your enrollment details:</p>
-      <table class="table">
-        <tr>
-          <td>Email:</td>
-          <td><%= email %></td>
-        </tr>
+          <p style="font-size:18px; text-align: left; font-weight: 500;">Hi <span style="font-weight:600;"><%= full_name %></span>,</p>
 
-        <% if (application_type === "android" || application_type === "both") { %>
-        <tr>
-          <td>Android App:</td>
-          <td><a href="<%= android_app_link %>">Download Android App</a></td>
-        </tr>
-        <% } %>
+          <p style="text-align:left; font-size: 16px; font-weight:400; line-height: 30px; color: #323232;">
+            Get ready to experience the future of skincare! We're absolutely thrilled to confirm your early access to ZYNQ.
+          </p>
+          <p style="text-align:left; font-size: 16px; line-height: 30px; font-weight:400;">
+            We've got your registration complete, including your mobile <span style="font-weight: 600;"><%= mobile_number %></span>, ensuring smooth updates.
+          </p>
 
-        <% if (application_type === "ios" || application_type === "both") { %>
-        <tr>
-          <td>iOS App:</td>
-          <td><a href="<%= ios_app_link %>">Download iOS App</a></td>
-        </tr>
-        <% } %>
-      </table>
+          <h6 style="font-size:18px; margin-top: 20px; margin-bottom:5px; font-weight:600; text-align: left;">Unlock Your ZYNQ Experience Now!</h6>
+          <p style="text-align:left; font-size: 16px; line-height: 30px; font-weight:400;">Your ultimate skincare companion is just a tap away!</p>
 
-      <% if (application_type === "ios" || application_type === "both") { %>
-      <p>Your UDID will be added within 24 hours.</p>
-      <% } %>
+          <div style="margin-top: 20px; text-align: left;">
+            <% if (application_type === 'ios' || application_type === 'both') { %>
+            <a href="<%= ios_app_link %>" style="border: 1px solid #282828; padding: 15px 25px; color: #282828; margin-right: 15px;">Download for iOS</a>
+            <% } %>
+            <% if (application_type === 'android' || application_type === 'both') { %>
+            <a href="<%= android_app_link %>" style="border: 1px solid #282828; padding: 15px 25px; color: #282828;">Download for Android</a>
+            <% } %>
+          </div>
 
-      <p>Once you're in, you'll get your first personalized skin diagnosis and treatment suggestions instantly — powered by AI and expert dermatology.
-      </p>
+          <% if (application_type === 'ios' || application_type === 'both') { %>
+          <div style="background-color: #f7f7f7; padding:20px; margin-top: 20px; box-shadow: 0px 4px 8px -1px #0000001F;">
+            <p style="margin-bottom:0px; text-align: left;">
+              We're verifying your UDID (<%= udid %>) to ensure seamless access to all ZYNQ features. Please allow up to 24-48 hours for this process. We'll send a quick update when your full access is unlocked!
+            </p>
+          </div>
+          <% } %>
 
-      <p>We're so glad to have you here 💫</p>
+          <div style="padding-top: 30px; text-align: left;">
+            <h4 style="margin-bottom: 10px;">Cheers,</h4>
+            <p style="margin-top: 0px;">ZYNQ Team</p>
+          </div>
+        </td>
+      </tr>
+    </table>
 
-      <p style="margin-top: 30px;">Cheers,<br><strong>ZYNQ Team</strong></p>
-    </div>
-
-    <div class="footer">
-      <p>Need More Help?</p>
-      <a href="#">We are here to help you out</a>
-    </div>
+    <table align="center" width="100%" style="max-width: 620px; background-color: #282828;">
+      <tr>
+        <td style="padding: 30px;">
+          <p style="margin-bottom:10px; margin-top: 0px; text-align:center; color:#fff;">Need More Help?</p>
+          <a href="#" style="color:#fff; text-decoration: underline; text-align:center; display: block;">We are here to help you out</a>
+        </td>
+      </tr>
+    </table>
   </div>
 </body>
 </html>
