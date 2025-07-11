@@ -610,6 +610,16 @@ export const getDoctorProfileByStatus = async (req, res) => {
                 clinic.clinic_logo = `${APP_URL}clinic/logo/${clinic.clinic_logo}`;
             }
 
+            const images = await clinicModels.getClinicImages(clinicId);
+            clinic.images = images
+                .filter(img => img?.image_url)
+                .map(img => ({
+                    clinic_image_id: img.clinic_image_id,
+                    url: img.image_url.startsWith('http')
+                        ? img.image_url
+                        : `${APP_URL}clinic/files/${img.image_url}`,
+                }));
+
             const zynqUser = await fetchZynqUserByUserId(zynqUserId);
             profileData.on_boarding_status = zynqUser[0].on_boarding_status;
 
