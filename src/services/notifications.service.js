@@ -1,3 +1,6 @@
+// ============================================================================
+// IMPORTS & INITIAL SETUP
+// ============================================================================
 import db from '../config/db.js';
 import { validateSchema } from '../middleware/validation.middleware.js';
 import { isEmpty } from '../utils/user_helper.js';
@@ -6,7 +9,10 @@ import { sendNotificationSchema } from '../validations/notification.validation.j
 import dotenv from "dotenv";
 dotenv.config();
 
-export const extractUserData = (userData) => {
+// ============================================================================
+// HELPERS
+// ============================================================================
+const extractUserData = (userData) => {
     if (!userData || !userData.role) {
         throw new Error("Invalid user data");
     }
@@ -49,7 +55,7 @@ export const extractUserData = (userData) => {
     return { user_id, role, full_name, token };
 };
 
-export const buildFullImageUrl = (senderType, imageFileName) => {
+const buildFullImageUrl = (senderType, imageFileName) => {
     if (!imageFileName) return null;
 
     const baseUrl = process.env.APP_URL;
@@ -68,6 +74,9 @@ export const buildFullImageUrl = (senderType, imageFileName) => {
     }
 };
 
+// ============================================================================
+// TEMPLATES
+// ============================================================================
 export const NOTIFICATION_MESSAGES = {
     chat_message: {
         title: 'Chat Notification',
@@ -114,6 +123,43 @@ const getNotificationContent = (notification_type, full_name) => {
     return { title, body };
 };
 
+// ============================================================================
+// FCM NOTIFICATION SENDER
+// ============================================================================
+
+// if (!admin.apps.length) {
+//     admin.initializeApp({
+//         credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+//     });
+// }
+
+const isPushNotificationEnabled = async (receiver_id, receiver_type) => {
+    let query = '';
+
+    switch (receiver_type) {
+        case 'USER':
+            query = 'SELECT is_push_notification_on FROM tbl_users WHERE user_id = ?';
+            break;
+
+        // case 'DOCTOR':
+        //   query = 'SELECT is_push_notification_on FROM tbl_doctors WHERE doctor_id = ?';
+        //   break;
+
+        default:
+            return false;
+    }
+
+    try {
+        const result = await db.query(query, [receiver_id]);
+        return Boolean(result[0]?.is_push_notification_on);
+
+    } catch (error) {
+        console.error('Error checking push notification status:', error);
+        return false;
+    }
+};
+
+
 const buildNotificationPayload = ({
     type,
     type_id,
@@ -137,6 +183,23 @@ const buildNotificationPayload = ({
     token: token || ''
 });
 
+const pushToFCM = async (message) => {
+    try {
+        const response = await admin.messaging().send({
+            token: message.token,
+            notification: message.notification,
+            data: message.data
+        });
+        return response;
+    } catch (error) {
+        console.error('FCM Error - pushToFCM:', error);
+        throw new Error('Failed to send push notification');
+    }
+};
+
+// ============================================================================
+// SEND NOTIFICATION WRAPPER
+// ============================================================================
 const insertUserNotification = async ({
     sender_id = null,
     sender_type = null,
@@ -170,38 +233,8 @@ const insertUserNotification = async ({
     }
 };
 
-export const pushToFCM = async (message) => {
-    try {
-        const response = await admin.messaging().send({
-            token: message.token,
-            notification: message.notification,
-            data: message.data
-        });
-        return response;
-    } catch (error) {
-        console.error('FCM Error - pushToFCM:', error);
-        throw new Error('Failed to send push notification');
-    }
-};
-
 /**
  * Sends a notification, stores it in the DB, and optionally pushes via FCM.
- * @example
- * await sendNotification({
- *   userData: req.user,
- *   type: "APPOINTMENT",
- *   type_id: appointment_id,
- *   notification_type: NOTIFICATION_MESSAGES.appointment_rescheduled,
- *   receiver_id: doctor_id,
- *   receiver_type: "DOCTOR"
- * });
- * @param {Object} params
- * @param {Object} params.userData - Sender's user object (typically from req.user)
- * @param {string} params.type - Notification category (e.g., 'APPOINTMENT')
- * @param {string} params.type_id - Associated item ID (e.g., appointment ID)
- * @param {string|Object} params.notification_type - Type from NOTIFICATION_MESSAGES or a custom message object
- * @param {string} params.receiver_type - Role of the receiver (e.g., 'USER', 'DOCTOR', 'CLINIC', 'ADMIN')
- * @param {string} params.receiver_id - ID of the receiver (e.g., user ID, doctor ID, clinic ID, admin ID)
  */
 export const sendNotification = async ({
     userData,
@@ -211,7 +244,6 @@ export const sendNotification = async ({
     receiver_type,
     receiver_id,
 }) => {
-
     try {
         validateSchema(sendNotificationSchema, {
             userData,
@@ -224,7 +256,9 @@ export const sendNotification = async ({
 
         const { user_id: sender_id, role: sender_type, full_name, token } = extractUserData(userData);
         const { title, body } = getNotificationContent(notification_type, full_name);
+        const isPushEnabled = await isPushNotificationEnabled(receiver_id, receiver_type);
 
+        console.log('isPushEnabled:', isPushEnabled);
         await insertUserNotification({
             sender_id,
             sender_type,
@@ -248,7 +282,7 @@ export const sendNotification = async ({
             body
         });
 
-        if (!isEmpty(token)) {
+        if (token && isPushEnabled) {
             await pushToFCM(payload);
         }
     } catch (error) {
@@ -257,6 +291,9 @@ export const sendNotification = async ({
     }
 };
 
+// ============================================================================
+// FETCH USER NOTIFICATIONS
+// ============================================================================
 const groupSenderIdsByType = (notifications) => {
     const senderMap = new Map();
     for (const notification of notifications) {
@@ -330,7 +367,6 @@ const fetchSenderDetailsByType = async (senderMap) => {
         }
     }
 
-
     return senderDetails;
 };
 
@@ -366,5 +402,31 @@ export const getUserNotifications = async (userData) => {
     } catch (error) {
         console.error('Error in getUserNotifications:', error);
         throw new Error('Failed to fetch notifications');
+    }
+};
+
+
+// ============================================================================
+// TOGGLE NOTIFICATIONS
+// ============================================================================
+
+export const toggleNotificationSetting = async (userData) => {
+    try {
+        const { user_id, role } = extractUserData(userData);
+
+        let updateQuery = '';
+        switch (role) {
+            case 'USER':
+                updateQuery = 'UPDATE tbl_users SET is_push_notification_on = NOT is_push_notification_on WHERE user_id = ?';
+                break;
+            default:
+                return { affectedRows: 0 };
+        }
+
+        return await db.query(updateQuery, [user_id]);
+    } catch (error) {
+        console.error('Error in toggleNotificationSetting:', error);
+        throw new Error('Failed to toggle notification setting');
+
     }
 };
