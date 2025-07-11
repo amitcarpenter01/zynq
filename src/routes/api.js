@@ -106,13 +106,15 @@ router.post('/getMyAppointmentById', authenticateUser, appointmentController.get
 
 router.post('/appointment/ratings', authenticateUser, validate(rateAppointmentSchema, "body"), appointmentController.rateAppointment);
 
-// -------------------------------------General------------------------------------------------//
-
-router.get('/treatments/concern/:concern_id', authenticateUser, validate(getTreatmentsByConcernSchema, "params"), treatmentControllers.getTreatmentsByConcern);
 
 // -------------------------------------Notifications------------------------------------------------//
 
 router.get('/notifications/get', authenticateUser, getNotifications);
 router.patch('/notifications/toggle-notification', authenticateUser, toggleNotification);
+
+// -------------------------------------Concerns------------------------------------------------//
+
+router.post('/get_treatments_by_concern_id', faceScanControllers.get_treatments_by_concern_id);
+router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
 
 export default router;

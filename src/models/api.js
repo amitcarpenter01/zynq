@@ -662,11 +662,35 @@ export const fetchZynqUserByUserId = async (user_id) => {
     }
 }
 
+export const getAllConcerns = async () => {
+    try {
+        return await db.query(`SELECT * FROM tbl_concerns ;
+                `, []);
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch clinic.");
+    }
+}
+
 export const getTreatmentsByConcernId = async (concern_id) => {
     try {
-        return await db.query("SELECT * FROM tbl_treatments WHERE concern_id = ?", [concern_id]);
+        return await db.query(`SELECT t.*,c.name as concern_name FROM tbl_treatment_concerns tc INNER JOIN 
+              tbl_treatments t ON tc.treatment_id = t.treatment_id INNER JOIN tbl_concerns c  ON  c.concern_id  = tc.concern_id
+              WHERE tc.concern_id = ?;
+                `, [concern_id]);
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch clinic.");
+    }
+}
+
+export const enroll_user_data = async (user_data) => {
+    try {
+        return await db.query(`INSERT INTO  tbl_enrollments  SET?`, user_data);
     } catch (error) {
-        console.error("Database Error in getTreatmentsByConcernId:", error.message);
-        throw error;
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to create user.");
     }
 };

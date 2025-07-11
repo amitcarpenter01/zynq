@@ -83,3 +83,35 @@ export const get_face_scan_history = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };  
+
+export const get_treatments_by_concern_id = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            concern_id: Joi.string().required(),
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        let { concern_id } = value;
+
+        const treatments = await apiModels.getTreatmentsByConcernId(concern_id);
+
+        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", treatments);
+    } catch (error) {
+        console.error("Error fetching user appointments:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const get_all_concerns = async (req, res) => {
+    try {
+    
+        const concerns = await apiModels.getAllConcerns();
+
+        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", concerns);
+    } catch (error) {
+        console.error("Error fetching user appointments:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
+};
