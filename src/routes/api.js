@@ -25,7 +25,7 @@ import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validatio
 import { getSingleDoctorSchema, getAllDoctorsSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema } from '../validations/clinic.validation.js';
 import { getTreatmentsByConcernSchema } from '../validations/treatment.validation.js';
-import { getNotifications } from '../controllers/api/notificationController.js';
+import { getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
 
 const router = express.Router();
 
@@ -112,6 +112,7 @@ router.get('/treatments/concern/:concern_id', authenticateUser, validate(getTrea
 
 // -------------------------------------Notifications------------------------------------------------//
 
-router.get('/user/notifications/get', authenticateUser, getNotifications);
+router.get('/notifications/get', authenticateUser, getNotifications);
+router.patch('/notifications/toggle-notification', authenticateUser, toggleNotification);
 
 export default router;

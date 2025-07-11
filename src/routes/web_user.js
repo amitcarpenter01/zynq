@@ -35,7 +35,9 @@ router.post(
 
 router.get("/get-call-logs", authenticate, webControllers.get_all_call_logs);
 
-router.get('/zynq-user/notifications/get', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getNotifications);
+
+//=======================================Notifications=============================
+router.get('/notifications/get', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getNotifications);
 
 
 export default router;  

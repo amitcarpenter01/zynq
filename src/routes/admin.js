@@ -63,6 +63,6 @@ router.get('/getAllappointments',authenticateAdmin, authControllers.get_all_appo
 
 //==================================== Notifications ==============================
 
-router.get('/admin/notifications/get', authenticateAdmin, getNotifications);
+router.get('/notifications/get', authenticateAdmin, getNotifications);
 
 export default router;
