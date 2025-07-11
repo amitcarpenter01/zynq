@@ -73,6 +73,7 @@ router.post("/get-all-products", authenticateUser, productControllers.getAllProd
 
 // ==================================== Clinic ==============================
 router.post("/get-all-clinics", authenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_all_clinics);
+router.post("/get-nearby-clinics", authenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_nearby_clinics);
 
 //==================================== Support ==============================
 router.post("/create-support-ticket", authenticateUser, supportControllers.create_support_ticket);
