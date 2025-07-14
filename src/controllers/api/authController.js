@@ -207,6 +207,9 @@ export const login_with_mobile = async (req, res) => {
         return handleSuccess(res, 200, language || 'en', "VERIFICATION_OTP", { otp, sid: verification.sid });
 
     } catch (error) {
+         if (error.code === 60203) {
+            return handleError(res, 400, language, "MAX_OTP_ATTEMPTS_REACHED");
+        }
         console.error("Internal error:", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
