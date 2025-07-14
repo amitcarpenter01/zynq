@@ -171,6 +171,7 @@ const verifyServiceSid = process.env.VERIFY_SERVICE_SID;
 const client = twilio(accountSid, authToken);
 
 export const login_with_mobile = async (req, res) => {
+    let language = req.body.language || 'en';
     try {
         const sendOtpSchema = Joi.object({
             mobile_number: Joi.string().required(),
