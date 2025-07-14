@@ -20,5 +20,6 @@
   "SCAN_DATA_ADDED": "Ansiktsskanningsdata tillagd framgångsrikt",
   "SCAN_HISTORY_DATA": "Ansiktsskanningshistorik hämtad framgångsrikt",
   "INTERNAL_SERVER_ERROR": "internt serverfel",
-  "OTP_EXPIRED_OR_INVALID": "Engångskoden har gått ut eller är ogiltig"
+  "OTP_EXPIRED_OR_INVALID": "Engångskoden har gått ut eller är ogiltig",
+  "MAX_OTP_ATTEMPTS_REACHED":"Du har nått det maximala antalet OTP-försök. Försök igen senare."
 }
