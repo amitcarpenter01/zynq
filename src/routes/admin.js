@@ -60,6 +60,10 @@ router.get('/call-logs',  authenticateAdmin,authControllers.get_all_call_logs);
  
 router.get('/getAllappointments',authenticateAdmin, authControllers.get_all_appointments);
 
+//==============================Enrollememt ===============================
+
+router.get('/get-all-enrollments',authenticateAdmin, authControllers.get_all_enrollments);
+
 
 
 export default router;
