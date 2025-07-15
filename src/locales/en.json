@@ -4,12 +4,12 @@
     "EMAIL_ALREADY": "Email Already Exists",
     "ADMIN_NOT_FOUND": "Admin Not Found",
     "USER_NOT_FOUND": "User Not Found",
-    "INVALID_OTP": "Invalid OTP",
+    "INVALID_OTP": "Code is Incorrect",
     "LOGIN_SUCCESSFUL": "Login Successful",
     "USER_PROFILE": "User profile fetched successfully",
     "PROFILE_UPDATED": "Profile updated successfully",
     "ADMIN_DEACTIVATION": "Your account has been deactivated by the admin.",
-    "VERIFICATION_OTP": "OTP sent successfully.",
+    "VERIFICATION_OTP": "Code sent successfully.",
     "VERIFY_EMAIL_FIRST": "Please Verify Your Account First",
     "ACOUNT_DELETED": "Account deleted successfully.",
     "UNAUTH": "Unauthorized: No token provided.",
@@ -198,7 +198,7 @@
     "APPOINTMENT_BOOKED_SUCCESSFULLY":"Appointment Booked Successfully",
     "SLOT_ALREADY_BOOKED":"The available Slot just got booked try with different Slot",
     "ROLE_TYPE_NOT_SELECTED":"Role type not selected. Please check your email and complete the role selection before attempting to log in.",
-    "OTP_EXPIRED_OR_INVALID":"OTP has expired or Invalid",
-    "MAX_OTP_ATTEMPTS_REACHED":"You have reached the maximum number of OTP requests. Please try again later.",
-    "PHONE_NUMBER_BLOCKED_BY_TWILIO":"You have requested OTP too many times. This phone number has been temporarily blocked due to suspected by Twilio due to fraudulent activity"
+    "OTP_EXPIRED_OR_INVALID":"Code has expired ",
+    "MAX_OTP_ATTEMPTS_REACHED":"You have reached the maximum number of Code requests. Please try again later.",
+    "PHONE_NUMBER_BLOCKED_BY_TWILIO":"You have requested Code too many times. This phone number has been temporarily blocked by Twilio due to suspected activity"
 }
