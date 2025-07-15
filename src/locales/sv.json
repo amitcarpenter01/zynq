@@ -4,12 +4,12 @@
   "EMAIL_ALREADY": "E-postadressen finns redan",
   "ADMIN_NOT_FOUND": "Admin hittades inte",
   "USER_NOT_FOUND": "Användare hittades inte",
-  "INVALID_OTP": "Ogiltig OTP",
+  "INVALID_OTP": "Koden är felaktig",
   "LOGIN_SUCCESSFUL": "Inloggning lyckades",
   "USER_PROFILE": "Användarprofil hämtades framgångsrikt",
   "PROFILE_UPDATED": "Profil uppdaterad framgångsrikt",
   "ADMIN_DEACTIVATION": "Ditt konto har inaktiverats av administratören.",
-  "VERIFICATION_OTP": "OTP skickades framgångsrikt.",
+  "VERIFICATION_OTP": "Koden har skickats framgångsrikt.",
   "VERIFY_EMAIL_FIRST": "Vänligen verifiera ditt konto först",
   "ACOUNT_DELETED": "Konto raderat framgångsrikt.",
   "UNAUTH": "Obehörig: Ingen token tillhandahållen.",
@@ -20,7 +20,7 @@
   "SCAN_DATA_ADDED": "Ansiktsskanningsdata tillagd framgångsrikt",
   "SCAN_HISTORY_DATA": "Ansiktsskanningshistorik hämtad framgångsrikt",
   "INTERNAL_SERVER_ERROR": "internt serverfel",
-  "OTP_EXPIRED_OR_INVALID": "Engångskoden har gått ut eller är ogiltig",
+  "OTP_EXPIRED_OR_INVALID": "Koden har gått ut.",
   "MAX_OTP_ATTEMPTS_REACHED":"Du har nått det maximala antalet kodförfrågningar. Försök igen senare.",
   "PHONE_NUMBER_BLOCKED_BY_TWILIO":"Du har begärt kod för många gånger. Detta telefonnummer har tillfälligt blockerats av Twilio på grund av misstänkt aktivitet"
 }
