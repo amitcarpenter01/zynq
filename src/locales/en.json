@@ -199,5 +199,6 @@
     "SLOT_ALREADY_BOOKED":"The available Slot just got booked try with different Slot",
     "ROLE_TYPE_NOT_SELECTED":"Role type not selected. Please check your email and complete the role selection before attempting to log in.",
     "OTP_EXPIRED_OR_INVALID":"OTP has expired or Invalid",
-    "MAX_OTP_ATTEMPTS_REACHED":"You have reached the maximum number of OTP requests. Please try again later."
+    "MAX_OTP_ATTEMPTS_REACHED":"You have reached the maximum number of OTP requests. Please try again later.",
+    "PHONE_NUMBER_BLOCKED_BY_TWILIO":"You have requested OTP too many times. This phone number has been temporarily blocked due to suspected by Twilio due to fraudulent activity"
 }
