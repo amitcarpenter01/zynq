@@ -472,3 +472,14 @@ export const enroll_user_data = async (user_data) => {
         throw new Error("Failed to create user.");
     }
 };
+
+export const get_all_enrollments = async () => {
+     try {
+        return await db.query(`SELECT * FROM tbl_enrollments
+                ORDER BY created_at DESC`, []);
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch clinic.");
+    }
+};

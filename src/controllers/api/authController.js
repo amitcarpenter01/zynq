@@ -496,9 +496,9 @@ export const enroll_user = async (req, res) => {
         const ios_app_link = process.env.IOS_APP_LINK;
 
         const [user] = await apiModels.get_user_by_mobile_number(mobile_number);
-        if (user) {
-            return handleError(res, 400, 'en', "USER_ALREADY_ENROLLED");
-        }
+        // if (user) {
+        //     return handleError(res, 400, 'en', "USER_ALREADY_ENROLLED");
+        // }
 
         const user_data = {
             email,
