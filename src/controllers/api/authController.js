@@ -211,6 +211,10 @@ export const login_with_mobile = async (req, res) => {
          if (error.code === 60203) {
             return handleError(res, 400, language, "MAX_OTP_ATTEMPTS_REACHED");
         }
+          if (error.code === 60410) {
+            return handleError(res, 400, language, "PHONE_NUMBER_BLOCKED_BY_TWILIO");
+        }
+
         console.error("Internal error:", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
