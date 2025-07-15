@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Bekräfta ditt konto</title>
+  <style type="text/css">
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+    body {
+      text-align: center;
+      margin: 0;
+      padding-top: 30px;
+      padding-bottom: 10px;
+      background-color: #f2f4f6;
+      color: #000000;
+      font-family: 'Poppins', sans-serif;
+    }
+    a { text-decoration: none !important; color: #0000EE; }
+    .link { text-decoration: underline !important; }
+    p { font-size: 15px; line-height: 24px; font-weight: 300; color: #000000; }
+    h1 { font-size: 22px; line-height: 24px; font-weight: normal; color: #000000; }
+  </style>
+</head>
+<body>
+  <div>
+    <table align="center" width="100%" style="max-width: 620px; background-color: #ffffff;">
+      <tr>
+        <td style="padding: 15px;">
+          <img src="<%= image_logo %>" alt="Logo" width="180" height="85" style="width: 180px; height: 85px; object-fit: contain;">
+        </td>
+      </tr>
+    </table>
+
+    <table align="center" width="100%" style="max-width: 620px; background-color: #ffffff;">
+      <tr>
+        <td style="padding: 30px;">
+          <p style="text-align:left; font-size: 22px; font-weight: 600; line-height: 30px;">
+            Goda nyheter! Din tidiga åtkomst till ZYNQ är <span style="color:#0AD000">bekräftad!</span>
+          </p>
+
+          <p style="font-size:18px; text-align: left; font-weight: 500;">Hej <span style="font-weight:600;"><%= full_name %></span>,</p>
+
+          <p style="text-align:left; font-size: 16px; font-weight:400; line-height: 30px; color: #323232;">
+            Förbered dig på att uppleva framtidens hudvård! Vi är glada att bekräfta din tidiga åtkomst till ZYNQ.
+          </p>
+          <p style="text-align:left; font-size: 16px; line-height: 30px; font-weight:400;">
+            Din registrering är klar, inklusive mobilnummer <span style="font-weight: 600;"><%= mobile_number %></span>, vilket säkerställer smidiga uppdateringar.
+          </p>
+
+          <h6 style="font-size:18px; margin-top: 20px; margin-bottom:5px; font-weight:600; text-align: left;">Lås upp din ZYNQ-upplevelse nu!</h6>
+          <p style="text-align:left; font-size: 16px; line-height: 30px; font-weight:400;">Din ultimata hudvårdspartner är bara ett tryck bort!</p>
+
+          <div style="margin-top: 20px; text-align: left;">
+            <% if (application_type === 'ios' || application_type === 'both') { %>
+            <a href="<%= ios_app_link %>" style="border: 1px solid #282828; padding: 15px 25px; color: #282828; margin-right: 15px;">Ladda ner för iOS</a>
+            <% } %>
+            <% if (application_type === 'android' || application_type === 'both') { %>
+            <a href="<%= android_app_link %>" style="border: 1px solid #282828; padding: 15px 25px; color: #282828;">Ladda ner för Android</a>
+            <% } %>
+          </div>
+
+          <% if (application_type === 'ios' || application_type === 'both') { %>
+          <div style="background-color: #f7f7f7; padding:20px; margin-top: 20px; box-shadow: 0px 4px 8px -1px #0000001F;">
+            <p style="margin-bottom:0px; text-align: left;">
+              Vi verifierar din UDID (<%= udid %>) för att säkerställa smidig åtkomst till alla ZYNQ-funktioner. Denna process kan ta upp till 24–48 timmar. Vi hör av oss så snart allt är klart!
+            </p>
+          </div>
+          <% } %>
+
+          <div style="padding-top: 30px; text-align: left;">
+            <h4 style="margin-bottom: 10px;">Hälsningar,</h4>
+            <p style="margin-top: 0px;">Teamet på ZYNQ</p>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <table align="center" width="100%" style="max-width: 620px; background-color: #282828;">
+      <tr>
+        <td style="padding: 30px;">
+          <p style="margin-bottom:10px; margin-top: 0px; text-align:center; color:#fff;">Behöver du hjälp?</p>
+          <a href="#" style="color:#fff; text-decoration: underline; text-align:center; display: block;">Vi finns här för att hjälpa dig</a>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>
