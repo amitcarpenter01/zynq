@@ -183,7 +183,7 @@
     "RESPONSE_SENT_SUCCESSFULLY": "Response Sent Successfully",
     "RESPONSE_SENT_FAILED": "Response Sent Failed",
     "ENROLL_SUCCESSFUL": "Enroll Successful",
-    "USER_ALREADY_ENROLLED": "User Already Enrolled",
+    "USER_ALREADY_ENROLLED": "Mobile number already exists",
     "USER_NOT_ENROLLED": "User Enrolled Failed",
     "PERSONAL_DETAILS_ADDED":"Personal Details Added Successfully",
     "CONTACT_DETAILS_UPDATED":"Contact Details Updated Successfully",
