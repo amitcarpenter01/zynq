@@ -2,6 +2,9 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import base64url from 'base64url';
+import dotenv from "dotenv";
+dotenv.config();
+const APP_URL = process.env.APP_URL;
 
 import { handleError, handleSuccess } from '../utils/responseHandler.js';
 
@@ -91,3 +94,6 @@ export const isEmpty = (value) => {
     if (typeof value === 'object') return Object.keys(value).length === 0;
     return false;
 };
+
+export const formatImagePath = (path, folder) =>
+    !path ? null : path.startsWith('http') ? path : `${APP_URL}${folder}/${path}`;

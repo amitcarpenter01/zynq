@@ -26,3 +26,15 @@ export const joiErrorHandle = (res, error) => {
   });
 };
 
+ 
+export const asyncHandler = (requestHandler) => {
+  return async (req, res, next) => {
+    try {
+      await requestHandler(req, res, next);
+    } catch (err) {
+      console.error("Unhandled error:", err);
+ 
+      return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
+  };
+};

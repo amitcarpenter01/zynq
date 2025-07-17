@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as apiModels from "../../models/api.js";
 import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken } from "../../utils/user_helper.js";
-import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 
 dotenv.config();
 
@@ -115,3 +115,10 @@ export const get_all_concerns = async (req, res) => {
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
+
+export const get_treatments_by_concerns = asyncHandler(async (req, res) => {
+    const { concern_ids } = req.body;
+    const language = req?.user?.language || 'en';
+    const treatments = await apiModels.getTreatmentsByConcernIds(concern_ids, language);
+    return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", treatments);
+})
