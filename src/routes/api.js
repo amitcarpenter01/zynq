@@ -19,7 +19,7 @@ import * as appointmentController from "../controllers/api/appointmentController
 
 import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 import { validate } from '../middleware/validation.middleware.js';
-import { getAllDoctorsSchema } from '../validations/doctor.validation.js';
+import { getAllDoctorsSchema, getSingleDoctorSchema } from '../validations/doctor.validation.js';
 import { getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
 
 const router = express.Router();
@@ -108,5 +108,7 @@ router.post('/get_treatments_by_concern_id', faceScanControllers.get_treatments_
 router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
 
 router.post('/get_treatments_by_concerns',  validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
+
+router.get("/doctor/get/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
 
 export default router;
