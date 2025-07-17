@@ -818,3 +818,23 @@ export const getSoloDoctorByZynqUserId = async (zynq_user_id) => {
     }
 }
 
+
+export const getDoctorByDoctorID = async (doctor_id) => {
+    try {
+        const query = `
+            SELECT dcm.*, d.*, zu.email
+            FROM tbl_doctor_clinic_map dcm
+            JOIN tbl_doctors d ON dcm.doctor_id = d.doctor_id
+            JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+            WHERE d.doctor_id = ? ORDER BY dcm.created_at DESC`;
+ 
+        const result = await db.query(query, [doctor_id]);
+ 
+        return result;
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch doctor by doctor id.");
+    }
+};
+ 
