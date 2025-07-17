@@ -1652,3 +1652,16 @@ export const getChatsBetweenUserAndDoctors = async (userId, doctorUserIds) => {
         [userId, doctorUserIds, userId, doctorUserIds]
     );
 };
+
+export const getClinicImages = async (clinic_id) => {
+    try {
+        const rows = await db.query(
+            `SELECT clinic_image_id, image_url FROM tbl_clinic_images WHERE clinic_id = ?`,
+            [clinic_id]
+        );
+        return rows;
+    } catch (error) {
+        console.error("Error in getClinicImages:", error);
+        throw error;
+    }
+};
