@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import { formatBenefitsOnLang } from "../utils/misc.util.js";
 
 //======================================= Auth =========================================
 
@@ -481,5 +482,118 @@ export const get_all_enrollments = async () => {
     catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch clinic.");
+    }
+};
+
+export const getAllRecommendedDoctors = async ({
+    treatment_ids = [],
+    skin_condition_ids = [],
+    aesthetic_device_ids = [],
+    skin_type_ids = [],
+    surgery_ids = [],
+    min_rating = null,
+    sort = { by: 'default', order: 'desc' },
+    limit,
+    offset
+}) => {
+    try {
+        const params = [];
+        const needsRating = min_rating !== null || sort.by === 'rating';
+ 
+        const selectFields = [
+            'd.*',
+            'zu.email',
+            'dm.clinic_id',
+            'c.clinic_name',
+            needsRating ? 'ROUND(AVG(ar.rating), 2) AS avg_rating' : null
+        ].filter(Boolean).join(', ');
+ 
+        let query = `
+            SELECT ${selectFields}
+            FROM tbl_doctors d
+            LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+            LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
+            LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
+        `;
+ 
+        if (needsRating) {
+            query += ` LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id`;
+        }
+ 
+        const joins = [];
+        const filters = [];
+ 
+        const addJoinAndFilter = (ids, joinTable, joinAlias, joinField) => {
+            if (ids.length > 0) {
+                joins.push(`LEFT JOIN ${joinTable} ${joinAlias} ON d.doctor_id = ${joinAlias}.doctor_id`);
+                filters.push(`${joinAlias}.${joinField} IN (${ids.map(() => '?').join(', ')})`);
+                params.push(...ids);
+            }
+        };
+ 
+        addJoinAndFilter(treatment_ids, 'tbl_doctor_treatments', 'dt', 'treatment_id');
+        addJoinAndFilter(skin_condition_ids, 'tbl_doctor_skin_condition', 'dsc', 'skin_condition_id');
+        addJoinAndFilter(aesthetic_device_ids, 'tbl_doctor_aesthetic_devices', 'dad', 'aesthetic_devices_id');
+        addJoinAndFilter(skin_type_ids, 'tbl_doctor_skin_types', 'dst', 'skin_type_id');
+        addJoinAndFilter(surgery_ids, 'tbl_doctor_surgery', 'ds', 'surgery_id');
+ 
+        if (joins.length > 0) {
+            query += ' ' + joins.join(' ');
+        }
+ 
+        query += ` WHERE d.profile_completion_percentage >= 0`;
+ 
+        if (filters.length > 0) {
+            query += ` AND ${filters.join(' AND ')}`;
+        }
+ 
+        query += ` GROUP BY d.doctor_id, dm.clinic_id`;
+ 
+        if (min_rating !== null) {
+            query += ` HAVING avg_rating >= ?`;
+            params.push(min_rating);
+        }
+ 
+        if (sort.by === 'rating') {
+            query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
+        } else {
+            query += ` ORDER BY d.created_at DESC`;
+        }
+ 
+        query += ` LIMIT ? OFFSET ?`;
+        params.push(Number(limit) || 10, Number(offset) || 0);
+ 
+        return await db.query(query, params);
+    } catch (error) {
+        console.error("Database Error in getAllRecommendedDoctors:", error.message);
+        throw new Error("Failed to fetch doctors.");
+    }
+};
+
+export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
+    if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
+        return [];
+    }
+ 
+    try {
+        const placeholders = concern_ids.map(() => '?').join(', ');
+        const query = `
+            SELECT
+                t.*,
+                c.name AS concern_name
+            FROM tbl_treatment_concerns tc
+            INNER JOIN tbl_treatments t ON tc.treatment_id = t.treatment_id
+            INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+            WHERE tc.concern_id IN (${placeholders});
+        `;
+ 
+        const results = await db.query(query, concern_ids);
+ 
+        // 🔄 Format benefits based on language
+        return formatBenefitsOnLang(results, lang);
+ 
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch treatments by concern IDs.");
     }
 };

@@ -18,6 +18,9 @@ import * as appointmentController from "../controllers/api/appointmentController
 
 
 import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
+import { validate } from '../middleware/validation.middleware.js';
+import { getAllDoctorsSchema } from '../validations/doctor.validation.js';
+import { getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
 
 const router = express.Router();
 
@@ -58,6 +61,8 @@ router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_f
 //==================================== Doctor ==============================
 // router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors);
 router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors_in_app_side);
+
+router.post("/get-recommended-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
 
 // //==================================== Product ==============================
 router.post("/get-all-products", authenticateUser, productControllers.getAllProducts);
@@ -101,5 +106,7 @@ router.post('/getMyAppointmentById', authenticateUser, appointmentController.get
 router.post('/get_treatments_by_concern_id', faceScanControllers.get_treatments_by_concern_id);
 
 router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
+
+router.post('/get_treatments_by_concerns',  validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
 
 export default router;

@@ -36,3 +36,20 @@ export const getTreatmentIDsByUserID = async (UserID) => {
     return treatmentIDs;
 };
 
+export const formatBenefitsOnLang = (rows = [], lang = 'en') => {
+    return rows.map(row => {
+        let localizedBenefits = [];
+ 
+        try {
+            const parsed = typeof row.benefits === 'string' ? JSON.parse(row.benefits) : row.benefits;
+            localizedBenefits = Object.values(parsed).map(b => b?.[lang] || '');
+        } catch (e) {
+            console.error(`Failed to parse benefits for treatment_id: ${row.treatment_id}`, e.message);
+        }
+ 
+        return {
+            ...row,
+            benefits: localizedBenefits
+        };
+    });
+};
