@@ -235,18 +235,13 @@ export const getDoctorTreatments = async (doctor_id) => {
 
 
 //======================================= Product =========================================
-export const get_all_products_for_user = async (treatment_ids = []) => {
+export const get_all_products_for_user = async ({
+    treatment_ids = [],
+    limit = 20,
+    offset = 0
+}) => {
     try {
-        let params = [];
-        let treatmentFilterClause = '';
-
-        if (treatment_ids.length > 0) {
-            const placeholders = treatment_ids.map(() => '?').join(', ');
-            treatmentFilterClause = `WHERE pt.treatment_id IN (${placeholders})`;
-            params.push(...treatment_ids);
-        }
-
-        const query = `
+        let query = `
             SELECT
                 p.*,
                 IF(COUNT(t.treatment_id), JSON_ARRAYAGG(
@@ -263,17 +258,26 @@ export const get_all_products_for_user = async (treatment_ids = []) => {
             FROM tbl_products AS p
             LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
             LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
-            ${treatmentFilterClause}
-            GROUP BY p.product_id
-            ORDER BY p.created_at DESC
+            WHERE 1=1
         `;
-
+ 
+        const params = [];
+ 
+        if (treatment_ids.length > 0) {
+            query += ` AND pt.treatment_id IN (${treatment_ids.map(() => '?').join(', ')})`;
+            params.push(...treatment_ids);
+        }
+ 
+        query += ` GROUP BY p.product_id ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
+        params.push(limit, offset);
+ 
         return await db.query(query, params);
     } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch products with treatments.");
+        console.error("Database Error in getAllProductsForUser:", error.message);
+        throw new Error("Failed to fetch products.");
     }
 };
+ 
 
 export const get_product_images = async (product_id) => {
     try {
@@ -287,30 +291,97 @@ export const get_product_images = async (product_id) => {
 
 
 //======================================= Clinic =========================================
-export const getAllClinicsForUser = async (ids = [], limit, offset) => {
+export const getAllClinicsForUser = async ({
+    treatment_ids = [],
+    skin_condition_ids = [],
+    aesthetic_device_ids = [],
+    skin_type_ids = [],
+    surgery_ids = [],
+    min_rating = null,
+    sort = { by: 'default', order: 'desc' },
+    userLatitude,
+    userLongitude,
+    limit,
+    offset
+}) => {
     try {
-        let query = `
-           SELECT DISTINCT c.*
-            FROM tbl_clinics c
-LEFT JOIN tbl_clinic_treatments tct ON c.clinic_id = tct.clinic_id
-        `;
-        let params = [];
-
-        if (ids.length > 0) {
-            const placeholders = ids.map(() => '?').join(', ');
-            query += ` AND tct.treatment_id IN (${placeholders})`;
-            params.push(...ids);
+        const params = [];
+        const needsDistance = sort.by === 'nearest' && userLatitude != null && userLongitude != null;
+        const needsRating = min_rating !== null || sort.by === 'rating';
+ 
+        const selectFields = [
+            'c.*',
+            needsRating ? 'ROUND(AVG(ar.rating), 2) AS avg_rating' : null,
+            needsDistance ? `ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) AS distance` : null
+        ].filter(Boolean).join(', ');
+ 
+        if (needsDistance) {
+            params.push(userLongitude, userLatitude); // Order: lon, lat
         }
-
-        query += ` ORDER BY c.created_at DESC LIMIT ? OFFSET ?`;
-
-        return await db.query(query, [...params, limit, offset]);
+ 
+        let query = `
+            SELECT ${selectFields}
+            FROM tbl_clinics c
+            LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
+        `;
+ 
+        if (needsRating) {
+            query += ` LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id`;
+        }
+ 
+        const joins = [];
+        const filters = [];
+ 
+        const addJoinAndFilter = (ids, joinTable, joinAlias, joinField) => {
+            if (ids.length > 0) {
+                joins.push(`LEFT JOIN ${joinTable} ${joinAlias} ON c.clinic_id = ${joinAlias}.clinic_id`);
+                filters.push(`${joinAlias}.${joinField} IN (${ids.map(() => '?').join(', ')})`);
+                params.push(...ids);
+            }
+        };
+ 
+        addJoinAndFilter(treatment_ids, 'tbl_clinic_treatments', 'ct', 'treatment_id');
+        addJoinAndFilter(skin_condition_ids, 'tbl_clinic_skin_condition', 'csc', 'skin_condition_id');
+        addJoinAndFilter(aesthetic_device_ids, 'tbl_clinic_aesthetic_devices', 'cad', 'aesthetic_devices_id');
+        addJoinAndFilter(skin_type_ids, 'tbl_clinic_skin_types', 'cskt', 'skin_type_id');
+        addJoinAndFilter(surgery_ids, 'tbl_clinic_surgery', 'cr', 'surgery_id');
+ 
+        if (joins.length > 0) {
+            query += ' ' + joins.join(' ');
+        }
+ 
+        query += ` WHERE c.profile_completion_percentage >= 50`;
+ 
+        if (filters.length > 0) {
+            query += ` AND ${filters.join(' AND ')}`;
+        }
+ 
+        if (needsRating) {
+            query += ` GROUP BY c.clinic_id`;
+        }
+ 
+        if (min_rating !== null) {
+            query += ` HAVING avg_rating >= ?`;
+            params.push(min_rating);
+        }
+ 
+        if (needsDistance) {
+            query += ` ORDER BY distance ${sort.order.toUpperCase()}`;
+        } else if (sort.by === 'rating') {
+            query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
+        } else {
+            query += ` ORDER BY c.created_at DESC`;
+        }
+ 
+        query += ` LIMIT ? OFFSET ?`;
+        params.push(Number(limit), Number(offset));
+ 
+        return await db.query(query, params);
     } catch (error) {
-        console.error("Database Error:", error.message);
+        console.error("Database Error in getAllClinicsForUser:", error.message);
         throw new Error("Failed to fetch clinics.");
     }
 };
-
 
 export const get_clinic_by_zynq_user_id = async (zynq_user_id) => {
     try {
@@ -597,3 +668,27 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
         throw new Error("Failed to fetch treatments by concern IDs.");
     }
 };
+
+ 
+export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
+    try {
+        if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
+            return []; // Early return for empty input
+        }
+ 
+        const placeholders = concern_ids.map(() => '?').join(', ');
+        const query = `
+            SELECT DISTINCT treatment_id
+            FROM tbl_treatment_concerns
+            WHERE concern_id IN (${placeholders})
+        `;
+ 
+        const results = await db.query(query, concern_ids);
+        return results.map(row => row.treatment_id).filter(Boolean);
+    } catch (error) {
+        console.error("Database Error in getTreatmentIdsByConcernIds:", error);
+        throw new Error("Failed to fetch treatment IDs by concern IDs.");
+    }
+};
+ 
+ 

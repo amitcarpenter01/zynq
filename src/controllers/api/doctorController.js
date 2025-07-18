@@ -219,17 +219,39 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
         pagination = { page: 1, limit: 10 }
     } = req.body;
  
-    const {
+    let {
         treatment_ids = [],
         skin_condition_ids = [],
         aesthetic_device_ids = [],
         skin_type_ids = [],
         surgery_ids = [],
+        concern_ids = [],
         min_rating = null
     } = filters;
  
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
+ 
+    if (concern_ids.length > 0) {
+        const treatment_ids_from_concern = await userModels.getTreatmentIdsByConcernIds(concern_ids);
+        if (Array.isArray(treatment_ids_from_concern) && treatment_ids_from_concern.length > 0) {
+            treatment_ids = treatment_ids.concat(treatment_ids_from_concern);
+        }
+    }
+ 
+    // 👇 Check if all filters are empty, then fallback to user-specific treatments
+    const areAllFiltersEmpty =
+        treatment_ids.length === 0 &&
+        skin_condition_ids.length === 0 &&
+        aesthetic_device_ids.length === 0 &&
+        skin_type_ids.length === 0 &&
+        surgery_ids.length === 0 &&
+        !min_rating;
+ 
+    if (areAllFiltersEmpty) {
+        const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
+        treatment_ids = fallbackTreatmentIds || [];
+    }
  
     const doctors = await userModels.getAllRecommendedDoctors({
         treatment_ids,
@@ -244,7 +266,7 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
     });
  
     if (!doctors?.length) {
-      return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", doctors);
+       return handleSuccess(res, 200, language || 'en', "DOCTORS_FETCHED_SUCCESSFULLY", doctors);
     }
  
     const doctorIds = doctors.map(doc => doc.doctor_id);
@@ -268,10 +290,9 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
         clinicModels.getDoctorSeverityLevelsBulk?.(doctorIds),
         clinicModels.getDoctorSkinTypesBulk(doctorIds),
         clinicModels.getDoctorTreatmentsBulk(doctorIds),
-        clinicModels.getChatsBetweenUserAndDoctors(user_id, doctorIds) // 🆕 optimized bulk chat
+        clinicModels.getChatsBetweenUserAndDoctors(user_id, doctorIds)
     ]);
  
-    // Mapify all result sets
     const availabilityMap = toMap(allAvailability);
     const certMap = toMap(allCertificates);
     const eduMap = toMap(allEducation);
@@ -281,30 +302,27 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
     const skinTypeMap = toMap(allSkinTypes);
     const treatmentMap = toMap(allTreatments);
  
-    // Mapify chats by doctor zynq_user_id
     const chatMap = new Map();
     (allChats || []).forEach(chat => {
-        const doctorUserId = chat.other_user_id; // or chat.doctor_user_id depending on schema
+        const doctorUserId = chat.other_user_id;
         chatMap.set(doctorUserId, chat);
     });
  
-    const enrichedDoctors = doctors.map((doctor) => {
-        return {
-            ...doctor,
-            chatId: chatMap.get(doctor.zynq_user_id)?.id || null,
-            profile_image: formatImagePath(doctor.profile_image, 'doctor/profile_images'),
-            availability: availabilityMap.get(doctor.doctor_id) || [],
-            certifications: formatCertifications(certMap.get(doctor.doctor_id)),
-            education: eduMap.get(doctor.doctor_id) || [],
-            experience: expMap.get(doctor.doctor_id) || [],
-            reviews: reviewsMap.get(doctor.doctor_id) || [],
-            severity_levels: severityMap.get(doctor.doctor_id) || [],
-            skin_types: skinTypeMap.get(doctor.doctor_id) || [],
-            treatments: treatmentMap.get(doctor.doctor_id) || []
-        };
-    });
+    const enrichedDoctors = doctors.map((doctor) => ({
+        ...doctor,
+        chatId: chatMap.get(doctor.zynq_user_id)?.id || null,
+        profile_image: formatImagePath(doctor.profile_image, 'doctor/profile_images'),
+        availability: availabilityMap.get(doctor.doctor_id) || [],
+        certifications: formatCertifications(certMap.get(doctor.doctor_id)),
+        education: eduMap.get(doctor.doctor_id) || [],
+        experience: expMap.get(doctor.doctor_id) || [],
+        reviews: reviewsMap.get(doctor.doctor_id) || [],
+        severity_levels: severityMap.get(doctor.doctor_id) || [],
+        skin_types: skinTypeMap.get(doctor.doctor_id) || [],
+        treatments: treatmentMap.get(doctor.doctor_id) || []
+    }));
  
-    return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", enrichedDoctors);
+    return handleSuccess(res, 200, language || 'en', "DOCTORS_FETCHED_SUCCESSFULLY", enrichedDoctors);
 });
 
 export const getSingleDoctor = asyncHandler(async (req, res) => {
