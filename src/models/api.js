@@ -310,7 +310,7 @@ export const getAllClinicsForUser = async ({
         const needsRating = min_rating !== null || sort.by === 'rating';
  
         const selectFields = [
-            'c.*',
+            'DISTINCT c.clinic_id,c.zynq_user_id,c.clinic_name,c.org_number,c.email,c.mobile_number,c.address,c.is_invited,c.is_active,c.is_deleted,c.onboarding_token,c.profile_completion_percentage,c.created_at,c.updated_at,c.email_sent_at,c.email_sent_count,c.fee_range,c.website_url,c.clinic_description,c.clinic_logo,c.language,c.form_stage,c.ivo_registration_number,c.hsa_id,c.is_onboarded,c.is_unsubscribed',
             needsRating ? 'ROUND(AVG(ar.rating), 2) AS avg_rating' : null,
             needsDistance ? `ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) AS distance` : null
         ].filter(Boolean).join(', ');
@@ -322,11 +322,11 @@ export const getAllClinicsForUser = async ({
         let query = `
             SELECT ${selectFields}
             FROM tbl_clinics c
-            JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
+            LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
         `;
  
         if (needsRating) {
-            query += ` JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id`;
+            query += ` LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id`;
         }
  
         const joins = [];
@@ -334,7 +334,7 @@ export const getAllClinicsForUser = async ({
  
         const addJoinAndFilter = (ids, joinTable, joinAlias, joinField) => {
             if (ids.length > 0) {
-                joins.push(`JOIN ${joinTable} ${joinAlias} ON c.clinic_id = ${joinAlias}.clinic_id`);
+                joins.push(`LEFT JOIN ${joinTable} ${joinAlias} ON c.clinic_id = ${joinAlias}.clinic_id`);
                 filters.push(`${joinAlias}.${joinField} IN (${ids.map(() => '?').join(', ')})`);
                 params.push(...ids);
             }
