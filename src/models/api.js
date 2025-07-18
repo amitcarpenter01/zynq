@@ -511,16 +511,41 @@ export const fetchZynqUserByUserId = async (user_id) => {
     }
 }
 
-export const getAllConcerns = async () => {
+export const getAllConcerns = async (lang = "en") => {
     try {
-        return await db.query(`SELECT * FROM tbl_concerns ;
-                `, []);
-    }
-    catch (error) {
+        console.log("lang", lang);
+ 
+        const concernData = await db.query(`SELECT * FROM tbl_concerns;`, []);
+ 
+        const result = concernData.map((concern) => {
+            let parsedTips = {};
+            try {
+                parsedTips = typeof concern.tips === "string"
+                    ? JSON.parse(concern.tips)
+                    : concern.tips || {};
+            } catch (err) {
+                console.warn(`Invalid JSON in tips for concern_id: ${concern.concern_id}`);
+                parsedTips = {};
+            }
+ 
+            // Ensure tips is an array of trimmed strings
+            const tipsString = parsedTips?.[lang] || "";
+            const tipsArray = typeof tipsString === "string"
+                ? tipsString.split(",").map((tip) => tip.trim()).filter(Boolean)
+                : [];
+ 
+            return {
+                ...concern,
+                tips: tipsArray,
+            };
+        });
+ 
+        return result;
+    } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch clinic.");
+        throw new Error("Failed to fetch concerns.");
     }
-}
+};
 
 export const getTreatmentsByConcernId = async (concern_id) => {
     try {
