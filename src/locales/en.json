@@ -200,5 +200,6 @@
     "ROLE_TYPE_NOT_SELECTED":"Role type not selected. Please check your email and complete the role selection before attempting to log in.",
     "OTP_EXPIRED_OR_INVALID":"Code has expired ",
     "MAX_OTP_ATTEMPTS_REACHED":"You have reached the maximum number of Code requests. Please try again later.",
-    "PHONE_NUMBER_BLOCKED_BY_TWILIO":"You have requested Code too many times. This phone number has been temporarily blocked by Twilio due to suspected activity"
+    "PHONE_NUMBER_BLOCKED_BY_TWILIO":"You have requested Code too many times. This phone number has been temporarily blocked by Twilio due to suspected activity",
+    "DOCUMENTS_UPDATED_SUCCESSFULLY":"Document Updated Successfully"
 }
