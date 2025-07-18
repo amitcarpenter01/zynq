@@ -322,11 +322,11 @@ export const getAllClinicsForUser = async ({
         let query = `
             SELECT ${selectFields}
             FROM tbl_clinics c
-            LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
+            JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
         `;
  
         if (needsRating) {
-            query += ` LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id`;
+            query += ` JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id`;
         }
  
         const joins = [];
@@ -334,7 +334,7 @@ export const getAllClinicsForUser = async ({
  
         const addJoinAndFilter = (ids, joinTable, joinAlias, joinField) => {
             if (ids.length > 0) {
-                joins.push(`LEFT JOIN ${joinTable} ${joinAlias} ON c.clinic_id = ${joinAlias}.clinic_id`);
+                joins.push(`JOIN ${joinTable} ${joinAlias} ON c.clinic_id = ${joinAlias}.clinic_id`);
                 filters.push(`${joinAlias}.${joinField} IN (${ids.map(() => '?').join(', ')})`);
                 params.push(...ids);
             }
