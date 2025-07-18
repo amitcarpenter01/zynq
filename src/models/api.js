@@ -778,3 +778,45 @@ export const updateLegalDocumentsService = async ({ TERMS_CONDITIONS, PRIVACY_PO
     }
 };
  
+export const getTipsByConcernIds = async (concern_ids = [], lang = "en") => {
+    if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
+        return [];
+    }
+ 
+    try {
+        const placeholders = concern_ids.map(() => '?').join(', ');
+        const query = `
+            SELECT tips
+            FROM tbl_concerns
+            WHERE concern_id IN (${placeholders});
+        `;
+ 
+        const results = await db.query(query, concern_ids);
+ 
+        const allTips = [];
+ 
+        for (const row of results) {
+            let parsedTips = {};
+            try {
+                parsedTips = typeof row.tips === 'string'
+                    ? JSON.parse(row.tips)
+                    : row.tips || {};
+            } catch (err) {
+                console.warn("Invalid tips JSON:", row.tips);
+                continue;
+            }
+ 
+            const tipsString = parsedTips?.[lang] || "";
+            const tipsArray = typeof tipsString === "string"
+                ? tipsString.split(",").map(t => t.trim()).filter(Boolean)
+                : [];
+ 
+            allTips.push(...tipsArray);
+        }
+ 
+        return allTips;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch tips by concern IDs.");
+    }
+};

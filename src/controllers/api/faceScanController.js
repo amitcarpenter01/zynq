@@ -122,3 +122,11 @@ export const get_treatments_by_concerns = asyncHandler(async (req, res) => {
     const treatments = await apiModels.getTreatmentsByConcernIds(concern_ids, language);
     return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", treatments);
 })
+
+export const get_tips_by_concerns = asyncHandler(async (req, res) => {
+    const { concern_ids } = req.body;
+    const language = req?.user?.language || 'en';
+    const tips = await apiModels.getTipsByConcernIds(concern_ids, language);
+    return handleSuccess(res, 200, "en", "TIPS_FETCHED", tips);
+})
+ 

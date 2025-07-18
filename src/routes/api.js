@@ -20,7 +20,7 @@ import * as appointmentController from "../controllers/api/appointmentController
 import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { getAllDoctorsSchema, getSingleDoctorSchema } from '../validations/doctor.validation.js';
-import { getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
+import { getTipsByConcernsSchema, getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
 import { getAllClinicsSchema } from '../validations/clinic.validation.js';
 import { getAllProductsSchema } from '../validations/product.validation.js';
 import { getLegalDocuments } from '../controllers/api/legalController.js';
@@ -116,5 +116,7 @@ router.post('/get_treatments_by_concerns',  validate(getTreatmentsByConcersSchem
 router.get("/doctor/get/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
 
 router.get('/legal', getLegalDocuments);
+
+router.post('/get_tips_by_concerns',  validate(getTipsByConcernsSchema, "body"), faceScanControllers.get_tips_by_concerns);
 
 export default router;

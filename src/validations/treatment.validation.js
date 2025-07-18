@@ -11,3 +11,6 @@ export const getTreatmentsByConcernSchema = joi.object({
 export const getTreatmentsByConcersSchema = joi.object({
   concern_ids: idArrayValidation,
 })
+export const getTipsByConcernsSchema = joi.object({
+  concern_ids: idArrayValidation,
+})
