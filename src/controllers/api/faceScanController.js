@@ -106,12 +106,12 @@ export const get_treatments_by_concern_id = async (req, res) => {
 
 export const get_all_concerns = async (req, res) => {
     try {
-    
-        const concerns = await apiModels.getAllConcerns();
-
-        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", concerns);
+        const language = req?.user?.language || 'en';
+        const concerns = await apiModels.getAllConcerns(language);
+ 
+        return handleSuccess(res, 200, "en", "CONCERNS_FETCHED", concerns);
     } catch (error) {
-        console.error("Error fetching user appointments:", error);
+        console.error("Error fetching concerns:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
