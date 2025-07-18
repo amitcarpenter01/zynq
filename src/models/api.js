@@ -692,3 +692,64 @@ export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
 };
  
  
+export const getLegalDocumentsForUsers = async () => {
+    try {
+        const rows = await db.query(`SELECT type, text FROM tbl_legal_documents`);
+ 
+        const payload = {
+            TERMS_CONDITIONS: null,
+            PRIVACY_POLICY: null,
+        };
+ 
+        for (const doc of rows) {
+            if (doc.type === 'TERMS_CONDITIONS') {
+                payload.TERMS_CONDITIONS = doc.text;
+            } else if (doc.type === 'PRIVACY_POLICY') {
+                payload.PRIVACY_POLICY = doc.text;
+            }
+        }
+ 
+        return payload;
+    } catch (error) {
+        console.error("❌ Database Error in getLegalDocumentsForUsers:", error.message);
+        throw new Error("Failed to fetch legal documents");
+    }
+};
+ 
+ 
+export const updateLegalDocumentsService = async ({ TERMS_CONDITIONS, PRIVACY_POLICY }) => {
+    try {
+        const queries = [];
+        const values = [];
+ 
+        if (TERMS_CONDITIONS !== undefined) {
+            queries.push(`WHEN 'TERMS_CONDITIONS' THEN ?`);
+            values.push(TERMS_CONDITIONS);
+        }
+ 
+        if (PRIVACY_POLICY !== undefined) {
+            queries.push(`WHEN 'PRIVACY_POLICY' THEN ?`);
+            values.push(PRIVACY_POLICY);
+        }
+ 
+        if (queries.length === 0) return { affectedRows: 0 }; // Nothing to update
+ 
+        const query = `
+            UPDATE tbl_legal_documents
+            SET text = CASE type
+                ${queries.join('\n')}
+            END
+            WHERE type IN (${queries.map((_, idx) =>
+            idx === 0 && TERMS_CONDITIONS !== undefined ? `'TERMS_CONDITIONS'` :
+                `'PRIVACY_POLICY'`
+        ).join(', ')})
+        `;
+ 
+        const result = await db.query(query, values);
+        return result;
+    } catch (error) {
+        console.error("❌ Database Error in updateLegalDocumentsService:", error.message);
+        throw new Error("Failed to update legal documents");
+    }
+};
+ 
