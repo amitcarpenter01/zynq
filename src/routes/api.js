@@ -21,6 +21,8 @@ import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { getAllDoctorsSchema, getSingleDoctorSchema } from '../validations/doctor.validation.js';
 import { getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
+import { getAllClinicsSchema } from '../validations/clinic.validation.js';
+import { getAllProductsSchema } from '../validations/product.validation.js';
 
 const router = express.Router();
 
@@ -65,10 +67,11 @@ router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_docto
 router.post("/get-recommended-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
 
 // //==================================== Product ==============================
-router.post("/get-all-products", authenticateUser, productControllers.getAllProducts);
+router.post("/get-all-products", authenticateUser, validate(getAllProductsSchema, "body"), productControllers.getAllProducts);
+ 
 
 // ==================================== Clinic ==============================
-router.post("/get-all-clinics", authenticateUser, clinicControllers.get_all_clinics);
+router.post("/get-all-clinics", authenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_all_clinics);
 
 //==================================== Support ==============================
 router.post("/create-support-ticket", authenticateUser, supportControllers.create_support_ticket);
