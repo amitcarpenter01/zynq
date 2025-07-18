@@ -23,6 +23,7 @@ import { getAllDoctorsSchema, getSingleDoctorSchema } from '../validations/docto
 import { getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
 import { getAllClinicsSchema } from '../validations/clinic.validation.js';
 import { getAllProductsSchema } from '../validations/product.validation.js';
+import { getLegalDocuments } from '../controllers/api/legalController.js';
 
 const router = express.Router();
 
@@ -113,5 +114,7 @@ router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
 router.post('/get_treatments_by_concerns',  validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
 
 router.get("/doctor/get/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
+
+router.get('/legal', getLegalDocuments);
 
 export default router;

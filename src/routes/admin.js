@@ -10,6 +10,9 @@ import * as clinicControllers from "../controllers/admin/clinicController.js";
 import * as doctorControllers from "../controllers/admin/doctorController.js";
 import * as productControllers from "../controllers/admin/productController.js";
 import * as supportControllers from "../controllers/admin/supportController.js";
+import { getLegalDocuments, updateLegalDocuments } from '../controllers/api/legalController.js';
+import { updateLegalDocumentsSchema } from '../validations/legal.validation.js';
+import { validate } from '../middleware/validation.middleware.js';
 const router = express.Router();
 
 //==================================== Authentication ==============================
@@ -64,6 +67,8 @@ router.get('/getAllappointments',authenticateAdmin, authControllers.get_all_appo
 
 router.get('/get-all-enrollments',authenticateAdmin, authControllers.get_all_enrollments);
 
+router.get('/legal', getLegalDocuments);
 
+router.put('/legal', authenticateAdmin, validate(updateLegalDocumentsSchema, "body"), updateLegalDocuments);
 
 export default router;
