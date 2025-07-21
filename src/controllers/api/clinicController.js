@@ -11,6 +11,7 @@ import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { fileURLToPath } from 'url';
+import { getTreatmentIDsByUserID } from "../../utils/misc.util.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
