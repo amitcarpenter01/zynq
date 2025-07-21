@@ -9,6 +9,7 @@ import { sendEmail } from "../../services/send_email.js";
 import { formatImagePath, generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
 import { fileURLToPath } from 'url';
 import { fetchChatById, getChatBetweenUsers } from "../../models/chat.js";
+import { getTreatmentIDsByUserID } from "../../utils/misc.util.js";
 
 
 dotenv.config();
@@ -251,6 +252,8 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
         sort = { by: 'default', order: 'desc' },
         pagination = { page: 1, limit: 10 }
     } = req.body;
+
+    let language = req?.user?.language || "en"
  
     let {
         treatment_ids = [],

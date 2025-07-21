@@ -29,8 +29,8 @@ const image_logo = process.env.LOGO_URL;
             filters = {},
             pagination = { page: 1, limit: 20 }
         } = req.body;
-
-        const {
+ 
+        let {
             treatment_ids = [],
             concern_ids = [],
             search = ''

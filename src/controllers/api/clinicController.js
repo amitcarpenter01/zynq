@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import * as clinicModels from "../../models/clinic.js";
 import * as apiModels from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess } from "../../utils/responseHandler.js";
+import { getTreatmentIDsByUserID } from "../../utils/misc.util.js";
 
 dotenv.config();
 
@@ -15,7 +16,7 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         pagination = { page: 1, limit: 20 }
     } = req.body;
 
-    const {
+    let {
         treatment_ids = [],
         skin_condition_ids = [],
         aesthetic_device_ids = [],
@@ -23,7 +24,6 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         surgery_ids = [],
         concern_ids = [],
         search = '',
-
         min_rating = null
     } = filters;
 
