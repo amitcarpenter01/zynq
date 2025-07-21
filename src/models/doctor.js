@@ -1,5 +1,7 @@
 import db from "../config/db.js";
 import { get_web_user_by_id } from "./web_user.js";
+import { extractUserData } from "../utils/misc.util.js";
+import { isEmpty } from "../utils/user_helper.js";
 
 
 export const get_doctor_by_zynquser_id = async (zynqUserId) => {
@@ -221,17 +223,35 @@ export const update_doctor_severity_levels = async (doctorId, severityLevelIds) 
     }
 };
 
-export const update_doctor_treatments = async (doctorId, treatmentIds) => {
+export const update_doctor_treatments = async (doctorId, treatments) => {
     try {
         await db.query(`DELETE FROM tbl_doctor_treatments WHERE doctor_id = ?`, [doctorId]);
-        const values = treatmentIds.map(treatmentId => [doctorId, treatmentId]);
+
+        const values = treatments.map(t => [
+            doctorId,
+            t.treatment_id,
+            t.price,
+            t.add_notes || null,
+            t.session_duration || null
+        ]);
+
         if (values.length > 0) {
-            return await db.query(`INSERT INTO tbl_doctor_treatments (doctor_id, treatment_id) VALUES ?`, [values]);
+            const insertQuery = `
+                INSERT INTO tbl_doctor_treatments (
+                    doctor_id,
+                    treatment_id,
+                    price,
+                    add_notes,
+                    session_duration
+                ) VALUES ?
+            `;
+            return await db.query(insertQuery, [values]);
         }
+
         return null;
     } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to update doctor's severity levels.");
+        throw new Error("Failed to update doctor's treatments.");
     }
 };
 
@@ -834,5 +854,63 @@ export const getDoctorByDoctorID = async (doctor_id) => {
     catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch doctor by doctor id.");
+    }
+};
+
+export const getDashboardDataByRole = async (id, role) => {
+    if (!['DOCTOR', 'SOLO_DOCTOR', 'CLINIC'].includes(role)) {
+        throw new Error('Invalid role provided');
+    }
+
+    const isClinic = role === 'CLINIC';
+    const whereField = isClinic ? 'a.clinic_id' : 'a.doctor_id';
+    const values = [id];
+
+    // SELECT fields
+    const selectFields = [
+        'COUNT(DISTINCT a.user_id) AS total_patients',
+        `COUNT(CASE WHEN DATE(a.start_time) = CURDATE() THEN 1 ELSE NULL END) AS today_appointments`,
+        'ROUND(AVG(ar.rating), 2) AS average_rating',
+    ];
+
+    if (isClinic) {
+        selectFields.push('COUNT(DISTINCT map.doctor_id) AS total_doctors');
+    }
+
+    // JOINs
+    const joinClauses = [
+        'LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id',
+    ];
+
+    if (isClinic) {
+        joinClauses.push('LEFT JOIN tbl_doctor_clinic_map map ON map.clinic_id = a.clinic_id');
+    }
+
+    const query = `
+        SELECT ${selectFields.join(',\n        ')}
+        FROM tbl_appointments a
+        ${joinClauses.join('\n        ')}
+        WHERE ${whereField} = ?
+    `;
+
+    try {
+        const [dashboard] = await db.query(query, values);
+        return dashboard;
+    } catch (error) {
+        console.error('[DashboardDataError]', error);
+        throw new Error('Failed to fetch dashboard data.');
+    }
+};
+
+export const getDashboardData = async (userData) => {
+    try {
+        const { user_id, role } = extractUserData(userData);
+        let results = await getDashboardDataByRole(user_id, role);
+        if (!isEmpty(results)) results.total_earnings = 0
+        return results;
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch dashboard data.");
     }
 };
