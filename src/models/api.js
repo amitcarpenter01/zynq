@@ -506,7 +506,7 @@ export const getAllClinicsForUser = async ({
             'MIN(d.fee_per_session) AS doctor_lower_price_range',
             'MAX(d.fee_per_session) AS doctor_higher_price_range',
             'ROUND(AVG(ar.rating), 2) AS avg_rating',
-            needsDistance ? `ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) AS distance` : null
+            needsDistance ? `ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)) AS distance` : null
         ].filter(Boolean).join(', ');
 
         if (needsDistance) {
