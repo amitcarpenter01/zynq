@@ -209,12 +209,14 @@ export const getAllDoctors = async ({
     }
 };
 
+
 export const getAllRecommendedDoctors = async ({
     treatment_ids = [],
     skin_condition_ids = [],
     aesthetic_device_ids = [],
     skin_type_ids = [],
     surgery_ids = [],
+    search = '',
     min_rating = null,
     sort = { by: 'default', order: 'desc' },
     limit,
@@ -222,31 +224,33 @@ export const getAllRecommendedDoctors = async ({
 }) => {
     try {
         const params = [];
-        const needsRating = min_rating !== null || sort.by === 'rating';
- 
+
         const selectFields = [
-            'd.*',
-            'zu.email',
+            'd.doctor_id',
+            'd.name',
+            'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
+            'd.specialization',
+            'd.fee_per_session',
+            'd.profile_image',
             'dm.clinic_id',
             'c.clinic_name',
-            needsRating ? 'ROUND(AVG(ar.rating), 2) AS avg_rating' : null
-        ].filter(Boolean).join(', ');
- 
+            'c.address AS clinic_address',
+            'ROUND(AVG(ar.rating), 2) AS avg_rating'
+        ].join(', ');
+
         let query = `
             SELECT ${selectFields}
             FROM tbl_doctors d
             LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
             LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
             LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
+            LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id
+            LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
         `;
- 
-        if (needsRating) {
-            query += ` LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id`;
-        }
- 
+
         const joins = [];
         const filters = [];
- 
+
         const addJoinAndFilter = (ids, joinTable, joinAlias, joinField) => {
             if (ids.length > 0) {
                 joins.push(`LEFT JOIN ${joinTable} ${joinAlias} ON d.doctor_id = ${joinAlias}.doctor_id`);
@@ -254,39 +258,44 @@ export const getAllRecommendedDoctors = async ({
                 params.push(...ids);
             }
         };
- 
+
         addJoinAndFilter(treatment_ids, 'tbl_doctor_treatments', 'dt', 'treatment_id');
         addJoinAndFilter(skin_condition_ids, 'tbl_doctor_skin_condition', 'dsc', 'skin_condition_id');
         addJoinAndFilter(aesthetic_device_ids, 'tbl_doctor_aesthetic_devices', 'dad', 'aesthetic_devices_id');
         addJoinAndFilter(skin_type_ids, 'tbl_doctor_skin_types', 'dst', 'skin_type_id');
         addJoinAndFilter(surgery_ids, 'tbl_doctor_surgery', 'ds', 'surgery_id');
- 
+
         if (joins.length > 0) {
             query += ' ' + joins.join(' ');
         }
- 
-        query += ` WHERE d.profile_completion_percentage >= 0`;
- 
+
+        query += ` WHERE d.profile_completion_percentage >= 50`;
+
+        if (search && search.trim() !== '') {
+            filters.push(`LOWER(d.name) LIKE ?`);
+            params.push(`%${search.trim().toLowerCase()}%`);
+        }
+
         if (filters.length > 0) {
             query += ` AND ${filters.join(' AND ')}`;
         }
- 
+
         query += ` GROUP BY d.doctor_id, dm.clinic_id`;
- 
+
         if (min_rating !== null) {
             query += ` HAVING avg_rating >= ?`;
             params.push(min_rating);
         }
- 
+
         if (sort.by === 'rating') {
             query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
         } else {
             query += ` ORDER BY d.created_at DESC`;
         }
- 
+
         query += ` LIMIT ? OFFSET ?`;
         params.push(Number(limit) || 10, Number(offset) || 0);
- 
+
         return await db.query(query, params);
     } catch (error) {
         console.error("Database Error in getAllRecommendedDoctors:", error.message);
@@ -493,6 +502,7 @@ export const getAllClinicsForUser = async ({
             'c.clinic_id',
             'c.clinic_name',
             'c.clinic_logo',
+            'c.address',
             'MIN(d.fee_per_session) AS doctor_lower_price_range',
             'MAX(d.fee_per_session) AS doctor_higher_price_range',
             needsRating ? 'ROUND(AVG(ar.rating), 2) AS avg_rating' : null,
@@ -839,9 +849,9 @@ export const fetchZynqUserByUserId = async (user_id) => {
 export const getAllConcerns = async (lang = "en") => {
     try {
         console.log("lang", lang);
- 
+
         const concernData = await db.query(`SELECT * FROM tbl_concerns;`, []);
- 
+
         const result = concernData.map((concern) => {
             let parsedTips = {};
             try {
@@ -852,19 +862,19 @@ export const getAllConcerns = async (lang = "en") => {
                 console.warn(`Invalid JSON in tips for concern_id: ${concern.concern_id}`);
                 parsedTips = {};
             }
- 
+
             // Ensure tips is an array of trimmed strings
             const tipsString = parsedTips?.[lang] || "";
             const tipsArray = typeof tipsString === "string"
                 ? tipsString.split(",").map((tip) => tip.trim()).filter(Boolean)
                 : [];
- 
+
             return {
                 ...concern,
                 tips: tipsArray,
             };
         });
- 
+
         return result;
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -895,7 +905,7 @@ export const enroll_user_data = async (user_data) => {
 };
 
 export const get_all_enrollments = async () => {
-     try {
+    try {
         return await db.query(`SELECT * FROM tbl_enrollments
                 ORDER BY created_at DESC`, []);
     }
@@ -909,7 +919,7 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
     if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
         return [];
     }
- 
+
     try {
         const placeholders = concern_ids.map(() => '?').join(', ');
         const query = `
@@ -921,32 +931,32 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
             INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
             WHERE tc.concern_id IN (${placeholders});
         `;
- 
+
         const results = await db.query(query, concern_ids);
- 
+
         // 🔄 Format benefits based on language
         return formatBenefitsOnLang(results, lang);
- 
+
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch treatments by concern IDs.");
     }
 };
 
- 
+
 export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
     try {
         if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
             return []; // Early return for empty input
         }
- 
+
         const placeholders = concern_ids.map(() => '?').join(', ');
         const query = `
             SELECT DISTINCT treatment_id
             FROM tbl_treatment_concerns
             WHERE concern_id IN (${placeholders})
         `;
- 
+
         const results = await db.query(query, concern_ids);
         return results.map(row => row.treatment_id).filter(Boolean);
     } catch (error) {
@@ -954,17 +964,17 @@ export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
         throw new Error("Failed to fetch treatment IDs by concern IDs.");
     }
 };
- 
- 
+
+
 export const getLegalDocumentsForUsers = async () => {
     try {
         const rows = await db.query(`SELECT type, text FROM tbl_legal_documents`);
- 
+
         const payload = {
             TERMS_CONDITIONS: null,
             PRIVACY_POLICY: null,
         };
- 
+
         for (const doc of rows) {
             if (doc.type === 'TERMS_CONDITIONS') {
                 payload.TERMS_CONDITIONS = doc.text;
@@ -972,32 +982,32 @@ export const getLegalDocumentsForUsers = async () => {
                 payload.PRIVACY_POLICY = doc.text;
             }
         }
- 
+
         return payload;
     } catch (error) {
         console.error("❌ Database Error in getLegalDocumentsForUsers:", error.message);
         throw new Error("Failed to fetch legal documents");
     }
 };
- 
- 
+
+
 export const updateLegalDocumentsService = async ({ TERMS_CONDITIONS, PRIVACY_POLICY }) => {
     try {
         const queries = [];
         const values = [];
- 
+
         if (TERMS_CONDITIONS !== undefined) {
             queries.push(`WHEN 'TERMS_CONDITIONS' THEN ?`);
             values.push(TERMS_CONDITIONS);
         }
- 
+
         if (PRIVACY_POLICY !== undefined) {
             queries.push(`WHEN 'PRIVACY_POLICY' THEN ?`);
             values.push(PRIVACY_POLICY);
         }
- 
+
         if (queries.length === 0) return { affectedRows: 0 }; // Nothing to update
- 
+
         const query = `
             UPDATE tbl_legal_documents
             SET text = CASE type
@@ -1008,7 +1018,7 @@ export const updateLegalDocumentsService = async ({ TERMS_CONDITIONS, PRIVACY_PO
                 `'PRIVACY_POLICY'`
         ).join(', ')})
         `;
- 
+
         const result = await db.query(query, values);
         return result;
     } catch (error) {
@@ -1016,12 +1026,12 @@ export const updateLegalDocumentsService = async ({ TERMS_CONDITIONS, PRIVACY_PO
         throw new Error("Failed to update legal documents");
     }
 };
- 
+
 export const getTipsByConcernIds = async (concern_ids = [], lang = "en") => {
     if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
         return [];
     }
- 
+
     try {
         const placeholders = concern_ids.map(() => '?').join(', ');
         const query = `
@@ -1029,11 +1039,11 @@ export const getTipsByConcernIds = async (concern_ids = [], lang = "en") => {
             FROM tbl_concerns
             WHERE concern_id IN (${placeholders});
         `;
- 
+
         const results = await db.query(query, concern_ids);
- 
+
         const allTips = [];
- 
+
         for (const row of results) {
             let parsedTips = {};
             try {
@@ -1044,15 +1054,15 @@ export const getTipsByConcernIds = async (concern_ids = [], lang = "en") => {
                 console.warn("Invalid tips JSON:", row.tips);
                 continue;
             }
- 
+
             const tipsString = parsedTips?.[lang] || "";
             const tipsArray = typeof tipsString === "string"
                 ? tipsString.split(",").map(t => t.trim()).filter(Boolean)
                 : [];
- 
+
             allTips.push(...tipsArray);
         }
- 
+
         return allTips;
     } catch (error) {
         console.error("Database Error:", error.message);
