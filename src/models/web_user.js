@@ -3,7 +3,6 @@ import db from "../config/db.js";
 //======================================= Auth =========================================
 
 export const get_web_user_by_id = async (id) => {
-    console.log('id', id);
 
     try {
         return await db.query(`SELECT

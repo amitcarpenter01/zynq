@@ -95,5 +95,11 @@ export const isEmpty = (value) => {
     return false;
 };
 
+export const splitIDs = (str = "") =>
+    str
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean);
+        
 export const formatImagePath = (path, folder) =>
     !path ? null : path.startsWith('http') ? path : `${APP_URL}${folder}/${path}`;

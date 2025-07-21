@@ -1,6 +1,7 @@
 import db from "../config/db.js";
 import { isEmpty } from "./user_helper.js";
 
+
 export const getTreatmentIDsByUserID = async (UserID) => {
     const result = await db.query(`
         SELECT aiAnalysisResult

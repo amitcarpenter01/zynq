@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 import jwt from "jsonwebtoken"
 import * as apiModels from "../../models/api.js";
 import { sendEmail } from "../../services/send_email.js";
-import { generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
+import { generateAccessToken, generatePassword, generateVerificationLink, splitIDs } from "../../utils/user_helper.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { fileURLToPath } from 'url';
 import { getTreatmentIDsByUserID } from "../../utils/misc.util.js";

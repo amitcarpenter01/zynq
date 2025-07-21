@@ -3,7 +3,8 @@ import express from 'express';
 const router = express.Router();
 import * as webControllers from "../controllers/web_users/authController.js";
 import { authenticate } from '../middleware/web_user_auth.js';;
-import { authenticateUser } from '../middleware/auth.js';;
+import { authenticateUser } from '../middleware/auth.js';import { getNotifications } from '../controllers/api/notificationController.js';
+;
 // router.get("/get_profile", authenticate(['CLINIC','DOCTOR']), webControllers.getProfile);
 
 router.post("/login", webControllers.login_web_user);
@@ -33,5 +34,10 @@ router.post(
 
 
 router.get("/get-call-logs", authenticate, webControllers.get_all_call_logs);
+
+
+//=======================================Notifications=============================
+router.get('/notifications/get', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getNotifications);
+
 
 export default router;  

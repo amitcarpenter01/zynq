@@ -9,9 +9,8 @@ import * as clinicModels from "../../models/clinic.js";
 import * as webModels from "../../models/web_user.js";
 import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken, generateVerificationLink } from "../../utils/user_helper.js";
-import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import axios from 'axios';
-import { tryCatch } from "bullmq";
 
 
 dotenv.config();
@@ -74,6 +73,18 @@ export const getProfile = async (req, res) => {
         if (clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")) {
             clinic.clinic_logo = `${APP_URL}clinic/logo/${clinic.clinic_logo}`;
         }
+
+        const images = await clinicModels.getClinicImages(clinic.clinic_id);
+        clinic.images = images
+            .filter(img => img?.image_url)
+            .map(img => ({
+                clinic_image_id: img.clinic_image_id,
+                url: img.image_url.startsWith('http')
+                    ? img.image_url
+                    : `${APP_URL}clinic/files/${img.image_url}`,
+            }));
+
+
         return handleSuccess(res, 200, language, "CLINIC_PROFILE_FETCHED", clinic);
     } catch (error) {
         console.error("Error in getProfile:", error);
@@ -165,7 +176,7 @@ export const onboardClinic = async (req, res) => {
                 return handleError(res, 400, "en", "INVALID_JSON_FOR_CLINIC_TIMING");
             }
         }
-        
+
         if (typeof req.body.treatments === 'string') {
             try {
                 req.body.treatments = JSON.parse(req.body.treatments);
@@ -272,19 +283,35 @@ export const onboardClinic = async (req, res) => {
 
         const [clinic] = await clinicModels.get_clinic_by_zynq_user_id(zynq_user_id);
         const clinic_id = clinic.clinic_id;
+        const clinicImageFiles = [];
 
         if (uploadedFiles.length > 0) {
-            uploadedFiles.forEach(async (file) => {
-                const [certificationType] = await clinicModels.getCertificateTypeByFileName(file.fieldname);
-                let certification_type_id = certificationType ? certificationType.certification_type_id : null;
-                if (certification_type_id) {
-                    const fileName = file.filename;
-                    await clinicModels.insertClinicDocuments(clinic_id, certification_type_id, file.fieldname, fileName);
+            for (const file of uploadedFiles) {
+                const fileName = file.filename;
+
+                if (file.fieldname === 'files') {
+                    clinicImageFiles.push(fileName);
+                    continue;
                 }
-            });
+
+                const [certificationType] = await clinicModels.getCertificateTypeByFileName(file.fieldname);
+                const certification_type_id = certificationType?.certification_type_id || null;
+
+                if (certification_type_id) {
+                    await clinicModels.insertClinicDocuments(
+                        clinic_id,
+                        certification_type_id,
+                        file.fieldname,
+                        fileName
+                    );
+                }
+            }
+
+            if (clinicImageFiles.length > 0) {
+                await clinicModels.insertClinicImages(clinic_id, clinicImageFiles);
+            }
         }
 
-        console.log('uploadedFiles', uploadedFiles)
 
         const [clinicLocation] = await clinicModels.getClinicLocation(clinic_id);
         if (clinicLocation) {
@@ -710,3 +737,11 @@ export const getAllDevices = async (req, res) => {
         return handleError(res, 500, "en", 'INTERNAL_SERVER_ERROR');
     }
 }
+
+export const deleteClinicImage = asyncHandler(async (req, res) => {
+    const { clinic_image_id } = req.params;
+    const result = await clinicModels.deleteClinicImageById(clinic_image_id, req?.user?.clinicData?.clinic_id);
+    if (result?.affectedRows === 0) return handleError(res, 404, "en", "Image_NOT_FOUND");
+    return handleSuccess(res, 200, "en", "Image_DELETED_SUCCESSFULLY", null);
+
+})

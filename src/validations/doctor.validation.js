@@ -26,7 +26,6 @@ export const getAllDoctorsSchema = joi.object({
     by: joi.string().valid('nearest', 'rating').default('nearest'),
     order: orderValidation
   }).optional(),
- 
   pagination: joi.object({
     page: numberValidation.min(1).default(1),
     limit: numberValidation.min(1).default(20)

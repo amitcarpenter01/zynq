@@ -765,16 +765,16 @@ export const fetchAppointmentsBulkModel = async (doctorId, fromDate, toDate) => 
 
 
 export const createOrUpdateCallLog = async ({
-  call_id,
-  sender_user_id,
-  sender_doctor_id,
-  receiver_user_id,
-  receiver_doctor_id,
-  status,
-  started_at
+    call_id,
+    sender_user_id,
+    sender_doctor_id,
+    receiver_user_id,
+    receiver_doctor_id,
+    status,
+    started_at
 }) => {
-  try {
-    await db.query(`
+    try {
+        await db.query(`
       INSERT INTO tbl_call_logs (
         call_id, sender_user_id, sender_doctor_id,
         receiver_user_id, receiver_doctor_id, status, started_at
@@ -783,20 +783,20 @@ export const createOrUpdateCallLog = async ({
         status = VALUES(status),
         started_at = VALUES(started_at)
     `, [
-      call_id,
-      sender_user_id,
-      sender_doctor_id,
-      receiver_user_id,
-      receiver_doctor_id,
-      status,
-      started_at
-    ]);
-  } catch (error) {
-    console.error("Error in createOrUpdateCallLog:", error);
-    throw error;
-  }
+            call_id,
+            sender_user_id,
+            sender_doctor_id,
+            receiver_user_id,
+            receiver_doctor_id,
+            status,
+            started_at
+        ]);
+    } catch (error) {
+        console.error("Error in createOrUpdateCallLog:", error);
+        throw error;
+    }
 };
- 
+
 export const getDocterByDocterId = async (doctor_id) => {
     try {
         const result = await db.query('SELECT * FROM tbl_doctors WHERE doctor_id = ?', [doctor_id]);
@@ -806,7 +806,7 @@ export const getDocterByDocterId = async (doctor_id) => {
         throw new Error("Failed to fetch support tickets.");
     }
 }
- 
+
 
 export const getSoloDoctorByZynqUserId = async (zynq_user_id) => {
     try {
@@ -818,7 +818,6 @@ export const getSoloDoctorByZynqUserId = async (zynq_user_id) => {
     }
 }
 
-
 export const getDoctorByDoctorID = async (doctor_id) => {
     try {
         const query = `
@@ -827,9 +826,9 @@ export const getDoctorByDoctorID = async (doctor_id) => {
             JOIN tbl_doctors d ON dcm.doctor_id = d.doctor_id
             JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
             WHERE d.doctor_id = ? ORDER BY dcm.created_at DESC`;
- 
+
         const result = await db.query(query, [doctor_id]);
- 
+
         return result;
     }
     catch (error) {
@@ -837,4 +836,3 @@ export const getDoctorByDoctorID = async (doctor_id) => {
         throw new Error("Failed to fetch doctor by doctor id.");
     }
 };
- 

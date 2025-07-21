@@ -1,5 +1,10 @@
 import db from "../config/db.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 //======================================= Auth =========================================
 
 export const get_clinic_by_zynq_user_id = async (zynq_user_id) => {
@@ -1588,12 +1593,14 @@ export const getDoctorAvailabilityBulk = async (doctorIds) => {
         const placeholders = doctorIds.map(() => '?').join(',');
         const query = `SELECT * FROM tbl_doctor_availability WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
         const results = await db.query(query, doctorIds);
+
  
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
             grouped[row.doctor_id].push(row);
         });
+
  
         return grouped;
     } catch (error) {
@@ -1607,32 +1614,35 @@ export const getDoctorReviewsBulk = async (doctorIds) => {
         const placeholders = doctorIds.map(() => '?').join(',');
         const query = `SELECT * FROM tbl_doctor_reviews WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
         const results = await db.query(query, doctorIds);
+
  
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
             grouped[row.doctor_id].push(row);
         });
+
  
         return grouped;
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch doctor reviews.");
     }
-}
+};
+
 
 export const getDoctorSeverityLevelsBulk = async (doctorIds) => {
     try {
         const placeholders = doctorIds.map(() => '?').join(',');
         const query = `SELECT * FROM tbl_doctor_severity_levels WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
         const results = await db.query(query, doctorIds);
- 
+
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
             grouped[row.doctor_id].push(row);
         });
- 
+
         return grouped;
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -1653,6 +1663,20 @@ export const getChatsBetweenUserAndDoctors = async (userId, doctorUserIds) => {
     );
 };
 
+export const insertClinicImages = async (clinicId, imageFilenames = []) => {
+    if (!imageFilenames.length) return;
+
+    const values = imageFilenames.map(() => `(?, ?)`).join(', ');
+    const params = imageFilenames.flatMap(filename => [clinicId, filename]);
+
+    const query = `
+        INSERT INTO tbl_clinic_images (clinic_id, image_url)
+        VALUES ${values}
+    `;
+
+    return await db.query(query, params);
+};
+
 export const getClinicImages = async (clinic_id) => {
     try {
         const rows = await db.query(
@@ -1662,6 +1686,36 @@ export const getClinicImages = async (clinic_id) => {
         return rows;
     } catch (error) {
         console.error("Error in getClinicImages:", error);
+        throw error;
+    }
+};
+
+export const deleteClinicImageById = async (clinic_image_id, clinic_id) => {
+    try {
+        console.log('clinic_image_id', clinic_image_id, 'clinic_id', clinic_id);
+        // 1. Get image_url first
+        const rows = await db.query(
+            `SELECT image_url FROM tbl_clinic_images WHERE clinic_image_id = ? AND clinic_id = ?`,
+            [clinic_image_id, clinic_id]
+        );
+
+        if (rows.length === 0) return null;
+
+        const imageFileName = rows[0]?.image_url;
+        const filePath = path.join(__dirname, '../uploads/clinic/files', imageFileName);
+
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        const result = await db.query(
+            `DELETE FROM tbl_clinic_images WHERE clinic_image_id = ? AND clinic_id = ?`,
+            [clinic_image_id, clinic_id]
+        );
+
+        return result;
+    } catch (error) {
+        console.error("Error in deleteClinicImageById:", error);
         throw error;
     }
 };

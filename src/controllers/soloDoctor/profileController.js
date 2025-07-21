@@ -59,6 +59,23 @@ export const addPersonalInformation = async (req, res) => {
             clinicData.clinic_logo = req.files.logo[0].filename
         }
 
+        const uploadedFiles = req.files || {};
+        const clinicImageFiles = [];
+
+        if (Array.isArray(uploadedFiles.files) && uploadedFiles.files.length > 0) {
+            for (const file of uploadedFiles.files) {
+                const fileName = file.filename;
+                clinicImageFiles.push(fileName);
+            }
+
+            if (clinicImageFiles.length > 0) {
+                await clinicModels.insertClinicImages(req?.user?.clinicData?.clinic_id, clinicImageFiles);
+            }
+        }
+
+
+
+
         const doctorResult = await dbOperations.getData('tbl_doctors', `where zynq_user_id = '${zynqUserId}' `);
         const getClinicData = await dbOperations.getData('tbl_clinics', `WHERE zynq_user_id = '${zynqUserId}' `);
         if (getClinicData.length == 0) {
@@ -461,6 +478,17 @@ export const getDoctorProfile = async (req, res) => {
             clinic.clinic_logo = `${APP_URL}clinic/logo/${clinic.clinic_logo}`;
         }
 
+        const images = await clinicModels.getClinicImages(clinic.clinic_id);
+        clinic.images = images
+            .filter(img => img?.image_url)
+            .map(img => ({
+                clinic_image_id: img.clinic_image_id,
+                url: img.image_url.startsWith('http')
+                    ? img.image_url
+                    : `${APP_URL}clinic/files/${img.image_url}`,
+            }));
+
+
         // Get profile for clinic ends
         console.log(clinic);
         return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, clinic, completionPercentage });
@@ -498,7 +526,7 @@ export const createDoctorAvailability = async (req, res) => {
         const zynqUserId = req.user.id
         console.log('zynqUserId', zynqUserId);
 
-       
+
         await update_onboarding_status(5, zynqUserId);
         await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
         return handleSuccess(res, 200, 'en', 'Availability_added_successfully');
@@ -581,6 +609,16 @@ export const getDoctorProfileByStatus = async (req, res) => {
             if (clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")) {
                 clinic.clinic_logo = `${APP_URL}clinic/logo/${clinic.clinic_logo}`;
             }
+
+            const images = await clinicModels.getClinicImages(clinicId);
+            clinic.images = images
+                .filter(img => img?.image_url)
+                .map(img => ({
+                    clinic_image_id: img.clinic_image_id,
+                    url: img.image_url.startsWith('http')
+                        ? img.image_url
+                        : `${APP_URL}clinic/files/${img.image_url}`,
+                }));
 
             const zynqUser = await fetchZynqUserByUserId(zynqUserId);
             profileData.on_boarding_status = zynqUser[0].on_boarding_status;
@@ -693,7 +731,7 @@ export const getDoctorProfileByStatus = async (req, res) => {
 
 export const updateOnboardingStatus = async (req, res) => {
     try {
-        const {statusId} = req.query;
+        const { statusId } = req.query;
         await update_onboarding_status(statusId, req.user.id);
         return handleSuccess(res, 200, 'en', "ONBOARDING_STATUS_UPDATED");
     } catch (err) {
@@ -701,9 +739,9 @@ export const updateOnboardingStatus = async (req, res) => {
         return handleError(res, 500, 'Failed to update availability');
     }
 };
- 
 
- 
+
+
 
 
 
