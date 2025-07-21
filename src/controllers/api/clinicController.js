@@ -123,6 +123,89 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language || 'en', "CLINICS_FETCHED_SUCCESSFULLY", processedClinics);
 });
 
+export const get_nearby_clinics = asyncHandler(async (req, res) => {
+    const {
+        filters = {},
+        pagination = { page: 1, limit: 20 }
+    } = req.body;
+
+    const {
+        treatment_ids = [],
+        skin_condition_ids = [],
+        aesthetic_device_ids = [],
+        skin_type_ids = [],
+        surgery_ids = [],
+        min_rating = null
+    } = filters;
+
+    const { page, limit } = pagination;
+    const offset = (page - 1) * limit;
+
+    let {
+        latitude: userLatitude = null,
+        longitude: userLongitude = null,
+        language = 'en'
+    } = req.user;
+
+    // userLatitude = 22.72266520
+    // userLongitude = 75.88740870
+
+    console.log("userLatitude", userLatitude, "userLongitude", userLongitude);
+
+    const clinics = await apiModels.getNearbyClinicsForUser({
+        treatment_ids,
+        skin_condition_ids,
+        aesthetic_device_ids,
+        skin_type_ids,
+        surgery_ids,
+        min_rating,
+        userLatitude,
+        userLongitude,
+        limit,
+        offset
+    });
+
+    if (!clinics || clinics.length === 0) {
+        return handleSuccess(res, 200, language, "CLINICS_FETCHED_SUCCESSFULLY", clinics);
+    }
+
+    // const clinicIds = clinics.map(c => c.clinic_id);
+
+    // const [
+    //     allTreatments,
+    //     allOperationHours,
+    //     allSkinTypes,
+    //     allSkinCondition,
+    //     allSurgery,
+    //     allAstheticDevices,
+    //     allLocations
+    // ] = await Promise.all([
+    //     clinicModels.getClinicTreatmentsBulk(clinicIds),
+    //     clinicModels.getClinicOperationHoursBulk(clinicIds),
+    //     clinicModels.getClinicSkinTypesBulk(clinicIds),
+    //     clinicModels.getClinicSkinConditionBulk(clinicIds),
+    //     clinicModels.getClinicSurgeryBulk(clinicIds),
+    //     clinicModels.getClinicAstheticDevicesBulk(clinicIds),
+    //     clinicModels.getClinicLocationsBulk(clinicIds)
+    // ]);
+
+    const processedClinics = clinics.map(clinic => ({
+        ...clinic,
+        // location: allLocations[clinic.clinic_id] || null,
+        // treatments: allTreatments[clinic.clinic_id] || [],
+        // operation_hours: allOperationHours[clinic.clinic_id] || [],
+        // skin_types: allSkinTypes[clinic.clinic_id] || [],
+        // allSkinCondition: allSkinCondition[clinic.clinic_id] || [],
+        // allSurgery: allSurgery[clinic.clinic_id] || [],
+        // allAstheticDevices: allAstheticDevices[clinic.clinic_id] || [],
+        clinic_logo: clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")
+            ? `${APP_URL}clinic/logo/${clinic.clinic_logo}`
+            : clinic.clinic_logo
+    }));
+
+    return handleSuccess(res, 200, language, "CLINICS_FETCHED_SUCCESSFULLY", processedClinics);
+});
+
 export const getSingleClinic = asyncHandler(async (req, res) => {
     const { clinic_id } = req.params;
     const { language = 'en' } = req.user;
@@ -168,86 +251,5 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language || 'en', "CLINICS_FETCHED_SUCCESSFULLY", processedClinics[0]);
 });
 
-export const get_nearby_clinics = asyncHandler(async (req, res) => {
-    const {
-        filters = {},
-        pagination = { page: 1, limit: 20 }
-    } = req.body;
 
-    const {
-        treatment_ids = [],
-        skin_condition_ids = [],
-        aesthetic_device_ids = [],
-        skin_type_ids = [],
-        surgery_ids = [],
-        min_rating = null
-    } = filters;
-
-    const { page, limit } = pagination;
-    const offset = (page - 1) * limit;
-
-    let {
-        latitude: userLatitude = null,
-        longitude: userLongitude = null,
-        language = 'en'
-    } = req.user;
-
-    userLatitude = 22.72266520
-    userLongitude = 75.88740870
-
-    console.log("userLatitude", userLatitude, "userLongitude", userLongitude);
-
-    const clinics = await apiModels.getNearbyClinicsForUser({
-        treatment_ids,
-        skin_condition_ids,
-        aesthetic_device_ids,
-        skin_type_ids,
-        surgery_ids,
-        min_rating,
-        userLatitude,
-        userLongitude,
-        limit,
-        offset
-    });
-
-    if (!clinics || clinics.length === 0) {
-        return handleError(res, 404, language, "NO_CLINICS_FOUND");
-    }
-
-    const clinicIds = clinics.map(c => c.clinic_id);
-
-    const [
-        allTreatments,
-        allOperationHours,
-        allSkinTypes,
-        allSkinCondition,
-        allSurgery,
-        allAstheticDevices,
-        allLocations
-    ] = await Promise.all([
-        clinicModels.getClinicTreatmentsBulk(clinicIds),
-        clinicModels.getClinicOperationHoursBulk(clinicIds),
-        clinicModels.getClinicSkinTypesBulk(clinicIds),
-        clinicModels.getClinicSkinConditionBulk(clinicIds),
-        clinicModels.getClinicSurgeryBulk(clinicIds),
-        clinicModels.getClinicAstheticDevicesBulk(clinicIds),
-        clinicModels.getClinicLocationsBulk(clinicIds)
-    ]);
-
-    const processedClinics = clinics.map(clinic => ({
-        ...clinic,
-        location: allLocations[clinic.clinic_id] || null,
-        treatments: allTreatments[clinic.clinic_id] || [],
-        operation_hours: allOperationHours[clinic.clinic_id] || [],
-        skin_types: allSkinTypes[clinic.clinic_id] || [],
-        allSkinCondition: allSkinCondition[clinic.clinic_id] || [],
-        allSurgery: allSurgery[clinic.clinic_id] || [],
-        allAstheticDevices: allAstheticDevices[clinic.clinic_id] || [],
-        clinic_logo: clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")
-            ? `${APP_URL}clinic/logo/${clinic.clinic_logo}`
-            : clinic.clinic_logo
-    }));
-
-    return handleSuccess(res, 200, language, "CLINICS_FETCHED_SUCCESSFULLY", processedClinics);
-});
 
