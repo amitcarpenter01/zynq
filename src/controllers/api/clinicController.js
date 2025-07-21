@@ -20,7 +20,8 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         aesthetic_device_ids = [],
         skin_type_ids = [],
         surgery_ids = [],
-        min_rating = null
+        min_rating = null,
+        concern_ids
     } = filters;
 
     const { page, limit } = pagination;
