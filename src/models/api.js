@@ -521,9 +521,9 @@ export const getAllClinicsForUser = async ({
             LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
         `;
 
-        if (needsRating) {
-            query += ` LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id`;
-        }
+        // if (needsRating) {
+        query += ` LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id`;
+        // }
 
         const joins = [];
         const filters = [];
