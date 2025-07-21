@@ -21,7 +21,7 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         skin_type_ids = [],
         surgery_ids = [],
         min_rating = null,
-        concern_ids
+        concern_ids = []
     } = filters;
 
     const { page, limit } = pagination;
