@@ -9,7 +9,7 @@ import * as apiModels from "../../models/api.js";
 import * as webModels from "../../models/web_user.js";
 import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken, generateVerificationLink } from "../../utils/user_helper.js";
-import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import twilio from 'twilio';
 
 import { fileURLToPath } from 'url';
@@ -761,3 +761,13 @@ export const isUserOfflineOrOnline = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
+
+
+export const uploadChatFiles = asyncHandler(async (req, res) => {
+    if (!req.files || req.files.length === 0)
+        return handleError(res, 400, 'en', "NO_FILES_UPLOADED");
+
+    const fileNames = req.files.map(file => file.filename);
+
+    return handleSuccess(res, 200, 'en', "FILE_UPLOADED", fileNames);
+});

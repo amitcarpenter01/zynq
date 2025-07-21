@@ -7,6 +7,9 @@ import dayjs from 'dayjs';
 import { getDocterByDocterId } from '../../models/doctor.js';
 import { getChatBetweenUsers } from '../../models/chat.js';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
+import pkg from 'rrule';
+import { generateSlots, weekdayMap } from '../api/authController.js';
+const { RRule } = pkg;
 const APP_URL = process.env.APP_URL;
 export const getMyAppointmentsDoctor = async (req, res) => {
     try {
@@ -112,12 +115,19 @@ export const getMyAppointmentById = async (req, res) => {
 
 export const rescheduleAppointment = asyncHandler(async (req, res) => {
     const { doctor_id, appointment_id, start_time, end_time } = req.body;
-
+    const language = req?.user?.language || 'en';
     const existing = await appointmentModel.checkIfSlotAlreadyBooked(doctor_id, start_time);
 
     if (existing.length > 0) {
-        return handleError(res, 400, "en", "SLOT_ALREADY_BOOKED");
+        return handleError(res, 400, language, "SLOT_ALREADY_BOOKED");
     }
+
+    const now = new Date();
+    const originalStartTime = new Date(start_time);
+    // if ((originalStartTime - now) < (60 * 60 * 1000)) {
+    //     return handleError(res, 400, "en", "RESCHEDULE_WINDOW_EXPIRED");
+    // }
+
 
     const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
     const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
@@ -128,7 +138,7 @@ export const rescheduleAppointment = asyncHandler(async (req, res) => {
     );
 
     if (result.affectedRows === 0) {
-        return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+        return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
     }
 
     const [appointmentData] = await appointmentModel.getAppointmentDataByAppointmentID(appointment_id)
@@ -142,5 +152,97 @@ export const rescheduleAppointment = asyncHandler(async (req, res) => {
         receiver_type: "USER"
     });
 
-    return handleSuccess(res, 200, "en", "APPOINTMENT_RESCHEDULED_SUCCESSFULLY");
+    return handleSuccess(res, 200, language, "APPOINTMENT_RESCHEDULED_SUCCESSFULLY");
+});
+
+export const getFutureDoctorSlots = asyncHandler(async (req, res) => {
+    const doctor_id = req.user.doctorData.doctor_id;
+    const today = dayjs();
+    const oneMonthLater = today.add(1, 'month');
+
+    const availabilityRows = await doctorModel.fetchDoctorAvailabilityModel(doctor_id);
+
+    if (!availabilityRows || availabilityRows.length === 0) {
+        return handleError(res, 400, 'en', "NO_AVAILABILITY_FOUND", []);
+    }
+
+    let allSlotData = [];
+
+    for (const availability of availabilityRows) {
+        const rruleDay = weekdayMap[availability.day.toLowerCase()];
+        if (!rruleDay) continue;
+
+        const rule = new RRule({
+            freq: RRule.WEEKLY,
+            byweekday: [rruleDay],
+            dtstart: today.toDate(),
+            until: oneMonthLater.toDate()
+        });
+
+        const upcomingDates = rule.all();
+
+        for (const dateObj of upcomingDates) {
+            const formattedDate = dayjs.utc(dateObj).format('YYYY-MM-DD');
+
+            const slots = generateSlots(
+                availability.start_time,
+                availability.end_time,
+                availability.slot_duration,
+                formattedDate
+            );
+
+            slots.forEach(slot => {
+                allSlotData.push({
+                    date: formattedDate,
+                    day: availability.day.toLowerCase(),
+                    ...slot
+                });
+            });
+        }
+    }
+
+    if (allSlotData.length === 0) {
+        return handleError(res, 400, 'en', "NO_SLOTS_FOUND", []);
+    }
+
+    const bookedAppointmentsRaw = await doctorModel.fetchAppointmentsBulkModel(
+        doctor_id,
+        today.format('YYYY-MM-DD'),
+        oneMonthLater.format('YYYY-MM-DD')
+    );
+
+    const bookedAppointments = (bookedAppointmentsRaw || []).map(app => {
+        const localFormatted = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
+        const fixedUTC = dayjs.utc(localFormatted).toISOString();
+        return {
+            ...app,
+            start_time: fixedUTC,
+        };
+    });
+
+    const bookedMap = {};
+    for (const app of bookedAppointments) {
+        bookedMap[app.start_time] = app.count || 1;
+    }
+
+    const resultWithStatus = allSlotData.map(slot => {
+        const status = bookedMap[slot.start_time] > 0 ? 'booked' : 'available';
+        return {
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            status
+        };
+    });
+
+    return handleSuccess(res, 200, 'en', "FUTURE_DOCTOR_SLOTS", resultWithStatus);
+});
+
+export const getPatientRecords = asyncHandler(async (req, res) => {
+    const patientRecords = await appointmentModel.getPatientRecords(req.user);
+    return handleSuccess(res, 200, 'en', "PATIENT_RECORDS", patientRecords);
+})
+
+export const getReviewsAndRatings = asyncHandler(async (req, res) => {
+    const reviews = await appointmentModel.getRatings(req.user);
+    return handleSuccess(res, 200, 'en', "REVIEWS_FETCHED", reviews);
 });

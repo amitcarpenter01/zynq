@@ -91,7 +91,7 @@ router.post('/getMyAppointmentById', authenticate(['DOCTOR', 'SOLO_DOCTOR']), ap
 
 router.get("/get_docter_profile", authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.get_docter_profile);
 router.patch('/appointment/reschedule', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(rescheduleAppointmentSchema, "body"), appointmentControllers.rescheduleAppointment);
-
+router.get('/future-slots', authenticate(['DOCTOR', 'SOLO_DOCTOR']), appointmentControllers.getFutureDoctorSlots);
 
 
 // -------------------------------------Get logs------------------------------------------------//
@@ -101,5 +101,18 @@ router.post(
     authenticate(['DOCTOR', 'SOLO_DOCTOR']),
     doctorController.create_call_log_doctor
 );
+
+// -------------------------------------Patient Records------------------------------------------------//
+
+router.get('/patient-records', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), appointmentControllers.getPatientRecords);
+
+// -------------------------------------Dashboards------------------------------------------------//
+
+router.get('/dashboard', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), doctorController.getDashboard);
+
+
+// -------------------------------------Ratings and Reviews------------------------------------------------//
+
+router.get('/reviews-ratings', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), appointmentControllers.getReviewsAndRatings);
 
 export default router;

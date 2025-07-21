@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 import jwt from "jsonwebtoken"
 import * as webModels from "../../models/web_user.js";
 import * as clinicModels from "../../models/clinic.js";
-import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { fileURLToPath } from "url";
 import { sendEmail } from "../../services/send_email.js";
 
@@ -462,4 +462,9 @@ export const verifyRoleSelected = async (req, res) => {
 };
 
 
+export const toggleLanguage = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const result = await webModels.toggleUserLanguage(req.user);
+    return handleSuccess(res, 200, language, 'Language updated successfully');
+})
 
