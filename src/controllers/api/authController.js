@@ -171,6 +171,7 @@ const verifyServiceSid = process.env.VERIFY_SERVICE_SID;
 const client = twilio(accountSid, authToken);
 
 export const login_with_mobile = async (req, res) => {
+    let language = req.body.language || 'en';
     try {
         const sendOtpSchema = Joi.object({
             mobile_number: Joi.string().required(),
@@ -207,12 +208,20 @@ export const login_with_mobile = async (req, res) => {
         return handleSuccess(res, 200, language || 'en', "VERIFICATION_OTP", { otp, sid: verification.sid });
 
     } catch (error) {
+         if (error.code === 60203) {
+            return handleError(res, 400, language, "MAX_OTP_ATTEMPTS_REACHED");
+        }
+          if (error.code === 60410) {
+            return handleError(res, 400, language, "PHONE_NUMBER_BLOCKED_BY_TWILIO");
+        }
+
         console.error("Internal error:", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
 
 export const login_with_otp = async (req, res) => {
+    let language = req.body.language || 'en';
     try {
         const loginOtpSchema = Joi.object({
             mobile_number: Joi.string().required(),
@@ -254,6 +263,11 @@ export const login_with_otp = async (req, res) => {
         return handleSuccess(res, 200, language || 'en', "LOGIN_SUCCESSFUL", token);
 
     } catch (error) {
+        console.error("Login OTP verification error:", error);
+
+        if (error.code === 20404) {
+            return handleError(res, 400, language, "OTP_EXPIRED_OR_INVALID");
+        }
         console.error("Login OTP verification error:", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
@@ -467,24 +481,32 @@ export const register_with_email = async (req, res) => {
 export const enroll_user = async (req, res) => {
     try {
         const enrollSchema = Joi.object({
-            full_name:Joi.string().required(),
+            full_name: Joi.string().required(),
             email: Joi.string().required(),
             mobile_number: Joi.string().required(),
             application_type: Joi.string().valid('android', 'ios', 'both').required(),
             udid: Joi.string().optional().allow("", null),
+            language: Joi.string().valid('sv', 'en').optional().allow("", null),
         });
 
         const { error, value } = enrollSchema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
-        const { email, mobile_number, application_type, udid ,full_name} = value;
-
+        const { email, mobile_number, application_type, udid, full_name, language } = value;
         const android_app_link = process.env.ANDROID_APP_LINK;
         const ios_app_link = process.env.IOS_APP_LINK;
+        const lang = language === 'sv' ? 'sv' : 'en';
 
         const [user] = await apiModels.get_user_by_mobile_number(mobile_number);
         if (user) {
-            return handleError(res, 400, 'en', "USER_ALREADY_ENROLLED");
+            return handleError(res, 400, lang, "USER_ALREADY_ENROLLED");
         }
+
+        const data = {
+            email:email,
+            mobile_number:mobile_number
+        }
+
+        await apiModels.enroll_user(data)
 
         const user_data = {
             email,
@@ -493,11 +515,14 @@ export const enroll_user = async (req, res) => {
             full_name,
             udid
         }
+        const image_logo = 'https://51.21.123.99:4000/zynq_logo.png'
+      
         await apiModels.enroll_user_data(user_data);
-
+        
+        const emailTemplatePath = path.resolve(__dirname, `../../views/user_enroll/${lang}.ejs`);
         if (application_type == "android") {
-            const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
-            const emailHtml = await ejs.renderFile(emailTemplatePath, { image_logo, email, android_app_link, application_type: "android",full_name,mobile_number });
+            // const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
+            const emailHtml = await ejs.renderFile(emailTemplatePath, { image_logo, email, android_app_link, application_type: "android", full_name, mobile_number });
 
             const emailOptions = {
                 to: email,
@@ -509,8 +534,8 @@ export const enroll_user = async (req, res) => {
         }
 
         if (application_type == "ios") {
-            const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
-            const emailHtml = await ejs.renderFile(emailTemplatePath, { udid, image_logo, email, ios_app_link, application_type: "ios" ,full_name,mobile_number});
+            // const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
+            const emailHtml = await ejs.renderFile(emailTemplatePath, { udid, image_logo, email, ios_app_link, application_type: "ios", full_name, mobile_number });
 
             const emailOptions = {
                 to: email,
@@ -522,8 +547,8 @@ export const enroll_user = async (req, res) => {
         }
 
         if (application_type == "both") {
-            const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
-            const emailHtml = await ejs.renderFile(emailTemplatePath, { udid, image_logo, email, android_app_link, ios_app_link, application_type: "both",full_name ,mobile_number});
+            // const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
+            const emailHtml = await ejs.renderFile(emailTemplatePath, { udid, image_logo, email, android_app_link, ios_app_link, application_type: "both", full_name, mobile_number });
             const emailOptions = {
                 to: email,
                 subject: "Enroll Your Account",

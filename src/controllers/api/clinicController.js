@@ -38,8 +38,30 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         console.warn("User selected 'nearest' but no location found, falling back to default sort.");
         effectiveSort = { by: 'default', order: 'desc' };
     }
-
-    const clinics = await apiModels.getAllClinicsForUser({
+ 
+    if (concern_ids.length > 0) {
+        const treatment_ids_from_concern = await apiModels.getTreatmentIdsByConcernIds(concern_ids);
+        if (Array.isArray(treatment_ids_from_concern) && treatment_ids_from_concern.length > 0) {
+            treatment_ids = treatment_ids.concat(treatment_ids_from_concern);
+        }
+    }
+ 
+    // 👉 If all filters are empty, fallback to user-based treatment IDs
+    const areAllFiltersEmpty =
+        treatment_ids.length === 0 &&
+        skin_condition_ids.length === 0 &&
+        aesthetic_device_ids.length === 0 &&
+        skin_type_ids.length === 0 &&
+        concern_ids.length === 0 &&
+        surgery_ids.length === 0 &&
+        !min_rating;
+ 
+    if (areAllFiltersEmpty) {
+        const userTreatmentIds = await getTreatmentIDsByUserID(req.user.user_id);
+        treatment_ids = userTreatmentIds || [];
+    }
+ 
+    const queryFilters = {
         treatment_ids,
         skin_condition_ids,
         aesthetic_device_ids,
@@ -51,14 +73,18 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         userLongitude,
         limit,
         offset
-    });
-
-    if (!clinics || clinics.length === 0) {
-        return handleError(res, 404, language, "NO_CLINICS_FOUND");
     }
 
+    console.log("quer",queryFilters)
+ 
+    const clinics = await apiModels.getAllClinicsForUser(queryFilters);
+ 
+    if (!clinics || clinics.length === 0) {
+        return handleSuccess(res, 200, language || 'en', "CLINICS_FETCHED_SUCCESSFULLY", clinics);;
+    }
+ 
     const clinicIds = clinics.map(c => c.clinic_id);
-
+ 
     const [
         allTreatments,
         allOperationHours,

@@ -1,6 +1,7 @@
 import { populateMessage } from "../utils/joi.util.js";
 import { handleError } from "../utils/responseHandler.js";
 
+
 const validate = (schema, type) => (req, res, next) => {
     const { error } = schema.validate(req[type]);
     if (error) {
@@ -9,11 +10,13 @@ const validate = (schema, type) => (req, res, next) => {
     next();
 };
 
+
 const validateMultiple = (schema, types) => (req, res, next) => {
     const validationData = {};
     types.forEach((type) => {
         validationData[type] = req[type];
     });
+
 
     const { error } = schema.validate(validationData);
     if (error) {
@@ -21,6 +24,7 @@ const validateMultiple = (schema, types) => (req, res, next) => {
     }
     next();
 };
+
 
 const validateSchema = (schema, data) => {
     const { error, value } = schema.validate(data);
@@ -31,3 +35,4 @@ const validateSchema = (schema, data) => {
 };
 
 export { validate, validateMultiple, validateSchema };
+

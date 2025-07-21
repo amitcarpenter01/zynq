@@ -1594,12 +1594,14 @@ export const getDoctorAvailabilityBulk = async (doctorIds) => {
         const query = `SELECT * FROM tbl_doctor_availability WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
         const results = await db.query(query, doctorIds);
 
+ 
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
             grouped[row.doctor_id].push(row);
         });
 
+ 
         return grouped;
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -1613,12 +1615,14 @@ export const getDoctorReviewsBulk = async (doctorIds) => {
         const query = `SELECT * FROM tbl_doctor_reviews WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
         const results = await db.query(query, doctorIds);
 
+ 
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
             grouped[row.doctor_id].push(row);
         });
 
+ 
         return grouped;
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -1626,18 +1630,27 @@ export const getDoctorReviewsBulk = async (doctorIds) => {
     }
 };
 
+
 export const getDoctorSeverityLevelsBulk = async (doctorIds) => {
     try {
         const placeholders = doctorIds.map(() => '?').join(',');
         const query = `SELECT * FROM tbl_doctor_severity_levels WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
         const results = await db.query(query, doctorIds);
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> d85592bccdebdac2a77899620658ffcb4f464735
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
             grouped[row.doctor_id].push(row);
         });
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> d85592bccdebdac2a77899620658ffcb4f464735
         return grouped;
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -1647,16 +1660,17 @@ export const getDoctorSeverityLevelsBulk = async (doctorIds) => {
 
 export const getChatsBetweenUserAndDoctors = async (userId, doctorUserIds) => {
     if (!doctorUserIds.length) return [];
-
+ 
     return await db.query(
-        `SELECT * FROM tbl_chats 
-         WHERE 
-           (userId_1 = ? AND userId_2 IN (?)) 
-           OR 
+        `SELECT * FROM tbl_chats
+         WHERE
+           (userId_1 = ? AND userId_2 IN (?))
+           OR
            (userId_2 = ? AND userId_1 IN (?))`,
         [userId, doctorUserIds, userId, doctorUserIds]
     );
 };
+
 export const insertClinicImages = async (clinicId, imageFilenames = []) => {
     if (!imageFilenames.length) return;
 

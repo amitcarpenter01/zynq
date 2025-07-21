@@ -362,3 +362,15 @@ export const get_all_appointments = async (req, res) => {
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
+
+
+export const get_all_enrollments = async (req, res) => {
+    try {
+        const enrollments = await apiModels.get_all_enrollments();
+
+        return handleSuccess(res, 200, 'en', "Appointments fetched successfully", enrollments);
+    } catch (error) {
+        console.error("❌ Error fetching appointments:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR " + error.message);
+    }
+};

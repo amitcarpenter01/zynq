@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import { formatBenefitsOnLang } from "../utils/misc.util.js";
 
 //======================================= Auth =========================================
 
@@ -221,30 +222,31 @@ export const getAllRecommendedDoctors = async ({
 }) => {
     try {
         const params = [];
-
         const needsRating = min_rating !== null || sort.by === 'rating';
-
+ 
         const selectFields = [
             'd.*',
             'zu.email',
-            'dm.clinic_id', // clinic_id from mapping table
+            'dm.clinic_id',
+            'c.clinic_name',
             needsRating ? 'ROUND(AVG(ar.rating), 2) AS avg_rating' : null
         ].filter(Boolean).join(', ');
-
+ 
         let query = `
             SELECT ${selectFields}
             FROM tbl_doctors d
             LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
             LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
+            LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
         `;
-
+ 
         if (needsRating) {
             query += ` LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id`;
         }
-
+ 
         const joins = [];
         const filters = [];
-
+ 
         const addJoinAndFilter = (ids, joinTable, joinAlias, joinField) => {
             if (ids.length > 0) {
                 joins.push(`LEFT JOIN ${joinTable} ${joinAlias} ON d.doctor_id = ${joinAlias}.doctor_id`);
@@ -252,43 +254,42 @@ export const getAllRecommendedDoctors = async ({
                 params.push(...ids);
             }
         };
-
+ 
         addJoinAndFilter(treatment_ids, 'tbl_doctor_treatments', 'dt', 'treatment_id');
         addJoinAndFilter(skin_condition_ids, 'tbl_doctor_skin_condition', 'dsc', 'skin_condition_id');
         addJoinAndFilter(aesthetic_device_ids, 'tbl_doctor_aesthetic_devices', 'dad', 'aesthetic_devices_id');
         addJoinAndFilter(skin_type_ids, 'tbl_doctor_skin_types', 'dst', 'skin_type_id');
         addJoinAndFilter(surgery_ids, 'tbl_doctor_surgery', 'ds', 'surgery_id');
-
+ 
         if (joins.length > 0) {
             query += ' ' + joins.join(' ');
         }
-
+ 
         query += ` WHERE d.profile_completion_percentage >= 0`;
-
+ 
         if (filters.length > 0) {
             query += ` AND ${filters.join(' AND ')}`;
         }
-
-        // Group by doctor and clinic to allow duplicates across clinics
+ 
         query += ` GROUP BY d.doctor_id, dm.clinic_id`;
-
+ 
         if (min_rating !== null) {
             query += ` HAVING avg_rating >= ?`;
             params.push(min_rating);
         }
-
+ 
         if (sort.by === 'rating') {
             query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
         } else {
             query += ` ORDER BY d.created_at DESC`;
         }
-
+ 
         query += ` LIMIT ? OFFSET ?`;
         params.push(Number(limit) || 10, Number(offset) || 0);
-
+ 
         return await db.query(query, params);
     } catch (error) {
-        console.error("Database Error in getAllDoctors:", error.message);
+        console.error("Database Error in getAllRecommendedDoctors:", error.message);
         throw new Error("Failed to fetch doctors.");
     }
 };
@@ -387,11 +388,13 @@ export const getDoctorTreatments = async (doctor_id) => {
 
 //======================================= Product =========================================
 export const get_all_products_for_user = async ({
-    treatment_ids = []
+    treatment_ids = [],
+    limit = 20,
+    offset = 0
 }) => {
     try {
         let query = `
-            SELECT 
+            SELECT
                 p.*,
                 IF(COUNT(t.treatment_id), JSON_ARRAYAGG(
                     JSON_OBJECT(
@@ -411,20 +414,22 @@ export const get_all_products_for_user = async ({
         `;
 
         const params = [];
-
+ 
         if (treatment_ids.length > 0) {
             query += ` AND pt.treatment_id IN (${treatment_ids.map(() => '?').join(', ')})`;
             params.push(...treatment_ids);
         }
 
-        query += ` GROUP BY p.product_id ORDER BY p.created_at DESC`;
-
+        query += ` GROUP BY p.product_id ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
+        params.push(limit, offset);
+ 
         return await db.query(query, params);
     } catch (error) {
         console.error("Database Error in getAllProductsForUser:", error.message);
         throw new Error("Failed to fetch products.");
     }
 };
+ 
 
 
 export const get_product_images = async (product_id) => {
@@ -490,6 +495,7 @@ export const getAllClinicsForUser = async ({
             }
         };
 
+ 
         addJoinAndFilter(treatment_ids, 'tbl_clinic_treatments', 'ct', 'treatment_id');
         addJoinAndFilter(skin_condition_ids, 'tbl_clinic_skin_condition', 'csc', 'skin_condition_id');
         addJoinAndFilter(aesthetic_device_ids, 'tbl_clinic_aesthetic_devices', 'cad', 'aesthetic_devices_id');
@@ -515,6 +521,7 @@ export const getAllClinicsForUser = async ({
             params.push(min_rating);
         }
 
+ 
         if (needsDistance) {
             query += ` ORDER BY distance ${sort.order.toUpperCase()}`;
         } else if (sort.by === 'rating') {
@@ -760,16 +767,41 @@ export const fetchZynqUserByUserId = async (user_id) => {
     }
 }
 
-export const getAllConcerns = async () => {
+export const getAllConcerns = async (lang = "en") => {
     try {
-        return await db.query(`SELECT * FROM tbl_concerns ;
-                `, []);
-    }
-    catch (error) {
+        console.log("lang", lang);
+ 
+        const concernData = await db.query(`SELECT * FROM tbl_concerns;`, []);
+ 
+        const result = concernData.map((concern) => {
+            let parsedTips = {};
+            try {
+                parsedTips = typeof concern.tips === "string"
+                    ? JSON.parse(concern.tips)
+                    : concern.tips || {};
+            } catch (err) {
+                console.warn(`Invalid JSON in tips for concern_id: ${concern.concern_id}`);
+                parsedTips = {};
+            }
+ 
+            // Ensure tips is an array of trimmed strings
+            const tipsString = parsedTips?.[lang] || "";
+            const tipsArray = typeof tipsString === "string"
+                ? tipsString.split(",").map((tip) => tip.trim()).filter(Boolean)
+                : [];
+ 
+            return {
+                ...concern,
+                tips: tipsArray,
+            };
+        });
+ 
+        return result;
+    } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch clinic.");
+        throw new Error("Failed to fetch concerns.");
     }
-}
+};
 
 export const getTreatmentsByConcernId = async (concern_id) => {
     try {
@@ -790,5 +822,171 @@ export const enroll_user_data = async (user_data) => {
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to create user.");
+    }
+};
+
+export const get_all_enrollments = async () => {
+     try {
+        return await db.query(`SELECT * FROM tbl_enrollments
+                ORDER BY created_at DESC`, []);
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch clinic.");
+    }
+};
+
+export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
+    if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
+        return [];
+    }
+ 
+    try {
+        const placeholders = concern_ids.map(() => '?').join(', ');
+        const query = `
+            SELECT
+                t.*,
+                c.name AS concern_name
+            FROM tbl_treatment_concerns tc
+            INNER JOIN tbl_treatments t ON tc.treatment_id = t.treatment_id
+            INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+            WHERE tc.concern_id IN (${placeholders});
+        `;
+ 
+        const results = await db.query(query, concern_ids);
+ 
+        // 🔄 Format benefits based on language
+        return formatBenefitsOnLang(results, lang);
+ 
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch treatments by concern IDs.");
+    }
+};
+
+ 
+export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
+    try {
+        if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
+            return []; // Early return for empty input
+        }
+ 
+        const placeholders = concern_ids.map(() => '?').join(', ');
+        const query = `
+            SELECT DISTINCT treatment_id
+            FROM tbl_treatment_concerns
+            WHERE concern_id IN (${placeholders})
+        `;
+ 
+        const results = await db.query(query, concern_ids);
+        return results.map(row => row.treatment_id).filter(Boolean);
+    } catch (error) {
+        console.error("Database Error in getTreatmentIdsByConcernIds:", error);
+        throw new Error("Failed to fetch treatment IDs by concern IDs.");
+    }
+};
+ 
+ 
+export const getLegalDocumentsForUsers = async () => {
+    try {
+        const rows = await db.query(`SELECT type, text FROM tbl_legal_documents`);
+ 
+        const payload = {
+            TERMS_CONDITIONS: null,
+            PRIVACY_POLICY: null,
+        };
+ 
+        for (const doc of rows) {
+            if (doc.type === 'TERMS_CONDITIONS') {
+                payload.TERMS_CONDITIONS = doc.text;
+            } else if (doc.type === 'PRIVACY_POLICY') {
+                payload.PRIVACY_POLICY = doc.text;
+            }
+        }
+ 
+        return payload;
+    } catch (error) {
+        console.error("❌ Database Error in getLegalDocumentsForUsers:", error.message);
+        throw new Error("Failed to fetch legal documents");
+    }
+};
+ 
+ 
+export const updateLegalDocumentsService = async ({ TERMS_CONDITIONS, PRIVACY_POLICY }) => {
+    try {
+        const queries = [];
+        const values = [];
+ 
+        if (TERMS_CONDITIONS !== undefined) {
+            queries.push(`WHEN 'TERMS_CONDITIONS' THEN ?`);
+            values.push(TERMS_CONDITIONS);
+        }
+ 
+        if (PRIVACY_POLICY !== undefined) {
+            queries.push(`WHEN 'PRIVACY_POLICY' THEN ?`);
+            values.push(PRIVACY_POLICY);
+        }
+ 
+        if (queries.length === 0) return { affectedRows: 0 }; // Nothing to update
+ 
+        const query = `
+            UPDATE tbl_legal_documents
+            SET text = CASE type
+                ${queries.join('\n')}
+            END
+            WHERE type IN (${queries.map((_, idx) =>
+            idx === 0 && TERMS_CONDITIONS !== undefined ? `'TERMS_CONDITIONS'` :
+                `'PRIVACY_POLICY'`
+        ).join(', ')})
+        `;
+ 
+        const result = await db.query(query, values);
+        return result;
+    } catch (error) {
+        console.error("❌ Database Error in updateLegalDocumentsService:", error.message);
+        throw new Error("Failed to update legal documents");
+    }
+};
+ 
+export const getTipsByConcernIds = async (concern_ids = [], lang = "en") => {
+    if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
+        return [];
+    }
+ 
+    try {
+        const placeholders = concern_ids.map(() => '?').join(', ');
+        const query = `
+            SELECT tips
+            FROM tbl_concerns
+            WHERE concern_id IN (${placeholders});
+        `;
+ 
+        const results = await db.query(query, concern_ids);
+ 
+        const allTips = [];
+ 
+        for (const row of results) {
+            let parsedTips = {};
+            try {
+                parsedTips = typeof row.tips === 'string'
+                    ? JSON.parse(row.tips)
+                    : row.tips || {};
+            } catch (err) {
+                console.warn("Invalid tips JSON:", row.tips);
+                continue;
+            }
+ 
+            const tipsString = parsedTips?.[lang] || "";
+            const tipsArray = typeof tipsString === "string"
+                ? tipsString.split(",").map(t => t.trim()).filter(Boolean)
+                : [];
+ 
+            allTips.push(...tipsArray);
+        }
+ 
+        return allTips;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch tips by concern IDs.");
     }
 };

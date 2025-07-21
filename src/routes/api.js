@@ -19,6 +19,12 @@ import * as appointmentController from "../controllers/api/appointmentController
 
 
 import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
+import { validate } from '../middleware/validation.middleware.js';
+import { getAllDoctorsSchema, getSingleDoctorSchema } from '../validations/doctor.validation.js';
+import { getTipsByConcernsSchema, getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
+import { getAllClinicsSchema } from '../validations/clinic.validation.js';
+import { getAllProductsSchema } from '../validations/product.validation.js';
+import { getLegalDocuments } from '../controllers/api/legalController.js';
 
 //==================================== Import Validations ==============================
 import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validations/appointment.validation.js';
@@ -68,8 +74,13 @@ router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_f
 router.post("/get-all-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_all_doctors_in_app_side);
 router.post("/get-recommended-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
 router.get("/doctor/get/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
+// router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors_in_app_side);
+
+router.post("/get-recommended-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
+
 // //==================================== Product ==============================
-router.post("/get-all-products", authenticateUser, productControllers.getAllProducts);
+router.post("/get-all-products", authenticateUser, validate(getAllProductsSchema, "body"), productControllers.getAllProducts);
+ 
 
 // ==================================== Clinic ==============================
 router.post("/get-all-clinics", authenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_all_clinics);
@@ -117,5 +128,13 @@ router.patch('/notifications/toggle-notification', authenticateUser, toggleNotif
 
 router.post('/get_treatments_by_concern_id', faceScanControllers.get_treatments_by_concern_id);
 router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
+
+router.post('/get_treatments_by_concerns',  validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
+
+router.get("/doctor/get/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
+
+router.get('/legal', getLegalDocuments);
+
+router.post('/get_tips_by_concerns',  validate(getTipsByConcernsSchema, "body"), faceScanControllers.get_tips_by_concerns);
 
 export default router;
