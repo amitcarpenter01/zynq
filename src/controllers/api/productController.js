@@ -52,7 +52,7 @@ const image_logo = process.env.LOGO_URL;
         // Fallback to personalized treatment IDs
         if (finalTreatmentIds.length === 0) {
             const fallbackTreatmentIds = await getTreatmentIDsByUserID(req.user.user_id);
-            // finalTreatmentIds = fallbackTreatmentIds || [];
+            finalTreatmentIds = fallbackTreatmentIds || [];
         }
 
         const products = await apiModels.get_all_products_for_user({
