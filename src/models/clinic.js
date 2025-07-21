@@ -1636,21 +1636,13 @@ export const getDoctorSeverityLevelsBulk = async (doctorIds) => {
         const placeholders = doctorIds.map(() => '?').join(',');
         const query = `SELECT * FROM tbl_doctor_severity_levels WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
         const results = await db.query(query, doctorIds);
-<<<<<<< HEAD
 
-=======
- 
->>>>>>> d85592bccdebdac2a77899620658ffcb4f464735
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
             grouped[row.doctor_id].push(row);
         });
-<<<<<<< HEAD
 
-=======
- 
->>>>>>> d85592bccdebdac2a77899620658ffcb4f464735
         return grouped;
     } catch (error) {
         console.error("Database Error:", error.message);

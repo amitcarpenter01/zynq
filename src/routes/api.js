@@ -1,11 +1,16 @@
 import express from 'express';
-import { upload } from '../services/multer.js';
+const router = express.Router();
+
+//=============================== Middleware ===============================
 import { authenticateAdmin, authenticateUser } from '../middleware/auth.js';
-import { authenticate } from '../middleware/web_user_auth.js';;
-import { uploadFile, uploadMultipleFiles } from '../services/multer.js';
+import { authenticate } from '../middleware/web_user_auth.js';
 import { validate } from '../middleware/validation.middleware.js';
 
-//==================================== Import Controllers ==============================
+//=============================== Multer Services ==========================
+import { upload, uploadFile, uploadMultipleFiles } from '../services/multer.js';
+import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
+
+//=============================== Controllers ==============================
 import * as authControllers from "../controllers/api/authController.js";
 import * as aiPromptControllers from "../controllers/api/aiPromptController.js";
 import * as faceScanControllers from "../controllers/api/faceScanController.js";
@@ -14,26 +19,29 @@ import * as productControllers from "../controllers/api/productController.js";
 import * as clinicControllers from "../controllers/api/clinicController.js";
 import * as supportControllers from "../controllers/api/supportController.js";
 import * as treatmentControllers from "../controllers/api/treatmentController.js";
-
 import * as appointmentController from "../controllers/api/appointmentController.js";
-
-
-import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
-import { validate } from '../middleware/validation.middleware.js';
-import { getAllDoctorsSchema, getSingleDoctorSchema } from '../validations/doctor.validation.js';
-import { getTipsByConcernsSchema, getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
-import { getAllClinicsSchema } from '../validations/clinic.validation.js';
-import { getAllProductsSchema } from '../validations/product.validation.js';
 import { getLegalDocuments } from '../controllers/api/legalController.js';
-
-//==================================== Import Validations ==============================
-import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validations/appointment.validation.js';
-import { getSingleDoctorSchema, getAllDoctorsSchema } from '../validations/doctor.validation.js';
-import { getAllClinicsSchema } from '../validations/clinic.validation.js';
-import { getTreatmentsByConcernSchema } from '../validations/treatment.validation.js';
 import { getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
 
-const router = express.Router();
+//=============================== Validations ==============================
+import { 
+  getAllDoctorsSchema, 
+  getSingleDoctorSchema 
+} from '../validations/doctor.validation.js';
+
+import { getAllClinicsSchema } from '../validations/clinic.validation.js';
+
+import { 
+  getTipsByConcernsSchema, 
+  getTreatmentsByConcernSchema, 
+  getTreatmentsByConcersSchema
+} from '../validations/treatment.validation.js';
+
+import { 
+  rescheduleAppointmentSchema, 
+  rateAppointmentSchema 
+} from '../validations/appointment.validation.js';
+import { getAllProductsSchema } from '../validations/product.validation.js';
 
 
 //==================================== AUTH ==============================

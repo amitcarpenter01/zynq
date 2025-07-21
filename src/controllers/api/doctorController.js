@@ -10,7 +10,6 @@ import { formatImagePath, generateAccessToken, generatePassword, generateVerific
 import { fileURLToPath } from 'url';
 import { fetchChatById, getChatBetweenUsers } from "../../models/chat.js";
 
-import { getChatBetweenUsers } from "../../models/chat.js";
 
 dotenv.config();
 
@@ -145,11 +144,6 @@ export const get_all_doctors_by_clinic_id = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
-
-
-
-const formatImagePath = (path, folder) =>
-    path?.startsWith('http') ? path : `${APP_URL}${folder}/${path}`;
 
 
 export const get_all_doctors_in_app_side = asyncHandler(async (req, res) => {
