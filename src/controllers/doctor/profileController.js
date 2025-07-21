@@ -28,7 +28,8 @@ export const addPersonalInformation = async (req, res) => {
             gender: Joi.string().max(255).required(),
             biography: Joi.string().optional().allow('')
         });
-        let language = 'en';
+
+        let language = req?.user?.language || 'en';
 
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
@@ -63,7 +64,7 @@ export const addEducationAndExperienceInformation = async (req, res) => {
             experience: Joi.string().required(), // will be JSON
         });
 
-        let language = 'en';
+        let language = req?.user?.language || 'en';
 
         const payload = {
             education: req.body.education,
@@ -148,21 +149,29 @@ export const addEducationAndExperienceInformation = async (req, res) => {
 export const addExpertise = async (req, res) => {
     try {
         const schema = Joi.object({
-            treatment_ids: Joi.string().required(),
+            treatments: Joi.array().items(
+                Joi.object({
+                    treatment_id: Joi.string().required(),
+                    price: Joi.number().required(),
+                    add_notes: Joi.string().allow('', null), // optional
+                    session_duration: Joi.number().allow(null) // optional
+                })
+            ).min(1).required(),
+
             skin_type_ids: Joi.string().required(),
             skin_condition_ids: Joi.string().required(),
             surgery_ids: Joi.string().required(),
             aesthetic_devices_ids: Joi.string().required(),
-            //severity_levels_ids: Joi.string().required(),
+            // severity_levels_ids: Joi.string().required(), // if needed in future
         });
 
-        let language = 'en';
+        let language = req?.user?.language || 'en';
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
         const doctorId = req.user.doctorData.doctor_id;
 
-        const treatmentIds = value.treatment_ids.split(',').map(id => id.trim());
+        // const treatmentIds = value.treatment_ids.split(',').map(id => id.trim());
         const skinTypeIds = value.skin_type_ids.split(',').map(id => id.trim());
         const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
         const surgeryIds = value.surgery_ids.split(',').map(id => id.trim());
@@ -170,7 +179,7 @@ export const addExpertise = async (req, res) => {
         //const severityLevelIds = value.severity_levels_ids.split(',').map(id => id.trim());
 
         // Call model functions to update each expertise
-        await doctorModels.update_doctor_treatments(doctorId, treatmentIds);
+        await doctorModels.update_doctor_treatments(doctorId, value.treatments);
         await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
         //await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
         await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
@@ -204,7 +213,7 @@ export const addConsultationFeeAndAvailability = async (req, res) => {
                 })
             ).optional(),
         });
-        const language = 'en'
+        let language = req?.user?.language || 'en';
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
         const doctorId = req.user.doctorData.doctor_id;
@@ -297,7 +306,7 @@ export const editPersonalInformation = async (req, res) => {
             gender: Joi.string().max(255).optional(),
             biography: Joi.string().optional().allow('')
         });
-        let language = 'en';
+        let language = req?.user?.language || 'en';
 
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
@@ -337,7 +346,7 @@ export const addEducation = async (req, res) => {
             education: Joi.string().required(),   // will be JSON
         });
 
-        let language = 'en';
+        let language = req?.user?.language || 'en';
 
         const payload = {
             education: req.body.education,
@@ -382,7 +391,7 @@ export const editEducation = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const language = 'en'
+        let language = req?.user?.language || 'en';
 
         const result = await doctorModels.update_education(
             value.education_id,
@@ -415,7 +424,7 @@ export const deleteEducation = async (req, res) => {
 
         console.log("req.params>>", req.params);
 
-        const language = 'en'
+        let language = req?.user?.language || 'en';
 
         const result = await doctorModels.delete_education(value.education_id);
 
@@ -436,7 +445,7 @@ export const addExperince = async (req, res) => {
             experience: Joi.string().required(), // will be JSON
         });
 
-        let language = 'en';
+        let language = req?.user?.language || 'en';
 
         const payload = {
             experience: req.body.experience
@@ -486,7 +495,7 @@ export const editExperience = async (req, res) => {
             value.end_date
         );
 
-        const language = 'en'
+        let language = req?.user?.language || 'en';
 
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "EXPERIENCE_UPDATED", result.affectedRows);
@@ -509,7 +518,7 @@ export const deleteExperience = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
 
         const result = await doctorModels.delete_experience(value.experience_id);
-        const language = 'en'
+        let language = req?.user?.language || 'en';
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "EXPERIENCE_DELETED", result.affectedRows);
         } else {
@@ -524,7 +533,14 @@ export const deleteExperience = async (req, res) => {
 export const editExpertise = async (req, res) => {
     try {
         const schema = Joi.object({
-            treatment_ids: Joi.string().optional(),
+            treatments: Joi.array().items(
+                Joi.object({
+                    treatment_id: Joi.string().required(),
+                    price: Joi.number().required(),
+                    add_notes: Joi.string().allow('', null), // optional
+                    session_duration: Joi.number().allow(null) // optional
+                })
+            ).optional(),
             skin_type_ids: Joi.string().optional(),
             severity_levels_ids: Joi.string().optional(),
             skin_condition_ids: Joi.string().optional(),
@@ -532,15 +548,15 @@ export const editExpertise = async (req, res) => {
             aesthetic_devices_ids: Joi.string().optional(),
         });
 
-        let language = 'en';
+        let language = req?.user?.language || 'en';
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
         const doctorId = req.user.doctorData.doctor_id;
 
-        if (value.treatment_ids !== undefined) {
-            const treatmentIds = value.treatment_ids.split(',').map(id => id.trim());
-            await doctorModels.update_doctor_treatments(doctorId, treatmentIds);
+        if (value.treatments !== undefined) {
+            // const treatmentIds = value.treatment_ids.split(',').map(id => id.trim());
+            await doctorModels.update_doctor_treatments(doctorId, value.treatments);
         }
         if (value.skin_type_ids !== undefined) {
             const skinTypeIds = value.skin_type_ids.split(',').map(id => id.trim());
@@ -573,7 +589,7 @@ export const editExpertise = async (req, res) => {
 export const addCertifications = async (req, res) => {
     try {
 
-        let language = 'en';
+        let language = req?.user?.language || 'en';
 
         const doctorId = req.user.doctorData.doctor_id;
 
@@ -604,7 +620,7 @@ export const editCertification = async (req, res) => {
         const schema = Joi.object({
             doctor_certification_id: Joi.string().uuid().required(),
         });
-        let language = 'en';
+        let language = req?.user?.language || 'en';
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
@@ -631,7 +647,7 @@ export const deleteCertification = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
 
         const result = await doctorModels.delete_certification(value.doctor_certification_id);
-        const language = 'en'
+        let language = req?.user?.language || 'en';
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "CERTIFICATION_DELETED", result.affectedRows);
         } else {
@@ -659,7 +675,7 @@ export const editConsultationFeeAndAvailability = async (req, res) => {
         //         })
         //     ).optional(),
         // });
-        const language = 'en'
+        let language = req?.user?.language || 'en';
         // const { error, value } = schema.validate(req.body);
         // if (error) return joiErrorHandle(res, error);
         // const doctorId = req.user.doctorData.doctor_id;
@@ -748,7 +764,7 @@ export const editEducationAndExperienceInformation = async (req, res) => {
             experience: Joi.string().optional(),
         });
 
-        let language = 'en';
+        let language = req?.user?.language || 'en';
 
         const payload = {
             education: req.body.education,
@@ -829,7 +845,7 @@ export const deleteProfileImage = async (req, res) => {
     try {
         const doctorId = req.user.doctorData.doctor_id;
         const result = await doctorModels.delete_profile_image(doctorId);
-        const language = 'en'
+        const language = req?.user?.language || 'en';
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "PROFILE_IMAGE_DELETED", result.affectedRows);
         } else {
@@ -934,6 +950,7 @@ export const createDoctorAvailability = async (req, res) => {
     try {
         const doctor_id = req.user.doctorData.doctor_id;
         const { days, fee_per_session, dr_type } = req.body;
+        const language = req?.user?.language || 'en';
         await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
         await Promise.all(
             days.map(dayObj => {
@@ -961,7 +978,7 @@ export const createDoctorAvailability = async (req, res) => {
             await update_onboarding_status(4, zynqUserId);
         }
         await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
-        return handleSuccess(res, 200, 'en', 'Availability_added_successfully');
+        return handleSuccess(res, 200, language, 'Availability_added_successfully');
     } catch (err) {
         console.error('Error creating availability:', err);
         return handleError(res, 500, 'Failed to insert availability');
@@ -972,7 +989,8 @@ export const createDoctorAvailability = async (req, res) => {
 export const updateDoctorAvailability = async (req, res) => {
     try {
         const doctor_id = req.user.doctorData.doctor_id;
-        const { days, fee_per_session,dr_type } = req.body;
+        const language = req?.user?.language || 'en';
+        const { days, fee_per_session, dr_type } = req.body;
 
         if (fee_per_session) {
             await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
@@ -1003,7 +1021,7 @@ export const updateDoctorAvailability = async (req, res) => {
             await update_onboarding_status(4, zynqUserId);
         }
         await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
-        return handleSuccess(res, 200, 'en', 'UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY');
+        return handleSuccess(res, 200, language, 'UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY');
 
     } catch (err) {
         console.error('Error updating availability:', err);
@@ -1042,12 +1060,14 @@ export const create_call_log_doctor = async (req, res) => {
 
         const { role_name, doctorData } = req.user;
 
+        const language = req?.user?.language || 'en';
+
         if (role_name !== 'DOCTOR') {
-            return handleError(res, 403, 'en', "Only doctors can access this endpoint");
+            return handleError(res, 403, language, "Only doctors can access this endpoint");
         }
 
         if (!call_id || !status || !receiver_user_id || !started_at) {
-            return handleError(res, 400, 'en', "Missing required fields");
+            return handleError(res, 400, language, "Missing required fields");
         }
 
         const sender_doctor_id = doctorData?.doctor_id;
@@ -1062,7 +1082,7 @@ export const create_call_log_doctor = async (req, res) => {
             started_at // Pass to model
         });
 
-        return handleSuccess(res, 200, 'en', "Call log created by doctor");
+        return handleSuccess(res, 200, language, "Call log created by doctor");
     } catch (error) {
         console.error("Error in create_call_log_doctor:", error);
         return handleError(res, 500, 'en', error.message);

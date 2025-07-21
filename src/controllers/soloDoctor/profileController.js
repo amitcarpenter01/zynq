@@ -253,7 +253,14 @@ export const addEducationAndExperienceInformation = async (req, res) => {
 export const addExpertise = async (req, res) => {
     try {
         const schema = Joi.object({
-            treatment_ids: Joi.string().required(),
+            treatments: Joi.array().items(
+                Joi.object({
+                    treatment_id: Joi.string().required(),
+                    price: Joi.number().required(),
+                    add_notes: Joi.string().allow('', null), // optional
+                    session_duration: Joi.number().allow(null) // optional
+                })
+            ).min(1).required(),
             skin_type_ids: Joi.string().required(),
             skin_condition_ids: Joi.string().required(),
             surgery_ids: Joi.string().required(),
@@ -268,7 +275,7 @@ export const addExpertise = async (req, res) => {
         const doctorId = req.user.doctorData.doctor_id;
         const clinic_id = req.user.clinicData.clinic_id;
 
-        const treatmentIds = value.treatment_ids.split(',').map(id => id.trim());
+        // const treatmentIds = value.treatment_ids.split(',').map(id => id.trim());
         const skinTypeIds = value.skin_type_ids.split(',').map(id => id.trim());
         const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
         const surgeryIds = value.surgery_ids.split(',').map(id => id.trim());
@@ -276,13 +283,13 @@ export const addExpertise = async (req, res) => {
         //const severityLevelIds = value.severity_levels_ids.split(',').map(id => id.trim());
 
         // Call model functions to update each expertise
-        await doctorModels.update_doctor_treatments(doctorId, treatmentIds);
+        await doctorModels.update_doctor_treatments(doctorId, value.treatments);
         await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
         //await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
         await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
         await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
         await doctorModels.update_doctor_aesthetic_devices(doctorId, aestheticDevicesIds);
-
+        const treatmentIds = value.treatments.map(item => item.treatment_id);
         if (treatmentIds.length > 0) {
             const treatmentsData = await clinicModels.getClinicTreatments(clinic_id);
             if (treatmentsData) {
