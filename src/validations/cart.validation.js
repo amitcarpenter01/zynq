@@ -1,0 +1,20 @@
+import Joi from "joi";
+import {
+  stringValidation,
+  dateValidation,
+  numberValidation,
+  orderValidation,
+  ratingValidation,
+  idArrayValidation,
+} from "../utils/joi.util.js";
+
+
+export const addProductToCartSchema = Joi.object({
+  clinic_id: stringValidation,
+  product_id: stringValidation,
+  quantity: numberValidation.min(1).default(1),
+})
+
+export const deleteProductFromCartSchema = Joi.object({
+  product_id: stringValidation,
+})
