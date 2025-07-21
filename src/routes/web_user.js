@@ -40,4 +40,8 @@ router.get("/get-call-logs", authenticate, webControllers.get_all_call_logs);
 router.get('/notifications/get', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getNotifications);
 
 
+//=======================================Language=============================
+router.patch('/toggle-language', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), webControllers.toggleLanguage);
+
+
 export default router;  

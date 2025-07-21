@@ -389,12 +389,46 @@ export const getDoctorTreatments = async (doctor_id) => {
 //======================================= Product =========================================
 export const get_all_products_for_user = async ({
     treatment_ids = [],
+    search = '',
     limit = 20,
     offset = 0
 }) => {
     try {
         let query = `
-            SELECT
+            SELECT 
+                p.*
+            FROM tbl_products AS p
+            LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
+            LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
+            WHERE 1=1
+        `;
+
+        const params = [];
+
+        if (treatment_ids.length > 0) {
+            query += ` AND pt.treatment_id IN (${treatment_ids.map(() => '?').join(', ')})`;
+            params.push(...treatment_ids);
+        }
+
+        if (search && search.trim() !== '') {
+            query += ` AND LOWER(p.name) LIKE ?`;
+            params.push(`%${search.trim().toLowerCase()}%`);
+        }
+
+        query += ` GROUP BY p.product_id ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
+        params.push(limit, offset);
+
+        return await db.query(query, params);
+    } catch (error) {
+        console.error("Database Error in getAllProductsForUser:", error.message);
+        throw new Error("Failed to fetch products.");
+    }
+};
+
+export const get_single_product_for_user = async (product_id) => {
+    try {
+        const query = `
+            SELECT 
                 p.*,
                 IF(COUNT(t.treatment_id), JSON_ARRAYAGG(
                     JSON_OBJECT(
@@ -410,27 +444,16 @@ export const get_all_products_for_user = async ({
             FROM tbl_products AS p
             LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
             LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
-            WHERE 1=1
+            WHERE p.product_id = ?
+            GROUP BY p.product_id
         `;
 
-        const params = [];
- 
-        if (treatment_ids.length > 0) {
-            query += ` AND pt.treatment_id IN (${treatment_ids.map(() => '?').join(', ')})`;
-            params.push(...treatment_ids);
-        }
-
-        query += ` GROUP BY p.product_id ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
-        params.push(limit, offset);
- 
-        return await db.query(query, params);
+        return await db.query(query, [product_id]);
     } catch (error) {
-        console.error("Database Error in getAllProductsForUser:", error.message);
-        throw new Error("Failed to fetch products.");
+        console.error("Database Error in get_single_product_for_user:", error.message);
+        throw new Error("Failed to fetch product details.");
     }
 };
- 
-
 
 export const get_product_images = async (product_id) => {
     try {
@@ -445,12 +468,14 @@ export const get_product_images = async (product_id) => {
 
 //======================================= Clinic =========================================
 
+
 export const getAllClinicsForUser = async ({
     treatment_ids = [],
     skin_condition_ids = [],
     aesthetic_device_ids = [],
     skin_type_ids = [],
     surgery_ids = [],
+    search = '',
     min_rating = null,
     sort = { by: 'default', order: 'desc' },
     userLatitude,
@@ -465,7 +490,11 @@ export const getAllClinicsForUser = async ({
         const needsRating = min_rating !== null || sort.by === 'rating';
 
         const selectFields = [
-            'c.*',
+            'c.clinic_id',
+            'c.clinic_name',
+            'c.clinic_logo',
+            'MIN(d.fee_per_session) AS doctor_lower_price_range',
+            'MAX(d.fee_per_session) AS doctor_higher_price_range',
             needsRating ? 'ROUND(AVG(ar.rating), 2) AS avg_rating' : null,
             needsDistance ? `ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) AS distance` : null
         ].filter(Boolean).join(', ');
@@ -478,6 +507,8 @@ export const getAllClinicsForUser = async ({
             SELECT ${selectFields}
             FROM tbl_clinics c
             LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
+            LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
+            LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
         `;
 
         if (needsRating) {
@@ -495,7 +526,6 @@ export const getAllClinicsForUser = async ({
             }
         };
 
- 
         addJoinAndFilter(treatment_ids, 'tbl_clinic_treatments', 'ct', 'treatment_id');
         addJoinAndFilter(skin_condition_ids, 'tbl_clinic_skin_condition', 'csc', 'skin_condition_id');
         addJoinAndFilter(aesthetic_device_ids, 'tbl_clinic_aesthetic_devices', 'cad', 'aesthetic_devices_id');
@@ -508,20 +538,23 @@ export const getAllClinicsForUser = async ({
 
         query += ` WHERE c.profile_completion_percentage >= 50`;
 
+        if (search && search.trim() !== '') {
+            filters.push(`LOWER(c.clinic_name) LIKE ?`);
+            params.push(`%${search.trim().toLowerCase()}%`);
+        }
+
         if (filters.length > 0) {
             query += ` AND ${filters.join(' AND ')}`;
         }
 
-        if (needsRating) {
-            query += ` GROUP BY c.clinic_id`;
-        }
+        query += ` GROUP BY c.clinic_id`;
 
         if (min_rating !== null) {
             query += ` HAVING avg_rating >= ?`;
             params.push(min_rating);
         }
 
- 
+        // Sorting logic
         if (needsDistance) {
             query += ` ORDER BY distance ${sort.order.toUpperCase()}`;
         } else if (sort.by === 'rating') {
@@ -539,6 +572,42 @@ export const getAllClinicsForUser = async ({
         throw new Error("Failed to fetch clinics.");
     }
 };
+
+
+export const getSingleClinicForUser = async (
+    clinic_id,
+) => {
+    try {
+        const params = [];
+
+        const selectFields = [
+            'c.*',
+            'MIN(d.fee_per_session) AS doctor_lower_price_range',
+            'MAX(d.fee_per_session) AS doctor_higher_price_range',
+            'ROUND(AVG(ar.rating), 2) AS avg_rating'
+        ].filter(Boolean).join(', ');
+
+        let query = `
+            SELECT ${selectFields}
+            FROM tbl_clinics c
+            LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
+            LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
+            LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
+            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id
+            WHERE c.clinic_id = ?
+        `;
+
+        params.push(clinic_id);
+
+        query += ` GROUP BY c.clinic_id`;
+        return await db.query(query, params);
+    } catch (error) {
+        console.error("Database Error in getSingleClinicDetailsForUser:", error.message);
+        throw new Error("Failed to fetch clinic details.");
+    }
+};
+
+
 
 export const getNearbyClinicsForUser = async ({
     treatment_ids = [],
@@ -988,5 +1057,63 @@ export const getTipsByConcernIds = async (concern_ids = [], lang = "en") => {
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch tips by concern IDs.");
+    }
+};
+
+
+export const getWishlistForUser = async (user_id) => {
+    try {
+        const result = await db.query(`
+            SELECT p.* 
+            FROM tbl_wishlist w
+            LEFT JOIN tbl_products p ON w.product_id = p.product_id
+            WHERE w.user_id = ?`,
+            [user_id]);
+        return result;
+    } catch (error) {
+        console.error("Database Error in getWishlistForUser:", error);
+        throw new Error("Failed to fetch wishlist for user.");
+    }
+};
+
+export const toggleWishlistProductForUser = async (product_id, user_id) => {
+    try {
+        const deleteResult = await db.query(
+            `DELETE FROM tbl_wishlist WHERE product_id = ? AND user_id = ?`,
+            [product_id, user_id]
+        );
+
+        console.log('deleteResult', deleteResult)
+
+        if (deleteResult.affectedRows === 0) {
+            await db.query(
+                `INSERT INTO tbl_wishlist (product_id, user_id) VALUES (?, ?)`,
+                [product_id, user_id]
+            );
+            return { action: 'added_to_wishlist' };
+        } else {
+            return { action: 'removed_from_wishlist' };
+        }
+    } catch (error) {
+        console.error("Database Error in toggleWishlistProductForUser:", error);
+        throw new Error("Failed to toggle wishlist product for user.");
+    }
+};
+
+export const get_product_images_by_product_ids = async (productIds = []) => {
+    if (!Array.isArray(productIds) || productIds.length === 0) return [];
+
+    try {
+        const placeholders = productIds.map(() => '?').join(', ');
+        const query = `
+            SELECT product_id, image
+            FROM tbl_product_images
+            WHERE product_id IN (${placeholders})
+        `;
+
+        return await db.query(query, productIds);
+    } catch (error) {
+        console.error("Database Error in get_product_images_by_product_ids:", error.message);
+        throw new Error("Failed to fetch product images.");
     }
 };

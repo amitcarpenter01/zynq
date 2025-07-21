@@ -10,10 +10,6 @@ import * as clinicControllers from "../controllers/admin/clinicController.js";
 import * as doctorControllers from "../controllers/admin/doctorController.js";
 import * as productControllers from "../controllers/admin/productController.js";
 import * as supportControllers from "../controllers/admin/supportController.js";
-import { getNotifications } from '../controllers/api/notificationController.js';
-import { getLegalDocuments, updateLegalDocuments } from '../controllers/api/legalController.js';
-import { updateLegalDocumentsSchema } from '../validations/legal.validation.js';
-import { validate } from '../middleware/validation.middleware.js';
 const router = express.Router();
 
 //==================================== Authentication ==============================
@@ -64,16 +60,10 @@ router.get('/call-logs',  authenticateAdmin,authControllers.get_all_call_logs);
  
 router.get('/getAllappointments',authenticateAdmin, authControllers.get_all_appointments);
 
-//==================================== Notifications ==============================
-
-router.get('/notifications/get', authenticateAdmin, getNotifications);
-
 //==============================Enrollememt ===============================
 
 router.get('/get-all-enrollments',authenticateAdmin, authControllers.get_all_enrollments);
 
-router.get('/legal', getLegalDocuments);
 
-router.put('/legal', authenticateAdmin, validate(updateLegalDocumentsSchema, "body"), updateLegalDocuments);
 
 export default router;

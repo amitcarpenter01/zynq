@@ -1,16 +1,11 @@
 import express from 'express';
-const router = express.Router();
-
-//=============================== Middleware ===============================
+import { upload } from '../services/multer.js';
 import { authenticateAdmin, authenticateUser } from '../middleware/auth.js';
-import { authenticate } from '../middleware/web_user_auth.js';
+import { authenticate } from '../middleware/web_user_auth.js';;
+import { uploadFile, uploadMultipleFiles } from '../services/multer.js';
 import { validate } from '../middleware/validation.middleware.js';
 
-//=============================== Multer Services ==========================
-import { upload, uploadFile, uploadMultipleFiles } from '../services/multer.js';
-import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
-
-//=============================== Controllers ==============================
+//==================================== Import Controllers ==============================
 import * as authControllers from "../controllers/api/authController.js";
 import * as aiPromptControllers from "../controllers/api/aiPromptController.js";
 import * as faceScanControllers from "../controllers/api/faceScanController.js";
@@ -19,29 +14,27 @@ import * as productControllers from "../controllers/api/productController.js";
 import * as clinicControllers from "../controllers/api/clinicController.js";
 import * as supportControllers from "../controllers/api/supportController.js";
 import * as treatmentControllers from "../controllers/api/treatmentController.js";
+
 import * as appointmentController from "../controllers/api/appointmentController.js";
-import { getLegalDocuments } from '../controllers/api/legalController.js';
+
+
+import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
+
+//==================================== Import Validations ==============================
+import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validations/appointment.validation.js';
+import { getSingleDoctorSchema, getAllDoctorsSchema } from '../validations/doctor.validation.js';
+import { getAllClinicsSchema, getSingleClinicSchema } from '../validations/clinic.validation.js';
+import {  getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
 import { getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
+import { sendAppointmentNotifications } from '../services/notifications.service.js';
+import { toggleLanguage } from '../controllers/web_users/authController.js';
+import { getLegalDocuments } from '../controllers/api/legalController.js';
+import { uploadMulterChatFiles } from '../services/multer.chat.js';
+import { getAllProductsSchema, getSingleProductSchema } from '../validations/product.validation.js';
+import { getWishlists, toggleWishlistProduct } from '../controllers/api/wishlistController.js';
+import { toggleWishlistProductSchema } from '../validations/wishlist.validation.js';
 
-//=============================== Validations ==============================
-import { 
-  getAllDoctorsSchema, 
-  getSingleDoctorSchema 
-} from '../validations/doctor.validation.js';
-
-import { getAllClinicsSchema } from '../validations/clinic.validation.js';
-
-import { 
-  getTipsByConcernsSchema, 
-  getTreatmentsByConcernSchema, 
-  getTreatmentsByConcersSchema
-} from '../validations/treatment.validation.js';
-
-import { 
-  rescheduleAppointmentSchema, 
-  rateAppointmentSchema 
-} from '../validations/appointment.validation.js';
-import { getAllProductsSchema } from '../validations/product.validation.js';
+const router = express.Router();
 
 
 //==================================== AUTH ==============================
@@ -82,16 +75,13 @@ router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_f
 router.post("/get-all-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_all_doctors_in_app_side);
 router.post("/get-recommended-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
 router.get("/doctor/get/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
-// router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors_in_app_side);
-
-router.post("/get-recommended-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
-
 // //==================================== Product ==============================
 router.post("/get-all-products", authenticateUser, validate(getAllProductsSchema, "body"), productControllers.getAllProducts);
- 
+router.get("/product/:product_id", authenticateUser, validate(getSingleProductSchema, "params"), productControllers.getSingleProduct);
 
 // ==================================== Clinic ==============================
 router.post("/get-all-clinics", authenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_all_clinics);
+router.get("/clinic/:clinic_id", authenticateUser, validate(getSingleClinicSchema, "params"), clinicControllers.getSingleClinic);
 router.post("/get-nearby-clinics", authenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_nearby_clinics);
 
 //==================================== Support ==============================
@@ -135,14 +125,22 @@ router.patch('/notifications/toggle-notification', authenticateUser, toggleNotif
 // -------------------------------------Concerns------------------------------------------------//
 
 router.post('/get_treatments_by_concern_id', faceScanControllers.get_treatments_by_concern_id);
-router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
-
 router.post('/get_treatments_by_concerns',  validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
+router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
+router.post('/get_tips_by_concerns',  validate(getTipsByConcernsSchema, "body"), faceScanControllers.get_tips_by_concerns);
+router.patch('/toggle-language', authenticateUser, toggleLanguage);
 
-router.get("/doctor/get/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
+// -------------------------------------Terms & Conditions------------------------------------------------//
 
 router.get('/legal', getLegalDocuments);
 
-router.post('/get_tips_by_concerns',  validate(getTipsByConcernsSchema, "body"), faceScanControllers.get_tips_by_concerns);
+// -------------------------------------Chat Files------------------------------------------------//
+
+router.post('/upload-files', uploadMulterChatFiles, authControllers.uploadChatFiles);
+
+// -------------------------------------Wishlists------------------------------------------------//
+
+router.get('/wishlists', authenticateUser, getWishlists);
+router.patch('/wishlists/:product_id', authenticateUser, validate(toggleWishlistProductSchema, "params"), toggleWishlistProduct);
 
 export default router;

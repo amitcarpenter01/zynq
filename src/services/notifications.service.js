@@ -3,57 +3,19 @@
 // ============================================================================
 import db from '../config/db.js';
 import { validateSchema } from '../middleware/validation.middleware.js';
+import { getAppointmentsForNotification } from '../models/appointment.js';
+import { getUserDataByReceiverIdAndRole, getUserDataByRole } from '../models/web_user.js';
+import { extractUserData } from '../utils/misc.util.js';
 import { isEmpty } from '../utils/user_helper.js';
 import { sendNotificationSchema } from '../validations/notification.validation.js';
 // import admin from 'firebase-admin';
+import dayjs from 'dayjs';
 import dotenv from "dotenv";
 dotenv.config();
 
 // ============================================================================
 // HELPERS
 // ============================================================================
-const extractUserData = (userData) => {
-    if (!userData || !userData.role) {
-        throw new Error("Invalid user data");
-    }
-
-    const role = userData.role;
-    const token = userData.fcm_token || null;
-
-    let user_id, full_name;
-
-    switch (role) {
-        case 'DOCTOR':
-        case 'SOLO_DOCTOR':
-            user_id = userData?.doctorData?.doctor_id;
-            full_name = userData?.doctorData?.name || "Someone";
-            break;
-
-        case 'CLINIC':
-            user_id = userData?.clinicData?.clinic_id;
-            full_name = userData?.clinicData?.clinic_name || "Someone";
-            break;
-
-        case 'USER':
-            user_id = userData?.user_id;
-            full_name = userData?.full_name || "Someone";
-            break;
-
-        case 'ADMIN':
-            user_id = userData?.admin_id;
-            full_name = userData?.full_name || "Someone";
-            break;
-
-        default:
-            throw new Error("Unsupported role");
-    }
-
-    if (!user_id) {
-        throw new Error(`${role} ID not found in userData`);
-    }
-
-    return { user_id, role, full_name, token };
-};
 
 const buildFullImageUrl = (senderType, imageFileName) => {
     if (!imageFileName) return null;
@@ -93,6 +55,10 @@ export const NOTIFICATION_MESSAGES = {
     appointment_completed: {
         title: 'Appointment',
         getBody: (name) => `${name} completed an appointment.`
+    },
+    upcoming_appointment: {
+        title: 'Upcoming Appointment',
+        getBody: (name) => `You have an upcoming appointment with ${name}.`
     },
     default: {
         title: (name) => `${name} Notification`,
@@ -243,6 +209,7 @@ export const sendNotification = async ({
     notification_type,
     receiver_type,
     receiver_id,
+    system = false
 }) => {
     try {
         validateSchema(sendNotificationSchema, {
@@ -252,13 +219,18 @@ export const sendNotification = async ({
             notification_type,
             receiver_type,
             receiver_id,
+            system
         });
+        const senderMeta = system ? userData : extractUserData(userData);
+        const {
+            user_id: sender_id,
+            role: sender_type,
+            full_name = 'Someone',
+        } = senderMeta;
 
-        const { user_id: sender_id, role: sender_type, full_name, token } = extractUserData(userData);
         const { title, body } = getNotificationContent(notification_type, full_name);
         const isPushEnabled = await isPushNotificationEnabled(receiver_id, receiver_type);
-
-        console.log('isPushEnabled:', isPushEnabled);
+        const { token } = await getUserDataByReceiverIdAndRole(receiver_id, receiver_type)
         await insertUserNotification({
             sender_id,
             sender_type,
@@ -428,5 +400,114 @@ export const toggleNotificationSetting = async (userData) => {
         console.error('Error in toggleNotificationSetting:', error);
         throw new Error('Failed to toggle notification setting');
 
+    }
+};
+
+// ============================================================================
+// Appointment Notifications CRON
+// ============================================================================
+
+export const getUpcomingAppointmentWindow = (minutesFromNow = 30) => {
+    const now = dayjs();
+    const windowStart = now.startOf('minute').format('YYYY-MM-DD HH:mm:ss');
+    const windowEnd = now.add(minutesFromNow, 'minute').endOf('minute').format('YYYY-MM-DD HH:mm:ss');
+
+    return { windowStart, windowEnd };
+};
+
+export const sendAppointmentPairNotification = async (appointment) => {
+    const {
+        appointment_id,
+        user_id,
+        doctor_id,
+        user_name,
+        doctor_name
+    } = appointment;
+
+    // Doctor → User
+    await sendNotification({
+        userData: {
+            user_id: doctor_id,
+            role: 'DOCTOR',
+            full_name: doctor_name || 'Doctor',
+            token: null
+        },
+        type: 'APPOINTMENT',
+        type_id: appointment_id,
+        notification_type: NOTIFICATION_MESSAGES.upcoming_appointment,
+        receiver_type: 'USER',
+        receiver_id: user_id,
+        system: true
+    });
+
+    // User → Doctor
+    await sendNotification({
+        userData: {
+            user_id: user_id,
+            role: 'USER',
+            full_name: user_name || 'Someone',
+            token: null
+        },
+        type: 'APPOINTMENT',
+        type_id: appointment_id,
+        notification_type: NOTIFICATION_MESSAGES.upcoming_appointment,
+        receiver_type: 'DOCTOR',
+        receiver_id: doctor_id,
+        system: true
+    });
+};
+
+export const markAppointmentNotificationSent = async (appointment_id) => {
+    try {
+        const existing = await db.query(
+            `SELECT appointment_notification_id 
+             FROM tbl_appointments_notifications 
+             WHERE appointment_id = ?`,
+            [appointment_id]
+        );
+
+        if (existing.length) {
+            await db.query(
+                `UPDATE tbl_appointments_notifications 
+                 SET notification_sent = 1 
+                 WHERE appointment_id = ?`,
+                [appointment_id]
+            );
+        } else {
+            await db.query(
+                `INSERT INTO tbl_appointments_notifications 
+                 (appointment_id, notification_sent) 
+                 VALUES (?, 1)`,
+                [appointment_id]
+            );
+        }
+    } catch (error) {
+        console.error('❌ Error in markAppointmentNotificationSent:', error);
+        throw new Error('Failed to mark appointment notification status.');
+    }
+};
+
+export const sendAppointmentNotifications = async () => {
+    try {
+        const { windowStart, windowEnd } = getUpcomingAppointmentWindow(30);
+        const appointments = await getAppointmentsForNotification(windowStart, windowEnd);
+
+        if (!appointments.length) {
+            console.log('No appointments found for notification.');
+            return;
+        }
+
+        for (const appointment of appointments) {
+            try {
+                await sendAppointmentPairNotification(appointment);
+                await markAppointmentNotificationSent(appointment.appointment_id);
+            } catch (err) {
+                console.error(`Failed to notify for appointment ${appointment.appointment_id}:`, err.message);
+            }
+        }
+
+        console.log('Appointment notification cron completed.');
+    } catch (error) {
+        console.error('Cron job failed :', error.message);
     }
 };

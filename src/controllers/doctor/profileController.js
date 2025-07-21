@@ -1,7 +1,7 @@
 import Joi from "joi";
 import dotenv from "dotenv";
 import * as doctorModels from "../../models/doctor.js";
-import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { get_web_user_by_id, update_onboarding_status } from "../../models/web_user.js";
 import { createChat, fetchChatById, insertChatUsersActive, toActivateUsers } from "../../models/chat.js";
 import { getIO, getUserSockets } from '../../utils/socketManager.js';
@@ -1068,3 +1068,8 @@ export const create_call_log_doctor = async (req, res) => {
         return handleError(res, 500, 'en', error.message);
     }
 }
+
+export const getDashboard = asyncHandler(async (req, res) => {
+    const dashboardData = await doctorModels.getDashboardData(req.user);
+    return handleSuccess(res, 200, 'en', 'DASHBOARD_DATA', dashboardData);
+})
