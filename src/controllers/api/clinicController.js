@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import * as clinicModels from "../../models/clinic.js";
 import * as apiModels from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess } from "../../utils/responseHandler.js";
+import { getTreatmentIDsByUserID } from "../../utils/misc.util.js";
 
 dotenv.config();
 
