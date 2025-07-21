@@ -251,6 +251,8 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
         sort = { by: 'default', order: 'desc' },
         pagination = { page: 1, limit: 10 }
     } = req.body;
+
+    let language = req?.user?.language || "en"
  
     let {
         treatment_ids = [],
