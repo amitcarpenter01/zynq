@@ -9,6 +9,7 @@ import { sendEmail } from "../../services/send_email.js";
 import { formatImagePath, generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
 import { fileURLToPath } from 'url';
 import { fetchChatById, getChatBetweenUsers } from "../../models/chat.js";
+import { getTreatmentIDsByUserID } from "../../utils/misc.util.js";
 
 
 dotenv.config();
