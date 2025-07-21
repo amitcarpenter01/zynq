@@ -521,9 +521,9 @@ export const getAllClinicsForUser = async ({
             LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
         `;
 
-        if (needsRating) {
-            query += ` LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id`;
-        }
+        // if (needsRating) {
+        query += ` LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id`;
+        // }
 
         const joins = [];
         const filters = [];
@@ -583,6 +583,116 @@ export const getAllClinicsForUser = async ({
     }
 };
 
+export const getNearbyClinicsForUser = async ({
+    treatment_ids = [],
+    skin_condition_ids = [],
+    aesthetic_device_ids = [],
+    skin_type_ids = [],
+    surgery_ids = [],
+    search = '',
+    min_rating = null,
+    sort = { by: 'default', order: 'desc' },
+    userLatitude,
+    userLongitude,
+    limit,
+    offset
+}) => {
+    try {
+        const params = [];
+
+        const needsDistance = userLatitude != null && userLongitude != null;
+        const needsRating = min_rating !== null || sort.by === 'rating';
+
+        const selectFields = [
+            'c.clinic_id',
+            'c.clinic_name',
+            'c.clinic_logo',
+            'c.address',
+            'MIN(d.fee_per_session) AS doctor_lower_price_range',
+            'MAX(d.fee_per_session) AS doctor_higher_price_range',
+            'ROUND(AVG(ar.rating), 2) AS avg_rating',
+            needsDistance ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance` : null
+        ].filter(Boolean).join(', ');
+
+        if (needsDistance) {
+            params.push(userLongitude, userLatitude); // Order: lon, lat
+        }
+
+        let query = `
+            SELECT ${selectFields}
+            FROM tbl_clinics c
+            LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
+            LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
+            LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
+            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id
+        `;
+
+        const joins = [];
+        const filters = [];
+
+        const addJoinAndFilter = (ids, joinTable, joinAlias, joinField) => {
+            if (ids.length > 0) {
+                joins.push(`LEFT JOIN ${joinTable} ${joinAlias} ON c.clinic_id = ${joinAlias}.clinic_id`);
+                filters.push(`${joinAlias}.${joinField} IN (${ids.map(() => '?').join(', ')})`);
+                params.push(...ids);
+            }
+        };
+
+        addJoinAndFilter(treatment_ids, 'tbl_clinic_treatments', 'ct', 'treatment_id');
+        addJoinAndFilter(skin_condition_ids, 'tbl_clinic_skin_condition', 'csc', 'skin_condition_id');
+        addJoinAndFilter(aesthetic_device_ids, 'tbl_clinic_aesthetic_devices', 'cad', 'aesthetic_devices_id');
+        addJoinAndFilter(skin_type_ids, 'tbl_clinic_skin_types', 'cskt', 'skin_type_id');
+        addJoinAndFilter(surgery_ids, 'tbl_clinic_surgery', 'cr', 'surgery_id');
+
+        if (joins.length > 0) {
+            query += ' ' + joins.join(' ');
+        }
+
+        query += ` WHERE c.profile_completion_percentage >= 50`;
+
+        if (search && search.trim() !== '') {
+            filters.push(`LOWER(c.clinic_name) LIKE ?`);
+            params.push(`%${search.trim().toLowerCase()}%`);
+        }
+
+        if (filters.length > 0) {
+            query += ` AND ${filters.join(' AND ')}`;
+        }
+
+        query += ` GROUP BY c.clinic_id`;
+
+        const having = [];
+        if (min_rating !== null) {
+            having.push(`avg_rating >= ?`);
+            params.push(min_rating);
+        }
+
+        if (needsDistance) {
+            having.push(`distance <= ?`);
+            params.push(50000); // 50 km
+        }
+
+        if (having.length > 0) {
+            query += ` HAVING ${having.join(' AND ')}`;
+        }
+
+        if (needsDistance) {
+            query += ` ORDER BY distance ${sort.order.toUpperCase()}`;
+        } else if (sort.by === 'rating') {
+            query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
+        } else {
+            query += ` ORDER BY c.created_at DESC`;
+        }
+
+        query += ` LIMIT ? OFFSET ?`;
+        params.push(Number(limit), Number(offset));
+
+        return await db.query(query, params);
+    } catch (error) {
+        console.error("Database Error in getNearbyClinicsForUser:", error.message);
+        throw new Error("Failed to fetch nearby clinics.");
+    }
+};
 
 export const getSingleClinicForUser = async (
     clinic_id,
@@ -614,107 +724,6 @@ export const getSingleClinicForUser = async (
     } catch (error) {
         console.error("Database Error in getSingleClinicDetailsForUser:", error.message);
         throw new Error("Failed to fetch clinic details.");
-    }
-};
-
-
-
-export const getNearbyClinicsForUser = async ({
-    treatment_ids = [],
-    skin_condition_ids = [],
-    aesthetic_device_ids = [],
-    skin_type_ids = [],
-    surgery_ids = [],
-    min_rating = null,
-    userLatitude,
-    userLongitude,
-    limit,
-    offset
-}) => {
-    try {
-        const params = [];
-
-        const hasLocation = userLatitude != null && userLongitude != null;
-        const byRating = min_rating !== null;
-
-        const distanceSQL = hasLocation
-            ? `ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?))`
-            : 'NULL';
-
-        if (hasLocation) {
-            params.push(userLongitude, userLatitude);
-        }
-
-        // Build subquery to calculate distance + join filters
-        let subQuery = `
-            SELECT
-                c.*,
-                ROUND(${distanceSQL}, 2) AS distance
-            FROM tbl_clinics c
-            LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
-        `;
-
-        const joins = [];
-        const filters = [];
-
-        const addJoinAndFilter = (ids, table, alias, field) => {
-            if (ids.length > 0) {
-                joins.push(`LEFT JOIN ${table} ${alias} ON c.clinic_id = ${alias}.clinic_id`);
-                filters.push(`${alias}.${field} IN (${ids.map(() => '?').join(', ')})`);
-                params.push(...ids);
-            }
-        };
-
-        addJoinAndFilter(treatment_ids, 'tbl_clinic_treatments', 'ct', 'treatment_id');
-        addJoinAndFilter(skin_condition_ids, 'tbl_clinic_skin_condition', 'csc', 'skin_condition_id');
-        addJoinAndFilter(aesthetic_device_ids, 'tbl_clinic_aesthetic_devices', 'cad', 'aesthetic_devices_id');
-        addJoinAndFilter(skin_type_ids, 'tbl_clinic_skin_types', 'cskt', 'skin_type_id');
-        addJoinAndFilter(surgery_ids, 'tbl_clinic_surgery', 'cr', 'surgery_id');
-
-        if (joins.length > 0) subQuery += ' ' + joins.join(' ');
-        subQuery += ` WHERE c.profile_completion_percentage >= 50`;
-        if (filters.length > 0) subQuery += ` AND ${filters.join(' AND ')}`;
-
-        // Main query adds optional rating aggregation and filtering
-        let finalQuery = `
-            SELECT
-                sub.*,
-                ${byRating ? 'ROUND(AVG(ar.rating), 2) AS avg_rating' : 'NULL AS avg_rating'}
-            FROM (${subQuery}) AS sub
-        `;
-
-        if (byRating) {
-            finalQuery += `
-                LEFT JOIN tbl_appointment_ratings ar ON sub.clinic_id = ar.clinic_id
-                GROUP BY sub.clinic_id
-            `;
-        }
-
-        const having = [];
-
-        if (byRating) {
-            having.push(`avg_rating >= ?`);
-            params.push(min_rating);
-        }
-
-        if (hasLocation) {
-            having.push(`distance <= ?`);
-            params.push(50000);
-        }
-
-        if (having.length > 0) {
-            finalQuery += ` HAVING ${having.join(' AND ')}`;
-        }
-
-        finalQuery += ` ORDER BY ${hasLocation ? 'distance ASC' : byRating ? 'avg_rating DESC' : 'sub.created_at DESC'}`;
-
-        finalQuery += ` LIMIT ? OFFSET ?`;
-        params.push(Number(limit), Number(offset));
-
-        return await db.query(finalQuery, params);
-    } catch (error) {
-        console.error("Database Error in getNearbyClinicsForUser:", error.message);
-        throw new Error("Failed to fetch clinics.");
     }
 };
 
