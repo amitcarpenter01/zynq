@@ -15,7 +15,7 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         pagination = { page: 1, limit: 20 }
     } = req.body;
 
-    const {
+    let {
         treatment_ids = [],
         skin_condition_ids = [],
         aesthetic_device_ids = [],

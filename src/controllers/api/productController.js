@@ -31,7 +31,7 @@ export const getAllProducts = async (req, res) => {
             pagination = { page: 1, limit: 20 }
         } = req.body;
  
-        const {
+        let {
             treatment_ids = [],
             concern_ids = []
         } = filters;
