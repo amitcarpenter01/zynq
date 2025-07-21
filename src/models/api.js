@@ -178,7 +178,7 @@ export const getAllDoctors = async ({
             query += ' ' + joins.join(' ');
         }
 
-        query += ` WHERE d.profile_completion_percentage >= 50`;
+        query += ` WHERE d.profile_completion_percentage >= 0`;
 
         if (filters.length > 0) {
             query += ` AND ${filters.join(' AND ')}`;
@@ -269,7 +269,7 @@ export const getAllRecommendedDoctors = async ({
             query += ' ' + joins.join(' ');
         }
 
-        query += ` WHERE d.profile_completion_percentage >= 50`;
+        query += ` WHERE d.profile_completion_percentage >= 0`;
 
         if (search && search.trim() !== '') {
             filters.push(`LOWER(d.name) LIKE ?`);
@@ -546,7 +546,7 @@ export const getAllClinicsForUser = async ({
             query += ' ' + joins.join(' ');
         }
 
-        query += ` WHERE c.profile_completion_percentage >= 50`;
+        query += ` WHERE c.profile_completion_percentage >= 0`;
 
         if (search && search.trim() !== '') {
             filters.push(`LOWER(c.clinic_name) LIKE ?`);
@@ -648,7 +648,7 @@ export const getNearbyClinicsForUser = async ({
             query += ' ' + joins.join(' ');
         }
 
-        query += ` WHERE c.profile_completion_percentage >= 50`;
+        query += ` WHERE c.profile_completion_percentage >= 0`;
 
         if (search && search.trim() !== '') {
             filters.push(`LOWER(c.clinic_name) LIKE ?`);

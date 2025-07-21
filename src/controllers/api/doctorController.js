@@ -181,7 +181,7 @@ export const get_all_doctors_in_app_side = asyncHandler(async (req, res) => {
     });
 
     if (!doctors?.length) {
-        return handleError(res, 404, 'en', "NO_DOCTORS_FOUND");
+        return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", []);
     }
 
     const doctorIds = doctors.map(doc => doc.doctor_id);
