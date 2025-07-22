@@ -665,8 +665,9 @@ export const getDoctorProfileByStatus = async (req, res) => {
 
         } else if (status == 4) {
             console.log("clinicId", clinicId);
-            const treatments = await clinicModels.getClinicTreatments(clinicId);
-            console.log("treatments", treatments);
+           // const treatments = await clinicModels.getClinicTreatments(clinicId);
+            //console.log("treatments", treatments);
+            const treatments = await doctorModels.get_doctor_treatments(doctorId);
             clinic.treatments = treatments;
 
             const equipments = await clinicModels.getClinicEquipments(clinicId);
