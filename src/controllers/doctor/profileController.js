@@ -887,7 +887,7 @@ export const createUsersChat = async (req, res) => {
         await insertChatUsersActive(doctorUser)
         let user = { chat_id: chatCreatedSuccessfully.insertId, userId: userId, isActive: 0 }
         await insertChatUsersActive(user)
-        return handleSuccess(res, 200, language, 'Chat created successfully');
+        return handleSuccess(res, 200, language, 'CHAT_CREATED_SUCCESSFULLY');
     } catch (error) {
         console.error('Error in addMembersInGroup:', error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
@@ -978,7 +978,7 @@ export const createDoctorAvailability = async (req, res) => {
             await update_onboarding_status(4, zynqUserId);
         }
         await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
-        return handleSuccess(res, 200, language, 'Availability_added_successfully');
+        return handleSuccess(res, 200, language, 'AVAILABILITY_CREATED_SUCCESSFULLY');
     } catch (err) {
         console.error('Error creating availability:', err);
         return handleError(res, 500, 'Failed to insert availability');
@@ -1082,7 +1082,7 @@ export const create_call_log_doctor = async (req, res) => {
             started_at // Pass to model
         });
 
-        return handleSuccess(res, 200, language, "Call log created by doctor");
+        return handleSuccess(res, 200, language, "CALL_LOG_CREATED_SUCCESSFULLY");
     } catch (error) {
         console.error("Error in create_call_log_doctor:", error);
         return handleError(res, 500, 'en', error.message);
