@@ -21,7 +21,7 @@
   "SCAN_HISTORY_DATA": "Ansiktsskanningshistorik hämtad framgångsrikt",
   "INTERNAL_SERVER_ERROR": "internt serverfel",
   "OTP_EXPIRED_OR_INVALID": "Koden har gått ut.",
-  "MAX_OTP_ATTEMPTS_REACHED":"Du har nått det maximala antalet kodförfrågningar. Försök igen senare.",
-  "PHONE_NUMBER_BLOCKED_BY_TWILIO":"Du har begärt kod för många gånger. Detta telefonnummer har tillfälligt blockerats av Twilio på grund av misstänkt aktivitet",
-  "USER_ALREADY_ENROLLED":"Mobilnummer finns redan"
+  "MAX_OTP_ATTEMPTS_REACHED": "Du har nått det maximala antalet kodförfrågningar. Försök igen senare.",
+  "PHONE_NUMBER_BLOCKED_BY_TWILIO": "Du har begärt kod för många gånger. Detta telefonnummer har tillfälligt blockerats av Twilio på grund av misstänkt aktivitet",
+  "USER_ALREADY_ENROLLED": "Mobilnummer finns redan"
 }

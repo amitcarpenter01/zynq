@@ -741,7 +741,6 @@ export const getAllDevices = async (req, res) => {
 export const deleteClinicImage = asyncHandler(async (req, res) => {
     const { clinic_image_id } = req.params;
     const result = await clinicModels.deleteClinicImageById(clinic_image_id, req?.user?.clinicData?.clinic_id);
-    if (result?.affectedRows === 0) return handleError(res, 404, "en", "Image_NOT_FOUND");
-    return handleSuccess(res, 200, "en", "Image_DELETED_SUCCESSFULLY", null);
-
+    if (result?.affectedRows === 0) return handleSuccess(res, 200, "en", "IMAGE_NOT_FOUND");
+    return handleSuccess(res, 200, "en", "IMAGE_DELETED_SUCCESSFULLY");
 })

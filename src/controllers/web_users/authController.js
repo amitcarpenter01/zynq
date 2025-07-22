@@ -465,6 +465,6 @@ export const verifyRoleSelected = async (req, res) => {
 export const toggleLanguage = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
     const result = await webModels.toggleUserLanguage(req.user);
-    return handleSuccess(res, 200, language, 'Language updated successfully');
+    return handleSuccess(res, 200, language, 'LANGUAGE_UPDATED', result);
 })
 
