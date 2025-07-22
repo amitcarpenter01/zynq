@@ -1,4 +1,4 @@
-import { addOrGetUserCart, addProductToUserCart, deleteProductFromUserCart, get_product_images_by_product_ids, getUserCarts } from "../../models/api.js";
+import { addOrGetUserCart, addProductToUserCart, deleteProductFromUserCart, get_product_images_by_product_ids, getSingleCartByCartId, getUserCarts } from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
 import { formatImagePath, isEmpty } from "../../utils/user_helper.js";
 
@@ -15,6 +15,13 @@ export const deleteProductFromCart = asyncHandler(async (req, res) => {
     const { product_id } = req.params;
     const { user_id, language = "en" } = req.user;
     await deleteProductFromUserCart(user_id, product_id);
+    return handleSuccess(res, 200, language, "PRODUCT_DELETED_SUCCESSFULLY");
+});
+
+export const deleteCart = asyncHandler(async (req, res) => {
+    const { cart_id } = req.params;
+    const { language = "en" } = req.user;
+    await deleteCartByCartId(cart_id);
     return handleSuccess(res, 200, language, "PRODUCT_DELETED_SUCCESSFULLY");
 });
 
@@ -35,7 +42,7 @@ export const processedCartsData = async (cartsData = []) => {
             stock,
             quantity,
             price,
-            
+
         } = row;
 
         price = Number(price) || 0;
@@ -102,6 +109,19 @@ export const getCarts = asyncHandler(async (req, res) => {
     const processedCartData = await processedCartsData(cartsData);
 
     return handleSuccess(res, 200, language, "CARTS_FETCHED_SUCCESSFULLY", processedCartData);
+});
+
+export const getSingleCart = asyncHandler(async (req, res) => {
+    const { language = "en" } = req.user;
+    const { cart_id } = req.params;
+
+    const cartsData = await getSingleCartByCartId(cart_id);
+
+    if (isEmpty(cartsData)) return handleSuccess(res, 200, language, "CARTS_FETCHED_SUCCESSFULLY", []);
+
+    const processedCartData = await processedCartsData(cartsData);
+
+    return handleSuccess(res, 200, language, "CART_FETCHED_SUCCESSFULLY", processedCartData[0]);
 });
 
 

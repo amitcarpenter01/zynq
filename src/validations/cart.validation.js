@@ -18,3 +18,11 @@ export const addProductToCartSchema = Joi.object({
 export const deleteProductFromCartSchema = Joi.object({
   product_id: stringValidation,
 })
+
+export const getSingleCartSchema = Joi.object({
+  cart_id: stringValidation,
+})
+
+export const deleteCartSchema = Joi.object({
+  cart_id: stringValidation,
+})

@@ -18,7 +18,7 @@ const app = express();
 // const server = http.createServer(app);
 const PORT = process.env.PORT;
 const APP_URL = process.env.APP_URL;
-const IS_LIVE = true;
+const IS_LIVE = false;
  
 app.use(cors());
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));

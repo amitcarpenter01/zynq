@@ -1201,6 +1201,20 @@ export const deleteProductFromUserCart = async (user_id, product_id) => {
     }
 }
 
+export const deleteCartByCartId = async (cart_id) => {
+    try {
+        await db.query(
+            `DELETE cp FROM tbl_cart_products cp
+             INNER JOIN tbl_carts c ON cp.cart_id = c.cart_id
+             WHERE c.cart_id = ?`,
+            [cart_id]
+        );
+    } catch (error) {
+        console.error("Database Error in deleteProductFromUserCart:", error);
+        throw new Error("Failed to delete product from user cart.");
+    }
+}
+
 export const getUserCarts = async (user_id) => {
     try {
         const result = await db.query(
@@ -1213,6 +1227,26 @@ export const getUserCarts = async (user_id) => {
              ORDER BY ca.created_at DESC
              `,
             [user_id]
+        );
+        return result;
+    } catch (error) {
+        console.error("Database Error in getUserCarts:", error);
+        throw new Error("Failed to get user carts.");
+    }
+}
+
+export const getSingleCartByCartId = async (cart_id) => {
+    try {
+        const result = await db.query(
+            `SELECT ca.cart_id, cl.clinic_name, cl.clinic_logo, ca.clinic_id, ca.user_id, cp.product_id, cp.quantity, p.name as product_name, p.price, p.short_description, p.stock
+             FROM tbl_carts ca
+             LEFT JOIN tbl_cart_products cp ON ca.cart_id = cp.cart_id
+             LEFT JOIN tbl_products p ON cp.product_id = p.product_id
+             LEFT JOIN tbl_clinics cl ON ca.clinic_id = cl.clinic_id
+             WHERE ca.cart_id = ?
+             ORDER BY ca.created_at DESC
+             `,
+            [cart_id]
         );
         return result;
     } catch (error) {

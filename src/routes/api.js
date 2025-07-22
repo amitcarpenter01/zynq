@@ -33,8 +33,10 @@ import { uploadMulterChatFiles } from '../services/multer.chat.js';
 import { getAllProductsSchema, getSingleProductSchema } from '../validations/product.validation.js';
 import { getWishlists, toggleWishlistProduct } from '../controllers/api/wishlistController.js';
 import { toggleWishlistProductSchema } from '../validations/wishlist.validation.js';
-import { addProductToCartSchema, deleteProductFromCartSchema } from '../validations/cart.validation.js';
-import { addProductToCart, deleteProductFromCart, getCarts } from '../controllers/api/cartController.js';
+import { addProductToCartSchema, deleteCartSchema, deleteProductFromCartSchema, getSingleCartSchema,  } from '../validations/cart.validation.js';
+import { addProductToCart, deleteCart, deleteProductFromCart, getCarts, getSingleCart } from '../controllers/api/cartController.js';
+import { initiatePaymentSchema } from '../validations/payment.validation.js';
+import { initiatePayment } from '../controllers/api/paymentController.js';
 
 const router = express.Router();
 
@@ -149,6 +151,12 @@ router.patch('/wishlists/:product_id', authenticateUser, validate(toggleWishlist
 
 router.post('/cart/add', authenticateUser, validate(addProductToCartSchema, "body"), addProductToCart);
 router.get('/cart', authenticateUser, getCarts);
-router.delete('/cart/:product_id', authenticateUser, validate(deleteProductFromCartSchema, "params"), deleteProductFromCart);
+router.get('/cart/:cart_id', authenticateUser, validate(getSingleCartSchema, "params"), getSingleCart);
+router.delete('/cart/product/:product_id', authenticateUser, validate(deleteProductFromCartSchema, "params"), deleteProductFromCart);
+router.delete('/cart/:cart_id', authenticateUser, validate(deleteCartSchema, "params"), deleteCart);
+
+// -------------------------------------Payments------------------------------------------------//
+
+router.post('/payments/initiate', authenticateUser, validate(initiatePaymentSchema, "body"), initiatePayment);
 
 export default router;
