@@ -1,6 +1,6 @@
 import joi from "joi";
 import _ from "lodash";
- 
+
 const joiMessages = {
     "date.base": ":key must be a valid date",
     "date.empty": ":key is required",
@@ -29,31 +29,35 @@ const joiMessages = {
     "any.custom": "Something went wrong with : :key | :value",
     "object.base": ":key must be an object",
 };
- 
+
 const stringValidation = joi.string().trim().required()
- 
+
 const idArrayValidation = joi.array().items(stringValidation).optional();
- 
+
 const emailValidation = joi.string().trim().required().email();
- 
+
 const dateValidation = joi.string().isoDate().required();
- 
+
 const pastDateValidation = joi.date().iso().min(new Date()).required();
- 
+
 const numberValidation = joi.number().integer().required();
- 
+
 const decimalValidation = joi.number().required();
- 
+
 const booleanValidation = joi.boolean().required();
- 
+
 const objectValidation = joi.object().required().unknown();
- 
+
 const orderValidation = joi.string().valid('asc', 'desc').default('asc');
- 
+
 const ratingValidation = joi.number().min(0).max(5).required();
- 
+
 const userTypeValidation = joi.string().valid('USER', 'DOCTOR', 'ADMIN', 'CLINIC').required();
- 
+
+const gatewayTypeValidation = joi.string().valid('KLARNA', 'SWISH').required();
+
+const currencyValidation = joi.string().valid('SEK').required();
+
 const populateMessage = (error) => {
     let errorDetails = error.details[0];
     // console.log("errorDetails", errorDetails);
@@ -66,7 +70,7 @@ const populateMessage = (error) => {
         case "any.custom":
             message = errorDetails.message;
             break;
- 
+
         case "array.unique":
             message = message.replace(
                 ":key",
@@ -75,7 +79,7 @@ const populateMessage = (error) => {
             message = message.replace(":path", errorDetails.context?.path);
             message = message.replace(":label", errorDetails.context?.label);
             break;
- 
+
         default:
             message = message.replace(
                 ":key",
@@ -88,7 +92,7 @@ const populateMessage = (error) => {
     }
     return message;
 };
- 
+
 export {
     joiMessages,
     stringValidation,
@@ -102,6 +106,8 @@ export {
     orderValidation,
     ratingValidation,
     idArrayValidation,
-    userTypeValidation,
+    userTypeValidation, 
+    gatewayTypeValidation,
+    currencyValidation,
     populateMessage,
 };

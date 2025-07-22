@@ -216,6 +216,9 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
 
     const clinicIds = clinics.map(c => c.clinic_id);
 
+    const images = await clinicModels.getClinicImages(clinic_id);
+
+
     const [
         allTreatments,
         allOperationHours,
@@ -236,6 +239,10 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
 
     const processedClinics = clinics.map(clinic => ({
         ...clinic,
+        images: images.filter(img => img?.image_url).map(img => ({
+            clinic_image_id: img.clinic_image_id,
+            url: formatImagePath(img.image_url, 'clinic/files'),
+        })),
         location: allLocations[clinic.clinic_id] || null,
         treatments: allTreatments[clinic.clinic_id] || [],
         operation_hours: allOperationHours[clinic.clinic_id] || [],

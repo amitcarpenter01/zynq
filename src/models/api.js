@@ -1138,3 +1138,119 @@ export const get_product_images_by_product_ids = async (productIds = []) => {
         throw new Error("Failed to fetch product images.");
     }
 };
+
+//======================================= Carts =========================================
+
+export const addOrGetUserCart = async (clinic_id, user_id) => {
+    try {
+        let cartData;
+        const result = await db.query(
+            `SELECT cart_id FROM tbl_carts WHERE clinic_id = ? AND user_id = ?`,
+            [clinic_id, user_id]
+        );
+
+        if (result.length !== 0) {
+            cartData = result;
+        } else {
+            await db.query(
+                `INSERT INTO tbl_carts (clinic_id, user_id) VALUES (?, ?)`,
+                [clinic_id, user_id]
+            );
+
+            cartData = await db.query(
+                `SELECT cart_id FROM tbl_carts WHERE clinic_id = ? AND user_id = ?`,
+                [clinic_id, user_id]
+            );
+        }
+
+        return cartData[0];
+    } catch (error) {
+        console.error("Database Error in addOrGetUserCart:", error);
+        throw new Error("Failed to add or get user cart.");
+    }
+};
+
+export const addProductToUserCart = async (cart_id, product_id, quantity) => {
+    try {
+        await db.query(
+            `DELETE FROM tbl_cart_products WHERE cart_id = ? AND product_id = ?`,
+            [cart_id, product_id]
+        );
+
+        await db.query(
+            `INSERT INTO tbl_cart_products (cart_id, product_id, quantity) VALUES (?, ?, ?)`,
+            [cart_id, product_id, quantity]
+        );
+    } catch (error) {
+        console.error("Database Error in addProductToUserCart:", error);
+        throw new Error("Failed to add product to user cart.");
+    }
+}
+
+export const deleteProductFromUserCart = async (user_id, product_id) => {
+    try {
+        await db.query(
+            `DELETE cp FROM tbl_cart_products cp
+             INNER JOIN tbl_carts c ON cp.cart_id = c.cart_id
+             WHERE c.user_id = ? AND cp.product_id = ?`,
+            [user_id, product_id]
+        );
+    } catch (error) {
+        console.error("Database Error in deleteProductFromUserCart:", error);
+        throw new Error("Failed to delete product from user cart.");
+    }
+}
+
+export const deleteCartByCartId = async (cart_id) => {
+    try {
+        await db.query(
+            `DELETE cp FROM tbl_cart_products cp
+             INNER JOIN tbl_carts c ON cp.cart_id = c.cart_id
+             WHERE c.cart_id = ?`,
+            [cart_id]
+        );
+    } catch (error) {
+        console.error("Database Error in deleteProductFromUserCart:", error);
+        throw new Error("Failed to delete product from user cart.");
+    }
+}
+
+export const getUserCarts = async (user_id) => {
+    try {
+        const result = await db.query(
+            `SELECT ca.cart_id, cl.clinic_name, cl.clinic_logo, ca.clinic_id, ca.user_id, cp.product_id, cp.quantity, p.name as product_name, p.price, p.short_description, p.stock
+             FROM tbl_carts ca
+             LEFT JOIN tbl_cart_products cp ON ca.cart_id = cp.cart_id
+             LEFT JOIN tbl_products p ON cp.product_id = p.product_id
+             LEFT JOIN tbl_clinics cl ON ca.clinic_id = cl.clinic_id
+             WHERE ca.user_id = ?
+             ORDER BY ca.created_at DESC
+             `,
+            [user_id]
+        );
+        return result;
+    } catch (error) {
+        console.error("Database Error in getUserCarts:", error);
+        throw new Error("Failed to get user carts.");
+    }
+}
+
+export const getSingleCartByCartId = async (cart_id) => {
+    try {
+        const result = await db.query(
+            `SELECT ca.cart_id, cl.clinic_name, cl.clinic_logo, ca.clinic_id, ca.user_id, cp.product_id, cp.quantity, p.name as product_name, p.price, p.short_description, p.stock
+             FROM tbl_carts ca
+             LEFT JOIN tbl_cart_products cp ON ca.cart_id = cp.cart_id
+             LEFT JOIN tbl_products p ON cp.product_id = p.product_id
+             LEFT JOIN tbl_clinics cl ON ca.clinic_id = cl.clinic_id
+             WHERE ca.cart_id = ?
+             ORDER BY ca.created_at DESC
+             `,
+            [cart_id]
+        );
+        return result;
+    } catch (error) {
+        console.error("Database Error in getUserCarts:", error);
+        throw new Error("Failed to get user carts.");
+    }
+}

@@ -24,7 +24,7 @@ import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validations/appointment.validation.js';
 import { getSingleDoctorSchema, getAllDoctorsSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema, getSingleClinicSchema } from '../validations/clinic.validation.js';
-import {  getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
+import { getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
 import { getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
 import { sendAppointmentNotifications } from '../services/notifications.service.js';
 import { toggleLanguage } from '../controllers/web_users/authController.js';
@@ -33,6 +33,10 @@ import { uploadMulterChatFiles } from '../services/multer.chat.js';
 import { getAllProductsSchema, getSingleProductSchema } from '../validations/product.validation.js';
 import { getWishlists, toggleWishlistProduct } from '../controllers/api/wishlistController.js';
 import { toggleWishlistProductSchema } from '../validations/wishlist.validation.js';
+import { addProductToCartSchema, deleteCartSchema, deleteProductFromCartSchema, getSingleCartSchema,  } from '../validations/cart.validation.js';
+import { addProductToCart, deleteCart, deleteProductFromCart, getCarts, getSingleCart } from '../controllers/api/cartController.js';
+import { initiatePaymentSchema } from '../validations/payment.validation.js';
+import { initiatePayment } from '../controllers/api/paymentController.js';
 
 const router = express.Router();
 
@@ -125,9 +129,9 @@ router.patch('/notifications/toggle-notification', authenticateUser, toggleNotif
 // -------------------------------------Concerns------------------------------------------------//
 
 router.post('/get_treatments_by_concern_id', faceScanControllers.get_treatments_by_concern_id);
-router.post('/get_treatments_by_concerns',  validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
+router.post('/get_treatments_by_concerns', validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
 router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
-router.post('/get_tips_by_concerns',  validate(getTipsByConcernsSchema, "body"), faceScanControllers.get_tips_by_concerns);
+router.post('/get_tips_by_concerns', validate(getTipsByConcernsSchema, "body"), faceScanControllers.get_tips_by_concerns);
 router.patch('/toggle-language', authenticateUser, toggleLanguage);
 
 // -------------------------------------Terms & Conditions------------------------------------------------//
@@ -142,5 +146,17 @@ router.post('/upload-files', uploadMulterChatFiles, authControllers.uploadChatFi
 
 router.get('/wishlists', authenticateUser, getWishlists);
 router.patch('/wishlists/:product_id', authenticateUser, validate(toggleWishlistProductSchema, "params"), toggleWishlistProduct);
+
+// -------------------------------------Carts------------------------------------------------//
+
+router.post('/cart/add', authenticateUser, validate(addProductToCartSchema, "body"), addProductToCart);
+router.get('/cart', authenticateUser, getCarts);
+router.get('/cart/:cart_id', authenticateUser, validate(getSingleCartSchema, "params"), getSingleCart);
+router.delete('/cart/product/:product_id', authenticateUser, validate(deleteProductFromCartSchema, "params"), deleteProductFromCart);
+router.delete('/cart/:cart_id', authenticateUser, validate(deleteCartSchema, "params"), deleteCart);
+
+// -------------------------------------Payments------------------------------------------------//
+
+router.post('/payments/initiate', authenticateUser, validate(initiatePaymentSchema, "body"), initiatePayment);
 
 export default router;
