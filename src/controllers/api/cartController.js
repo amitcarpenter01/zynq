@@ -1,4 +1,4 @@
-import { addOrGetUserCart, addProductToUserCart, deleteProductFromUserCart, get_product_images_by_product_ids, getSingleCartByCartId, getUserCarts } from "../../models/api.js";
+import { addOrGetUserCart, addProductToUserCart, deleteCartByCartId, deleteProductFromUserCart, get_product_images_by_product_ids, getSingleCartByCartId, getUserCarts } from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
 import { formatImagePath, isEmpty } from "../../utils/user_helper.js";
 
@@ -22,7 +22,7 @@ export const deleteCart = asyncHandler(async (req, res) => {
     const { cart_id } = req.params;
     const { language = "en" } = req.user;
     await deleteCartByCartId(cart_id);
-    return handleSuccess(res, 200, language, "PRODUCT_DELETED_SUCCESSFULLY");
+    return handleSuccess(res, 200, language, "CART_DELETED_SUCCESSFULLY");
 });
 
 export const processedCartsData = async (cartsData = []) => {
