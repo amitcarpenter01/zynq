@@ -1441,6 +1441,56 @@ export const getClinicLocationsBulk = async (clinicIds) => {
     return grouped;
 };
 
+export const getClinicDoctorsBulk = async (clinicIds = []) => {
+    if (!clinicIds.length) return {};
+
+    try {
+        const params = [...clinicIds];
+
+        const selectFields = [
+            'd.doctor_id',
+            'd.name',
+            'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
+            'd.specialization',
+            'd.fee_per_session',
+            'd.profile_image',
+            'dm.clinic_id',
+            'c.clinic_name',
+            'c.address AS clinic_address',
+            'ROUND(AVG(ar.rating), 2) AS avg_rating'
+        ].join(', ');
+
+        let query = `
+            SELECT ${selectFields}
+            FROM tbl_doctors d
+            LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+            LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
+            LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
+            LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id
+            LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
+            WHERE dm.clinic_id IN (${clinicIds.map(() => '?').join(', ')})
+              AND d.profile_completion_percentage >= 0
+            GROUP BY d.doctor_id, dm.clinic_id
+            ORDER BY d.created_at DESC
+        `;
+
+        const rows = await db.query(query, params);
+
+        // Grouping by clinic_id
+        const grouped = {};
+        for (const row of rows) {
+            if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
+            grouped[row.clinic_id].push(row);
+        }
+
+        return grouped;
+    } catch (err) {
+        console.error("Error in getClinicDoctorsBulk:", err.message);
+        throw new Error("Failed to fetch doctors for clinics.");
+    }
+};
+
+
 export const getDoctorCertificationsBulk = async (doctorIds) => {
     try {
         const placeholders = doctorIds.map(() => '?').join(',');
