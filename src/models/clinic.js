@@ -2,6 +2,7 @@ import db from "../config/db.js";
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { formatImagePath } from "../utils/user_helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1479,6 +1480,7 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
         // Grouping by clinic_id
         const grouped = {};
         for (const row of rows) {
+            row.profile_image = formatImagePath(row.profile_image, 'doctor/profile_images');
             if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
             grouped[row.clinic_id].push(row);
         }
