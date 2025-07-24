@@ -35,8 +35,8 @@ import { getWishlists, toggleWishlistProduct } from '../controllers/api/wishlist
 import { toggleWishlistProductSchema } from '../validations/wishlist.validation.js';
 import { addProductToCartSchema, deleteCartSchema, deleteProductFromCartSchema, getSingleCartSchema,  } from '../validations/cart.validation.js';
 import { addProductToCart, deleteCart, deleteProductFromCart, getCarts, getSingleCart } from '../controllers/api/cartController.js';
-import { initiatePaymentSchema } from '../validations/payment.validation.js';
-import { initiatePayment } from '../controllers/api/paymentController.js';
+import { initiatePaymentSchema, klarnaWebhookSchema } from '../validations/payment.validation.js';
+import { initiatePayment, klarnaWebhookHandler } from '../controllers/api/paymentController.js';
 import { getUserSkinTypes } from '../models/clinic.js';
 
 const router = express.Router();
@@ -159,6 +159,7 @@ router.delete('/cart/:cart_id', authenticateUser, validate(deleteCartSchema, "pa
 // -------------------------------------Payments------------------------------------------------//
 
 router.post('/payments/initiate', authenticateUser, validate(initiatePaymentSchema, "body"), initiatePayment);
+router.get("/webhook/klarna", validate(klarnaWebhookSchema, "query"),  klarnaWebhookHandler);
 
 // -------------------------------------Generic------------------------------------------------//
 

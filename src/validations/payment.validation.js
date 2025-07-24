@@ -26,3 +26,7 @@ export const initiatePaymentSchema = Joi.object({
     ).min(1).required()
   }).required()
 });
+
+export const klarnaWebhookSchema = Joi.object({
+  order_id: stringValidation,
+});
