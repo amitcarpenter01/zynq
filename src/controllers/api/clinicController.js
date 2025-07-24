@@ -69,7 +69,7 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
 
     if (areAllFiltersEmpty) {
         const userTreatmentIds = await getTreatmentIDsByUserID(req.user.user_id);
-        // treatment_ids = userTreatmentIds || [];
+        treatment_ids = userTreatmentIds || [];
     }
 
     const queryFilters = {
@@ -162,8 +162,8 @@ export const get_nearby_clinics = asyncHandler(async (req, res) => {
         user_id
     } = req.user;
 
-    userLatitude = 22.72481320
-    userLongitude = 75.88707720
+    // userLatitude = 22.72481320
+    // userLongitude = 75.88707720
 
     // 🔁 Smart fallback if sorting by nearest but no coordinates
     let effectiveSort = { ...sort };
@@ -197,7 +197,7 @@ export const get_nearby_clinics = asyncHandler(async (req, res) => {
     // 🧠 Apply user treatment fallback
     if (areAllFiltersEmpty) {
         const userTreatmentIds = await getTreatmentIDsByUserID(user_id);
-        // treatment_ids = userTreatmentIds || [];
+        treatment_ids = userTreatmentIds || [];
     }
 
     const clinics = await apiModels.getNearbyClinicsForUser({
