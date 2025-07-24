@@ -290,10 +290,10 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
 
     if (areAllFiltersEmpty) {
         const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
-        // treatment_ids = fallbackTreatmentIds || [];
+        treatment_ids = fallbackTreatmentIds || [];
     }
-    userLatitude = 22.72481320
-    userLongitude = 75.88707720
+    // userLatitude = 22.72481320
+    // userLongitude = 75.88707720
 
     let effectiveSort = { ...sort };
     const sortRequiresLocation = effectiveSort.by === 'nearest';

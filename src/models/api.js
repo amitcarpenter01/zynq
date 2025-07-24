@@ -322,7 +322,7 @@ export const getAllRecommendedDoctors = async ({
         // Rating range filter
         if (min_rating !== null) {
             const ratingCeiling = Math.min(min_rating + 1, 5.01); // include 5.0 if min_rating is 4
-            query += ` HAVING CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) < ?`;
+            query += ` HAVING CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) <= ?`;
             params.push(min_rating, ratingCeiling);
         }
 
@@ -616,7 +616,8 @@ export const getAllClinicsForUser = async ({
 
         if (min_rating !== null) {
             const ratingCeiling = Math.min(min_rating + 1, 5.01);
-            havingConditions.push(`CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) < ?`);
+            console.log(`min_rating: ${min_rating}, ratingCeiling: ${ratingCeiling}`);
+            havingConditions.push(`CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) <= ?`);
             params.push(min_rating, ratingCeiling);
         }
 
@@ -777,7 +778,7 @@ export const getNearbyClinicsForUser = async ({
         const havingConditions = [];
         if (min_rating !== null) {
             const ratingCeiling = Math.min(min_rating + 1, 5.01);
-            havingConditions.push(`CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) < ?`);
+            havingConditions.push(`CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) <= ?`);
             params.push(min_rating, ratingCeiling);
         }
 
@@ -1070,27 +1071,31 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
 
     try {
         const placeholders = concern_ids.map(() => '?').join(', ');
+
         const query = `
             SELECT
                 t.*,
-                c.name AS concern_name
+                ANY_VALUE(c.name) AS concern_name,
+                IFNULL(MIN(dt.price), 0) AS min_price,
+                IFNULL(MAX(dt.price), 0) AS max_price
             FROM tbl_treatment_concerns tc
             INNER JOIN tbl_treatments t ON tc.treatment_id = t.treatment_id
             INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
-            WHERE tc.concern_id IN (${placeholders});
+            LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+            WHERE tc.concern_id IN (${placeholders})
+            GROUP BY t.treatment_id
         `;
 
         const results = await db.query(query, concern_ids);
 
-        // 🔄 Format benefits based on language
+        // Format benefits based on language
         return formatBenefitsOnLang(results, lang);
 
     } catch (error) {
-        console.error("Database Error:", error.message);
+        console.error("Database Error in getTreatmentsByConcernIds:", error.message);
         throw new Error("Failed to fetch treatments by concern IDs.");
     }
 };
-
 
 export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
     try {

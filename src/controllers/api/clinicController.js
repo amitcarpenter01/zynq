@@ -162,8 +162,8 @@ export const get_nearby_clinics = asyncHandler(async (req, res) => {
         user_id
     } = req.user;
 
-    userLatitude = 22.72481320
-    userLongitude = 75.88707720
+    // userLatitude = 22.72481320
+    // userLongitude = 75.88707720
 
     // 🔁 Smart fallback if sorting by nearest but no coordinates
     let effectiveSort = { ...sort };
