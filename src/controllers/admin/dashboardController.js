@@ -1,5 +1,6 @@
 import { get_clinics, get_doctors, get_users, get_latest_clinic } from '../../models/admin.js';
-import { handleError, handleSuccess } from '../../utils/responseHandler.js';
+import { getClinicDoctorWallets } from '../../models/payment.js';
+import { asyncHandler, handleError, handleSuccess } from '../../utils/responseHandler.js';
 
 export const get_dashboard = async (req, res) => {
     try {
@@ -24,3 +25,8 @@ export const get_dashboard = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
+
+export const get_wallets = asyncHandler(async (req, res) => {
+    const wallets = await getClinicDoctorWallets();
+    return handleSuccess(res, 200, 'en', "WALLETS_FETCHED", wallets);
+})

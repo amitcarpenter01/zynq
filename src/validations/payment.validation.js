@@ -12,14 +12,17 @@ import {
 
 
 export const initiatePaymentSchema = Joi.object({
-  user_id: stringValidation,
   doctor_id: stringValidation.optional(),
   clinic_id: stringValidation.optional(),
   payment_gateway: gatewayTypeValidation,
-  amount: numberValidation,
   currency: currencyValidation,
   metadata: Joi.object({
-    type: Joi.string().valid('APPOINTMENT', 'TREATMENT', 'PRODUCT').required(),
-    type_ids: idArrayValidation.required().min(1),
-  }).required(),
+    type: Joi.string().valid('APPOINTMENT', 'TREATMENT', 'CART').required(),
+    type_data: Joi.array().items(
+      Joi.object({
+        type_id: stringValidation,
+        quantity: numberValidation
+      })
+    ).min(1).required()
+  }).required()
 });

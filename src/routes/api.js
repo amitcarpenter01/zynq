@@ -37,6 +37,7 @@ import { addProductToCartSchema, deleteCartSchema, deleteProductFromCartSchema, 
 import { addProductToCart, deleteCart, deleteProductFromCart, getCarts, getSingleCart } from '../controllers/api/cartController.js';
 import { initiatePaymentSchema } from '../validations/payment.validation.js';
 import { initiatePayment } from '../controllers/api/paymentController.js';
+import { getUserSkinTypes } from '../models/clinic.js';
 
 const router = express.Router();
 
@@ -78,7 +79,7 @@ router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_f
 // router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors);
 router.post("/get-all-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_all_doctors_in_app_side);
 router.post("/get-recommended-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
-router.get("/doctor/get/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
+router.get("/doctor/get/:clinic_id/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
 // //==================================== Product ==============================
 router.post("/get-all-products", authenticateUser, validate(getAllProductsSchema, "body"), productControllers.getAllProducts);
 router.get("/product/:product_id", authenticateUser, validate(getSingleProductSchema, "params"), productControllers.getSingleProduct);
@@ -158,5 +159,9 @@ router.delete('/cart/:cart_id', authenticateUser, validate(deleteCartSchema, "pa
 // -------------------------------------Payments------------------------------------------------//
 
 router.post('/payments/initiate', authenticateUser, validate(initiatePaymentSchema, "body"), initiatePayment);
+
+// -------------------------------------Generic------------------------------------------------//
+
+router.get('/skin-types', authenticateUser, faceScanControllers.getClinicSkinTypes);
 
 export default router;
