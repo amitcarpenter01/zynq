@@ -9,6 +9,7 @@ export const insertPayment = async (
   amount,
   currency,
   provider_reference_id,
+  order_id,
   metadata
 ) => {
   const query = `
@@ -22,8 +23,9 @@ export const insertPayment = async (
       currency,
       status,
       provider_reference_id,
+      order_id,
       metadata
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?)
   `;
 
   const params = [
@@ -35,6 +37,7 @@ export const insertPayment = async (
     amount,
     currency,
     provider_reference_id,
+    order_id,
     JSON.stringify(metadata),
   ];
 
@@ -62,7 +65,6 @@ export const getAppointmentsData = async (appointment_ids) => {
   } catch (error) {
     console.error("Failed to fetch appointments data:", error);
     throw error;
-
   }
 };
 
@@ -82,12 +84,10 @@ export const getTreatmentsData = async (treatment_ids, doctor_id) => {
   } catch (error) {
     console.error("Failed to fetch appointments data:", error);
     throw error;
-
   }
 };
 
 export const getProductsData = async (cart_id) => {
-  
   try {
     const query = `
       SELECT 
@@ -103,7 +103,6 @@ export const getProductsData = async (cart_id) => {
   } catch (error) {
     console.error("Failed to fetch appointments data:", error);
     throw error;
-
   }
 };
 
@@ -119,7 +118,7 @@ export const getClinicDoctorWallets = async () => {
       FROM tbl_clinics c
       WHERE c.due_status = ?
     `;
-    
+
     const doctorQuery = `
       SELECT 
         d.doctor_id AS id,
@@ -132,13 +131,23 @@ export const getClinicDoctorWallets = async () => {
     `;
 
     const [clinicWallets, doctorWallets] = await Promise.all([
-      db.query(clinicQuery, ['DUE_PENDING']),
-      db.query(doctorQuery, ['DUE_PENDING'])
+      db.query(clinicQuery, ["DUE_PENDING"]),
+      db.query(doctorQuery, ["DUE_PENDING"]),
     ]);
 
     return [...clinicWallets, ...doctorWallets];
   } catch (error) {
     console.error("Failed to fetch wallet data:", error);
+    throw error;
+  }
+};
+
+export const updatePaymentStatus = async (order_id, status) => {
+  try {
+    const query = `UPDATE tbl_payments SET status = ? WHERE order_id = ?`;
+    await db.query(query, [status, order_id]);
+  } catch (error) {
+    console.error("Failed to update payment status:", error);
     throw error;
   }
 };
