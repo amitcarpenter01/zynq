@@ -6,11 +6,12 @@ import {
   orderValidation,
   ratingValidation,
 } from "../utils/joi.util.js";
- 
+
 export const getSingleDoctorSchema = joi.object({
   doctor_id: stringValidation,
+  clinic_id: stringValidation
 });
- 
+
 export const getAllDoctorsSchema = joi.object({
   filters: joi.object({
     treatment_ids: idArrayValidation.optional(),
@@ -19,11 +20,20 @@ export const getAllDoctorsSchema = joi.object({
     skin_type_ids: idArrayValidation.optional(),
     surgery_ids: idArrayValidation.optional(),
     concern_ids: idArrayValidation.optional(),
+    search: stringValidation.optional(),
+    distance: joi.object({
+      min: numberValidation.min(0),
+      max: numberValidation.min(0)
+    }).optional(),
+    price: joi.object({
+      min: numberValidation.min(0),
+      max: numberValidation.min(0)
+    }).optional(),
     min_rating: ratingValidation.optional(),
   }).optional(),
- 
+
   sort: joi.object({
-    by: joi.string().valid('nearest', 'rating').default('nearest'),
+    by: joi.string().valid('nearest', 'rating', 'price').default('nearest'),
     order: orderValidation
   }).optional(),
   pagination: joi.object({

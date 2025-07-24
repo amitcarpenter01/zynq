@@ -10,6 +10,7 @@ import * as apiModels from "../../models/api.js";
 import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken } from "../../utils/user_helper.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { getUserSkinTypes } from "../../models/clinic.js";
 
 dotenv.config();
 
@@ -49,7 +50,7 @@ export const add_face_scan_result = async (req, res) => {
 
         const new_face_scan_data = {
             user_id: user.user_id,
-            face_scan_result_id:face_scan_result_id,
+            face_scan_result_id: face_scan_result_id,
             skin_type,
             skin_concerns,
             details,
@@ -59,9 +60,9 @@ export const add_face_scan_result = async (req, res) => {
             aiAnalysisResult
         };
 
-        const id  = await apiModels.add_face_scan_data(new_face_scan_data);
-        console.log("id>>>>>>>>>>>>>>>>",id)
-        return handleSuccess(res, 200, language, "SCAN_DATA_ADDED",{id : face_scan_result_id});
+        const id = await apiModels.add_face_scan_data(new_face_scan_data);
+        console.log("id>>>>>>>>>>>>>>>>", id)
+        return handleSuccess(res, 200, language, "SCAN_DATA_ADDED", { id: face_scan_result_id });
 
     } catch (error) {
         console.error("Internal Error:", error);
@@ -82,7 +83,7 @@ export const get_face_scan_history = async (req, res) => {
         console.error("internal E", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
-};  
+};
 
 export const get_treatments_by_concern_id = async (req, res) => {
     try {
@@ -108,7 +109,7 @@ export const get_all_concerns = async (req, res) => {
     try {
         const language = req?.user?.language || 'en';
         const concerns = await apiModels.getAllConcerns(language);
- 
+
         return handleSuccess(res, 200, "en", "CONCERNS_FETCHED", concerns);
     } catch (error) {
         console.error("Error fetching concerns:", error);
@@ -129,4 +130,15 @@ export const get_tips_by_concerns = asyncHandler(async (req, res) => {
     const tips = await apiModels.getTipsByConcernIds(concern_ids, language);
     return handleSuccess(res, 200, "en", "TIPS_FETCHED", tips);
 })
- 
+
+export const getClinicSkinTypes = async (req, res) => {
+    try {
+        const language = req?.user?.language || 'sv';
+        const skinTypes = await getUserSkinTypes(language);
+        return handleSuccess(res, 200, language, "SKIN_TYPES_FETCHED_SUCCESSFULLY", skinTypes);
+    }
+    catch (error) {
+        console.error("Error in getClinicSkinTypes:", error);
+        return handleError(res, 500, "en", 'INTERNAL_SERVER_ERROR');
+    }
+};

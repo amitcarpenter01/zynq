@@ -65,5 +65,10 @@ router.get('/getAllappointments',authenticateAdmin, authControllers.get_all_appo
 router.get('/get-all-enrollments',authenticateAdmin, authControllers.get_all_enrollments);
 
 
+//==============================Wallets ===================================
+
+router.get('/wallets', authenticateAdmin, dashboardControllers.get_wallets);
+
+
 
 export default router;

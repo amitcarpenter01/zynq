@@ -838,16 +838,17 @@ export const getSoloDoctorByZynqUserId = async (zynq_user_id) => {
     }
 }
 
-export const getDoctorByDoctorID = async (doctor_id) => {
+export const getDoctorByDoctorID = async (doctor_id, clinic_id) => {
     try {
         const query = `
-            SELECT dcm.*, d.*, zu.email
+            SELECT dcm.*, d.*, zu.email, cl.latitude, cl.longitude
             FROM tbl_doctor_clinic_map dcm
             JOIN tbl_doctors d ON dcm.doctor_id = d.doctor_id
             JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
-            WHERE d.doctor_id = ? ORDER BY dcm.created_at DESC`;
+            JOIN tbl_clinic_locations cl ON cl.clinic_id = dcm.clinic_id
+            WHERE d.doctor_id = ? AND dcm.clinic_id = ? ORDER BY dcm.created_at DESC`;
 
-        const result = await db.query(query, [doctor_id]);
+        const result = await db.query(query, [doctor_id, clinic_id]);
 
         return result;
     }
@@ -871,6 +872,7 @@ export const getDashboardDataByRole = async (id, role) => {
         'COUNT(DISTINCT a.user_id) AS total_patients',
         `COUNT(CASE WHEN DATE(a.start_time) = CURDATE() THEN 1 ELSE NULL END) AS today_appointments`,
         'ROUND(AVG(ar.rating), 2) AS average_rating',
+        isClinic ? 'c.total_earnings AS total_earnings, c.wallet_balance AS wallet_balance' : 'd.total_earnings AS total_earnings, d.wallet_balance AS wallet_balance'
     ];
 
     if (isClinic) {
@@ -880,6 +882,9 @@ export const getDashboardDataByRole = async (id, role) => {
     // JOINs
     const joinClauses = [
         'LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id',
+        isClinic
+            ? 'LEFT JOIN tbl_clinics c ON a.clinic_id = c.clinic_id'
+            : 'LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id'
     ];
 
     if (isClinic) {
@@ -906,7 +911,6 @@ export const getDashboardData = async (userData) => {
     try {
         const { user_id, role } = extractUserData(userData);
         let results = await getDashboardDataByRole(user_id, role);
-        if (!isEmpty(results)) results.total_earnings = 0
         return results;
     }
     catch (error) {

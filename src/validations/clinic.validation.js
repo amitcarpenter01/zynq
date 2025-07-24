@@ -16,13 +16,21 @@ export const getAllClinicsSchema = Joi.object({
     aesthetic_device_ids: idArrayValidation.optional(),
     skin_type_ids: idArrayValidation.optional(),
     surgery_ids: idArrayValidation.optional(),
-    concern_ids : idArrayValidation.optional(),
-    search : stringValidation.optional(),
+    concern_ids: idArrayValidation.optional(),
+    distance: Joi.object({
+      min: numberValidation.min(0),
+      max: numberValidation.min(0)
+    }).optional(),
+    price: Joi.object({
+      min: numberValidation.min(0),
+      max: numberValidation.min(0)
+    }).optional(),
+    search: stringValidation.optional(),
     min_rating: ratingValidation.optional(),
   }).optional(),
 
   sort: Joi.object({
-    by: Joi.string().valid('nearest', 'rating').default('nearest'),
+    by: Joi.string().valid('nearest', 'rating', 'price').default('nearest'),
     order: orderValidation
   }).optional(),
 

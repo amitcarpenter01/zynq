@@ -216,27 +216,41 @@ export const getAllRecommendedDoctors = async ({
     aesthetic_device_ids = [],
     skin_type_ids = [],
     surgery_ids = [],
+    distance = {},
+    price = {},
     search = '',
     min_rating = null,
     sort = { by: 'default', order: 'desc' },
+    userLatitude,
+    userLongitude,
     limit,
     offset
 }) => {
     try {
         const params = [];
 
+        const needsDistance = userLatitude != null && userLongitude != null;
+        const distanceSelect = needsDistance
+            ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance`
+            : null;
+
         const selectFields = [
             'd.doctor_id',
             'd.name',
             'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
             'd.specialization',
-            'd.fee_per_session',
+            'ANY_VALUE(d.fee_per_session) AS fee_per_session',
             'd.profile_image',
             'dm.clinic_id',
             'c.clinic_name',
             'c.address AS clinic_address',
-            'ROUND(AVG(ar.rating), 2) AS avg_rating'
-        ].join(', ');
+            'ROUND(AVG(ar.rating), 2) AS avg_rating',
+            distanceSelect
+        ].filter(Boolean).join(', ');
+
+        if (needsDistance) {
+            params.push(userLongitude, userLatitude); // long, lat
+        }
 
         let query = `
             SELECT ${selectFields}
@@ -244,6 +258,7 @@ export const getAllRecommendedDoctors = async ({
             LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
             LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
             LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
+            LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
             LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id
             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
         `;
@@ -276,26 +291,56 @@ export const getAllRecommendedDoctors = async ({
             params.push(`%${search.trim().toLowerCase()}%`);
         }
 
+        // Fee per session
+        if (typeof price.min === 'number') {
+            filters.push('d.fee_per_session >= ?');
+            params.push(price.min);
+        }
+        if (typeof price.max === 'number') {
+            filters.push('d.fee_per_session <= ?');
+            params.push(price.max);
+        }
+
+        // Distance (in meters)
+        if (needsDistance) {
+            if (typeof distance.min === 'number') {
+                filters.push(`ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) >= ?`);
+                params.push(userLongitude, userLatitude, distance.min);
+            }
+            if (typeof distance.max === 'number') {
+                filters.push(`ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) <= ?`);
+                params.push(userLongitude, userLatitude, distance.max);
+            }
+        }
+
         if (filters.length > 0) {
             query += ` AND ${filters.join(' AND ')}`;
         }
 
         query += ` GROUP BY d.doctor_id, dm.clinic_id`;
 
+        // Rating range filter
         if (min_rating !== null) {
-            query += ` HAVING avg_rating >= ?`;
-            params.push(min_rating);
+            const ratingCeiling = Math.min(min_rating + 1, 5.01); // include 5.0 if min_rating is 4
+            query += ` HAVING CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) < ?`;
+            params.push(min_rating, ratingCeiling);
         }
 
+        // Sorting
         if (sort.by === 'rating') {
-            query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
+            query += ` ORDER BY avg_rating IS NULL, CAST(avg_rating AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
+        } else if (sort.by === 'nearest' && needsDistance) {
+            query += ` ORDER BY distance IS NULL, CAST(distance AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
+        } else if (sort.by === 'price') {
+            query += ` ORDER BY d.fee_per_session IS NULL, CAST(d.fee_per_session AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
         } else {
+            // default fallback (recently created doctors first)
             query += ` ORDER BY d.created_at DESC`;
         }
 
         query += ` LIMIT ? OFFSET ?`;
         params.push(Number(limit) || 10, Number(offset) || 0);
-
+        console.log(query)
         return await db.query(query, params);
     } catch (error) {
         console.error("Database Error in getAllRecommendedDoctors:", error.message);
@@ -485,6 +530,8 @@ export const getAllClinicsForUser = async ({
     skin_type_ids = [],
     surgery_ids = [],
     search = '',
+    distance = {},
+    price = {},
     min_rating = null,
     sort = { by: 'default', order: 'desc' },
     userLatitude,
@@ -495,7 +542,15 @@ export const getAllClinicsForUser = async ({
     try {
         const params = [];
 
-        const needsDistance = sort.by === 'nearest' && userLatitude != null && userLongitude != null;
+        const hasLatLong = userLatitude && userLongitude;
+        const needsDistanceFilter = distance.min != null || distance.max != null;
+        const needsDistanceSort = sort.by === 'nearest';
+
+        const needsDistance = hasLatLong;
+        const applyDistanceFilter = hasLatLong && needsDistanceFilter;
+        const applyDistanceSort = hasLatLong && needsDistanceSort;
+
+        const hasPriceFilter = price.min != null || price.max != null;
         const needsRating = min_rating !== null || sort.by === 'rating';
 
         const selectFields = [
@@ -504,14 +559,14 @@ export const getAllClinicsForUser = async ({
             'c.clinic_logo',
             'c.address',
             'c.mobile_number',
-            'MIN(d.fee_per_session) AS doctor_lower_price_range',
-            'MAX(d.fee_per_session) AS doctor_higher_price_range',
+            'MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range',
+            'MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range',
             'ROUND(AVG(ar.rating), 2) AS avg_rating',
-            needsDistance ? `ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)) AS distance` : null
+            needsDistance ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance` : null
         ].filter(Boolean).join(', ');
 
         if (needsDistance) {
-            params.push(userLongitude, userLatitude); // Order: lon, lat
+            params.push(userLongitude, userLatitude); // order: lon, lat
         }
 
         let query = `
@@ -520,19 +575,16 @@ export const getAllClinicsForUser = async ({
             LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
             LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
             LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
+            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id
         `;
-
-        // if (needsRating) {
-        query += ` LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id`;
-        // }
 
         const joins = [];
         const filters = [];
 
-        const addJoinAndFilter = (ids, joinTable, joinAlias, joinField) => {
+        const addJoinAndFilter = (ids, table, alias, column) => {
             if (ids.length > 0) {
-                joins.push(`LEFT JOIN ${joinTable} ${joinAlias} ON c.clinic_id = ${joinAlias}.clinic_id`);
-                filters.push(`${joinAlias}.${joinField} IN (${ids.map(() => '?').join(', ')})`);
+                joins.push(`LEFT JOIN ${table} ${alias} ON c.clinic_id = ${alias}.clinic_id`);
+                filters.push(`${alias}.${column} IN (${ids.map(() => '?').join(', ')})`);
                 params.push(...ids);
             }
         };
@@ -549,7 +601,7 @@ export const getAllClinicsForUser = async ({
 
         query += ` WHERE c.profile_completion_percentage >= 0`;
 
-        if (search && search.trim() !== '') {
+        if (search.trim()) {
             filters.push(`LOWER(c.clinic_name) LIKE ?`);
             params.push(`%${search.trim().toLowerCase()}%`);
         }
@@ -560,16 +612,56 @@ export const getAllClinicsForUser = async ({
 
         query += ` GROUP BY c.clinic_id`;
 
+        const havingConditions = [];
+
         if (min_rating !== null) {
-            query += ` HAVING avg_rating >= ?`;
-            params.push(min_rating);
+            const ratingCeiling = Math.min(min_rating + 1, 5.01);
+            havingConditions.push(`CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) < ?`);
+            params.push(min_rating, ratingCeiling);
         }
 
-        // Sorting logic
-        if (needsDistance) {
+        if (hasPriceFilter) {
+            if (price.min != null) {
+                havingConditions.push(`doctor_lower_price_range >= ?`);
+                params.push(price.min);
+            }
+            if (price.max != null) {
+                havingConditions.push(`doctor_higher_price_range <= ?`);
+                params.push(price.max);
+            }
+        }
+
+        if (applyDistanceFilter) {
+            if (distance.min != null) {
+                havingConditions.push(`distance >= ?`);
+                params.push(distance.min);
+            }
+            if (distance.max != null) {
+                havingConditions.push(`distance <= ?`);
+                params.push(distance.max);
+            }
+        }
+
+        if (havingConditions.length > 0) {
+            query += ` HAVING ${havingConditions.join(' AND ')}`;
+        }
+
+        if (applyDistanceSort) {
             query += ` ORDER BY distance ${sort.order.toUpperCase()}`;
         } else if (sort.by === 'rating') {
             query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
+        } else if (sort.by === 'price') {
+            if (sort.order === 'asc') {
+                query += ` ORDER BY doctor_lower_price_range ASC`;
+            } else {
+                query += ` ORDER BY doctor_lower_price_range DESC`;
+            }
+        } else if (sort.by === 'nearest') {
+            if (sort.order === 'asc') {
+                query += ` ORDER BY distance ASC`;
+            } else {
+                query += ` ORDER BY distance DESC`;
+            }
         } else {
             query += ` ORDER BY c.created_at DESC`;
         }
@@ -591,8 +683,10 @@ export const getNearbyClinicsForUser = async ({
     skin_type_ids = [],
     surgery_ids = [],
     search = '',
+    distance = {},
+    price = {},
     min_rating = null,
-    sort = { by: 'default', order: 'desc' },
+    sort = { by: 'nearest', order: 'asc' },
     userLatitude,
     userLongitude,
     limit,
@@ -601,7 +695,15 @@ export const getNearbyClinicsForUser = async ({
     try {
         const params = [];
 
-        const needsDistance = userLatitude != null && userLongitude != null;
+        const hasLatLong = userLatitude && userLongitude;
+        const needsDistanceFilter = distance.min != null || distance.max != null;
+        const needsDistanceSort = sort.by === 'nearest';
+
+        const needsDistance = hasLatLong;
+        const applyDistanceFilter = hasLatLong && needsDistanceFilter;
+        const applyDistanceSort = hasLatLong && needsDistanceSort;
+
+        const hasPriceFilter = price.min != null || price.max != null;
         const needsRating = min_rating !== null || sort.by === 'rating';
 
         const selectFields = [
@@ -610,11 +712,15 @@ export const getNearbyClinicsForUser = async ({
             'c.clinic_logo',
             'c.address',
             'c.mobile_number',
-            'MIN(d.fee_per_session) AS doctor_lower_price_range',
-            'MAX(d.fee_per_session) AS doctor_higher_price_range',
+            'MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range',
+            'MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range',
             'ROUND(AVG(ar.rating), 2) AS avg_rating',
-            needsDistance ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance` : null
-        ].filter(Boolean).join(', ');
+            needsDistance
+                ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance`
+                : null
+        ]
+            .filter(Boolean)
+            .join(', ');
 
         if (needsDistance) {
             params.push(userLongitude, userLatitude); // Order: lon, lat
@@ -634,8 +740,12 @@ export const getNearbyClinicsForUser = async ({
 
         const addJoinAndFilter = (ids, joinTable, joinAlias, joinField) => {
             if (ids.length > 0) {
-                joins.push(`LEFT JOIN ${joinTable} ${joinAlias} ON c.clinic_id = ${joinAlias}.clinic_id`);
-                filters.push(`${joinAlias}.${joinField} IN (${ids.map(() => '?').join(', ')})`);
+                joins.push(
+                    `LEFT JOIN ${joinTable} ${joinAlias} ON c.clinic_id = ${joinAlias}.clinic_id`
+                );
+                filters.push(
+                    `${joinAlias}.${joinField} IN (${ids.map(() => '?').join(', ')})`
+                );
                 params.push(...ids);
             }
         };
@@ -663,29 +773,56 @@ export const getNearbyClinicsForUser = async ({
 
         query += ` GROUP BY c.clinic_id`;
 
-        const having = [];
+        // HAVING Conditions
+        const havingConditions = [];
         if (min_rating !== null) {
-            having.push(`avg_rating >= ?`);
-            params.push(min_rating);
+            const ratingCeiling = Math.min(min_rating + 1, 5.01);
+            havingConditions.push(`CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) < ?`);
+            params.push(min_rating, ratingCeiling);
         }
 
-        if (needsDistance) {
-            having.push(`distance <= ?`);
-            params.push(50000); // 50 km
+        if (hasPriceFilter) {
+            if (price.min != null) {
+                havingConditions.push(`doctor_lower_price_range >= ?`);
+                params.push(price.min);
+            }
+            if (price.max != null) {
+                havingConditions.push(`doctor_higher_price_range <= ?`);
+                params.push(price.max);
+            }
         }
 
-        if (having.length > 0) {
-            query += ` HAVING ${having.join(' AND ')}`;
+        if (applyDistanceFilter) {
+            if (distance.min != null) {
+                havingConditions.push(`distance >= ?`);
+                params.push(distance.min);
+            }
+            if (distance.max != null) {
+                havingConditions.push(`distance <= ?`);
+                params.push(distance.max);
+            }
         }
 
-        if (needsDistance) {
+        if (havingConditions.length > 0) {
+            query += ` HAVING ${havingConditions.join(' AND ')}`;
+        }
+
+        // ORDER BY
+        if (applyDistanceSort) {
             query += ` ORDER BY distance ${sort.order.toUpperCase()}`;
         } else if (sort.by === 'rating') {
             query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
+        } else if (sort.by === 'price') {
+            if (sort.order === 'asc') {
+                query += ` ORDER BY doctor_lower_price_range ASC`;
+            } else {
+                query += ` ORDER BY doctor_lower_price_range DESC`;
+            }
         } else {
             query += ` ORDER BY c.created_at DESC`;
         }
 
+        // Pagination
         query += ` LIMIT ? OFFSET ?`;
         params.push(Number(limit), Number(offset));
 

@@ -521,10 +521,34 @@ export const getAllRoles = async () => {
 
 export const getAllSkinTypes = async () => {
     try {
-        const skinTypes = await db.query('SELECT * FROM tbl_skin_types ORDER BY created_at DESC');
+        const skinTypes = await db.query('SELECT * FROM tbl_skin_types WHERE name IS NOT NULL ORDER BY created_at DESC');
         return skinTypes;
     }
     catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch skin types.");
+    }
+};
+
+export const getUserSkinTypes = async (lang = 'sv') => {
+    try {
+        // Decide which column to use as "name"
+        const nameColumn = lang === 'sv' ? 'Swedish' : 'English';
+
+        const query = `
+            SELECT 
+                skin_type_id,
+                ${nameColumn} AS name,
+                description,
+                created_at
+            FROM tbl_skin_types
+            WHERE ${nameColumn} IS NOT NULL
+            ORDER BY created_at DESC
+        `;
+
+        const skinTypes = await db.query(query);
+        return skinTypes;
+    } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch skin types.");
     }
@@ -1562,7 +1586,7 @@ export const getDoctorSkinTypesBulk = async (doctorIds) => {
 
         const query = `SELECT dst.*, st.* 
             FROM tbl_doctor_skin_types dst 
-            LEFT JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id WHERE dst.doctor_id IN (${placeholders}) ORDER BY dst.created_at DESC`;
+            LEFT JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id WHERE name is not null AND dst.doctor_id IN (${placeholders}) ORDER BY dst.created_at DESC`;
         const results = await db.query(query, doctorIds);
 
         const grouped = {};
