@@ -13,7 +13,11 @@ export const getAllProductsSchema = Joi.object({
   filters: Joi.object({
     treatment_ids: idArrayValidation.optional(),
     concern_ids: idArrayValidation.optional(),
-    search : stringValidation.optional(),
+    search: stringValidation.optional(),
+    price: Joi.object({
+      min: numberValidation.min(0),
+      max: numberValidation.min(0)
+    }).optional(),
   }).optional(),
 
   // sort: Joi.object({

@@ -10,7 +10,7 @@ import * as apiModels from "../../models/api.js";
 import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken } from "../../utils/user_helper.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
-import { getUserSkinTypes } from "../../models/clinic.js";
+import { getUserSkinTypes, getUserTreatments } from "../../models/clinic.js";
 
 dotenv.config();
 
@@ -139,6 +139,18 @@ export const getClinicSkinTypes = async (req, res) => {
     }
     catch (error) {
         console.error("Error in getClinicSkinTypes:", error);
+        return handleError(res, 500, "en", 'INTERNAL_SERVER_ERROR');
+    }
+};
+
+export const getTreatments = async (req, res) => {
+    try {
+        const language = req?.user?.language || 'sv';
+        const treatments = await getUserTreatments("en");
+        return handleSuccess(res, 200, language, "TREATMENTS_FETCHED_SUCCESSFULLY", treatments);
+    }
+    catch (error) {
+        console.error("Error in getTreatments:", error);
         return handleError(res, 500, "en", 'INTERNAL_SERVER_ERROR');
     }
 };

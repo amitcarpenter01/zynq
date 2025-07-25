@@ -554,6 +554,33 @@ export const getUserSkinTypes = async (lang = 'sv') => {
     }
 };
 
+export const getUserTreatments = async (lang = 'sv') => {
+    try {
+        // Determine which column to use for display name
+        const nameColumn = lang === 'sv' ? 'swedish' : 'name';
+
+        const query = `
+            SELECT 
+                treatment_id,
+                ${nameColumn} AS name,
+                application,
+                type,
+                technology,
+                benefits,
+                created_at
+            FROM tbl_treatments
+            WHERE ${nameColumn} IS NOT NULL
+            ORDER BY created_at DESC
+        `;
+
+        const treatments = await db.query(query);
+        return treatments;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch treatments.");
+    }
+};
+
 export const getAllSeverityLevels = async () => {
     try {
         const severityLevels = await db.query('SELECT * FROM tbl_severity_levels ORDER BY created_at DESC');

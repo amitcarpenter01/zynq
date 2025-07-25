@@ -444,6 +444,7 @@ export const getDoctorTreatments = async (doctor_id) => {
 export const get_all_products_for_user = async ({
     treatment_ids = [],
     search = '',
+    price = {},
     limit = 20,
     offset = 0
 }) => {
@@ -467,6 +468,16 @@ export const get_all_products_for_user = async ({
         if (search && search.trim() !== '') {
             query += ` AND LOWER(p.name) LIKE ?`;
             params.push(`%${search.trim().toLowerCase()}%`);
+        }
+
+        if (typeof price?.min === 'number') {
+            query += ` AND p.price >= ?`;
+            params.push(price.min);
+        }
+
+        if (typeof price?.max === 'number') {
+            query += ` AND p.price <= ?`;
+            params.push(price.max);
         }
 
         query += ` GROUP BY p.product_id ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;

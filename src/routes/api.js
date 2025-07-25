@@ -159,10 +159,22 @@ router.delete('/cart/:cart_id', authenticateUser, validate(deleteCartSchema, "pa
 // -------------------------------------Payments------------------------------------------------//
 
 router.post('/payments/initiate', authenticateUser, validate(initiatePaymentSchema, "body"), initiatePayment);
-router.get("/webhook/klarna", validate(klarnaWebhookSchema, "query"),  klarnaWebhookHandler);
+router.post("/klarna/push", validate(klarnaWebhookSchema, "query"),  klarnaWebhookHandler);
+router.get("/klarna/confirmation", (req, res) => {
+  const { order_id } = req.query;
 
+  res.send(`
+    <html>
+      <body>
+        <h1>Thank you for your purchase!</h1>
+        <p>Your Klarna Order ID: ${order_id}</p>
+      </body>
+    </html>
+  `);
+});
 // -------------------------------------Generic------------------------------------------------//
 
 router.get('/skin-types', authenticateUser, faceScanControllers.getClinicSkinTypes);
+router.get('/treatments', authenticateUser, faceScanControllers.getTreatments);
 
 export default router;

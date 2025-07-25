@@ -23,9 +23,8 @@ export const insertPayment = async (
       currency,
       status,
       provider_reference_id,
-      order_id,
       metadata
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?)
   `;
 
   const params = [
@@ -37,7 +36,6 @@ export const insertPayment = async (
     amount,
     currency,
     provider_reference_id,
-    order_id,
     JSON.stringify(metadata),
   ];
 

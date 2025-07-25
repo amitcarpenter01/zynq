@@ -11,12 +11,11 @@ const APP_URL = process.env.APP_URL;
 const KLARNA_USERNAME = process.env.KLARNA_USERNAME;
 const KLARNA_PASSWORD = process.env.KLARNA_PASSWORD;
 const KLARNA_API_URL = process.env.KLARNA_API_URL;
-
 // Klarna redirect URLs with token placeholders
-const KLARNA_CONFIRMATION_URL = `${APP_URL}/checkout/success?order_id={checkout.order.id}`;
-const KLARNA_PUSH_URL = `${APP_URL}/webhook/klarna?order_id={checkout.order.id}`;
-const KLARNA_TERMS_URL = `${APP_URL}/terms`;
-const KLARNA_CHECKOUT_URL = `${APP_URL}/checkout`;
+const KLARNA_CONFIRMATION_URL = `${APP_URL}/api/klarna/confirmation?order_id={order.id}`;
+const KLARNA_PUSH_URL = `${APP_URL}/api/klarna/push?order_id={order.id}`;
+const KLARNA_TERMS_URL = `${APP_URL}/api/klarna/terms`;
+const KLARNA_CHECKOUT_URL = `${APP_URL}/api/klarna/checkout`;
 
 const formatKlarnaLineItem = (
     item,
@@ -99,11 +98,7 @@ export const processKlarnaMetadata = async (metadata, doctor_id, clinic_id) => {
     };
 };
 
-export const createKlarnaSession = async ({
-    payment_id,
-    currency = "SEK",
-    metadata,
-}) => {
+export const createKlarnaSession = async ({ payment_id, currency = "SEK", metadata, }) => {
     try {
         const klarnaPayload = {
             purchase_country: "SE",
@@ -120,25 +115,23 @@ export const createKlarnaSession = async ({
             },
             merchant_reference1: payment_id,
         };
+        const authToken = Buffer.from(
+            `${KLARNA_USERNAME}:${KLARNA_PASSWORD}`
+        ).toString("base64");
 
         const response = await axios.post(
-            `${KLARNA_API_URL}/checkout/v3/orders`,
+            `${KLARNA_API_URL}/payments/v1/sessions`,
             klarnaPayload,
             {
-                auth: {
-                    username: KLARNA_USERNAME,
-                    password: KLARNA_PASSWORD,
-                },
                 headers: {
                     "Content-Type": "application/json",
+                    Authorization: `Basic ${authToken}`,
                 },
             }
         );
-
         return {
-            id: response.data.order_id, // Klarna's reference
-            payment_id: payment_id, // your internal reference
-            html_snippet: response.data.html_snippet, // for frontend redirect
+            session_id: response.data.session_id,
+            client_token: response.data.client_token,
         };
     } catch (err) {
         console.error(

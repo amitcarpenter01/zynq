@@ -21,19 +21,21 @@ const APP_URL = process.env.APP_URL;
 const image_logo = process.env.LOGO_URL;
 
 
- export const getAllProducts = async (req, res) => {
+export const getAllProducts = async (req, res) => {
     try {
         const language = req?.user?.language || 'en';
+        const userId = req?.user?.user_id;
 
         const {
             filters = {},
             pagination = { page: 1, limit: 20 }
         } = req.body;
- 
+
         let {
             treatment_ids = [],
             concern_ids = [],
-            search = ''
+            search = '',
+            price = {}
         } = filters;
 
         const { page, limit } = pagination;
@@ -41,26 +43,34 @@ const image_logo = process.env.LOGO_URL;
 
         let finalTreatmentIds = [...treatment_ids];
 
-        // Get treatments based on concern_ids
+        // Expand treatment_ids from concern_ids
         if (concern_ids.length > 0) {
             const fromConcerns = await apiModels.getTreatmentIdsByConcernIds(concern_ids);
             if (Array.isArray(fromConcerns) && fromConcerns.length > 0) {
-                finalTreatmentIds = finalTreatmentIds.concat(fromConcerns);
+                finalTreatmentIds = [...new Set([...finalTreatmentIds, ...fromConcerns])];
             }
         }
 
-        // Fallback to personalized treatment IDs
-        if (finalTreatmentIds.length === 0) {
-            const fallbackTreatmentIds = await getTreatmentIDsByUserID(req.user.user_id);
-            finalTreatmentIds = fallbackTreatmentIds || [];
+        // Fallback if no filters provided
+        const areAllFiltersEmpty =
+            finalTreatmentIds.length === 0 &&
+            search.trim().length === 0 &&
+            Object.keys(price).length === 0;
+
+        if (areAllFiltersEmpty) {
+            const fallbackTreatmentIds = await getTreatmentIDsByUserID(userId);
+            // finalTreatmentIds = fallbackTreatmentIds || [];
         }
 
-        const products = await apiModels.get_all_products_for_user({
+        const queryFilters = {
             treatment_ids: finalTreatmentIds,
             search,
+            price,
             limit,
             offset
-        });
+        };
+
+        const products = await apiModels.get_all_products_for_user(queryFilters);
 
         if (!products || products.length === 0) {
             return handleSuccess(res, 200, language, "PRODUCTS_FETCHED_SUCCESSFULLY", []);
