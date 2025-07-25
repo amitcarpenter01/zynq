@@ -1,6 +1,7 @@
 import { insertPayment } from "../../models/payment.js";
 import {
     createKlarnaSession,
+    getKlarnaWebhookResponse,
     processKlarnaMetadata,
 } from "../../services/payments/klarna.js";
 import {
@@ -25,11 +26,7 @@ export const initiatePayment = asyncHandler(async (req, res) => {
     let session;
     if (payment_gateway === "KLARNA") {
         metadata = await processKlarnaMetadata(metadata, doctor_id, clinic_id);
-        session = await createKlarnaSession({
-            payment_id: payment_id,
-            currency: currency,
-            metadata: metadata,
-        });
+        session = await createKlarnaSession({ payment_id: payment_id, currency: currency, metadata: metadata, });
     } else if (payment_gateway === "SWISH") {
     }
 
@@ -41,8 +38,8 @@ export const initiatePayment = asyncHandler(async (req, res) => {
         payment_gateway, // provider
         metadata.order_amount,
         currency,
-        session.id, // provider_reference_id
-        session.order_id,
+        session.session_id, // provider_reference_id
+        session.client_token,
         metadata
     );
 
