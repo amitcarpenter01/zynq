@@ -40,7 +40,7 @@ const dateValidation = joi.string().isoDate().required();
 
 const pastDateValidation = joi.date().iso().min(new Date()).required();
 
-const numberValidation = joi.number().integer().required();
+const numberValidation = joi.number().required();
 
 const decimalValidation = joi.number().required();
 
