@@ -33,7 +33,7 @@ import { uploadMulterChatFiles } from '../services/multer.chat.js';
 import { getAllProductsSchema, getSingleProductSchema } from '../validations/product.validation.js';
 import { getWishlists, toggleWishlistProduct } from '../controllers/api/wishlistController.js';
 import { toggleWishlistProductSchema } from '../validations/wishlist.validation.js';
-import { addProductToCartSchema, deleteCartSchema, deleteProductFromCartSchema, getSingleCartSchema,  } from '../validations/cart.validation.js';
+import { addProductToCartSchema, deleteCartSchema, deleteProductFromCartSchema, getSingleCartSchema, } from '../validations/cart.validation.js';
 import { addProductToCart, deleteCart, deleteProductFromCart, getCarts, getSingleCart } from '../controllers/api/cartController.js';
 import { initiatePaymentSchema, klarnaWebhookSchema } from '../validations/payment.validation.js';
 import { initiatePayment, klarnaWebhookHandler } from '../controllers/api/paymentController.js';
@@ -159,8 +159,9 @@ router.delete('/cart/:cart_id', authenticateUser, validate(deleteCartSchema, "pa
 // -------------------------------------Payments------------------------------------------------//
 
 router.post('/payments/initiate', authenticateUser, validate(initiatePaymentSchema, "body"), initiatePayment);
-router.post("/klarna/push", validate(klarnaWebhookSchema, "query"),  klarnaWebhookHandler);
-router.get("/klarna/confirmation", (req, res) => {
+// router.post('/payments/klarna/confirm-payment', authenticateUser, validate(confirmKlarnaPaymentSchema, "body"), initiatePayment);
+router.post("/payments/klarna/push", validate(klarnaWebhookSchema, "query"), klarnaWebhookHandler);
+router.get("/payments/klarna/confirmation", (req, res) => {
   const { order_id } = req.query;
 
   res.send(`

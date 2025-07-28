@@ -19,15 +19,22 @@ export const initiatePayment = asyncHandler(async (req, res) => {
         currency,
         metadata,
     } = req.body;
-
     const { user_id, language = "en" } = req.user;
 
     const payment_id = uuidv4();
     let session;
-    if (payment_gateway === "KLARNA") {
-        metadata = await processKlarnaMetadata(metadata, doctor_id, clinic_id);
-        session = await createKlarnaSession({ payment_id: payment_id, currency: currency, metadata: metadata, });
-    } else if (payment_gateway === "SWISH") {
+
+    switch (payment_gateway) {
+        case "KLARNA":
+            metadata = await processKlarnaMetadata(metadata, doctor_id, clinic_id);
+            session = await createKlarnaSession({ payment_id: payment_id, currency: currency, metadata: metadata, });
+            break;
+
+        case "SWISH":
+            break;
+
+        default:
+            break;
     }
 
     await insertPayment(

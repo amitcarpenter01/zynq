@@ -1,74 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <title>Klarna Checkout Test</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f7f7f7;
-    }
-    #klarna-checkout-container {
-      max-width: 700px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Klarna Checkout</title>
 </head>
+
 <body>
-  <h2>Klarna Checkout Demo</h2>
-  <div id="klarna-checkout-container">
-    <p>Loading Klarna Checkout...</p>
-  </div>
+
+  <!-- Container for Klarna widget -->
+  <div id="klarna-payments-container"></div>
+
+  <!-- Optional: Buy button -->
+  <button id="buy-button">Buy Now</button>
 
   <script>
+    // Klarna SDK async callback
+    window.klarnaAsyncCallback = function () {
+      // 1. Initialize Klarna SDK
+      Klarna.Payments.init({
+        client_token: ''
+      });
 
-    async function loadKlarnaSnippet() {
-      const container = document.getElementById("klarna-checkout-container");
-
-      try {
-        const response = await fetch("http://localhost:4000/api/payments/initiate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNGMzNjU3ZmItNWNiNS0xMWYwLTllMDctMGU4ZTVkOTA2ZWVmIiwibW9iaWxlX251bWJlciI6Iis5MTg4Mzk3ODY4NjMiLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc1MjY2MDIwOCwiZXhwIjoxNzYwNDM2MjA4fQ.ITKqPZqw_MCcsV_5E6BSWIj3qpkwCZafB9-aQ3aYUAw"
-          },
-          body: JSON.stringify({
-            doctor_id: "c051edb5-5aef-11f0-9e07-0e8e5d906eef",
-            payment_gateway: "KLARNA",
-            currency: "SEK",
-            metadata: {
-              type: "CART",
-              type_data: [
-                {
-                  type_id: "97538883-6625-11f0-b14a-0e8e5d906eef",
-                  quantity: 1
-                }
-              ]
-            }
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error("Klarna API call failed");
+      // 2. Load Klarna widget
+      Klarna.Payments.load(
+        {
+          container: '#klarna-payments-container'
+        },
+        {},
+        function (res) {
+          console.log("Load result:", res);
         }
+      );
+    };
+  </script>
 
-        const data = await response.json();
-        console.log(data);
-        container.innerHTML = data.html_snippet;
+  <!-- Klarna SDK -->
+  <script src="https://x.klarnacdn.net/kp/lib/v1/api.js" async></script>
 
-      } catch (err) {
-        console.log(err);
-        container.innerHTML = `<p style="color:red;">Failed to load Klarna checkout: ${err}</p>`;
-        console.error(err);
-      }
-    }
-
-    loadKlarnaSnippet();
+  <script>
+    // 3. Handle Buy button -> call authorize
+    document.getElementById('buy-button').addEventListener('click', function () {
+      Klarna.Payments.authorize(
+        {},
+        {
+          billing_address: {
+            given_name: "Alice",
+            family_name: "Test",
+            email: "customer@email.se",
+            street_address: "Södra Blasieholmshamnen 2",
+            postal_code: "11148",
+            city: "Stockholm",
+            phone: "0701234567",
+            country: "SE"
+          }
+        },
+        function (res) {
+          console.log("Authorize result:", res);
+          if (res.approved) {
+            alert("Payment approved! Authorization token: " + res.authorization_token);
+          } else {
+            alert("Payment not approved.");
+          }
+        }
+      );
+    });
   </script>
 </body>
+
 </html>
