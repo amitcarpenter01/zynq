@@ -12,10 +12,10 @@ const KLARNA_USERNAME = process.env.KLARNA_USERNAME;
 const KLARNA_PASSWORD = process.env.KLARNA_PASSWORD;
 const KLARNA_API_URL = process.env.KLARNA_API_URL;
 // Klarna redirect URLs with token placeholders
-const KLARNA_CONFIRMATION_URL = `${APP_URL}/api/klarna/confirmation?order_id={order.id}`;
-const KLARNA_PUSH_URL = `${APP_URL}/api/klarna/push?order_id={order.id}`;
-const KLARNA_TERMS_URL = `${APP_URL}/api/klarna/terms`;
-const KLARNA_CHECKOUT_URL = `${APP_URL}/api/klarna/checkout`;
+const KLARNA_CONFIRMATION_URL = `${APP_URL}/api/payments/klarna/confirmation?order_id={order.id}`;
+const KLARNA_PUSH_URL = `${APP_URL}/api/payments/klarna/push?order_id={order.id}`;
+const KLARNA_TERMS_URL = `${APP_URL}/api/payments/klarna/terms`;
+const KLARNA_CHECKOUT_URL = `${APP_URL}/api/payments/klarna/checkout`;
 
 const formatKlarnaLineItem = (
     item,
@@ -114,6 +114,7 @@ export const createKlarnaSession = async ({ payment_id, currency = "SEK", metada
                 checkout: KLARNA_CHECKOUT_URL,
             },
             merchant_reference1: payment_id,
+            intent: "buy"
         };
         const authToken = Buffer.from(
             `${KLARNA_USERNAME}:${KLARNA_PASSWORD}`
@@ -131,6 +132,7 @@ export const createKlarnaSession = async ({ payment_id, currency = "SEK", metada
         );
         return {
             session_id: response.data.session_id,
+            payment_method_categories: response.data.payment_method_categories,
             client_token: response.data.client_token,
         };
     } catch (err) {
@@ -142,8 +144,8 @@ export const createKlarnaSession = async ({ payment_id, currency = "SEK", metada
     }
 };
 
-export const getKlarnaWebhookResponse = async (order_id) => {
-    const response = await axios.get(`${KLARNA_API_URL}/ordermanagement/v1/orders/${order_id}`, {
+export const getKlarnaWebhookResponse = async (authorization) => {
+    const response = await axios.post(`${KLARNA_API_URL}/payments/v1/authorizations/${authorization}/order`, {
         auth: {
             username: KLARNA_USERNAME,
             password: KLARNA_PASSWORD

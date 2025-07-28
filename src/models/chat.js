@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import { formatImagePath } from "../utils/user_helper.js";
 
 
 export const getUserChats = async (userId) => {
@@ -27,10 +28,49 @@ export const saveMessage = async (chatId, senderId, message, messageType) => {
 
 
 export const fetchMessages = async (chatId) => {
-    return db.query(`
-        SELECT m.* FROM tbl_message m
+    const query = `
+        SELECT 
+            m.id AS message_id,
+            m.chat_id,
+            m.sender_id,
+            m.message,
+            m.message_type,
+            m.createdAt,
+            m.updatedAt,
+            mf.files
+        FROM tbl_message m
         JOIN tbl_chats c ON c.id = m.chat_id 
-        WHERE m.chat_id = ? ORDER BY m.createdAt ASC `, [chatId]);
+        LEFT JOIN tbl_message_files mf ON m.id = mf.message_id
+        WHERE m.chat_id = ?
+        ORDER BY m.createdAt ASC
+    `;
+
+    const rows = await db.query(query, [chatId]);
+    const messagesMap = new Map();
+
+    for (const row of rows) {
+        const msgId = row.message_id;
+
+        if (!messagesMap.has(msgId)) {
+            messagesMap.set(msgId, {
+                message_id: row.message_id,
+                chat_id: row.chat_id,
+                sender_id: row.sender_id,
+                message: row.message,
+                message_type: row.message_type,
+                createdAt: row.createdAt,
+                updatedAt: row.updatedAt,
+                files: []
+            });
+        }
+
+        if (row.files) {
+            const formattedFile = formatImagePath(row.files, 'uploads/chat_files');
+            messagesMap.get(msgId).files.push(formattedFile);
+        }
+    }
+
+    return Array.from(messagesMap.values());
 };
 
 export const fetchChatById = async (id) => {
@@ -39,7 +79,24 @@ export const fetchChatById = async (id) => {
 
 
 export const fetchMessagesById = async (id) => {
-    return db.query(`SELECT * FROM tbl_message WHERE id = ? `, [id]);
+    const rows = await db.query(`
+        SELECT 
+            m.*, 
+            mf.files 
+        FROM tbl_message m
+        LEFT JOIN tbl_message_files mf ON m.id = mf.message_id
+        WHERE m.id = ?
+    `, [id]);
+
+    if (!rows || rows.length === 0) return null;
+
+    const baseMessage = { ...rows[0] };
+
+    baseMessage.files = rows
+        .filter(row => row.files !== null)
+        .map(row => formatImagePath(row.files, 'uploads/chat_files'));
+
+    return [baseMessage];
 };
 
 
@@ -164,7 +221,21 @@ export const getAdminChatsList = async (userId) => {
     );
 };
 
+export const uploadMessageFiles = async (chatId, messageId, files) => {
+    try {
+        if (!chatId || !messageId || !Array.isArray(files) || files.length === 0) return;
 
+        const values = files.map(file => [chatId, messageId, file]);
+
+        await db.query(
+            `INSERT INTO tbl_message_files (chat_id, message_id, files) VALUES ?`,
+            [values]
+        );
+    } catch (error) {
+        console.error("❌ uploadMessageFiles error:", error.message);
+        // throw new Error("Failed to save message files.");
+    }
+};
 
 
 

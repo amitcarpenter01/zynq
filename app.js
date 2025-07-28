@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import express from "express";
 import db from "./src/config/db.js";
 import configureApp from "./src/config/routes.js"
-import { send_clinic_email_cron } from "./src/utils/cronJob.js";
+import { send_clinic_email_cron, appointmentReminderCron } from "./src/utils/cronJob.js";
 import initializeSocket from './src/utils/socket.js';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
@@ -29,7 +29,8 @@ app.set('views', path.join(__dirname, 'src/views'));
  
 (async () => {
   configureApp(app);
-  // await send_clinic_email_cron()
+  // send_clinic_email_cron()
+  // appointmentReminderCron()
 })()
  
 app.get("/", (req, res) => {

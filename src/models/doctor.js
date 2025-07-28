@@ -841,11 +841,12 @@ export const getSoloDoctorByZynqUserId = async (zynq_user_id) => {
 export const getDoctorByDoctorID = async (doctor_id, clinic_id) => {
     try {
         const query = `
-            SELECT dcm.*, d.*, zu.email, cl.latitude, cl.longitude
+            SELECT dcm.*, d.*, zu.email, cl.latitude, cl.longitude, c.clinic_name
             FROM tbl_doctor_clinic_map dcm
             JOIN tbl_doctors d ON dcm.doctor_id = d.doctor_id
             JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
             JOIN tbl_clinic_locations cl ON cl.clinic_id = dcm.clinic_id
+            JOIN tbl_clinics c ON c.clinic_id = dcm.clinic_id
             WHERE d.doctor_id = ? AND dcm.clinic_id = ? ORDER BY dcm.created_at DESC`;
 
         const result = await db.query(query, [doctor_id, clinic_id]);
