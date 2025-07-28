@@ -7,6 +7,7 @@ import db from "../config/db.js";
 import { fileURLToPath } from 'url';
 import { sendEmail } from "../services/send_email.js";
 import { generatePassword } from "./user_helper.js";
+import { sendAppointmentNotifications } from "../services/notifications.service.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -83,8 +84,8 @@ export const send_clinic_email_cron = async () => {
                         continue;
                     }
 
-                console.log('after continuew');
-                
+                    console.log('after continuew');
+
                     const daysSinceLastEmail = moment().diff(lastSentDate, "days");
 
                     if (daysSinceLastEmail === 0) {
@@ -107,4 +108,9 @@ export const send_clinic_email_cron = async () => {
     } catch (err) {
         console.error("Error setting up clinic email cron:", err.message);
     }
+};
+
+// Schedule: Every 10 minutes
+export const appointmentReminderCron = () => {
+    cron.schedule('*/10 * * * *', sendAppointmentNotifications);
 };
