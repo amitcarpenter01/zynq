@@ -198,6 +198,7 @@
   "APPOINTMENTS_FETCHED": "Tider hämtade",
   "APPOINTMENT_RATED_SUCCESSFULLY": "Tid utvärderad framgångsrikt",
   "APPOINTMENT_STATUS_UPDATED": "Tidsstatus uppdaterad",
+  "APPOINTMENT_RESCHEDULED_SUCCESSFULLY": "Tid reschedulerad framgångsrikt",
   "AVAILABILITY_CREATED_SUCCESSFULLY": "Tillgänglighet skapad",
   "CALL_LOG_CREATED_SUCCESSFULLY": "Samtalslogg skapad",
   "CARTS_FETCHED_SUCCESSFULLY": "Kundvagnar hämtades",

@@ -205,6 +205,7 @@
     "APPOINTMENTS_FETCHED": "Appointments fetched",
     "APPOINTMENT_RATED_SUCCESSFULLY": "Appointment rated successfully",
     "APPOINTMENT_STATUS_UPDATED": "Appointment status updated",
+    "APPOINTMENT_RESCHEDULED_SUCCESSFULLY": "Appointment rescheduled successfully",
     "AVAILABILITY_CREATED_SUCCESSFULLY": "Availability created successfully",
     "CALL_LOG_CREATED_SUCCESSFULLY": "Call log created successfully",
     "CARTS_FETCHED_SUCCESSFULLY": "Carts fetched successfully",

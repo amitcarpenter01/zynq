@@ -140,6 +140,8 @@ export const updateAppointmentStatus = async (req, res) => {
                 .valid('Scheduled', 'Completed', 'Rescheduled', 'Ongoing')
         });
 
+        const language = req?.user?.language || 'en';
+
 
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
@@ -149,10 +151,10 @@ export const updateAppointmentStatus = async (req, res) => {
         const result = await appointmentModel.updateAppointmentStatus(appointment_id, status);
 
         if (result.affectedRows === 0) {
-            return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+            return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
         }
 
-        return handleSuccess(res, 200, "en", "APPOINTMENT_STATUS_UPDATED");
+        return handleSuccess(res, 200, language, "APPOINTMENT_STATUS_UPDATED");
     } catch (error) {
         console.error("Error updating appointment status:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
@@ -168,6 +170,8 @@ export const getAppointmentsById = async (req, res) => {
             appointment_id: Joi.string().required(),
         });
 
+        const language = req?.user?.language || 'en';
+
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
@@ -175,7 +179,7 @@ export const getAppointmentsById = async (req, res) => {
         const appointments = await appointmentModel.getAppointmentsById(userId, appointment_id);
 
         if (isEmpty(appointments))
-            return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+            return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
 
         const now = dayjs.utc();
 
@@ -212,7 +216,7 @@ export const getAppointmentsById = async (req, res) => {
             };
         }));
 
-        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result[0]);
+        return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", result[0]);
     } catch (error) {
         console.error("Error fetching appointment by ID:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
@@ -222,18 +226,20 @@ export const getAppointmentsById = async (req, res) => {
 export const rateAppointment = asyncHandler(async (req, res) => {
     const { appointment_id, rating, review } = req.body;
 
+    const language = req?.user?.language || 'en';
+
     const appointmentData = await appointmentModel.getAppointmentDataByAppointmentID(appointment_id);
 
     if (isEmpty(appointmentData)) {
-        return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+        return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
     }
     const result = await appointmentModel.insertAppointmentRating(
         { appointment_id, clinic_id: appointmentData[0].clinic_id, doctor_id: appointmentData[0].doctor_id, user_id: req.user.user_id, rating, review }
     );
 
     if (result.affectedRows === 0) {
-        return handleError(res, 404, "en", "ERROR_RATING_APPOINTMENT");
+        return handleError(res, 404, language, "ERROR_RATING_APPOINTMENT");
     }
 
-    return handleSuccess(res, 200, "en", "APPOINTMENT_RATED_SUCCESSFULLY");
+    return handleSuccess(res, 200, language, "APPOINTMENT_RATED_SUCCESSFULLY");
 });
