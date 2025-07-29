@@ -8,12 +8,13 @@ import { isEmpty } from '../../utils/user_helper.js';
 const APP_URL = process.env.APP_URL;
 import { v4 as uuidv4 } from 'uuid';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
+import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
 
 export const bookAppointment = async (req, res) => {
     try {
         const schema = Joi.object({
             doctor_id: Joi.string().required(),
-            report_id: Joi.string().required(),
+            report_id: Joi.string().optional(),
             clinic_id: Joi.string().required(),
             start_time: Joi.string().isoDate().required(),
             end_time: Joi.string().isoDate().required(),
@@ -25,6 +26,9 @@ export const bookAppointment = async (req, res) => {
 
         let { doctor_id, start_time, end_time, type, clinic_id, report_id } = value;
 
+        if (isEmpty(report_id)) {
+            report_id = await getLatestFaceScanReportIDByUserID(req.user.user_id);
+        }
 
         // Check before inserting (optional, for nicer UX)
         const existing = await appointmentModel.checkIfSlotAlreadyBooked(doctor_id, start_time);

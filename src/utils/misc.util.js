@@ -37,6 +37,31 @@ export const getTreatmentIDsByUserID = async (UserID) => {
     return treatmentIDs;
 };
 
+export const getLatestFaceScanReportIDByUserID = async (userID) => {
+    try {
+
+        const result = await db.query(`
+            SELECT face_scan_result_id
+            FROM tbl_face_scan_results 
+            WHERE user_id = ? 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        `, [userID]);
+
+        console.log("result", result);
+
+        if (!result?.length) {
+            return null;
+        }
+
+        return result[0].face_scan_result_id || null;
+    } catch (error) {
+        console.error("getLatestFaceScanReportIDByUserID error:", error);
+        return null;
+    }
+};
+
+
 export const extractUserData = (userData) => {
     if (!userData || !userData.role) {
         throw new Error("Invalid user data");
