@@ -225,8 +225,9 @@ export const sendNotification = async ({
         const {
             user_id: sender_id,
             role: sender_type,
-            full_name = 'Someone',
         } = senderMeta;
+
+        const full_name = isEmpty(senderMeta?.full_name) ? 'Someone' : senderMeta?.full_name;
 
         const { title, body } = getNotificationContent(notification_type, full_name);
         const isPushEnabled = await isPushNotificationEnabled(receiver_id, receiver_type);
