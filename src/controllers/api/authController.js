@@ -11,7 +11,7 @@ import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken, generateVerificationLink } from "../../utils/user_helper.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import twilio from 'twilio';
-
+import { fileTypeFromFile } from 'file-type';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -767,10 +767,13 @@ export const uploadChatFiles = asyncHandler(async (req, res) => {
     if (!req.files || req.files.length === 0)
         return handleError(res, 400, 'en', "NO_FILES_UPLOADED");
 
-    const files = req.files.map(file => ({
-        path: file.filename,
-        type: file.mimetype
+    const fileInfo = await Promise.all(req.files.map(async (file) => {
+        const detectedType = await fileTypeFromFile(file.path);
+        return {
+            path: file.filename,
+            type: detectedType?.mime || file.mimetype || 'application/octet-stream'
+        };
     }));
 
-    return handleSuccess(res, 200, 'en', "FILE_UPLOADED", files);
+    return handleSuccess(res, 200, 'en', "FILE_UPLOADED", fileInfo);
 });
