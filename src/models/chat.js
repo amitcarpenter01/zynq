@@ -65,7 +65,7 @@ export const fetchMessages = async (chatId) => {
         }
 
         if (row.files) {
-            const formattedFile = formatImagePath(row.files, 'uploads/chat_files');
+            const formattedFile = formatImagePath(row.files, 'chat_files');
             messagesMap.get(msgId).files.push(formattedFile);
         }
     }
@@ -94,7 +94,7 @@ export const fetchMessagesById = async (id) => {
 
     baseMessage.files = rows
         .filter(row => row.files !== null)
-        .map(row => formatImagePath(row.files, 'uploads/chat_files'));
+        .map(row => formatImagePath(row.files, 'chat_files'));
 
     return [baseMessage];
 };
