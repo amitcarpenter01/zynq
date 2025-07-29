@@ -208,10 +208,10 @@ export const login_with_mobile = async (req, res) => {
         return handleSuccess(res, 200, language || 'en', "VERIFICATION_OTP", { otp, sid: verification.sid });
 
     } catch (error) {
-         if (error.code === 60203) {
+        if (error.code === 60203) {
             return handleError(res, 400, language, "MAX_OTP_ATTEMPTS_REACHED");
         }
-          if (error.code === 60410) {
+        if (error.code === 60410) {
             return handleError(res, 400, language, "PHONE_NUMBER_BLOCKED_BY_TWILIO");
         }
 
@@ -502,8 +502,8 @@ export const enroll_user = async (req, res) => {
         }
 
         const data = {
-            email:email,
-            mobile_number:mobile_number
+            email: email,
+            mobile_number: mobile_number
         }
 
         await apiModels.enroll_user(data)
@@ -516,9 +516,9 @@ export const enroll_user = async (req, res) => {
             udid
         }
         const image_logo = 'https://51.21.123.99:4000/zynq_logo.png'
-      
+
         await apiModels.enroll_user_data(user_data);
-        
+
         const emailTemplatePath = path.resolve(__dirname, `../../views/user_enroll/${lang}.ejs`);
         if (application_type == "android") {
             // const emailTemplatePath = await path.resolve(__dirname, '../../views/user_enroll/en.ejs');
@@ -767,7 +767,10 @@ export const uploadChatFiles = asyncHandler(async (req, res) => {
     if (!req.files || req.files.length === 0)
         return handleError(res, 400, 'en', "NO_FILES_UPLOADED");
 
-    const fileNames = req.files.map(file => file.filename);
+    const files = req.files.map(file => ({
+        path: file.filename,
+        type: file.mimetype
+    }));
 
-    return handleSuccess(res, 200, 'en', "FILE_UPLOADED", fileNames);
+    return handleSuccess(res, 200, 'en', "FILE_UPLOADED", files);
 });

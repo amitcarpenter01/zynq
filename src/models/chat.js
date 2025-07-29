@@ -37,7 +37,8 @@ export const fetchMessages = async (chatId) => {
             m.message_type,
             m.createdAt,
             m.updatedAt,
-            mf.files
+            mf.files,
+            mf.type
         FROM tbl_message m
         JOIN tbl_chats c ON c.id = m.chat_id 
         LEFT JOIN tbl_message_files mf ON m.id = mf.message_id
@@ -65,8 +66,11 @@ export const fetchMessages = async (chatId) => {
         }
 
         if (row.files) {
-            const formattedFile = formatImagePath(row.files, 'chat_files');
-            messagesMap.get(msgId).files.push(formattedFile);
+            const formattedPath = formatImagePath(row.files, 'chat_files');
+            messagesMap.get(msgId).files.push({
+                file: formattedPath,
+                type: row.type
+            });
         }
     }
 
@@ -82,7 +86,8 @@ export const fetchMessagesById = async (id) => {
     const rows = await db.query(`
         SELECT 
             m.*, 
-            mf.files 
+            mf.files,
+            mf.type
         FROM tbl_message m
         LEFT JOIN tbl_message_files mf ON m.id = mf.message_id
         WHERE m.id = ?
@@ -94,7 +99,10 @@ export const fetchMessagesById = async (id) => {
 
     baseMessage.files = rows
         .filter(row => row.files !== null)
-        .map(row => formatImagePath(row.files, 'chat_files'));
+        .map(row => ({
+            file: formatImagePath(row.files, 'chat_files'),
+            type: row.type
+        }));
 
     return [baseMessage];
 };
@@ -225,10 +233,9 @@ export const uploadMessageFiles = async (chatId, messageId, files) => {
     try {
         if (!chatId || !messageId || !Array.isArray(files) || files.length === 0) return;
 
-        const values = files.map(file => [chatId, messageId, file]);
-
+        const values = files.map(file => [chatId, messageId, file.path, file.type]);
         await db.query(
-            `INSERT INTO tbl_message_files (chat_id, message_id, files) VALUES ?`,
+            `INSERT INTO tbl_message_files (chat_id, message_id, files, type) VALUES ?`,
             [values]
         );
     } catch (error) {
