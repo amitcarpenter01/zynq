@@ -276,10 +276,16 @@ export const login_with_otp = async (req, res) => {
 export const getProfile = async (req, res) => {
     try {
         const user = req.user;
+        let scan_hostory = await apiModels.get_face_scan_history(req.user?.user_id);
         const language = req.user?.language;
         if (user.profile_image && !user.profile_image.startsWith("http")) {
             user.profile_image = `${APP_URL}${user.profile_image}`;
         }
+        let is_onboarding_completed = 0
+        if (scan_hostory.length > 0) {
+            user.is_onboarding_completed = 1
+        }
+
         return handleSuccess(res, 200, language, "USER_PROFILE", user);
     } catch (error) {
         return handleError(res, 500, 'en', error.message)
