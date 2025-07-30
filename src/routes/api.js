@@ -177,5 +177,6 @@ router.get("/payments/klarna/confirmation", (req, res) => {
 
 router.get('/skin-types', authenticateUser, faceScanControllers.getClinicSkinTypes);
 router.get('/treatments', authenticateUser, faceScanControllers.getTreatments);
+router.post("/get-all-search-results", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.search_home_entities);
 
 export default router;

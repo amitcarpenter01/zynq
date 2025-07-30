@@ -410,3 +410,71 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
 
     return handleSuccess(res, 200, 'en', "DOCTOR_FETCHED_SUCCESSFULLY", processedDoctor);
 });
+
+
+export const search_home_entities = asyncHandler(async (req, res) => {
+    const { language = 'en' } = req.user || {};
+    let { filters = {},page = 1 } = req.body || {};
+    const offset = (page - 1) * 30;
+    const limit = 30;
+
+    const search = filters.search || " "
+
+    try {
+        const [doctors, clinics, products, treatments] = await Promise.all([
+            userModels.getDoctorsByFirstNameSearchOnly({ search, offset }),
+            userModels.getClinicsByNameSearchOnly({ search, offset }),
+            userModels.getProductsByNameSearchOnly({ search, offset }),
+            userModels.getTreatmentsBySearchOnly({ search, language, offset, limit })
+        ]);
+
+        const enrichedDoctors = doctors.map((doctor) => ({
+            ...doctor,
+            profile_image: formatImagePath(doctor.profile_image, 'doctor/profile_images')
+        }));
+
+        const enrichedClinics = clinics.map((clinic) => ({
+            ...clinic,
+            clinic_logo: formatImagePath(clinic.clinic_logo, 'clinic/logo')
+        }));
+
+        let productWithImages = [];
+        if (products && products.length > 0) {
+            const productIds = products.map(p => p.product_id);
+            const imageRows = await userModels.get_product_images_by_product_ids(productIds);
+
+            // Group images by product_id
+            const imagesMap = {};
+            for (const row of imageRows) {
+                if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
+                imagesMap[row.product_id].push(
+                    row.image.startsWith('http')
+                        ? row.image
+                        : `${APP_URL}clinic/product_image/${row.image}`
+                );
+            }
+
+            // Append images to each product
+            productWithImages = products.map(product => ({
+                ...product,
+                product_images: imagesMap[product.product_id] || []
+            }));
+        }
+
+        const enrichedProducts = products.map((product) => ({
+            ...product,
+            image: formatImagePath(product.image, 'clinic/product_image')
+        }));
+
+        return handleSuccess(res, 200, language, 'SEARCH_RESULTS_FETCHED', {
+            doctors: enrichedDoctors,
+            clinics: enrichedClinics,
+            products: productWithImages,
+            treatments
+        });
+
+    } catch (error) {
+        console.error("Search Home Error:", error);
+        return handleError(res, 500, language, "INTERNAL_SERVER_ERROR");
+    }
+});
