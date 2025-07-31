@@ -117,7 +117,7 @@ export const getMyAppointmentsUser = async (req, res) => {
             //const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
             const videoCallOn =
                 app.status !== 'Completed' &&
-            now.isAfter(startUTC) &&
+                now.isAfter(startUTC) &&
                 now.isBefore(endUTC);
 
             return {
@@ -182,9 +182,6 @@ export const getAppointmentsById = async (req, res) => {
         const { appointment_id } = value;
         const appointments = await appointmentModel.getAppointmentsById(userId, appointment_id);
 
-        if (isEmpty(appointments))
-            return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
-
         const now = dayjs.utc();
 
         const result = await Promise.all(appointments.map(async (app) => {
@@ -207,8 +204,8 @@ export const getAppointmentsById = async (req, res) => {
             const endUTC = localFormattedEnd ? dayjs.utc(localFormattedEnd) : null;
             //const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
             const videoCallOn =
-                app.status !== 'Completed' && startUTC && endUTC
-            now.isAfter(startUTC) &&
+                app.status !== 'Completed' &&
+                now.isAfter(startUTC) &&
                 now.isBefore(endUTC);
             const treatments = await appointmentModel.getAppointmentTreatments(appointment_id);
 

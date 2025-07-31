@@ -18,7 +18,7 @@ export const getMyAppointmentsDoctor = async (req, res) => {
 
         const now = dayjs.utc();
 
-        const appointments = await appointmentModel.getAppointmentsByDoctorId(doctorId,'booked');
+        const appointments = await appointmentModel.getAppointmentsByDoctorId(doctorId, 'booked');
 
         const result = await Promise.all(appointments.map(async (app) => {
 
@@ -36,7 +36,7 @@ export const getMyAppointmentsDoctor = async (req, res) => {
 
             const startUTC = dayjs.utc(localFormattedStart);
             const endUTC = dayjs.utc(localFormattedEnd);
-            const videoCallOn =  app.status !== 'Completed' && now.isAfter(startUTC) && now.isBefore(endUTC);
+            const videoCallOn = app.status !== 'Completed' && now.isAfter(startUTC) && now.isBefore(endUTC);
 
             return {
                 ...app,
@@ -88,20 +88,22 @@ export const getMyAppointmentById = async (req, res) => {
 
             const startUTC = dayjs.utc(localFormattedStart);
             const endUTC = dayjs.utc(localFormattedEnd);
-            const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
+            const videoCallOn = app.status !== 'Completed' && now.isAfter(startUTC) && now.isBefore(endUTC);
 
             const doctor = await doctorModel.getDocterByDocterId(app.doctor_id);
             console.log("doctor", doctor)
             let chatId = await chatModel.getChatBetweenUsers(app.user_id, doctor[0].zynq_user_id);
             // console.log('chatId', chatId);
 
+            const treatments = await appointmentModel.getAppointmentTreatments(appointment_id);
 
             return {
                 ...app,
                 start_time: dayjs.utc(localFormattedStart).toISOString(),
                 end_time: dayjs.utc(localFormattedEnd).toISOString(),
                 chatId: chatId.length > 0 ? chatId : null,
-                videoCallOn
+                videoCallOn,
+                treatments
             };
         }));
         console.log("result", result)
