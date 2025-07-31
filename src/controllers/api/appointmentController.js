@@ -91,7 +91,7 @@ export const bookAppointment = async (req, res) => {
 export const getMyAppointmentsUser = async (req, res) => {
     try {
         const userId = req.user.user_id;
-        const appointments = await appointmentModel.getAppointmentsByUserId(userId);
+        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'booked');
 
         const now = dayjs.utc();
 
@@ -100,8 +100,8 @@ export const getMyAppointmentsUser = async (req, res) => {
             let chatId = await getChatBetweenUsers(userId, doctor[0].zynq_user_id);
             app.chatId = chatId.length > 0 ? chatId[0].id : null;
 
-            const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
-            const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
+            const localFormattedStart = app.start_time ? dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss") : null;
+            const localFormattedEnd = app.end_time ? dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss") : null;
 
             if (app.profile_image && !app.profile_image.startsWith('http')) {
                 app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
@@ -112,18 +112,18 @@ export const getMyAppointmentsUser = async (req, res) => {
             }
 
 
-            const startUTC = dayjs.utc(localFormattedStart);
-            const endUTC = dayjs.utc(localFormattedEnd);
+            const startUTC = localFormattedStart ? dayjs.utc(localFormattedStart) : null;
+            const endUTC = localFormattedEnd ? dayjs.utc(localFormattedEnd) : null;
             //const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
             const videoCallOn =
                 app.status !== 'Completed' &&
-                now.isAfter(startUTC) &&
+            now.isAfter(startUTC) &&
                 now.isBefore(endUTC);
 
             return {
                 ...app,
-                start_time: dayjs.utc(localFormattedStart).toISOString(),
-                end_time: dayjs.utc(localFormattedEnd).toISOString(),
+                start_time: localFormattedStart ? dayjs.utc(localFormattedStart).toISOString() : null,
+                end_time: localFormattedEnd ? dayjs.utc(localFormattedEnd).toISOString() : null,
                 videoCallOn,
             };
         }));
@@ -193,9 +193,8 @@ export const getAppointmentsById = async (req, res) => {
 
             app.chatId = chatId.length > 0 ? chatId[0].id : null;
 
-            const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
-            const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
-
+            const localFormattedStart = app.start_time ? dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss") : null;
+            const localFormattedEnd = app.end_time ? dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss") : null;
             if (app.profile_image && !app.profile_image.startsWith('http')) {
                 app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
             }
@@ -204,20 +203,19 @@ export const getAppointmentsById = async (req, res) => {
                 app.pdf = `${APP_URL}${app.pdf}`;
             }
 
-            const startUTC = dayjs.utc(localFormattedStart);
-            const endUTC = dayjs.utc(localFormattedEnd);
-
+            const startUTC = localFormattedStart ? dayjs.utc(localFormattedStart) : null;
+            const endUTC = localFormattedEnd ? dayjs.utc(localFormattedEnd) : null;
+            //const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
             const videoCallOn =
-                app.status !== 'Completed' &&
-                now.isAfter(startUTC) &&
+                app.status !== 'Completed' && startUTC && endUTC
+            now.isAfter(startUTC) &&
                 now.isBefore(endUTC);
-
             const treatments = await appointmentModel.getAppointmentTreatments(appointment_id);
 
             return {
                 ...app,
-                start_time: startUTC.toISOString(),
-                end_time: endUTC.toISOString(),
+                start_time: localFormattedStart ? dayjs.utc(localFormattedStart).toISOString() : null,
+                end_time: localFormattedEnd ? dayjs.utc(localFormattedEnd).toISOString() : null,
                 videoCallOn,
                 treatments
             };
@@ -252,7 +250,6 @@ export const rateAppointment = asyncHandler(async (req, res) => {
 });
 
 
-
 export const saveOrBookAppointment = async (req, res) => {
     try {
 
@@ -275,7 +272,7 @@ export const saveOrBookAppointment = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const {
+        let {
             appointment_id: inputId,
             doctor_id,
             clinic_id,
@@ -354,11 +351,12 @@ export const saveOrBookAppointment = async (req, res) => {
 
             }
         }
+        const language = req?.user?.language || 'en';
 
         return handleSuccess(
             res,
             201,
-            'en',
+            language,
             save_type === 'booked' ? 'APPOINTMENT_BOOKED_SUCCESSFULLY' : 'DRAFT_SAVED_SUCCESSFULLY',
             { appointment_id }
         );
@@ -368,5 +366,52 @@ export const saveOrBookAppointment = async (req, res) => {
         }
         console.error("Error in saveOrBookAppointment:", err);
         return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+    }
+};
+
+export const getMyTreatmentPlans = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'draft');
+
+        const now = dayjs.utc();
+
+        const result = await Promise.all(appointments.map(async (app) => {
+            const doctor = await getDocterByDocterId(app.doctor_id);
+            let chatId = await getChatBetweenUsers(userId, doctor[0].zynq_user_id);
+            app.chatId = chatId.length > 0 ? chatId[0].id : null;
+
+            const localFormattedStart = app.start_time ? dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss") : null;
+            const localFormattedEnd = app.end_time ? dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss") : null;
+
+            if (app.profile_image && !app.profile_image.startsWith('http')) {
+                app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
+            }
+
+            if (app.pdf && !app.pdf.startsWith('http')) {
+                app.pdf = `${APP_URL}${app.pdf}`;
+            }
+
+
+            const startUTC = localFormattedStart ? dayjs.utc(localFormattedStart) : null;
+            const endUTC = localFormattedEnd ? dayjs.utc(localFormattedEnd) : null;
+            //const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
+            const videoCallOn =
+                app.status !== 'Completed'
+            now.isAfter(startUTC) &&
+                now.isBefore(endUTC);
+
+            return {
+                ...app,
+                start_time: localFormattedStart ? dayjs.utc(localFormattedStart).toISOString() : null,
+                end_time: localFormattedEnd ? dayjs.utc(localFormattedEnd).toISOString() : null,
+                videoCallOn,
+            };
+        }));
+
+        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
+    } catch (error) {
+        console.error("Error fetching user appointments:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
