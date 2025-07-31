@@ -18,7 +18,7 @@ export const getMyAppointmentsDoctor = async (req, res) => {
 
         const now = dayjs.utc();
 
-        const appointments = await appointmentModel.getAppointmentsByDoctorId(doctorId);
+        const appointments = await appointmentModel.getAppointmentsByDoctorId(doctorId,'booked');
 
         const result = await Promise.all(appointments.map(async (app) => {
 
@@ -36,7 +36,7 @@ export const getMyAppointmentsDoctor = async (req, res) => {
 
             const startUTC = dayjs.utc(localFormattedStart);
             const endUTC = dayjs.utc(localFormattedEnd);
-            const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
+            const videoCallOn =  app.status !== 'Completed' && now.isAfter(startUTC) && now.isBefore(endUTC);
 
             return {
                 ...app,

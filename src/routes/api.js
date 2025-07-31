@@ -117,6 +117,8 @@ router.post('/saveOrBookAppointment', authenticateUser, appointmentController.sa
 
 router.get('/getMyAppointments', authenticateUser, appointmentController.getMyAppointmentsUser);
 
+router.get('/getMyTreatmentPlans', authenticateUser, appointmentController.getMyTreatmentPlans);
+
 router.patch('/update-appointment-status', appointmentController.updateAppointmentStatus);
 
 router.post('/getMyAppointmentById', authenticateUser, appointmentController.getAppointmentsById);
