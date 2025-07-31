@@ -212,11 +212,14 @@ export const getAppointmentsById = async (req, res) => {
                 now.isAfter(startUTC) &&
                 now.isBefore(endUTC);
 
+            const treatments = await appointmentModel.getAppointmentTreatments(appointment_id);
+
             return {
                 ...app,
                 start_time: startUTC.toISOString(),
                 end_time: endUTC.toISOString(),
                 videoCallOn,
+                treatments
             };
         }));
 
@@ -247,3 +250,118 @@ export const rateAppointment = asyncHandler(async (req, res) => {
 
     return handleSuccess(res, 200, language, "APPOINTMENT_RATED_SUCCESSFULLY");
 });
+
+
+
+export const saveOrBookAppointment = async (req, res) => {
+    try {
+
+        const schema = Joi.object({
+            appointment_id: Joi.string().optional(),
+            doctor_id: Joi.string().required(),
+            clinic_id: Joi.string().required(),
+            treatments: Joi.array().items(
+                Joi.object({
+                    treatment_id: Joi.string().required(),
+                    price: Joi.number().required()
+                })
+            ).optional(),
+            start_time: Joi.string().isoDate().optional(),
+            end_time: Joi.string().isoDate().optional()
+        });
+
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const {
+            appointment_id: inputId,
+            doctor_id,
+            clinic_id,
+            treatments = [],
+            start_time,
+            end_time
+        } = value;
+
+        const user_id = req.user.user_id;
+        const hasTreatments = treatments.length > 0;
+        const appointmentType = hasTreatments ? 'Clinic Visit' : 'Video Call';
+        const save_type = hasTreatments
+            ? start_time && end_time
+                ? 'booked'
+                : 'draft'
+            : 'booked';
+
+        const appointment_id = inputId || uuidv4();
+        const total_price = treatments.reduce((sum, t) => sum + t.price, 0);
+
+        const normalizedStart = start_time
+            ? dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss")
+            : null;
+        const normalizedEnd = end_time
+            ? dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss")
+            : null;
+
+        const appointmentData = {
+            appointment_id,
+            user_id,
+            doctor_id,
+            clinic_id,
+            total_price,
+            type: appointmentType,
+            status: save_type === 'booked' ? 'Scheduled' : 'Draft',
+            save_type,
+            start_time: normalizedStart,
+            end_time: normalizedEnd
+        };
+
+        if (inputId) {
+            await appointmentModel.updateAppointment(appointmentData);
+            if (hasTreatments) {
+                await appointmentModel.deleteAppointmentTreatments(appointment_id);
+                await appointmentModel.insertAppointmentTreatments(appointment_id, treatments);
+            }
+        } else {
+            await appointmentModel.insertAppointment(appointmentData);
+            if (hasTreatments) {
+                await appointmentModel.insertAppointmentTreatments(appointment_id, treatments);
+            }
+        }
+
+        if (save_type == 'booked') {
+            let user_id = req.user.user_id
+            const doctor = await getDocterByDocterId(doctor_id);
+            let chatId = await getChatBetweenUsers(user_id, doctor[0].zynq_user_id);
+
+
+            await sendNotification({
+                userData: req.user,
+                type: "APPOINTMENT",
+                type_id: appointment_id,
+                notification_type: NOTIFICATION_MESSAGES.appointment_booked,
+                receiver_id: doctor_id,
+                receiver_type: "DOCTOR"
+            })
+
+            if (chatId.length < 1) {
+                let doctorId = doctor[0].zynq_user_id
+                await createChat(user_id, doctorId);
+
+            }
+        }
+
+        return handleSuccess(
+            res,
+            201,
+            'en',
+            save_type === 'booked' ? 'APPOINTMENT_BOOKED_SUCCESSFULLY' : 'DRAFT_SAVED_SUCCESSFULLY',
+            { appointment_id }
+        );
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return handleError(res, 400, "en", "SLOT_ALREADY_BOOKED");
+        }
+        console.error("Error in saveOrBookAppointment:", err);
+        return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+    }
+};

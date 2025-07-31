@@ -233,5 +233,6 @@
     "SKIN_CONDITION_FETCHED_SUCCESSFULLY": "Skin condition fetched successfully",
     "SURGERY_FETCHED_SUCCESSFULLY": "Surgery fetched successfully",
     "TIPS_FETCHED": "Tips fetched",
-    "WISHLIST_FETCHED_SUCCESSFULLY": "Wishlist fetched successfully"
+    "WISHLIST_FETCHED_SUCCESSFULLY": "Wishlist fetched successfully",
+    "DRAFT_SAVED_SUCCESSFULLY":"Your treatment plan has been saved as a draft. You can return to the 'My Plans' section in your profile to book it later."
 }

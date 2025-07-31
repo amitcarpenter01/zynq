@@ -113,6 +113,8 @@ router.post("/isUserOfflineOrOnline", authenticateUser, authControllers.isUserOf
 
 router.post('/bookAppointment', authenticateUser, appointmentController.bookAppointment);
 
+router.post('/saveOrBookAppointment', authenticateUser, appointmentController.saveOrBookAppointment);
+
 router.get('/getMyAppointments', authenticateUser, appointmentController.getMyAppointmentsUser);
 
 router.patch('/update-appointment-status', appointmentController.updateAppointmentStatus);

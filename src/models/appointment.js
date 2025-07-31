@@ -554,3 +554,40 @@ export const getAppointmentsForNotification = async (windowStart, windowEnd) => 
         AND a.start_time BETWEEN ? AND ?
     `, [windowStart, windowEnd]);
 };
+
+
+export const updateAppointment = async (data) => {
+    const {
+        appointment_id, doctor_id, clinic_id, total_price,
+        type, start_time, end_time, save_type, status
+    } = data;
+
+    const query = `
+    UPDATE tbl_appointments
+    SET doctor_id = ?, clinic_id = ?, total_price = ?, type = ?,
+        start_time = ?, end_time = ?, save_type = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE appointment_id = ?
+  `;
+    return await db.query(query, [doctor_id, clinic_id, total_price, type, start_time, end_time, save_type, status, appointment_id]);
+};
+
+export const deleteAppointmentTreatments = async (appointment_id) => {
+    return await db.query(`DELETE FROM tbl_appointment_treatments WHERE appointment_id = ?`, [appointment_id]);
+};
+
+export const insertAppointmentTreatments = async (appointment_id, treatments) => {
+    if (!Array.isArray(treatments) || treatments.length === 0) return;
+    const values = treatments.map(t => [appointment_id, t.treatment_id, t.price]);
+    const query = `
+    INSERT INTO tbl_appointment_treatments (appointment_id, treatment_id, price)
+    VALUES ?
+  `;
+    return await db.query(query, [values]);
+};
+
+export const getAppointmentTreatments = async (appointment_id) => {
+  const query = `
+    SELECT * FROM tbl_appointment_treatments WHERE appointment_id = ?
+  `;
+  return await db.query(query, [appointment_id]);
+};
