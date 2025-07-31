@@ -41,7 +41,7 @@ export const getAppointmentsByDoctorId = async (doctor_id,type) => {
         SELECT a.*, u.* , c.clinic_name FROM tbl_appointments a INNER JOIN tbl_users u ON a.user_id = u.user_id  INNER JOIN tbl_clinics c ON a.clinic_id = c.clinic_id 
         WHERE a.doctor_id = ? AND save_type  = ?
         ORDER BY  start_time ASC
-    `, [doctor_id]);
+    `, [doctor_id,type]);
     return results;
 };
 
