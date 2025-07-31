@@ -1413,14 +1413,16 @@ export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', 
     try {
         const searchField = language === 'sv' ? 'swedish' : 'name';
         const query = `
-            SELECT treatment_id, name, swedish
+            SELECT *
             FROM tbl_treatments
             WHERE LOWER(${searchField}) LIKE ?
             ORDER BY created_at DESC
             LIMIT ? OFFSET ?
         `;
         const params = [`%${search.trim().toLowerCase()}%`, limit, offset];
-        return await db.query(query, params);
+        const results = await db.query(query, params);
+
+        return formatBenefitsOnLang(results,language)
     } catch (error) {
         console.error("Database Error in getTreatmentsBySearchOnly:", error.message);
         throw new Error("Failed to fetch treatments.");
