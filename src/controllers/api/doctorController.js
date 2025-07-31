@@ -9,7 +9,7 @@ import { sendEmail } from "../../services/send_email.js";
 import { formatImagePath, generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
 import { fileURLToPath } from 'url';
 import { fetchChatById, getChatBetweenUsers } from "../../models/chat.js";
-import { getTreatmentIDsByUserID } from "../../utils/misc.util.js";
+import { formatBenefitsOnLang, getTreatmentIDsByUserID } from "../../utils/misc.util.js";
 
 
 dotenv.config();
@@ -382,11 +382,11 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
             clinic_image_id: img.clinic_image_id,
             url: formatImagePath(img.image_url, 'clinic/files'),
         }));
-
+   
     const processedDoctor = {
         ...doctor,
         chatId: chat?.[0]?.id || null,
-        treatments: allTreatments[doctor_id] || [],
+        treatments: formatBenefitsOnLang(allTreatments[doctor_id],'en') || [],
         skin_types: allSkinTypes[doctor_id] || [],
         allSkinCondition: allSkinCondition[doctor_id] || [],
         allSurgery: allSurgery[doctor_id] || [],
