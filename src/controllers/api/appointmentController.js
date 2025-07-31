@@ -120,11 +120,14 @@ export const getMyAppointmentsUser = async (req, res) => {
                 now.isAfter(startUTC) &&
                 now.isBefore(endUTC);
 
+              const treatments = await appointmentModel.getAppointmentTreatments(app.appointment_id);
+
             return {
                 ...app,
                 start_time: localFormattedStart ? dayjs.utc(localFormattedStart).toISOString() : null,
                 end_time: localFormattedEnd ? dayjs.utc(localFormattedEnd).toISOString() : null,
                 videoCallOn,
+                treatments
             };
         }));
 
@@ -398,11 +401,14 @@ export const getMyTreatmentPlans = async (req, res) => {
             now.isAfter(startUTC) &&
                 now.isBefore(endUTC);
 
+                 const treatments = await appointmentModel.getAppointmentTreatments(app.appointment_id);
+
             return {
                 ...app,
                 start_time: localFormattedStart ? dayjs.utc(localFormattedStart).toISOString() : null,
                 end_time: localFormattedEnd ? dayjs.utc(localFormattedEnd).toISOString() : null,
                 videoCallOn,
+                treatments
             };
         }));
 
