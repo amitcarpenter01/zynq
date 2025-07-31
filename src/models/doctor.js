@@ -841,7 +841,7 @@ export const getSoloDoctorByZynqUserId = async (zynq_user_id) => {
 export const getDoctorByDoctorID = async (doctor_id, clinic_id) => {
     try {
         const query = `
-            SELECT dcm.*, d.*, zu.email, cl.latitude, cl.longitude, c.clinic_name
+            SELECT dcm.*, d.*, zu.email, cl.latitude, cl.longitude, c.clinic_name, c.clinic_logo
             FROM tbl_doctor_clinic_map dcm
             JOIN tbl_doctors d ON dcm.doctor_id = d.doctor_id
             JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id

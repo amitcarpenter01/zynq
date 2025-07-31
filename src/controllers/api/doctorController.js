@@ -406,6 +406,10 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
                 ? doctor.profile_image
                 : `${APP_URL}doctor/profile_images/${doctor.profile_image}`)
             : null
+        ,
+        clinic_logo: doctor.clinic_logo && !doctor.clinic_logo.startsWith("http")
+            ? `${APP_URL}clinic/logo/${doctor.clinic_logo}`
+            : doctor.clinic_logo
     };
 
     return handleSuccess(res, 200, 'en', "DOCTOR_FETCHED_SUCCESSFULLY", processedDoctor);
@@ -414,7 +418,7 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
 
 export const search_home_entities = asyncHandler(async (req, res) => {
     const { language = 'en' } = req.user || {};
-    let { filters = {},page = 1 } = req.body || {};
+    let { filters = {}, page = 1 } = req.body || {};
     const offset = (page - 1) * 30;
     const limit = 30;
 

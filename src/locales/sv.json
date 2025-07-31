@@ -226,5 +226,6 @@
   "SKIN_CONDITION_FETCHED_SUCCESSFULLY": "Hudstatus hämtad",
   "SURGERY_FETCHED_SUCCESSFULLY": "Operation hämtad",
   "TIPS_FETCHED": "Tips hämtade",
-  "WISHLIST_FETCHED_SUCCESSFULLY": "Önskelista hämtad"
+  "WISHLIST_FETCHED_SUCCESSFULLY": "Önskelista hämtad",
+    "DRAFT_SAVED_SUCCESSFULLY":"Din behandlingsplan har sparats som ett utkast. Du kan gå tillbaka till avsnittet 'Mina planer' i din profil för att boka den senare."
 }
