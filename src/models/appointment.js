@@ -587,7 +587,7 @@ export const insertAppointmentTreatments = async (appointment_id, treatments) =>
 
 export const getAppointmentTreatments = async (appointment_id) => {
   const query = `
-    SELECT * FROM tbl_appointment_treatments WHERE appointment_id = ?
+    SELECT t.*,ap.* FROM tbl_appointment_treatments ap INNER JOIN tbl_treatments t ON ap.treatment_id  = t.treatment_id  WHERE appointment_id = ?
   `;
   return await db.query(query, [appointment_id]);
 };
