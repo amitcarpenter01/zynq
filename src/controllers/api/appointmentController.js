@@ -259,6 +259,7 @@ export const saveOrBookAppointment = async (req, res) => {
         const schema = Joi.object({
             appointment_id: Joi.string().optional(),
             doctor_id: Joi.string().required(),
+            report_id: Joi.string().optional(),
             clinic_id: Joi.string().required(),
             treatments: Joi.array().items(
                 Joi.object({
@@ -280,7 +281,8 @@ export const saveOrBookAppointment = async (req, res) => {
             clinic_id,
             treatments = [],
             start_time,
-            end_time
+            end_time,
+            report_id
         } = value;
 
         const user_id = req.user.user_id;
@@ -294,7 +296,9 @@ export const saveOrBookAppointment = async (req, res) => {
 
         const appointment_id = inputId || uuidv4();
         const total_price = treatments.reduce((sum, t) => sum + t.price, 0);
-
+        if (isEmpty(report_id)) {
+            report_id = await getLatestFaceScanReportIDByUserID(req.user.user_id);
+        }
         const normalizedStart = start_time
             ? dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss")
             : null;
@@ -308,6 +312,7 @@ export const saveOrBookAppointment = async (req, res) => {
             doctor_id,
             clinic_id,
             total_price,
+            report_id: report_id,
             type: appointmentType,
             status: save_type === 'booked' ? 'Scheduled' : 'Scheduled',
             save_type,
