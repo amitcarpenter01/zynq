@@ -309,7 +309,7 @@ export const saveOrBookAppointment = async (req, res) => {
             clinic_id,
             total_price,
             type: appointmentType,
-            status: save_type === 'booked' ? 'Scheduled' : 'Draft',
+            status: save_type === 'booked' ? 'Scheduled' : 'Scheduled',
             save_type,
             start_time: normalizedStart,
             end_time: normalizedEnd
