@@ -1409,94 +1409,145 @@ export const getSingleCartByCartId = async (cart_id) => {
 }
 
 
-export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', limit = 30, offset = 0 }) => {
-    try {
-        const searchField = language === 'sv' ? 'swedish' : 'name';
-        const query = `
-            SELECT *
-            FROM tbl_treatments
-            WHERE LOWER(${searchField}) LIKE ?
-            ORDER BY created_at DESC
-            LIMIT ? OFFSET ?
-        `;
-        const params = [`%${search.trim().toLowerCase()}%`, limit, offset];
-        const results = await db.query(query, params);
+// export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', limit = 30, offset = 0 }) => {
+//     try {
+//         const searchField = language === 'sv' ? 'swedish' : 'name';
+//         const query = `
+//             SELECT *
+//             FROM tbl_treatments
+//             WHERE LOWER(${searchField}) LIKE ?
+//             ORDER BY created_at DESC
+//             LIMIT ? OFFSET ?
+//         `;
+//         const params = [`%${search.trim().toLowerCase()}%`, limit, offset];
+//         const results = await db.query(query, params);
 
-        return formatBenefitsOnLang(results,language)
-    } catch (error) {
-        console.error("Database Error in getTreatmentsBySearchOnly:", error.message);
-        throw new Error("Failed to fetch treatments.");
-    }
-};
-export const getProductsByNameSearchOnly = async ({ search = '', offset = 0 }) => {
-    try {
-        let query = `
-            SELECT 
-                p.*
-            FROM tbl_products AS p
-            WHERE 1=1
-        `;
+//         return formatBenefitsOnLang(results,language)
+//     } catch (error) {
+//         console.error("Database Error in getTreatmentsBySearchOnly:", error.message);
+//         throw new Error("Failed to fetch treatments.");
+//     }
+// };
+// export const getProductsByNameSearchOnly = async ({ search = '', offset = 0 }) => {
+//     try {
+//         let query = `
+//             SELECT 
+//                 p.*
+//             FROM tbl_products AS p
+//             WHERE 1=1
+//         `;
 
-        const params = [];
+//         const params = [];
 
-        if (search && search.trim() !== '') {
-            query += ` AND LOWER(p.name) LIKE ?`;
-            params.push(`${search.trim().toLowerCase()}%`);
-        }
+//         if (search && search.trim() !== '') {
+//             query += ` AND LOWER(p.name) LIKE ?`;
+//             params.push(`${search.trim().toLowerCase()}%`);
+//         }
 
-        query += ` GROUP BY p.product_id ORDER BY p.created_at DESC LIMIT 30 OFFSET ?`;
-        params.push(Number(offset) || 0);
+//         query += ` GROUP BY p.product_id ORDER BY p.created_at DESC LIMIT 30 OFFSET ?`;
+//         params.push(Number(offset) || 0);
 
-        console.log("Product search only query:", query);
-        return await db.query(query, params);
-    } catch (error) {
-        console.error("Database Error in getProductsByNameSearchOnly:", error.message);
-        throw new Error("Failed to fetch products by name.");
-    }
-};
-export const getClinicsByNameSearchOnly = async ({ search = '', offset = 0 }) => {
-    try {
-        const params = [];
+//         console.log("Product search only query:", query);
+//         return await db.query(query, params);
+//     } catch (error) {
+//         console.error("Database Error in getProductsByNameSearchOnly:", error.message);
+//         throw new Error("Failed to fetch products by name.");
+//     }
+// };
+// export const getClinicsByNameSearchOnly = async ({ search = '', offset = 0 }) => {
+//     try {
+//         const params = [];
 
-        const selectFields = [
-            'c.clinic_id',
-            'c.clinic_name',
-            'c.clinic_logo',
-            'c.address',
-            'c.mobile_number',
-            'MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range',
-            'MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range',
-            'ROUND(AVG(ar.rating), 2) AS avg_rating'
-        ].join(', ');
+//         const selectFields = [
+//             'c.clinic_id',
+//             'c.clinic_name',
+//             'c.clinic_logo',
+//             'c.address',
+//             'c.mobile_number',
+//             'MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range',
+//             'MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range',
+//             'ROUND(AVG(ar.rating), 2) AS avg_rating'
+//         ].join(', ');
 
-        let query = `
-            SELECT ${selectFields}
-            FROM tbl_clinics c
-            LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
-            LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
-            LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
-            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id
-            WHERE c.profile_completion_percentage >= 50
-        `;
+//         let query = `
+//             SELECT ${selectFields}
+//             FROM tbl_clinics c
+//             LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
+//             LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
+//             LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
+//             LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id
+//             WHERE c.profile_completion_percentage >= 50
+//         `;
 
-        if (search.trim()) {
-            query += ` AND LOWER(c.clinic_name) LIKE ?`;
-            params.push(`${search.trim().toLowerCase()}%`);
-        }
+//         if (search.trim()) {
+//             query += ` AND LOWER(c.clinic_name) LIKE ?`;
+//             params.push(`${search.trim().toLowerCase()}%`);
+//         }
 
-        query += ` GROUP BY c.clinic_id`;
-        query += ` ORDER BY c.created_at DESC`; // default/fallback sort
-        query += ` LIMIT 30 OFFSET ?`;
+//         query += ` GROUP BY c.clinic_id`;
+//         query += ` ORDER BY c.created_at DESC`; // default/fallback sort
+//         query += ` LIMIT 30 OFFSET ?`;
 
-        params.push(Number(offset) || 0);
+//         params.push(Number(offset) || 0);
 
-        console.log("Clinic search query:", query);
-        return await db.query(query, params);
-    } catch (error) {
-        console.error("Database Error in getClinicsByNameSearchOnly:", error.message);
-        throw new Error("Failed to fetch clinics by name.");
-    }
-};
+//         console.log("Clinic search query:", query);
+//         return await db.query(query, params);
+//     } catch (error) {
+//         console.error("Database Error in getClinicsByNameSearchOnly:", error.message);
+//         throw new Error("Failed to fetch clinics by name.");
+//     }
+// };
+// export const getDoctorsByFirstNameSearchOnly = async ({ search = '', offset = 0 }) => {
+//     try {
+//         const params = [];
+
+//         const selectFields = [
+//             'd.doctor_id',
+//             'd.name',
+//             'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
+//             'd.specialization',
+//             'ANY_VALUE(d.fee_per_session) AS fee_per_session',
+//             'd.profile_image',
+//             'dm.clinic_id',
+//             'c.clinic_name',
+//             'c.address AS clinic_address',
+//             'ROUND(AVG(ar.rating), 2) AS avg_rating'
+//         ].join(', ');
+
+//         let query = `
+//             SELECT ${selectFields}
+//             FROM tbl_doctors d
+//             LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+//             LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
+//             LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
+//             LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
+//             LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id
+//             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
+//             WHERE d.profile_completion_percentage >= 0
+//         `;
+
+//         if (search && search.trim() !== '') {
+//             query += ` AND LOWER(d.name) LIKE ?`;
+//             params.push(`${search.trim().toLowerCase()}%`);
+//         }
+
+//         //query += ` GROUP BY d.doctor_id`;
+
+//         query += ` GROUP BY d.doctor_id, dm.clinic_id`;
+
+//         // No ORDER BY or SORTING
+//         query += ` LIMIT 30 OFFSET ?`;
+//         params.push(Number(offset) || 0);
+
+//         console.log("Search Only Query:", query);
+//         return await db.query(query, params);
+//     } catch (error) {
+//         console.error("Database Error in getDoctorsByFirstNameSearchOnly:", error.message);
+//         throw new Error("Failed to fetch doctors.");
+//     }
+// };
+
+// -------------------------------------Updated Code Okay ------------------------------------------------//
 export const getDoctorsByFirstNameSearchOnly = async ({ search = '', offset = 0 }) => {
     try {
         const params = [];
@@ -1527,22 +1578,139 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', offset = 0 
         `;
 
         if (search && search.trim() !== '') {
-            query += ` AND LOWER(d.name) LIKE ?`;
-            params.push(`${search.trim().toLowerCase()}%`);
+            query += `
+                AND (
+                    LOWER(d.name) LIKE ?
+                    OR EXISTS (
+                        SELECT 1 FROM tbl_doctor_treatments dt
+                        JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+                        WHERE dt.doctor_id = d.doctor_id
+                        AND (
+                            LOWER(t.name) LIKE ? OR LOWER(t.swedish) LIKE ?
+                        )
+                    )
+                )
+            `;
+            const s = `%${search.toLowerCase()}%`;
+            params.push(s, s, s);
         }
 
-        //query += ` GROUP BY d.doctor_id`;
-
-        query += ` GROUP BY d.doctor_id, dm.clinic_id`;
-
-        // No ORDER BY or SORTING
-        query += ` LIMIT 30 OFFSET ?`;
+        query += ` GROUP BY d.doctor_id, dm.clinic_id LIMIT 30 OFFSET ?`;
         params.push(Number(offset) || 0);
 
-        console.log("Search Only Query:", query);
         return await db.query(query, params);
     } catch (error) {
         console.error("Database Error in getDoctorsByFirstNameSearchOnly:", error.message);
         throw new Error("Failed to fetch doctors.");
+    }
+};
+export const getClinicsByNameSearchOnly = async ({ search = '', offset = 0 }) => {
+    try {
+        const params = [];
+
+        const selectFields = [
+            'c.clinic_id',
+            'c.clinic_name',
+            'c.clinic_logo',
+            'c.address',
+            'c.mobile_number',
+            'MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range',
+            'MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range',
+            'ROUND(AVG(ar.rating), 2) AS avg_rating'
+        ].join(', ');
+
+        let query = `
+            SELECT ${selectFields}
+            FROM tbl_clinics c
+            LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
+            LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
+            LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
+            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id
+            WHERE c.profile_completion_percentage >= 50
+        `;
+
+        if (search.trim()) {
+            query += `
+                AND (
+                    LOWER(c.clinic_name) LIKE ?
+                    OR EXISTS (
+                        SELECT 1 FROM tbl_clinic_treatments ct
+                        JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
+                        WHERE ct.clinic_id = c.clinic_id
+                        AND (
+                            LOWER(t.name) LIKE ? OR LOWER(t.swedish) LIKE ?
+                        )
+                    )
+                )
+            `;
+            const s = `%${search.toLowerCase()}%`;
+            params.push(s, s, s);
+        }
+
+        query += ` GROUP BY c.clinic_id ORDER BY c.created_at DESC LIMIT 30 OFFSET ?`;
+        params.push(Number(offset) || 0);
+
+        return await db.query(query, params);
+    } catch (error) {
+        console.error("Database Error in getClinicsByNameSearchOnly:", error.message);
+        throw new Error("Failed to fetch clinics by name.");
+    }
+};
+export const getProductsByNameSearchOnly = async ({ search = '', offset = 0 }) => {
+    try {
+        let query = `
+            SELECT 
+                p.*
+            FROM tbl_products AS p
+            WHERE 1=1
+        `;
+
+        const params = [];
+
+        if (search && search.trim() !== '') {
+            query += `
+                AND (
+                    LOWER(p.name) LIKE ?
+                    OR EXISTS (
+                        SELECT 1 FROM tbl_product_treatments pt
+                        JOIN tbl_treatments t ON pt.treatment_id = t.treatment_id
+                        WHERE pt.product_id = p.product_id
+                        AND (
+                            LOWER(t.name) LIKE ? OR LOWER(t.swedish) LIKE ?
+                        )
+                    )
+                )
+            `;
+            const s = `%${search.toLowerCase()}%`;
+            params.push(s, s, s);
+        }
+
+        query += ` GROUP BY p.product_id ORDER BY p.created_at DESC LIMIT 30 OFFSET ?`;
+        params.push(Number(offset) || 0);
+
+        return await db.query(query, params);
+    } catch (error) {
+        console.error("Database Error in getProductsByNameSearchOnly:", error.message);
+        throw new Error("Failed to fetch products by name.");
+    }
+};
+export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', limit = 30, offset = 0 }) => {
+    try {
+        const searchField = language === 'sv' ? 'swedish' : 'name';
+        const query = `
+            SELECT *
+            FROM tbl_treatments
+            WHERE LOWER(${searchField}) LIKE ?
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        `;
+        const params = [`%${search.trim().toLowerCase()}%`, limit, offset];
+
+        const results = await db.query(query, params);
+
+        return formatBenefitsOnLang(results, language);
+    } catch (error) {
+        console.error("Database Error in getTreatmentsBySearchOnly:", error.message);
+        throw new Error("Failed to fetch treatments.");
     }
 };
