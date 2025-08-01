@@ -12,6 +12,7 @@ import * as productControllers from "../controllers/admin/productController.js";
 import * as supportControllers from "../controllers/admin/supportController.js";
 import { getLegalDocuments, updateLegalDocuments } from '../controllers/api/legalController.js';
 import { updateLegalDocumentsSchema } from '../validations/legal.validation.js';
+import { validate } from '../middleware/validation.middleware.js';
 
 const router = express.Router();
 
