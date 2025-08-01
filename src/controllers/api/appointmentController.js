@@ -330,6 +330,8 @@ export const saveOrBookAppointment = async (req, res) => {
             }
         }
 
+        let chat_id = 0;
+
         if (save_type == 'booked') {
             let user_id = req.user.user_id
             const doctor = await getDocterByDocterId(doctor_id);
@@ -347,8 +349,8 @@ export const saveOrBookAppointment = async (req, res) => {
 
             if (chatId.length < 1) {
                 let doctorId = doctor[0].zynq_user_id
-                await createChat(user_id, doctorId);
-
+                let chatCreatedSuccessfully = await createChat(user_id, doctorId);
+                chat_id = chatCreatedSuccessfully.insertId
             }
         }
         const language = req?.user?.language || 'en';
@@ -358,7 +360,7 @@ export const saveOrBookAppointment = async (req, res) => {
             201,
             language,
             save_type === 'booked' ? 'APPOINTMENT_BOOKED_SUCCESSFULLY' : 'DRAFT_SAVED_SUCCESSFULLY',
-            { appointment_id }
+            { appointment_id ,chat_id}
         );
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
