@@ -213,6 +213,10 @@ const initializeSocket = (server) => {
                     } else {
                         chats = await getAdminChatsList(receiverId[0]);
                     }
+                    chats.map(chat => {
+                        chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
+                        return chat;
+                    })
                     io.in(receiverId).emit("chat_list", chats);
 
                     // Optional: Update sender chat list also
@@ -223,7 +227,6 @@ const initializeSocket = (server) => {
                             chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
                             return chat;
                         });
-                        console.log('senderChats>>>>>>>>>>>>', senderChats);
                         io.to(messageDetails[0].sender_id).emit("chat_list", senderChats);
                     } else {
                         // senderChats = await getAdminChatsList(receiverId[0]);
@@ -232,7 +235,6 @@ const initializeSocket = (server) => {
                             chat.profile_image = chat.profile_image != null ? `${APP_URL}${chat.profile_image}` : null;
                             return chat;
                         });
-                        console.log('senderChats>>>>>>>>>>>>', senderChats);
                         io.to(messageDetails[0].sender_id).emit("chat_list", senderChats);
                     }
                     // senderChats.map(chat => {
