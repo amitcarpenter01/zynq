@@ -5,7 +5,7 @@ import {
   userTypeValidation,
   booleanValidation,
 } from "../utils/joi.util.js";
- 
+
 export const updateLegalDocumentsSchema = joi.object({
   TERMS_CONDITIONS: stringValidation.optional(),
   PRIVACY_POLICY: stringValidation.optional()
