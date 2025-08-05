@@ -25,14 +25,14 @@ export const checkIfSlotAlreadyBooked = async (doctor_id, start_time) => {
     }
 };
 
-export const getAppointmentsByUserId = async (user_id, type) => {
+export const getAppointmentsByUserId = async (user_id) => {
     const results = await db.query(` 
         SELECT a.*,d.*,zu.email,r.pdf,c.clinic_name FROM tbl_appointments a INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
         INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
         INNER JOIN tbl_clinics c ON c.clinic_id  = a.clinic_id
-        WHERE a.user_id = ? AND save_type  = ?
+        WHERE a.user_id = ? AND save_type  = 'booked'
         ORDER BY  start_time ASC
-    `, [user_id, type]);
+    `, [user_id]);
     return results;
 };
 
@@ -558,17 +558,17 @@ export const getAppointmentsForNotification = async (windowStart, windowEnd) => 
 
 export const updateAppointment = async (data) => {
     const {
-        appointment_id, doctor_id, clinic_id, total_price,
+        appointment_id, doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings,
         type, start_time, end_time, save_type, status
     } = data;
 
     const query = `
     UPDATE tbl_appointments
-    SET doctor_id = ?, clinic_id = ?, total_price = ?, type = ?,
+    SET doctor_id = ?, clinic_id = ?, total_price = ?, admin_earnings = ?, clinic_earnings = ?, type = ?,
         start_time = ?, end_time = ?, save_type = ?, status = ?, updated_at = CURRENT_TIMESTAMP
     WHERE appointment_id = ?
   `;
-    return await db.query(query, [doctor_id, clinic_id, total_price, type, start_time, end_time, save_type, status, appointment_id]);
+    return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings, type, start_time, end_time, save_type, status, appointment_id]);
 };
 
 export const deleteAppointmentTreatments = async (appointment_id) => {

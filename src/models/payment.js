@@ -85,25 +85,6 @@ export const getTreatmentsData = async (treatment_ids, doctor_id) => {
   }
 };
 
-export const getProductsData = async (cart_id) => {
-  try {
-    const query = `
-      SELECT 
-        cp.product_id,
-        p.name AS name, 
-        cp.quantity * p.price AS unit_price
-      FROM tbl_cart_products cp
-      LEFT JOIN tbl_products p ON cp.product_id = p.product_id
-      WHERE cp.cart_id = ?
-    `;
-    const results = await db.query(query, [cart_id]);
-    return results;
-  } catch (error) {
-    console.error("Failed to fetch appointments data:", error);
-    throw error;
-  }
-};
-
 export const getClinicDoctorWallets = async () => {
   try {
     const clinicQuery = `
@@ -149,3 +130,121 @@ export const updatePaymentStatus = async (order_id, status) => {
     throw error;
   }
 };
+
+export const getProductsData = async (cart_id) => {
+  try {
+    const query = `
+      SELECT
+        cp.product_id,
+        p.name AS name,
+        cp.quantity * p.price AS unit_price,p.stock,cp.quantity as cart_quantity
+      FROM tbl_cart_products cp
+      LEFT JOIN tbl_products p ON cp.product_id = p.product_id
+      WHERE cp.cart_id = ?
+    `;
+    const results = await db.query(query, [cart_id]);
+    return results;
+  } catch (error) {
+    console.error("Failed to fetch appointments data:", error);
+    throw error;
+  }
+};
+ 
+export const updateProductsStock = async (product_id,stock) => {
+  try {
+    const query = `
+      UPDATE tbl_products SET stock = ? WHERE  product_id = ?
+    `;
+    const results = await db.query(query, [stock,product_id]);
+    return results;
+  } catch (error) {
+    console.error("Failed to fetch appointments data:", error);
+    throw error;
+  }
+};
+
+export const updateProductsStockBulk = async (items) => {
+  if (!items.length) return;
+
+  try {
+    const productIds = items.map((item) => item.product_id);
+
+    const cases = items
+      .map(
+        (item) => `WHEN ${item.product_id} THEN ${item.stock - item.cart_quantity}`
+      )
+      .join(" ");
+
+    const query = `
+      UPDATE tbl_products
+      SET stock = CASE product_id
+        ${cases}
+      END
+      WHERE product_id IN (${productIds.join(",")})
+    `;
+
+    return await db.query(query);
+  } catch (error) {
+    console.error("❌ Failed to bulk update product stock:", error);
+    throw error;
+  }
+};
+
+ 
+export const updateCartPurchasedStatus = async (cart_id) => {
+  try {
+    const query = `
+      UPDATE tbl_carts SET cart_status = "PURCHASED" WHERE  cart_id = ?
+    `;
+    const results = await db.query(query, [cart_id]);
+    return results;
+  } catch (error) {
+    console.error("Failed to fetch appointments data:", error);
+    throw error;
+  }
+};
+ 
+export const getCartsTotalPrice = async (cart_id) => {
+  try {
+    const query = `
+      SELECT
+    SUM(cp.quantity * p.price) AS total_price
+FROM tbl_cart_products cp
+LEFT JOIN tbl_products p ON cp.product_id = p.product_id
+WHERE cp.cart_id = ?
+    `;
+    const results = await db.query(query, [cart_id]);
+    return results;
+  } catch (error) {
+    console.error("Failed to fetch appointments data:", error);
+    throw error;
+  }
+};
+
+export const insertProductPurchase = async (
+   user_id,
+        cart_id,
+        clinic_id,
+        total_price,
+        admin_earnings,
+        clinic_earnings
+) => (
+  db.query(
+    `
+      INSERT INTO tbl_product_purchase (
+        user_id,
+        cart_id,
+        clinic_id,
+        total_price,
+        admin_earnings,
+        clinic_earnings
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `,
+    [  user_id,
+        cart_id,
+        clinic_id,
+        total_price,
+        admin_earnings,
+        clinic_earnings ]
+  )
+)
