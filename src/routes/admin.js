@@ -77,5 +77,7 @@ router.get('/legal', getLegalDocuments);
 
 router.put('/legal', authenticateAdmin, validate(updateLegalDocumentsSchema, "body"), updateLegalDocuments);
 
+router.get('/payments/get-booked-appointments', authenticateAdmin, dashboardControllers.getBookedAppointments);
+
 
 export default router;

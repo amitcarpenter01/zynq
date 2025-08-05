@@ -250,10 +250,10 @@ export const getReviewsAndRatings = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, 'en', "REVIEWS_FETCHED", reviews);
 });
 
-export const getBookedAppointments = asyncHandler(async (req, res) => {
+export const getDoctorBookedAppointments = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
     const { user_id, role } = extractUserData(req.user)
-    const appointments = await appointmentModel.getBookedAppointmentsModel(role, user_id);
+    const appointments = await appointmentModel.getDoctorBookedAppointmentsModel(role, user_id);
     const {
         total_clinic_earnings,
         total_admin_earnings,
