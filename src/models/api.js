@@ -1350,7 +1350,7 @@ export const deleteProductFromUserCart = async (user_id, product_id) => {
         await db.query(
             `DELETE cp FROM tbl_cart_products cp
              INNER JOIN tbl_carts c ON cp.cart_id = c.cart_id
-             WHERE c.user_id = ? AND cp.product_id = ?`,
+             WHERE c.user_id = ? AND cp.product_id = ? AND c.cart_status = 'CART'`,
             [user_id, product_id]
         );
     } catch (error) {
@@ -1364,7 +1364,7 @@ export const deleteCartByCartId = async (cart_id) => {
         await db.query(
             `DELETE cp FROM tbl_cart_products cp
              INNER JOIN tbl_carts c ON cp.cart_id = c.cart_id
-             WHERE c.cart_id = ?`,
+             WHERE c.cart_id = ? AND c.cart_status = 'CART'`,
             [cart_id]
         );
     } catch (error) {
@@ -1381,7 +1381,7 @@ export const getUserCarts = async (user_id) => {
              LEFT JOIN tbl_cart_products cp ON ca.cart_id = cp.cart_id
              LEFT JOIN tbl_products p ON cp.product_id = p.product_id
              LEFT JOIN tbl_clinics cl ON ca.clinic_id = cl.clinic_id
-             WHERE ca.user_id = ?
+             WHERE ca.user_id = ? AND ca.cart_status = 'CART'
              ORDER BY ca.created_at DESC
              `,
             [user_id]
