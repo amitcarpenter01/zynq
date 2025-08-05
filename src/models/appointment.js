@@ -592,7 +592,7 @@ export const getAppointmentTreatments = async (appointment_id) => {
     return await db.query(query, [appointment_id]);
 };
 
-export const getBookedAppointmentsModel = async (role, user_id) => {
+export const getDoctorBookedAppointmentsModel = async (role, user_id) => {
     let whereClause = '';
     let values = [user_id];
 
@@ -608,7 +608,7 @@ export const getBookedAppointmentsModel = async (role, user_id) => {
             throw new Error('Invalid role');
     }
 
-    let query =  `
+    let query = `
     SELECT 
       a.*,
       d.*,

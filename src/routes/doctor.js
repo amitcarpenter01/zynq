@@ -117,6 +117,6 @@ router.get('/reviews-ratings', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC'])
 
 // -------------------------------------Payments------------------------------------------------//
 
-router.get('/payments/get-booked-appointments', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), appointmentControllers.getBookedAppointments);
+router.get('/payments/get-booked-appointments', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), appointmentControllers.getDoctorBookedAppointments);
 
 export default router;

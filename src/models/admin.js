@@ -707,3 +707,23 @@ export const update_support_ticket = async (support_ticket_id, updateData) => {
         throw new Error("Failed to update support ticket.");
     }
 }
+
+export const getAdminBookedAppointmentsModel = async () => {
+    let query = `
+    SELECT 
+      a.*,
+      d.*,
+      zu.email,
+      r.pdf,
+      c.clinic_name
+    FROM tbl_appointments a
+    INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+    INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+    LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id = a.report_id
+    INNER JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
+    WHERE a.save_type = 'booked'
+    ORDER BY a.start_time ASC
+    `
+
+    return await db.query(query);
+};
