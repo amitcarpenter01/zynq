@@ -9,6 +9,7 @@ import { getChatBetweenUsers } from '../../models/chat.js';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 import pkg from 'rrule';
 import { generateSlots, weekdayMap } from '../api/authController.js';
+import { extractUserData } from '../../utils/misc.util.js';
 const { RRule } = pkg;
 const APP_URL = process.env.APP_URL;
 export const getMyAppointmentsDoctor = async (req, res) => {
@@ -247,4 +248,40 @@ export const getPatientRecords = asyncHandler(async (req, res) => {
 export const getReviewsAndRatings = asyncHandler(async (req, res) => {
     const reviews = await appointmentModel.getRatings(req.user);
     return handleSuccess(res, 200, 'en', "REVIEWS_FETCHED", reviews);
+});
+
+export const getBookedAppointments = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const { user_id, role } = extractUserData(req.user)
+    const appointments = await appointmentModel.getBookedAppointmentsModel(role, user_id);
+    const {
+        total_clinic_earnings,
+        total_admin_earnings,
+        total_appointments_earnings
+    } = appointments.reduce(
+        (acc, appointment) => {
+            const clinicEarning = Number(appointment.clinic_earnings) || 0;
+            const adminEarning = Number(appointment.admin_earnings) || 0;
+            const appointmentEarning = Number(appointment.total_price) || 0;
+
+            acc.total_clinic_earnings += clinicEarning;
+            acc.total_admin_earnings += adminEarning;
+            acc.total_appointments_earnings += appointmentEarning;
+
+            return acc;
+        },
+        {
+            total_clinic_earnings: 0,
+            total_admin_earnings: 0,
+            total_appointments_earnings: 0
+        }
+    );
+
+    const data = {
+        total_clinic_earnings: total_clinic_earnings,
+        total_admin_earnings: total_admin_earnings,
+        total_appointments_earnings: total_appointments_earnings,
+        appointments: appointments,
+    }
+    return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", data);
 });

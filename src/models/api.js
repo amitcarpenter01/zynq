@@ -1413,7 +1413,7 @@ export const getSingleCartByCartId = async (cart_id) => {
     }
 }
 
-export const getSingleCartByClinicId = async (clinic_id) => {
+export const getSingleCartByClinicId = async (clinic_id, user_id) => {
     try {
         const result = await db.query(
             `SELECT ca.cart_id, cl.clinic_name, cl.clinic_logo, ca.clinic_id, ca.user_id, cp.product_id, cp.quantity, p.name as product_name, p.price, p.short_description, p.stock
@@ -1421,10 +1421,10 @@ export const getSingleCartByClinicId = async (clinic_id) => {
              LEFT JOIN tbl_cart_products cp ON ca.cart_id = cp.cart_id
              LEFT JOIN tbl_products p ON cp.product_id = p.product_id
              LEFT JOIN tbl_clinics cl ON ca.clinic_id = cl.clinic_id
-             WHERE ca.clinic_id = ?
+             WHERE ca.clinic_id = ? AND ca.user_id = ?
              ORDER BY ca.created_at DESC
              `,
-            [clinic_id]
+            [clinic_id, user_id]
         );
         return result;
     } catch (error) {
