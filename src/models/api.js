@@ -450,12 +450,15 @@ export const get_all_products_for_user = async ({
 }) => {
     try {
         let query = `
-            SELECT 
-                p.*
-            FROM tbl_products AS p
-            LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
-            LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
-            WHERE 1=1
+SELECT 
+    p.*,
+    IF(cp.product_id IS NOT NULL, TRUE, FALSE) AS added_in_cart
+FROM tbl_products AS p
+LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
+LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
+LEFT JOIN tbl_cart_products AS cp ON cp.product_id = p.product_id
+WHERE 1=1;
+
         `;
 
         const params = [];
@@ -493,24 +496,27 @@ export const get_all_products_for_user = async ({
 export const get_single_product_for_user = async (product_id) => {
     try {
         const query = `
-            SELECT 
-                p.*,
-                IF(COUNT(t.treatment_id), JSON_ARRAYAGG(
-                    JSON_OBJECT(
-                        'treatment_id', t.treatment_id,
-                        'name',         t.name,
-                        'swedish',      t.swedish,
-                        'application',  t.application,
-                        'type',         t.type,
-                        'technology',   t.technology,
-                        'created_at',   t.created_at
-                    )
-                ), JSON_ARRAY()) AS treatments
-            FROM tbl_products AS p
-            LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
-            LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
-            WHERE p.product_id = ?
-            GROUP BY p.product_id
+SELECT 
+    p.*,
+    IF(COUNT(t.treatment_id), JSON_ARRAYAGG(
+        JSON_OBJECT(
+            'treatment_id', t.treatment_id,
+            'name',         t.name,
+            'swedish',      t.swedish,
+            'application',  t.application,
+            'type',         t.type,
+            'technology',   t.technology,
+            'created_at',   t.created_at
+        )
+    ), JSON_ARRAY()) AS treatments,
+    IF(cp.product_id IS NOT NULL, TRUE, FALSE) AS added_in_cart
+FROM tbl_products AS p
+LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
+LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
+LEFT JOIN tbl_cart_products AS cp ON cp.product_id = p.product_id
+WHERE p.product_id = ?
+GROUP BY p.product_id;
+
         `;
 
         return await db.query(query, [product_id]);
