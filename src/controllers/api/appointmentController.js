@@ -120,7 +120,7 @@ export const getMyAppointmentsUser = async (req, res) => {
                 now.isAfter(startUTC) &&
                 now.isBefore(endUTC);
 
-              const treatments = await appointmentModel.getAppointmentTreatments(app.appointment_id);
+            const treatments = await appointmentModel.getAppointmentTreatments(app.appointment_id);
 
             return {
                 ...app,
@@ -360,7 +360,7 @@ export const saveOrBookAppointment = async (req, res) => {
             201,
             language,
             save_type === 'booked' ? 'APPOINTMENT_BOOKED_SUCCESSFULLY' : 'DRAFT_SAVED_SUCCESSFULLY',
-            { appointment_id ,chat_id}
+            { appointment_id, chat_id }
         );
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -403,7 +403,7 @@ export const getMyTreatmentPlans = async (req, res) => {
             now.isAfter(startUTC) &&
                 now.isBefore(endUTC);
 
-                 const treatments = await appointmentModel.getAppointmentTreatments(app.appointment_id);
+            const treatments = await appointmentModel.getAppointmentTreatments(app.appointment_id);
 
             return {
                 ...app,
@@ -415,6 +415,22 @@ export const getMyTreatmentPlans = async (req, res) => {
         }));
 
         return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
+    } catch (error) {
+        console.error("Error fetching user appointments:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const getBookedAppointments = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'booked');
+        const total_spent = appointments.reduce((acc, appointment) => acc + Number(appointment.total_price), 0);
+        const data = {
+            total_spent: total_spent,
+            appointments: appointments,
+        }
+        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", data);
     } catch (error) {
         console.error("Error fetching user appointments:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");

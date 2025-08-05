@@ -1413,6 +1413,26 @@ export const getSingleCartByCartId = async (cart_id) => {
     }
 }
 
+export const getSingleCartByClinicId = async (clinic_id) => {
+    try {
+        const result = await db.query(
+            `SELECT ca.cart_id, cl.clinic_name, cl.clinic_logo, ca.clinic_id, ca.user_id, cp.product_id, cp.quantity, p.name as product_name, p.price, p.short_description, p.stock
+             FROM tbl_carts ca
+             LEFT JOIN tbl_cart_products cp ON ca.cart_id = cp.cart_id
+             LEFT JOIN tbl_products p ON cp.product_id = p.product_id
+             LEFT JOIN tbl_clinics cl ON ca.clinic_id = cl.clinic_id
+             WHERE ca.clinic_id = ?
+             ORDER BY ca.created_at DESC
+             `,
+            [clinic_id]
+        );
+        return result;
+    } catch (error) {
+        console.error("Database Error in getUserCarts:", error);
+        throw new Error("Failed to get user carts.");
+    }
+}
+
 
 // export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', limit = 30, offset = 0 }) => {
 //     try {
