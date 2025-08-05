@@ -450,15 +450,14 @@ export const get_all_products_for_user = async ({
 }) => {
     try {
         let query = `
-SELECT 
-    p.*,
-    IF(cp.product_id IS NOT NULL, TRUE, FALSE) AS added_in_cart
-FROM tbl_products AS p
-LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
-LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
-LEFT JOIN tbl_cart_products AS cp ON cp.product_id = p.product_id
-WHERE 1=1;
-
+            SELECT 
+                p.*, 
+                IF(cp.product_id IS NOT NULL, TRUE, FALSE) AS added_in_cart
+            FROM tbl_products AS p
+            LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
+            LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
+            LEFT JOIN tbl_cart_products AS cp ON cp.product_id = p.product_id
+            WHERE 1=1
         `;
 
         const params = [];
