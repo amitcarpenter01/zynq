@@ -6,6 +6,7 @@ import { createChat, getChatBetweenUsers } from '../../models/chat.js';
 import { getDocterByDocterId } from '../../models/doctor.js';
 import { isEmpty } from '../../utils/user_helper.js';
 const APP_URL = process.env.APP_URL;
+const ADMIN_EARNING_PERCENTAGE = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE);
 import { v4 as uuidv4 } from 'uuid';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
@@ -302,13 +303,16 @@ export const saveOrBookAppointment = async (req, res) => {
         const normalizedEnd = end_time
             ? dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss")
             : null;
-
+        const admin_earnings = (total_price * ADMIN_EARNING_PERCENTAGE) / 100;
+        const clinic_earnings = total_price - admin_earnings;
         const appointmentData = {
             appointment_id,
             user_id,
             doctor_id,
             clinic_id,
             total_price,
+            admin_earnings,
+            clinic_earnings,
             report_id: report_id,
             type: appointmentType,
             status: save_type === 'booked' ? 'Scheduled' : 'Scheduled',
@@ -424,7 +428,7 @@ export const getMyTreatmentPlans = async (req, res) => {
 export const getBookedAppointments = async (req, res) => {
     try {
         const userId = req.user.user_id;
-        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'booked');
+        const appointments = await appointmentModel.getAppointmentsByUserId(userId);
         const total_spent = appointments.reduce((acc, appointment) => acc + Number(appointment.total_price), 0);
         const data = {
             total_spent: total_spent,
