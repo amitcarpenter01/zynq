@@ -1,4 +1,4 @@
-import { addOrGetUserCart, addProductToUserCart, deleteCartByCartId, deleteProductFromUserCart, get_product_images_by_product_ids, getSingleCartByCartId, getUserCarts } from "../../models/api.js";
+import { addOrGetUserCart, addProductToUserCart, deleteCartByCartId, deleteProductFromUserCart, get_product_images_by_product_ids, getSingleCartByCartId, getSingleCartByClinicId, getUserCarts } from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
 import { formatImagePath, isEmpty } from "../../utils/user_helper.js";
 
@@ -116,6 +116,19 @@ export const getSingleCart = asyncHandler(async (req, res) => {
     const { cart_id } = req.params;
 
     const cartsData = await getSingleCartByCartId(cart_id);
+
+    if (isEmpty(cartsData)) return handleSuccess(res, 200, language, "CARTS_FETCHED_SUCCESSFULLY", []);
+
+    const processedCartData = await processedCartsData(cartsData);
+
+    return handleSuccess(res, 200, language, "CART_FETCHED_SUCCESSFULLY", processedCartData[0]);
+});
+
+export const getSingleCartByClinic = asyncHandler(async (req, res) => {
+    const { language = "en" } = req.user;
+    const { clinic_id } = req.params;
+
+    const cartsData = await getSingleCartByClinicId(clinic_id);
 
     if (isEmpty(cartsData)) return handleSuccess(res, 200, language, "CARTS_FETCHED_SUCCESSFULLY", []);
 

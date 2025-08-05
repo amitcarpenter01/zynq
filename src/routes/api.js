@@ -34,7 +34,7 @@ import { getAllProductsSchema, getSingleProductSchema } from '../validations/pro
 import { getWishlists, toggleWishlistProduct } from '../controllers/api/wishlistController.js';
 import { toggleWishlistProductSchema } from '../validations/wishlist.validation.js';
 import { addProductToCartSchema, deleteCartSchema, deleteProductFromCartSchema, getSingleCartSchema, } from '../validations/cart.validation.js';
-import { addProductToCart, deleteCart, deleteProductFromCart, getCarts, getSingleCart } from '../controllers/api/cartController.js';
+import { addProductToCart, deleteCart, deleteProductFromCart, getCarts, getSingleCart, getSingleCartByClinic } from '../controllers/api/cartController.js';
 import { initiatePaymentSchema, klarnaWebhookSchema } from '../validations/payment.validation.js';
 import { initiatePayment, klarnaWebhookHandler } from '../controllers/api/paymentController.js';
 import { getUserSkinTypes } from '../models/clinic.js';
@@ -156,6 +156,7 @@ router.patch('/wishlists/:product_id', authenticateUser, validate(toggleWishlist
 
 router.post('/cart/add', authenticateUser, validate(addProductToCartSchema, "body"), addProductToCart);
 router.get('/cart', authenticateUser, getCarts);
+router.get('/cart/clinic/:clinic_id', authenticateUser, validate(getSingleClinicSchema, "params"), getSingleCartByClinic);
 router.get('/cart/:cart_id', authenticateUser, validate(getSingleCartSchema, "params"), getSingleCart);
 router.delete('/cart/product/:product_id', authenticateUser, validate(deleteProductFromCartSchema, "params"), deleteProductFromCart);
 router.delete('/cart/:cart_id', authenticateUser, validate(deleteCartSchema, "params"), deleteCart);
@@ -171,5 +172,7 @@ router.post("/payments/klarna/push", validate(klarnaWebhookSchema, "query"), kla
 router.get('/skin-types', authenticateUser, faceScanControllers.getClinicSkinTypes);
 router.get('/treatments', authenticateUser, faceScanControllers.getTreatments);
 router.post("/get-all-search-results", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.search_home_entities);
+
+router.get('/payments/get-booked-appointments', authenticateUser, appointmentController.getBookedAppointments);
 
 export default router;
