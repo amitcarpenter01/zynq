@@ -127,8 +127,9 @@ export const getSingleCart = asyncHandler(async (req, res) => {
 export const getSingleCartByClinic = asyncHandler(async (req, res) => {
     const { language = "en" } = req.user;
     const { clinic_id } = req.params;
+    const { user_id } = req.user;
 
-    const cartsData = await getSingleCartByClinicId(clinic_id);
+    const cartsData = await getSingleCartByClinicId(clinic_id, user_id);
 
     if (isEmpty(cartsData)) return handleSuccess(res, 200, language, "CARTS_FETCHED_SUCCESSFULLY", []);
 

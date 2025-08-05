@@ -25,23 +25,23 @@ export const checkIfSlotAlreadyBooked = async (doctor_id, start_time) => {
     }
 };
 
-export const getAppointmentsByUserId = async (user_id,type) => {
+export const getAppointmentsByUserId = async (user_id, type) => {
     const results = await db.query(` 
         SELECT a.*,d.*,zu.email,r.pdf,c.clinic_name FROM tbl_appointments a INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
         INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
         INNER JOIN tbl_clinics c ON c.clinic_id  = a.clinic_id
         WHERE a.user_id = ? AND save_type  = ?
         ORDER BY  start_time ASC
-    `, [user_id,type]);
+    `, [user_id, type]);
     return results;
 };
 
-export const getAppointmentsByDoctorId = async (doctor_id,type) => {
+export const getAppointmentsByDoctorId = async (doctor_id, type) => {
     const results = await db.query(`
         SELECT a.*, u.* , c.clinic_name FROM tbl_appointments a INNER JOIN tbl_users u ON a.user_id = u.user_id  INNER JOIN tbl_clinics c ON a.clinic_id = c.clinic_id 
         WHERE a.doctor_id = ? AND save_type  = ?
         ORDER BY  start_time ASC
-    `, [doctor_id,type]);
+    `, [doctor_id, type]);
     return results;
 };
 
@@ -586,8 +586,43 @@ export const insertAppointmentTreatments = async (appointment_id, treatments) =>
 };
 
 export const getAppointmentTreatments = async (appointment_id) => {
-  const query = `
+    const query = `
     SELECT t.*,ap.* FROM tbl_appointment_treatments ap INNER JOIN tbl_treatments t ON ap.treatment_id  = t.treatment_id  WHERE appointment_id = ?
   `;
-  return await db.query(query, [appointment_id]);
+    return await db.query(query, [appointment_id]);
+};
+
+export const getBookedAppointmentsModel = async (role, user_id) => {
+    let whereClause = '';
+    let values = [user_id];
+
+    switch (role) {
+        case 'DOCTOR':
+        case 'SOLO_DOCTOR':
+            whereClause = 'a.doctor_id = ?';
+            break;
+        case 'CLINIC':
+            whereClause = 'a.clinic_id = ?';
+            break;
+        default:
+            throw new Error('Invalid role');
+    }
+
+    let query =  `
+    SELECT 
+      a.*,
+      d.*,
+      zu.email,
+      r.pdf,
+      c.clinic_name
+    FROM tbl_appointments a
+    INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+    INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+    LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id = a.report_id
+    INNER JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
+    WHERE ${whereClause} AND a.save_type = 'booked'
+    ORDER BY a.start_time ASC
+    `
+
+    return await db.query(query, values);
 };
