@@ -16,24 +16,31 @@ export const getMyAppointmentsClinic = asyncHandler(async (req, res) => {
     }
 
     const result = appointments.map((app) => {
-        const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
-        const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
+        const localFormattedStart = app.start_time ? dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss") : null;
+        const localFormattedEnd = app.end_time ? dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss") : null;
 
         if (app.profile_image && !app.profile_image.startsWith('http')) {
             app.profile_image = `${APP_URL}${app.profile_image}`;
         }
 
-        const startUTC = dayjs.utc(localFormattedStart);
-        const endUTC = dayjs.utc(localFormattedEnd);
-        const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
+        const startUTC = localFormattedStart ? dayjs.utc(localFormattedStart) : null;
+        const endUTC = localFormattedEnd ? dayjs.utc(localFormattedEnd) : null;
+
+        const videoCallOn = (
+            startUTC?.isValid() &&
+            endUTC?.isValid() &&
+            now.isAfter(startUTC) &&
+            now.isBefore(endUTC)
+        );
 
         return {
             ...app,
-            start_time: startUTC.toISOString(),
-            end_time: endUTC.toISOString(),
+            start_time: startUTC ? startUTC.toISOString() : null,
+            end_time: endUTC ? endUTC.toISOString() : null,
             videoCallOn
         };
     });
+
 
     return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED_SUCCESSFULLY", result);
 });
