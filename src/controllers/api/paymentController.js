@@ -13,10 +13,15 @@ import { v4 as uuidv4 } from "uuid";
 
 const process_earnings = async (metadata, user_id, products, cart_id) => {
     try {
-        const total_price = products.reduce((acc, item) => acc + item.unit_price, 0) || 0;
-        const admin_earning_percentage = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE || 3);
-        const admin_earnings = ((total_price * admin_earning_percentage) / 100).toFixed(2);
-        const clinic_earnings = total_price - admin_earnings;
+        const total_price = products.reduce((acc, item) => acc + Number(item.unit_price || 0), 0);
+        const admin_earning_percentage = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE || "3");
+
+        const admin_earnings = parseFloat(((total_price * admin_earning_percentage) / 100).toFixed(2));
+        const clinic_earnings = parseFloat((total_price - admin_earnings).toFixed(2));
+
+        if (isNaN(total_price) || isNaN(admin_earnings) || isNaN(clinic_earnings)) {
+            throw new Error("Computed earnings contain NaN values");
+        }
 
         await insertProductPurchase(
             user_id,
@@ -28,7 +33,10 @@ const process_earnings = async (metadata, user_id, products, cart_id) => {
 
         return { status: "SUCCESS", message: "Earnings processed successfully" };
     } catch (error) {
-        return { status: "FAILED", message: "Error in process_earnings - " + error.message || "Unknown error" };
+        return {
+            status: "FAILED",
+            message: `Error in process_earnings - ${error.message || "Unknown error"}`
+        };
     }
 };
 
