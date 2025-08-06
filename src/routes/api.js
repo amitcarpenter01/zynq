@@ -38,6 +38,8 @@ import { addProductToCart, deleteCart, deleteProductFromCart, getCarts, getSingl
 import { initiatePaymentSchema, klarnaWebhookSchema } from '../validations/payment.validation.js';
 import { initiatePayment, klarnaWebhookHandler } from '../controllers/api/paymentController.js';
 import { getUserSkinTypes } from '../models/clinic.js';
+import { addEditAddressSchema, deleteAddressSchema, getSingleAddressSchema } from '../validations/address.validation.js';
+import { addEditAddress, deleteAddress, getAddresses, getSingleAddress } from '../controllers/api/addressController.js';
 
 const router = express.Router();
 
@@ -175,5 +177,11 @@ router.post("/get-all-search-results", authenticateUser, validate(getAllDoctorsS
 
 router.get('/payments/get-booked-appointments', authenticateUser, appointmentController.getBookedAppointments);
 router.get('/payments/get-purchased-products', authenticateUser, productControllers.getUserPurchasedProducts);
+
+router.post('/address', authenticateUser, validate(addEditAddressSchema, "body"), addEditAddress);
+router.get('/address/:address_id', authenticateUser, validate(getSingleAddressSchema, "params"), getSingleAddress);
+router.get('/address', authenticateUser, getAddresses);
+router.patch('/address', authenticateUser, validate(addEditAddressSchema, "body"), addEditAddress);
+router.delete('/address/:address_id', authenticateUser, validate(deleteAddressSchema, "params"), deleteAddress);
 
 export default router;
