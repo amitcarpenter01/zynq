@@ -117,7 +117,7 @@ export const getMyAppointmentsUser = async (req, res) => {
 
             // Safe check for video call eligibility
             const videoCallOn = (
-                app.status !== 'Completed' &&
+                // app.status !== 'Completed' &&
                 startUTC?.isValid() &&
                 endUTC?.isValid() &&
                 now.isAfter(startUTC) &&

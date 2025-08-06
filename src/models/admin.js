@@ -733,6 +733,10 @@ export const getAdminReviewsModel = async () => {
  SELECT 
                 ar.appointment_rating_id,
                 ar.appointment_id,
+                c.clinic_name,
+                d.name as doctor_name,
+                c.clinic_id,
+                d.doctor_id,
                 ar.rating,
                 ar.review,
                 ar.created_at,
@@ -742,7 +746,10 @@ export const getAdminReviewsModel = async () => {
                 u.age,
                 u.gender
             FROM tbl_appointment_ratings AS ar
-            INNER JOIN tbl_users AS u ON ar.user_id = u.user_id
+            LEFT JOIN tbl_appointments AS a ON ar.appointment_id = a.appointment_id
+            LEFT JOIN tbl_doctors AS d ON a.doctor_id = d.doctor_id
+            LEFT JOIN tbl_clinics AS c ON a.clinic_id = c.clinic_id
+            LEFT JOIN tbl_users AS u ON ar.user_id = u.user_id
             ORDER BY ar.created_at DESC
     `
 
