@@ -41,3 +41,7 @@ export const getAllDoctorsSchema = joi.object({
     limit: numberValidation.min(1).default(20)
   }).optional()
 });
+
+export const requestCallbackSchema = joi.object({
+  doctor_id: stringValidation,
+})

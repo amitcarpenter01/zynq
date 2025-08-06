@@ -13,5 +13,5 @@ export const sendNotificationSchema = joi.object({
   notification_type: joi.alternatives().try(stringValidation, objectValidation).required(),
   receiver_type: userTypeValidation,
   receiver_id: stringValidation,
-  system : booleanValidation.optional()
+  system: booleanValidation.optional()
 });
