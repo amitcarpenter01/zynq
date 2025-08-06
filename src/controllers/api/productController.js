@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken"
 import * as apiModels from "../../models/api.js";
 import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken, generatePassword, generateVerificationLink, splitIDs } from "../../utils/user_helper.js";
-import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { fileURLToPath } from 'url';
 import { getTreatmentIDsByUserID } from "../../utils/misc.util.js";
 
@@ -136,4 +136,28 @@ export const getSingleProduct = async (req, res) => {
     }
 };
 
+export const getUserPurchasedProducts = asyncHandler(async (req, res) => {
+    const { language = "en", user_id } = req.user;
+    const products = await apiModels.getUserPurchasedProductModel(user_id);
+    const carts = await apiModels.getUserCartProductModel(user_id);
 
+    const {
+        total_carts_spent
+    } = carts.reduce(
+        (acc, cart) => {
+            const cartSpent = Number(cart.total_price) || 0;
+            acc.total_carts_spent += cartSpent;
+
+            return acc;
+        },
+        {
+            total_carts_spent: 0
+        }
+    );
+
+    const data = {
+        total_spent: total_carts_spent,
+        products: products,
+    }
+    return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
+});

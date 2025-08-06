@@ -2,7 +2,7 @@ import Joi from "joi";
 import dotenv from "dotenv";
 import * as doctorModels from "../../models/doctor.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
-import { get_web_user_by_id, update_onboarding_status } from "../../models/web_user.js";
+import { get_web_user_by_id, getUserDataByRole, update_onboarding_status } from "../../models/web_user.js";
 import { createChat, fetchChatById, insertChatUsersActive, toActivateUsers } from "../../models/chat.js";
 import { getIO, getUserSockets } from '../../utils/socketManager.js';
 import dbOperations from '../../models/common.js';
@@ -1093,3 +1093,41 @@ export const getDashboard = asyncHandler(async (req, res) => {
     const dashboardData = await doctorModels.getDashboardData(req.user);
     return handleSuccess(res, 200, 'en', 'DASHBOARD_DATA', dashboardData);
 })
+
+export const getClinicPurchasedProducts = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const clinic_id = req.user.clinicData.clinic_id
+    const products = await doctorModels.getClinicPurchasedProductModel(clinic_id);
+    const carts = await doctorModels.getClinicCartProductModel(clinic_id);
+
+    const {
+        total_clinic_earnings,
+        total_admin_earnings,
+        total_carts_earnings
+    } = carts.reduce(
+        (acc, cart) => {
+            const clinicEarning = Number(cart.clinic_earnings) || 0;
+            const adminEarning = Number(cart.admin_earnings) || 0;
+            const cartEarning = Number(cart.total_price) || 0;
+
+            acc.total_clinic_earnings += clinicEarning;
+            acc.total_admin_earnings += adminEarning;
+            acc.total_carts_earnings += cartEarning;
+
+            return acc;
+        },
+        {
+            total_clinic_earnings: 0,
+            total_admin_earnings: 0,
+            total_carts_earnings: 0
+        }
+    );
+
+    const data = {
+        total_clinic_earnings: total_clinic_earnings,
+        total_admin_earnings: total_admin_earnings,
+        total_carts_earnings: total_carts_earnings,
+        products: products,
+    }
+    return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
+});

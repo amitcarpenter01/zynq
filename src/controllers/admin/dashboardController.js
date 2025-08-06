@@ -1,4 +1,4 @@
-import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel } from '../../models/admin.js';
+import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel } from '../../models/admin.js';
 import { getClinicDoctorWallets } from '../../models/payment.js';
 import { asyncHandler, handleError, handleSuccess } from '../../utils/responseHandler.js';
 
@@ -65,3 +65,45 @@ export const getBookedAppointments = asyncHandler(async (req, res) => {
     }
     return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", data);
 });
+
+export const getPurchasedProducts = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const products = await getAdminPurchasedProductModel();
+    const carts = await getAdminCartProductModel();
+    const {
+        total_clinic_earnings,
+        total_admin_earnings,
+        total_carts_earnings
+    } = carts.reduce(
+        (acc, cart) => {
+            const clinicEarning = Number(cart.clinic_earnings) || 0;
+            const adminEarning = Number(cart.admin_earnings) || 0;
+            const cartEarning = Number(cart.total_price) || 0;
+
+            acc.total_clinic_earnings += clinicEarning;
+            acc.total_admin_earnings += adminEarning;
+            acc.total_carts_earnings += cartEarning;
+
+            return acc;
+        },
+        {
+            total_clinic_earnings: 0,
+            total_admin_earnings: 0,
+            total_carts_earnings: 0
+        }
+    );
+
+    const data = {
+        total_clinic_earnings: total_clinic_earnings,
+        total_admin_earnings: total_admin_earnings,
+        total_carts_earnings: total_carts_earnings,
+        products: products,
+    }
+    return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
+});
+
+export const getAdminReviewsRatings = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const reviews = await getAdminReviewsModel();
+    return handleSuccess(res, 200, language, "REVIEWS_FETCHED", reviews);
+})

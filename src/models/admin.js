@@ -727,3 +727,51 @@ export const getAdminBookedAppointmentsModel = async () => {
 
     return await db.query(query);
 };
+
+export const getAdminReviewsModel = async () => {
+    let query = `
+ SELECT 
+                ar.appointment_rating_id,
+                ar.appointment_id,
+                ar.rating,
+                ar.review,
+                ar.created_at,
+                u.user_id,
+                u.full_name,
+                u.profile_image,
+                u.age,
+                u.gender
+            FROM tbl_appointment_ratings AS ar
+            INNER JOIN tbl_users AS u ON ar.user_id = u.user_id
+            ORDER BY ar.created_at DESC
+    `
+
+    return await db.query(query);
+}
+
+export const getAdminPurchasedProductModel = async () => {
+  try {
+    const query = `
+      SELECT c.cart_product_id,c.cart_id,c.quantity,p.*,pp.created_at as purchase_date
+      FROM tbl_cart_products c JOIN tbl_products p ON c.product_id = p.product_id JOIN tbl_product_purchase pp ON pp.cart_id = c.cart_id ORDER BY p.created_at DESC
+    `;
+    const results = await db.query(query);
+    return results;
+  } catch (error) {
+    console.error("Failed to fetch purchase products data:", error);
+    throw error;
+  }
+};
+
+export const getAdminCartProductModel = async () => {
+  try {
+    const query = `
+      SELECT * FROM tbl_product_purchase ORDER BY created_at DESC
+    `;
+    const results = await db.query(query);
+    return results;
+  } catch (error) {
+    console.error("Failed to fetch purchase products data:", error);
+    throw error;
+  }
+};
