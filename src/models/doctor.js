@@ -919,3 +919,30 @@ export const getDashboardData = async (userData) => {
         throw new Error("Failed to fetch dashboard data.");
     }
 };
+
+export const getClinicPurchasedProductModel = async (clinic_id) => {
+  try {
+    const query = `
+      SELECT c.cart_product_id,c.cart_id,c.quantity,p.*,pp.created_at as purchase_date
+      FROM tbl_cart_products c JOIN tbl_products p ON c.product_id = p.product_id JOIN tbl_product_purchase pp ON pp.cart_id = c.cart_id WHERE p.clinic_id = ? ORDER BY p.created_at DESC
+    `;
+    const results = await db.query(query,[clinic_id]);
+    return results;
+  } catch (error) {
+    console.error("Failed to fetch purchase products data:", error);
+    throw error;
+  }
+};
+
+export const getClinicCartProductModel = async (clinic_id) => {
+  try {
+    const query = `
+      SELECT pp.* FROM tbl_product_purchase pp JOIN tbl_carts c ON pp.cart_id = c.cart_id WHERE c.clinic_id = ? ORDER BY created_at DESC
+    `;
+    const results = await db.query(query,[clinic_id]);
+    return results;
+  } catch (error) {
+    console.error("Failed to fetch purchase products data:", error);
+    throw error;
+  }
+};

@@ -79,5 +79,9 @@ router.put('/legal', authenticateAdmin, validate(updateLegalDocumentsSchema, "bo
 
 router.get('/payments/get-booked-appointments', authenticateAdmin, dashboardControllers.getBookedAppointments);
 
+router.get('/payments/get-purchased-products', authenticateAdmin, dashboardControllers.getPurchasedProducts);
+
+router.get('/reviews-ratings', authenticateAdmin, dashboardControllers.getAdminReviewsRatings);
+
 
 export default router;

@@ -13,9 +13,7 @@ import { v4 as uuidv4 } from "uuid";
 
 const process_earnings = async (metadata, user_id, products, cart_id) => {
     try {
-        console.log("products", products);
         const total_price = products.reduce((acc, item) => acc + item.unit_price, 0) || 0;
-        console.log("total_price", total_price);
         const admin_earning_percentage = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE || 3);
         const admin_earnings = (total_price * admin_earning_percentage) / 100;
         const clinic_earnings = total_price - admin_earnings;
@@ -23,7 +21,6 @@ const process_earnings = async (metadata, user_id, products, cart_id) => {
         await insertProductPurchase(
             user_id,
             cart_id,
-            metadata.clinic_id,
             total_price,
             admin_earnings,
             clinic_earnings
@@ -53,8 +50,6 @@ const check_cart_stock = async (metadata) => {
 
 export const initiatePayment = asyncHandler(async (req, res) => {
     const {
-        doctor_id = null,
-        clinic_id = null,
         payment_gateway,
         currency,
         metadata,
@@ -62,14 +57,11 @@ export const initiatePayment = asyncHandler(async (req, res) => {
 
     const { user_id, language = "en" } = req.user;
 
-    if (!Array.isArray(metadata?.type_data) || metadata.type_data.length === 0) {
-        return handleError(res, 400, language, "Invalid or missing type_data in metadata");
-    }
-
     let result = { status: "SUCCESS", message: "Payment initiated successfully" };
 
     if (metadata.type === "CART") {
         const stockCheck = await check_cart_stock(metadata);
+
         if (stockCheck.status === "FAILED") {
             return handleError(res, 400, language, stockCheck.message);
         }

@@ -149,13 +149,13 @@ export const getProductsData = async (cart_id) => {
     throw error;
   }
 };
- 
-export const updateProductsStock = async (product_id,stock) => {
+
+export const updateProductsStock = async (product_id, stock) => {
   try {
     const query = `
       UPDATE tbl_products SET stock = ? WHERE  product_id = ?
     `;
-    const results = await db.query(query, [stock,product_id]);
+    const results = await db.query(query, [stock, product_id]);
     return results;
   } catch (error) {
     console.error("Failed to fetch appointments data:", error);
@@ -167,20 +167,21 @@ export const updateProductsStockBulk = async (items) => {
   if (!items.length) return;
 
   try {
-    const productIds = items.map((item) => item.product_id);
-
     const cases = items
       .map(
-        (item) => `WHEN ${item.product_id} THEN ${item.stock - item.cart_quantity}`
+        (item) =>
+          `WHEN '${item.product_id}' THEN ${item.stock - item.cart_quantity}`
       )
       .join(" ");
+
+    const productIds = items.map((item) => `'${item.product_id}'`).join(",");
 
     const query = `
       UPDATE tbl_products
       SET stock = CASE product_id
         ${cases}
       END
-      WHERE product_id IN (${productIds.join(",")})
+      WHERE product_id IN (${productIds})
     `;
 
     return await db.query(query);
@@ -190,7 +191,7 @@ export const updateProductsStockBulk = async (items) => {
   }
 };
 
- 
+
 export const updateCartPurchasedStatus = async (cart_id) => {
   try {
     const query = `
@@ -203,7 +204,7 @@ export const updateCartPurchasedStatus = async (cart_id) => {
     throw error;
   }
 };
- 
+
 export const getCartsTotalPrice = async (cart_id) => {
   try {
     const query = `
@@ -222,29 +223,26 @@ WHERE cp.cart_id = ?
 };
 
 export const insertProductPurchase = async (
-   user_id,
-        cart_id,
-        clinic_id,
-        total_price,
-        admin_earnings,
-        clinic_earnings
+  user_id,
+  cart_id,
+  total_price,
+  admin_earnings,
+  clinic_earnings
 ) => (
   db.query(
     `
       INSERT INTO tbl_product_purchase (
         user_id,
         cart_id,
-        clinic_id,
         total_price,
         admin_earnings,
         clinic_earnings
-      ) VALUES (?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?)
     `,
-    [  user_id,
-        cart_id,
-        clinic_id,
-        total_price,
-        admin_earnings,
-        clinic_earnings ]
+    [user_id,
+      cart_id,
+      total_price,
+      admin_earnings,
+      clinic_earnings]
   )
 )

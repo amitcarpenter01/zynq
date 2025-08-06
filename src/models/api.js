@@ -1739,3 +1739,30 @@ export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', 
         throw new Error("Failed to fetch treatments.");
     }
 };
+
+export const getUserPurchasedProductModel = async (user_id) => {
+  try {
+    const query = `
+      SELECT c.cart_product_id,c.cart_id,c.quantity,p.*,pp.created_at as purchase_date
+      FROM tbl_cart_products c JOIN tbl_products p ON c.product_id = p.product_id JOIN tbl_product_purchase pp ON pp.cart_id = c.cart_id WHERE pp.user_id  = ? ORDER BY p.created_at DESC
+    `;
+    const results = await db.query(query,[user_id]);
+    return results;
+  } catch (error) {
+    console.error("Failed to fetch purchase products data:", error);
+    throw error;
+  }
+};
+
+export const getUserCartProductModel = async (user_id ) => {
+  try {
+    const query = `
+      SELECT pp.* FROM tbl_product_purchase pp JOIN tbl_carts c ON pp.cart_id = c.cart_id WHERE pp.user_id = ? ORDER BY created_at DESC
+    `;
+    const results = await db.query(query,[user_id]);
+    return results;
+  } catch (error) {
+    console.error("Failed to fetch purchase products data:", error);
+    throw error;
+  }
+};

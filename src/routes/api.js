@@ -174,5 +174,6 @@ router.get('/treatments', authenticateUser, faceScanControllers.getTreatments);
 router.post("/get-all-search-results", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.search_home_entities);
 
 router.get('/payments/get-booked-appointments', authenticateUser, appointmentController.getBookedAppointments);
+router.get('/payments/get-purchased-products', authenticateUser, productControllers.getUserPurchasedProducts);
 
 export default router;
