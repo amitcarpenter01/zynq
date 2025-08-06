@@ -1,7 +1,8 @@
 import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel } from '../../models/admin.js';
+import { get_product_images_by_product_ids } from '../../models/api.js';
 import { getClinicDoctorWallets } from '../../models/payment.js';
 import { asyncHandler, handleError, handleSuccess } from '../../utils/responseHandler.js';
-
+const APP_URL = process.env.APP_URL;
 export const get_dashboard = async (req, res) => {
     try {
         const [get_clinic, get_doctor, get_user, latest_clinic] = await Promise.all([
@@ -70,6 +71,23 @@ export const getPurchasedProducts = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
     const products = await getAdminPurchasedProductModel();
     const carts = await getAdminCartProductModel();
+    const productIds = products.map(p => p.product_id);
+    const imageRows = await get_product_images_by_product_ids(productIds);
+
+    // 🧠 Group images by product_id
+    const imagesMap = {};
+    for (const row of imageRows) {
+        if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
+        imagesMap[row.product_id].push(
+            row.image.startsWith('http')
+                ? row.image
+                : `${APP_URL}clinic/product_image/${row.image}`
+        );
+    }
+
+    for (const product of products) {
+        product.product_images = imagesMap[product.product_id] || [];
+    }
     const {
         total_clinic_earnings,
         total_admin_earnings,

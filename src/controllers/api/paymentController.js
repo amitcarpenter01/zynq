@@ -15,7 +15,7 @@ const process_earnings = async (metadata, user_id, products, cart_id) => {
     try {
         const total_price = products.reduce((acc, item) => acc + item.unit_price, 0) || 0;
         const admin_earning_percentage = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE || 3);
-        const admin_earnings = (total_price * admin_earning_percentage) / 100;
+        const admin_earnings = ((total_price * admin_earning_percentage) / 100).toFixed(2);
         const clinic_earnings = total_price - admin_earnings;
 
         await insertProductPurchase(

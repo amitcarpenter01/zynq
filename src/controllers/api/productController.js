@@ -141,6 +141,23 @@ export const getUserPurchasedProducts = asyncHandler(async (req, res) => {
     const products = await apiModels.getUserPurchasedProductModel(user_id);
     const carts = await apiModels.getUserCartProductModel(user_id);
 
+    const productIds = products.map(p => p.product_id);
+    const imageRows = await apiModels.get_product_images_by_product_ids(productIds);
+
+    // 🧠 Group images by product_id
+    const imagesMap = {};
+    for (const row of imageRows) {
+        if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
+        imagesMap[row.product_id].push(
+            row.image.startsWith('http')
+                ? row.image
+                : `${APP_URL}clinic/product_image/${row.image}`
+        );
+    }
+
+    for (const product of products) {
+        product.product_images = imagesMap[product.product_id] || [];
+    }
     const {
         total_carts_spent
     } = carts.reduce(
