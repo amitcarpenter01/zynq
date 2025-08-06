@@ -6,6 +6,7 @@ import { get_web_user_by_id, getUserDataByRole, update_onboarding_status } from 
 import { createChat, fetchChatById, insertChatUsersActive, toActivateUsers } from "../../models/chat.js";
 import { getIO, getUserSockets } from '../../utils/socketManager.js';
 import dbOperations from '../../models/common.js';
+import { get_product_images_by_product_ids } from "../../models/api.js";
 dotenv.config();
 
 //const APP_URL = process.env.APP_URL;
@@ -1100,6 +1101,23 @@ export const getClinicPurchasedProducts = asyncHandler(async (req, res) => {
     const products = await doctorModels.getClinicPurchasedProductModel(clinic_id);
     const carts = await doctorModels.getClinicCartProductModel(clinic_id);
 
+    const productIds = products.map(p => p.product_id);
+    const imageRows = await get_product_images_by_product_ids(productIds);
+
+    // 🧠 Group images by product_id
+    const imagesMap = {};
+    for (const row of imageRows) {
+        if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
+        imagesMap[row.product_id].push(
+            row.image.startsWith('http')
+                ? row.image
+                : `${APP_URL}clinic/product_image/${row.image}`
+        );
+    }
+
+    for (const product of products) {
+        product.product_images = imagesMap[product.product_id] || [];
+    }
     const {
         total_clinic_earnings,
         total_admin_earnings,
