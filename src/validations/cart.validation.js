@@ -12,7 +12,7 @@ import {
 export const addProductToCartSchema = Joi.object({
   clinic_id: stringValidation,
   product_id: stringValidation,
-  quantity: numberValidation.min(1).default(1),
+  quantity: numberValidation,
 })
 
 export const deleteProductFromCartSchema = Joi.object({

@@ -7,6 +7,11 @@ export const addProductToCart = asyncHandler(async (req, res) => {
     const { user_id, language = "en" } = req.user
 
     const cartData = await addOrGetUserCart(clinic_id, user_id);
+    if (!isEmpty(cartData) && quantity <= 0) {
+        await deleteProductFromUserCart(user_id, product_id);
+        return handleSuccess(res, 200, language, "CART_UPDATED_SUCCESSFULLY");
+    }
+
     const productData = await addProductToUserCart(cartData.cart_id, product_id, quantity);
     return handleSuccess(res, 200, language, "CART_UPDATED_SUCCESSFULLY");
 });

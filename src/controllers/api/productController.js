@@ -136,6 +136,28 @@ export const getSingleProduct = async (req, res) => {
     }
 };
 
+export const groupProductsByCartAndClinic = (products = []) => {
+    const groupedMap = {};
+
+    for (const product of products) {
+        const key = `${product.cart_id}_${product.clinic_id}_${product.clinic_name}`;
+
+        if (!groupedMap[key]) {
+            groupedMap[key] = {
+                cart_id: product.cart_id,
+                clinic_id: product.clinic_id,
+                name: product.name,
+                products: []
+            };
+        }
+
+        groupedMap[key].products.push(product);
+    }
+
+    return Object.values(groupedMap);
+};
+
+
 export const getUserPurchasedProducts = asyncHandler(async (req, res) => {
     const { language = "en", user_id } = req.user;
     const products = await apiModels.getUserPurchasedProductModel(user_id);
@@ -171,10 +193,10 @@ export const getUserPurchasedProducts = asyncHandler(async (req, res) => {
             total_carts_spent: 0
         }
     );
-
+    const groupedProducts = groupProductsByCartAndClinic(products);
     const data = {
         total_spent: total_carts_spent,
-        products: products,
+        products: groupedProducts,
     }
     return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
 });
