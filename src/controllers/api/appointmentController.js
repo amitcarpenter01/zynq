@@ -303,8 +303,9 @@ export const saveOrBookAppointment = async (req, res) => {
         const normalizedEnd = end_time
             ? dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss")
             : null;
-        const admin_earnings = ((total_price * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2);
-        const clinic_earnings = total_price - admin_earnings;
+        const admin_earnings = Number(((total_price * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2));
+        const clinic_earnings = Number(total_price) - admin_earnings;
+
         const appointmentData = {
             appointment_id,
             user_id,
