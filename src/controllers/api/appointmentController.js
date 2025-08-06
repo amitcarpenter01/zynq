@@ -98,7 +98,7 @@ export const getMyAppointmentsUser = async (req, res) => {
 
         const result = await Promise.all(appointments.map(async (app) => {
             const doctor = await getDocterByDocterId(app.doctor_id);
-            let chatId = await getChatBetweenUsers(userId, doctor[0].zynq_user_id);
+            let chatId = await getChatBetweenUsers(userId, doctor[0]?.zynq_user_id);
             app.chatId = chatId.length > 0 ? chatId[0].id : null;
 
             const localFormattedStart = app.start_time ? dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss") : null;
@@ -112,25 +112,29 @@ export const getMyAppointmentsUser = async (req, res) => {
                 app.pdf = `${APP_URL}${app.pdf}`;
             }
 
-
             const startUTC = localFormattedStart ? dayjs.utc(localFormattedStart) : null;
             const endUTC = localFormattedEnd ? dayjs.utc(localFormattedEnd) : null;
-            //const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
-            const videoCallOn =
+
+            // Safe check for video call eligibility
+            const videoCallOn = (
                 app.status !== 'Completed' &&
+                startUTC?.isValid() &&
+                endUTC?.isValid() &&
                 now.isAfter(startUTC) &&
-                now.isBefore(endUTC);
+                now.isBefore(endUTC)
+            );
 
             const treatments = await appointmentModel.getAppointmentTreatments(app.appointment_id);
 
             return {
                 ...app,
-                start_time: localFormattedStart ? dayjs.utc(localFormattedStart).toISOString() : null,
-                end_time: localFormattedEnd ? dayjs.utc(localFormattedEnd).toISOString() : null,
+                start_time: startUTC ? startUTC.toISOString() : null,
+                end_time: endUTC ? endUTC.toISOString() : null,
                 videoCallOn,
                 treatments
             };
         }));
+
 
         return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
     } catch (error) {
