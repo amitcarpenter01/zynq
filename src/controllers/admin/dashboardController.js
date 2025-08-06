@@ -1,4 +1,4 @@
-import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel } from '../../models/admin.js';
+import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel, getAdminCommissionRatesModel, updateAdminCommissionRatesModel } from '../../models/admin.js';
 import { get_product_images_by_product_ids } from '../../models/api.js';
 import { getClinicDoctorWallets } from '../../models/payment.js';
 import { asyncHandler, handleError, handleSuccess } from '../../utils/responseHandler.js';
@@ -124,4 +124,17 @@ export const getAdminReviewsRatings = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
     const reviews = await getAdminReviewsModel();
     return handleSuccess(res, 200, language, "REVIEWS_FETCHED", reviews);
+})
+
+export const getAdminCommissionRates = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const commissionRates = await getAdminCommissionRatesModel();
+    return handleSuccess(res, 200, language, "COMMISSION_RATES_FETCHED", commissionRates[0]);
+})
+
+export const updateAdminCommissionRates = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const { APPOINTMENT_COMMISSION, PRODUCT_COMMISSION } = req.body;
+    await updateAdminCommissionRatesModel({ APPOINTMENT_COMMISSION, PRODUCT_COMMISSION });
+    return handleSuccess(res, 200, language, "COMMISSION_RATES_UPDATED",);
 })

@@ -13,6 +13,7 @@ import * as supportControllers from "../controllers/admin/supportController.js";
 import { getLegalDocuments, updateLegalDocuments } from '../controllers/api/legalController.js';
 import { updateLegalDocumentsSchema } from '../validations/legal.validation.js';
 import { validate } from '../middleware/validation.middleware.js';
+import { updateAdminCommissionRatesSchema } from '../validations/commission.validation.js.js';
 
 const router = express.Router();
 
@@ -83,5 +84,8 @@ router.get('/payments/get-purchased-products', authenticateAdmin, dashboardContr
 
 router.get('/reviews-ratings', authenticateAdmin, dashboardControllers.getAdminReviewsRatings);
 
+router.get('/commission-rates', authenticateAdmin, dashboardControllers.getAdminCommissionRates);
+
+router.put('/commission-rates', authenticateAdmin, validate(updateAdminCommissionRatesSchema, "body"), dashboardControllers.updateAdminCommissionRates);
 
 export default router;
