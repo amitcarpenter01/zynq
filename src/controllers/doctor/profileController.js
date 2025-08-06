@@ -964,6 +964,8 @@ export const createDoctorAvailability = async (req, res) => {
                             start_time: slot.start_time,
                             end_time: slot.end_time,
                             slot_duration: slot.slot_duration,
+                            start_time_utc: slot.start_time_utc,
+                            end_time_utc: slot.end_time_utc,
                             repeat: "weekly",
                         };
                         await doctorModels.insertDoctorAvailabilityModel(availability);
@@ -1008,6 +1010,8 @@ export const updateDoctorAvailability = async (req, res) => {
                             start_time: slot.start_time,
                             end_time: slot.end_time,
                             slot_duration: slot.slot_duration,
+                            start_time_utc: slot.start_time_utc,
+                            end_time_utc: slot.end_time_utc,
                             repeat: "weekly",
                         };
                         await doctorModels.insertDoctorAvailabilityModel(availability);

@@ -445,3 +445,19 @@ export const getBookedAppointments = async (req, res) => {
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
+
+export const requestCallback = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const doctor_id = req.params.doctor_id;
+
+    sendNotification({
+        userData: req.user,
+        type: "CALLBACK",
+        type_id: doctor_id,
+        notification_type: NOTIFICATION_MESSAGES.callback_requested,
+        receiver_id: doctor_id,
+        receiver_type: "DOCTOR"
+    })
+
+    return handleSuccess(res, 200, language, "CALLBACK_REQUESTED_SUCCESSFULLY");
+})

@@ -22,7 +22,7 @@ import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 
 //==================================== Import Validations ==============================
 import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validations/appointment.validation.js';
-import { getSingleDoctorSchema, getAllDoctorsSchema } from '../validations/doctor.validation.js';
+import { getSingleDoctorSchema, getAllDoctorsSchema, requestCallbackSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema, getSingleClinicSchema } from '../validations/clinic.validation.js';
 import { getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
 import { getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
@@ -183,5 +183,7 @@ router.get('/address/:address_id', authenticateUser, validate(getSingleAddressSc
 router.get('/address', authenticateUser, getAddresses);
 router.patch('/address', authenticateUser, validate(addEditAddressSchema, "body"), addEditAddress);
 router.delete('/address/:address_id', authenticateUser, validate(deleteAddressSchema, "params"), deleteAddress);
+
+router.post('/request-callback/:doctor_id', authenticateUser, validate(requestCallbackSchema, "params"), appointmentController.requestCallback);
 
 export default router;

@@ -60,6 +60,10 @@ export const NOTIFICATION_MESSAGES = {
         title: 'Upcoming Appointment',
         getBody: (name) => `You have an upcoming appointment with ${name}.`
     },
+    callback_requested: {
+        title: 'Callback Request',
+        getBody: (name) => `${name} requested a callback.`
+    },
     default: {
         title: (name) => `${name} Notification`,
         getBody: () => `You have a new notification.`
