@@ -6,7 +6,7 @@ import { createChat, getChatBetweenUsers } from '../../models/chat.js';
 import { getDocterByDocterId } from '../../models/doctor.js';
 import { isEmpty } from '../../utils/user_helper.js';
 const APP_URL = process.env.APP_URL;
-const ADMIN_EARNING_PERCENTAGE = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE);
+const ADMIN_EARNING_PERCENTAGE = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE) || 3;
 import { v4 as uuidv4 } from 'uuid';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
