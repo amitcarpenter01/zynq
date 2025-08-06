@@ -750,28 +750,72 @@ export const getAdminReviewsModel = async () => {
 }
 
 export const getAdminPurchasedProductModel = async () => {
-  try {
-    const query = `
+    try {
+        const query = `
       SELECT c.cart_product_id,c.cart_id,c.quantity,p.*,pp.created_at as purchase_date
       FROM tbl_cart_products c JOIN tbl_products p ON c.product_id = p.product_id JOIN tbl_product_purchase pp ON pp.cart_id = c.cart_id ORDER BY p.created_at DESC
     `;
-    const results = await db.query(query);
-    return results;
-  } catch (error) {
-    console.error("Failed to fetch purchase products data:", error);
-    throw error;
-  }
+        const results = await db.query(query);
+        return results;
+    } catch (error) {
+        console.error("Failed to fetch purchase products data:", error);
+        throw error;
+    }
 };
 
 export const getAdminCartProductModel = async () => {
-  try {
-    const query = `
+    try {
+        const query = `
       SELECT * FROM tbl_product_purchase ORDER BY created_at DESC
     `;
-    const results = await db.query(query);
-    return results;
-  } catch (error) {
-    console.error("Failed to fetch purchase products data:", error);
-    throw error;
-  }
+        const results = await db.query(query);
+        return results;
+    } catch (error) {
+        console.error("Failed to fetch purchase products data:", error);
+        throw error;
+    }
+};
+
+export const getAdminCommissionRatesModel = async () => {
+    try {
+        const query = `
+      SELECT appointment_commission AS APPOINTMENT_COMMISSION, product_commission AS PRODUCT_COMMISSION  FROM tbl_admin ORDER BY created_at DESC
+    `;
+        const results = await db.query(query);
+        return results;
+    } catch (error) {
+        console.error("Failed to fetch commission rates data:", error);
+        throw error;
+    }
+}
+
+export const updateAdminCommissionRatesModel = async ({ APPOINTMENT_COMMISSION, PRODUCT_COMMISSION }) => {
+    try {
+        const fields = [];
+        const values = [];
+
+        if (APPOINTMENT_COMMISSION !== undefined) {
+            fields.push('appointment_commission = ?');
+            values.push(APPOINTMENT_COMMISSION);
+        }
+
+        if (PRODUCT_COMMISSION !== undefined) {
+            fields.push('product_commission = ?');
+            values.push(PRODUCT_COMMISSION);
+        }
+
+        if (fields.length === 0) return { affectedRows: 0 };
+
+        const query = `
+            UPDATE tbl_admin
+            SET ${fields.join(', ')}
+            LIMIT 1
+        `;
+
+        const result = await db.query(query, values);
+        return result;
+    } catch (error) {
+        console.error("❌ Database Error in updateAdminCommissionRatesModel:", error.message);
+        throw new Error("Failed to update admin commission rates");
+    }
 };
