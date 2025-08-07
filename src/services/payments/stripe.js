@@ -6,13 +6,13 @@ import { v4 as uuidv4 } from "uuid";
 import { getAppointmentsData, getProductsData, getTreatmentsData } from "../../models/payment.js";
 dotenv.config();
 
-const APP_URL = process.env.APP_URL;
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY;
+// const APP_URL = process.env.APP_URL;
+// const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+// const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY;
 
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
-    apiVersion: "2023-10-16", // or your preferred version
-});
+// const stripe = new Stripe(STRIPE_SECRET_KEY, {
+//     apiVersion: "2023-10-16", // or your preferred version
+// });
 export const processStripeMetadata = async (metadata) => {
     if (!Array.isArray(metadata?.type_data) || metadata.type_data.length === 0) {
         throw new Error("Invalid or missing type_data in metadata");
@@ -72,8 +72,8 @@ export const processStripeMetadata = async (metadata) => {
     };
 };
 
-const SUCCESS_URL = `${APP_URL}api/payments/stripe/success?session_id={CHECKOUT_SESSION_ID}`;
-const CANCEL_URL = `${APP_URL}api/payments/stripe/cancel?session_id={CHECKOUT_SESSION_ID}`;
+// const SUCCESS_URL = `${APP_URL}api/payments/stripe/success?session_id={CHECKOUT_SESSION_ID}`;
+// const CANCEL_URL = `${APP_URL}api/payments/stripe/cancel?session_id={CHECKOUT_SESSION_ID}`;
 
 export const createStripeSession = async ({ payment_id, currency, metadata }) => {
     if (!metadata?.order_amount) {
