@@ -171,7 +171,7 @@ export const rescheduleAppointment = asyncHandler(async (req, res) => {
 
 export const getFutureDoctorSlots = asyncHandler(async (req, res) => {
     const doctor_id = req.user.doctorData.doctor_id;
-    const today = dayjs();
+    const today = dayjs().startOf('day'); // Include all of today
     const oneMonthLater = today.add(1, 'month');
 
     const availabilityRows = await doctorModel.fetchDoctorAvailabilityModel(doctor_id);
@@ -198,9 +198,12 @@ export const getFutureDoctorSlots = asyncHandler(async (req, res) => {
         for (const dateObj of upcomingDates) {
             const formattedDate = dayjs.utc(dateObj).format('YYYY-MM-DD');
 
+            const startTime = dayjs(availability.start_time_utc).utc().format('HH:mm');
+            const endTime = dayjs(availability.end_time_utc).utc().format('HH:mm');
+
             const slots = generateSlots(
-                availability.start_time,
-                availability.end_time,
+                startTime,
+                endTime,
                 availability.slot_duration,
                 formattedDate
             );
@@ -215,7 +218,13 @@ export const getFutureDoctorSlots = asyncHandler(async (req, res) => {
         }
     }
 
-    if (allSlotData.length === 0) {
+    const now = dayjs.utc();
+
+    const filteredSlotData = allSlotData.filter(slot => {
+        return dayjs.utc(slot.start_time).isAfter(now);
+    });
+
+    if (filteredSlotData.length === 0) {
         return handleError(res, 400, 'en', "NO_SLOTS_FOUND", []);
     }
 
@@ -239,7 +248,7 @@ export const getFutureDoctorSlots = asyncHandler(async (req, res) => {
         bookedMap[app.start_time] = app.count || 1;
     }
 
-    const resultWithStatus = allSlotData.map(slot => {
+    const resultWithStatus = filteredSlotData.map(slot => {
         const status = bookedMap[slot.start_time] > 0 ? 'booked' : 'available';
         return {
             start_time: slot.start_time,

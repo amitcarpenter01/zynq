@@ -15,6 +15,8 @@ const dbConfig = {
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
   database: process.env.DB_DATABASE,
+
+  timezone: 'Z',
 };
 
 let connection;
@@ -48,7 +50,7 @@ handleDisconnect();
 function makeDb() {
   return {
     async query(sql, args) {
-      console.log("Executing query:", sql);
+      // console.log("Executing query:", sql);
       if (!connection || connection.state === 'disconnected') {
         console.warn('⚠️ Connection lost. Reconnecting...');
         handleDisconnect();
