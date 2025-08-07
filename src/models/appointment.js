@@ -626,3 +626,11 @@ export const getDoctorBookedAppointmentsModel = async (role, user_id) => {
 
     return await db.query(query, values);
 };
+export const updateMissedAppointmentStatusModel = async () => {
+    let query = `
+    UPDATE tbl_appointments SET
+    status = "Missed"
+    WHERE status = "Scheduled" AND end_time < UTC_TIMESTAMP()`
+
+    return await db.query(query);
+}

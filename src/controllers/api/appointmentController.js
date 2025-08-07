@@ -91,6 +91,7 @@ export const bookAppointment = async (req, res) => {
 
 export const getMyAppointmentsUser = async (req, res) => {
     try {
+        await appointmentModel.updateMissedAppointmentStatusModel();
         const userId = req.user.user_id;
         const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'booked');
 

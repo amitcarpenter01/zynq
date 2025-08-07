@@ -14,6 +14,7 @@ const { RRule } = pkg;
 const APP_URL = process.env.APP_URL;
 export const getMyAppointmentsDoctor = async (req, res) => {
     try {
+        await appointmentModel.updateMissedAppointmentStatusModel();
         const userId = req.user.user_id;
         const doctorId = req.user.doctorData.doctor_id;
 

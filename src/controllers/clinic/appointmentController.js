@@ -6,6 +6,7 @@ import { asyncHandler } from "../../utils/responseHandler.js"
 const APP_URL = process.env.APP_URL;
 
 export const getMyAppointmentsClinic = asyncHandler(async (req, res) => {
+    await appointmentModel.updateMissedAppointmentStatusModel();
     const clinicId = req.user.clinicData.clinic_id;
     const now = dayjs.utc();
 
