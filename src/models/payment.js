@@ -137,7 +137,8 @@ export const getProductsData = async (cart_id) => {
       SELECT
         cp.product_id,
         p.name AS name,
-        cp.quantity * p.price AS unit_price,p.stock,cp.quantity as cart_quantity
+        p.price AS unit_price,
+        p.stock,cp.quantity as cart_quantity
       FROM tbl_cart_products cp
       LEFT JOIN tbl_products p ON cp.product_id = p.product_id
       WHERE cp.cart_id = ?

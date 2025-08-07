@@ -54,7 +54,7 @@ const ratingValidation = joi.number().min(0).max(5).required();
 
 const userTypeValidation = joi.string().valid('USER', 'DOCTOR', 'ADMIN', 'CLINIC').required();
 
-const gatewayTypeValidation = joi.string().valid('KLARNA', 'SWISH').required();
+const gatewayTypeValidation = joi.string().valid('KLARNA', 'SWISH', 'STRIPE').required();
 
 const currencyValidation = joi.string().valid('SEK').required();
 

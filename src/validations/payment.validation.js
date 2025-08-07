@@ -12,6 +12,8 @@ import {
 
 
 export const initiatePaymentSchema = Joi.object({
+  clinic_id: stringValidation.optional(),
+  doctor_id: stringValidation.optional(),
   payment_gateway: gatewayTypeValidation,
   currency: currencyValidation,
   metadata: Joi.object({
