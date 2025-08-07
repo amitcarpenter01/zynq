@@ -66,14 +66,19 @@ export function generateSlots(startTime, endTime, duration, date) {
     const slots = [];
 
     let current = dayjs.utc(`${date} ${startTime}`);
-    const end = dayjs.utc(`${date} ${endTime}`);
+    let end = dayjs.utc(`${date} ${endTime}`);
+
+    // If end time is before or equal to start time, assume it spans to next day
+    if (end.isSameOrBefore(current)) {
+        end = end.add(1, 'day');
+    }
 
     while (current.add(duration, 'minute').isSameOrBefore(end)) {
         const slotStart = current;
         const slotEnd = current.add(duration, 'minute');
 
         slots.push({
-            start_time: slotStart.toISOString(),  // ✅ Proper ISO format
+            start_time: slotStart.toISOString(),
             end_time: slotEnd.toISOString(),
         });
 
@@ -82,6 +87,7 @@ export function generateSlots(startTime, endTime, duration, date) {
 
     return slots;
 }
+
 
 
 
@@ -645,7 +651,8 @@ export const create_call_log_doctor = async (req, res) => {
 export const getFutureDoctorSlots = async (req, res) => {
     try {
         const { doctor_id } = req.query;
-        const today = dayjs();
+        const today = dayjs().startOf('day'); // sets time to 00:00:00
+
         const oneMonthLater = today.add(1, 'month');
 
         const availabilityRows = await doctorModels.fetchDoctorAvailabilityModel(doctor_id);
@@ -672,12 +679,16 @@ export const getFutureDoctorSlots = async (req, res) => {
 
             for (const dateObj of upcomingDates) {
                 const formattedDate = dayjs.utc(dateObj).format('YYYY-MM-DD');
+                const start_time = dayjs(availability.start_time_utc).utc().format('HH:mm');
+                const end_time = dayjs(availability.end_time_utc).utc().format('HH:mm');
+
                 const slots = generateSlots(
-                    availability.start_time,
-                    availability.end_time,
+                    start_time,
+                    end_time,
                     availability.slot_duration,
                     formattedDate
                 );
+
 
                 slots.forEach(slot => {
                     allSlotData.push({
@@ -689,7 +700,13 @@ export const getFutureDoctorSlots = async (req, res) => {
             }
         }
 
-        if (allSlotData.length === 0) {
+        const now = dayjs.utc();
+
+        const filteredSlotData = allSlotData.filter(slot => {
+            return dayjs.utc(slot.start_time).isAfter(now);
+        });
+
+        if (filteredSlotData.length === 0) {
             return handleError(res, 400, 'en', "NO_SLOTS_FOUND", []);
         }
 
@@ -699,7 +716,6 @@ export const getFutureDoctorSlots = async (req, res) => {
             today.format('YYYY-MM-DD'),
             oneMonthLater.format('YYYY-MM-DD')
         );
-        console.log("bookedAppointmentsRaw", bookedAppointmentsRaw);
 
         const result = bookedAppointmentsRaw.map(app => {
             // Convert local Date object (from MySQL) to local string
@@ -715,8 +731,6 @@ export const getFutureDoctorSlots = async (req, res) => {
         });
         // Example result format: [{date: '2025-06-28', time: '10:00', count: 1}, ...]
 
-        console.log("result", result)
-
         const bookedAppointments = Array.isArray(result) ? result : [];
 
         const bookedMap = {};
@@ -729,10 +743,8 @@ export const getFutureDoctorSlots = async (req, res) => {
             bookedMap[key] = app.count || 1;
         }
 
-        console.log("bookedMap", bookedMap)
-
         // 3. Assign status in-memory
-        const resultWithStatus = allSlotData.map(slot => {
+        const resultWithStatus = filteredSlotData.map(slot => {
             // const key = `${slot.date}_${slot.start_time}`;
             // const status = bookedMap[key] > 0 ? 'booked' : 'available';
             const key = slot.start_time;
