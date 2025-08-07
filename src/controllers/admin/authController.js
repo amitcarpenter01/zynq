@@ -10,6 +10,7 @@ import * as adminModels from "../../models/admin.js";
 import { sendEmail } from "../../services/send_email.js";
 import { generateAccessTokenAdmin, generateAccessTokenVerifyAdmin } from "../../utils/user_helper.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { updateMissedAppointmentStatusModel } from "../../models/appointment.js";
 
 dotenv.config();
 
@@ -303,6 +304,7 @@ export const get_all_call_logs = async (req, res) => {
 
 export const get_all_appointments = async (req, res) => {
     try {
+        await updateMissedAppointmentStatusModel();
         const appointments = await apiModels.get_all_appointments();
 
         if (!Array.isArray(appointments) || appointments.length === 0) {
