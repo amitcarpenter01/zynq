@@ -4,6 +4,7 @@ import {
     getKlarnaWebhookResponse,
     processKlarnaMetadata,
 } from "../../services/payments/klarna.js";
+import { createStripeSession, processStripeMetadata } from "../../services/payments/stripe.js";
 import {
     asyncHandler,
     handleError,
@@ -48,7 +49,7 @@ const check_cart_stock = async (metadata) => {
         if (product.stock < product.cart_quantity) {
             return {
                 status: "FAILED",
-                message: `${product.name} is out of stock. Current stock is ${product.stock}`,
+                message: `${product.name} is out of stock.`,
             };
         }
     }
@@ -57,39 +58,73 @@ const check_cart_stock = async (metadata) => {
 };
 
 export const initiatePayment = asyncHandler(async (req, res) => {
-    const {
+    let {
         payment_gateway,
         currency,
         metadata,
+        doctor_id,
+        clinic_id
     } = req.body;
 
     const { user_id, language = "en" } = req.user;
 
-    let result = { status: "SUCCESS", message: "Payment initiated successfully" };
+    metadata.user_id = user_id;
+    metadata.doctor_id = doctor_id;
+    metadata.clinic_id = clinic_id;
 
+    let result = { status: "SUCCESS", message: "Payment initiated successfully" };
+    const payment_id = uuidv4();
     if (metadata.type === "CART") {
         const stockCheck = await check_cart_stock(metadata);
-
-        if (stockCheck.status === "FAILED") {
-            return handleError(res, 400, language, stockCheck.message);
-        }
+        if (stockCheck.status === "FAILED") return handleError(res, 400, language, stockCheck.message);
 
         const { products, cart_id } = stockCheck;
 
         const earningResult = await process_earnings(metadata, user_id, products, cart_id);
 
-        if (earningResult.status === "FAILED") {
-            return handleError(res, 500, language, earningResult.message);
-        }
+        if (earningResult.status === "FAILED") return handleError(res, 500, language, earningResult.message);
 
         await Promise.all([
             updateProductsStockBulk(products),
             updateCartPurchasedStatus(cart_id),
         ]);
 
-
-        result = earningResult; // overwrite with earning info
+        result = earningResult
     }
+    let session;
+
+    // switch (payment_gateway) {
+    //     case "KLARNA":
+    //         metadata = await processKlarnaMetadata(metadata);
+    //         session = await createKlarnaSession({ payment_id: payment_id, currency: currency, metadata: metadata, });
+    //         break;
+
+    //     case "SWISH":
+    //         break;
+
+    //     case "STRIPE":
+    //         metadata = await processStripeMetadata(metadata);
+    //         session = await createStripeSession({ payment_id, currency, metadata });
+    //         break;
+
+    //     default:
+    //         break;
+    // }
+
+    // await insertPayment(
+    //     payment_id,
+    //     user_id,
+    //     doctor_id,
+    //     clinic_id,
+    //     payment_gateway, // provider
+    //     metadata.order_amount,
+    //     currency,
+    //     session.session_id, // provider_reference_id
+    //     session.client_token,
+    //     metadata
+    // );
+
+
 
     return handleSuccess(res, 200, language, "Product Purchase Successfully", result);
 });

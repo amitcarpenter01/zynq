@@ -38,13 +38,10 @@ const formatKlarnaLineItem = (
     };
 };
 
-export const processKlarnaMetadata = async (metadata, doctor_id, clinic_id) => {
+export const processKlarnaMetadata = async (metadata) => {
     if (!Array.isArray(metadata?.type_data) || metadata.type_data.length === 0) {
         throw new Error("Invalid or missing type_data in metadata");
     }
-
-    metadata.doctor_id = doctor_id;
-    metadata.clinic_id = clinic_id;
 
     const type_ids = metadata.type_data.map((item) => item.type_id);
     const quantityMap = {};

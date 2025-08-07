@@ -40,6 +40,7 @@ import { initiatePayment, klarnaWebhookHandler } from '../controllers/api/paymen
 import { getUserSkinTypes } from '../models/clinic.js';
 import { addEditAddressSchema, deleteAddressSchema, getSingleAddressSchema } from '../validations/address.validation.js';
 import { addEditAddress, deleteAddress, getAddresses, getSingleAddress } from '../controllers/api/addressController.js';
+import { stripeSuccessHandler } from '../services/payments/stripe.js';
 
 const router = express.Router();
 
@@ -168,6 +169,7 @@ router.delete('/cart/:cart_id', authenticateUser, validate(deleteCartSchema, "pa
 router.post('/payments/initiate', authenticateUser, validate(initiatePaymentSchema, "body"), initiatePayment);
 // router.post('/payments/klarna/confirm-payment', authenticateUser, validate(confirmKlarnaPaymentSchema, "body"), initiatePayment);
 router.post("/payments/klarna/push", validate(klarnaWebhookSchema, "query"), klarnaWebhookHandler);
+router.get("/payments/stripe/success", stripeSuccessHandler);
 
 // -------------------------------------Generic------------------------------------------------//
 
