@@ -1376,11 +1376,15 @@ export const deleteCartByCartId = async (cart_id) => {
 export const getUserCarts = async (user_id) => {
     try {
         const result = await db.query(
-            `SELECT ca.cart_id, cl.clinic_name, cl.clinic_logo, ca.clinic_id, ca.user_id, cp.product_id, cp.quantity, p.name as product_name, p.price, p.short_description, p.stock
+            `SELECT ca.cart_id, cl.clinic_name, cll.street_address as clinic_street_address, 
+            cll.city as clinic_city, cll.state as clinic_state, cll.zip_code as clinic_zip, 
+            cll.latitude as clinic_latitude, cll.longitude as clinic_longitude,
+            cl.clinic_logo, ca.clinic_id, ca.user_id, cp.product_id, cp.quantity, p.name as product_name, p.price, p.short_description, p.stock
              FROM tbl_carts ca
              LEFT JOIN tbl_cart_products cp ON ca.cart_id = cp.cart_id
              LEFT JOIN tbl_products p ON cp.product_id = p.product_id
              LEFT JOIN tbl_clinics cl ON ca.clinic_id = cl.clinic_id
+             LEFT JOIN tbl_clinic_locations cll ON ca.clinic_id = cll.clinic_id
              WHERE ca.user_id = ? AND ca.cart_status = 'CART'
              ORDER BY ca.created_at DESC
              `,
