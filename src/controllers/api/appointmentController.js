@@ -212,7 +212,7 @@ export const getAppointmentsById = async (req, res) => {
             const endUTC = localFormattedEnd ? dayjs.utc(localFormattedEnd) : null;
             //const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
             const videoCallOn =
-                app.status !== 'Completed' &&
+                // app.status !== 'Completed' &&
                 now.isAfter(startUTC) &&
                 now.isBefore(endUTC);
             const treatments = await appointmentModel.getAppointmentTreatments(appointment_id);
