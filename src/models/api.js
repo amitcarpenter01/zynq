@@ -1362,7 +1362,7 @@ export const deleteProductFromUserCart = async (user_id, product_id) => {
 export const deleteCartByCartId = async (cart_id) => {
     try {
         await db.query(
-            `DELETE cp FROM tbl_cart_products cp
+            `DELETE cp, c FROM tbl_cart_products cp
              INNER JOIN tbl_carts c ON cp.cart_id = c.cart_id
              WHERE c.cart_id = ? AND c.cart_status = 'CART'`,
             [cart_id]
