@@ -35,7 +35,8 @@ export const getAllProducts = async (req, res) => {
             treatment_ids = [],
             concern_ids = [],
             search = '',
-            price = {}
+            price = {},
+            recommended = true
         } = filters;
 
         const { page, limit } = pagination;
@@ -57,9 +58,14 @@ export const getAllProducts = async (req, res) => {
             search.trim().length === 0 &&
             Object.keys(price).length === 0;
 
-        if (areAllFiltersEmpty) {
+        // if (areAllFiltersEmpty) {
+        //     const fallbackTreatmentIds = await getTreatmentIDsByUserID(userId);
+        //     // finalTreatmentIds = fallbackTreatmentIds || [];
+        // }
+
+        if (recommended) {
             const fallbackTreatmentIds = await getTreatmentIDsByUserID(userId);
-            // finalTreatmentIds = fallbackTreatmentIds || [];
+            finalTreatmentIds = fallbackTreatmentIds || [];
         }
 
         const queryFilters = {
