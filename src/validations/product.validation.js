@@ -6,6 +6,7 @@ import {
   orderValidation,
   ratingValidation,
   idArrayValidation,
+  booleanValidation,
 } from "../utils/joi.util.js";
 
 
@@ -18,6 +19,7 @@ export const getAllProductsSchema = Joi.object({
       min: numberValidation.min(0),
       max: numberValidation.min(0)
     }).optional(),
+    recommended: booleanValidation.optional()
   }).optional(),
 
   // sort: Joi.object({
