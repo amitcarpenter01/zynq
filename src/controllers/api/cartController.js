@@ -1,20 +1,14 @@
-import { addOrGetUserCart, addProductToUserCart, deleteCartByCartId, deleteProductFromUserCart, get_product_images_by_product_ids, getSingleCartByCartId, getSingleCartByClinicId, getUserCarts,deleteProductBeforeInsertData } from "../../models/api.js";
+import { addOrGetUserCart, addProductToUserCart, deleteCartByCartId, deleteProductFromUserCart, get_product_images_by_product_ids, getSingleCartByCartId, getSingleCartByClinicId, getUserCarts, deleteProductBeforeInsertData } from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
 import { formatImagePath, isEmpty } from "../../utils/user_helper.js";
 
 export const addProductToCart = asyncHandler(async (req, res) => {
     const { clinic_id, product_id, quantity } = req.body;
-    console.log('req.body', req.body);
-
     const { user_id, language = "en" } = req.user
 
     const cartData = await addOrGetUserCart(clinic_id, user_id);
-    console.log('cartData', cartData);
-    console.log('quantity <= 0', quantity <= 0);
 
     if (!isEmpty(cartData) && quantity <= 0) {
-        console.log('true');
-
         await deleteProductFromUserCart(user_id, product_id);
         return handleSuccess(res, 200, language, "CART_UPDATED_SUCCESSFULLY");
     }
@@ -55,7 +49,6 @@ export const processedCartsData = async (cartsData = []) => {
             stock,
             quantity,
             price,
-
         } = row;
 
         price = Number(price) || 0;
@@ -110,7 +103,8 @@ export const processedCartsData = async (cartsData = []) => {
         }
     }
 
-    return Array.from(cartMap.values());
+    // ✅ Filter out carts with no products
+    return Array.from(cartMap.values()).filter(cart => cart.products.length > 0);
 };
 
 export const getCarts = asyncHandler(async (req, res) => {

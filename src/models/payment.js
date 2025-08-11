@@ -151,6 +151,23 @@ export const getProductsData = async (cart_id) => {
   }
 };
 
+export const getProductsByCartId = async (cart_id) => {
+  try {
+    const query = `
+      SELECT
+        p.*
+      FROM tbl_cart_products cp
+      LEFT JOIN tbl_products p ON cp.product_id = p.product_id
+      WHERE cp.cart_id = ?
+    `;
+    const results = await db.query(query, [cart_id]);
+    return results;
+  } catch (error) {
+    console.error("Failed to fetch appointments data:", error);
+    throw error;
+  }
+};
+
 export const updateProductsStock = async (product_id, stock) => {
   try {
     const query = `
@@ -228,7 +245,8 @@ export const insertProductPurchase = async (
   cart_id,
   total_price,
   admin_earnings,
-  clinic_earnings
+  clinic_earnings,
+  productDetails
 ) => (
   db.query(
     `
@@ -237,13 +255,15 @@ export const insertProductPurchase = async (
         cart_id,
         total_price,
         admin_earnings,
-        clinic_earnings
-      ) VALUES (?, ?, ?, ?, ?)
+        clinic_earnings,
+        product_details
+      ) VALUES (?, ?, ?, ?, ?, ?)
     `,
     [user_id,
       cart_id,
       total_price,
       admin_earnings,
-      clinic_earnings]
+      clinic_earnings,
+      productDetails]
   )
 )

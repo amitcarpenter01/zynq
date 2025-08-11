@@ -493,7 +493,7 @@ export const get_all_products_for_user = async ({
 };
 
 export const getUserCartProduct = async (
-   user_id
+    user_id
 ) => {
     try {
         let query = `
@@ -505,8 +505,8 @@ export const getUserCartProduct = async (
            
             WHERE ct.cart_status = 'CART' And ct.user_id  = '${user_id}'
         `;
-        console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>',query);
-        
+        console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', query);
+
         return await db.query(query);
     } catch (error) {
         console.error("Database Error in getAllProductsForUser:", error.message);
@@ -1351,10 +1351,10 @@ export const addOrGetUserCart = async (clinic_id, user_id) => {
 };
 
 export const addProductToUserCart = async (cart_id, product_id, quantity) => {
-    console.log('cart_id, product_id, quantity',cart_id, product_id, quantity);
-    
+    console.log('cart_id, product_id, quantity', cart_id, product_id, quantity);
+
     try {
-       
+
         await db.query(
             `INSERT INTO tbl_cart_products (cart_id, product_id, quantity) VALUES (?, ?, ?)`,
             [cart_id, product_id, quantity]
@@ -1367,9 +1367,9 @@ export const addProductToUserCart = async (cart_id, product_id, quantity) => {
 
 export const deleteProductBeforeInsertData = async (cart_id, product_id, quantity) => {
     console.log('delete called');
-    
+
     try {
-         await db.query(
+        await db.query(
             `DELETE FROM tbl_cart_products WHERE cart_id = ? AND product_id = ?`,
             [cart_id, product_id]
         );
@@ -1780,13 +1780,60 @@ export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', 
 export const getUserPurchasedProductModel = async (user_id) => {
     try {
         const query = `
-      SELECT c.cart_product_id,c.cart_id,c.quantity,p.*,pp.created_at as purchase_date
-      FROM tbl_cart_products c JOIN tbl_products p ON c.product_id = p.product_id JOIN tbl_product_purchase pp ON pp.cart_id = c.cart_id WHERE pp.user_id  = ? ORDER BY p.created_at DESC
-    `;
-        const results = await db.query(query, [user_id]);
-        return results;
+            SELECT 
+                pp.cart_id,
+                pp.product_details, 
+                pp.created_at AS purchase_date
+            FROM tbl_product_purchase pp
+            WHERE pp.user_id = ?
+            ORDER BY pp.created_at DESC
+        `;
+        const purchaseRows = await db.query(query, [user_id]);
+
+        // Gather all product IDs in one pass for stock fetching
+        let allProductIds = [];
+        for (const row of purchaseRows) {
+            const products = Array.isArray(row.product_details)
+                ? row.product_details
+                : [];
+            allProductIds.push(...products.map(p => p.product_id));
+        }
+
+        allProductIds = [...new Set(allProductIds)]; // remove duplicates
+
+        // Fetch stock for all products in one query
+        let stockMap = {};
+        if (allProductIds.length) {
+            const stockRows = await db.query(
+                `SELECT product_id, stock FROM tbl_products WHERE product_id IN (?)`,
+                [allProductIds]
+            );
+            stockMap = stockRows.reduce((map, r) => {
+                map[r.product_id] = r.stock;
+                return map;
+            }, {});
+        }
+
+        // Build final array in the same format as before
+        const allProducts = [];
+        for (const row of purchaseRows) {
+            const products = Array.isArray(row.product_details)
+                ? row.product_details
+                : [];
+
+            for (const p of products) {
+                allProducts.push({
+                    ...p,
+                    stock: stockMap[p.product_id] ?? 0,
+                    cart_id: row.cart_id,
+                    purchase_date: row.purchase_date
+                });
+            }
+        }
+
+        return allProducts;
     } catch (error) {
-        console.error("Failed to fetch purchase products data:", error);
+        console.error("Failed to fetch purchased product data:", error);
         throw error;
     }
 };

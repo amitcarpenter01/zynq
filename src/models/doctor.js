@@ -921,28 +921,69 @@ export const getDashboardData = async (userData) => {
 };
 
 export const getClinicPurchasedProductModel = async (clinic_id) => {
-  try {
-    const query = `
-      SELECT c.cart_product_id,c.cart_id,c.quantity,p.*,pp.created_at as purchase_date
-      FROM tbl_cart_products c JOIN tbl_products p ON c.product_id = p.product_id JOIN tbl_product_purchase pp ON pp.cart_id = c.cart_id WHERE p.clinic_id = ? ORDER BY p.created_at DESC
+    try {
+        // Step 1: Get purchase rows with product_details for carts belonging to this clinic
+        const purchaseQuery = `
+      SELECT pp.cart_id, pp.product_details, pp.created_at AS purchase_date
+      FROM tbl_product_purchase pp
+      JOIN tbl_carts c ON pp.cart_id = c.cart_id
+      WHERE c.clinic_id = ?
+      ORDER BY pp.created_at DESC
     `;
-    const results = await db.query(query,[clinic_id]);
-    return results;
-  } catch (error) {
-    console.error("Failed to fetch purchase products data:", error);
-    throw error;
-  }
+        const purchaseRows = await db.query(purchaseQuery, [clinic_id]);
+
+        // Step 2: Extract all product IDs from product_details
+        let allProductIds = [];
+        for (const row of purchaseRows) {
+            const products = Array.isArray(row.product_details) ? row.product_details : [];
+            allProductIds.push(...products.map(p => p.product_id));
+        }
+        allProductIds = [...new Set(allProductIds)];
+
+        // Step 3: Fetch stock for all product_ids
+        let stockMap = {};
+        if (allProductIds.length) {
+            const stockRows = await db.query(
+                `SELECT product_id, stock FROM tbl_products WHERE product_id IN (?)`,
+                [allProductIds]
+            );
+            stockMap = stockRows.reduce((map, r) => {
+                map[r.product_id] = r.stock;
+                return map;
+            }, {});
+        }
+
+        // Step 4: Flatten products with stock and purchase date
+        const allProducts = [];
+        for (const row of purchaseRows) {
+            const products = Array.isArray(row.product_details) ? row.product_details : [];
+            for (const p of products) {
+                allProducts.push({
+                    ...p,
+                    stock: stockMap[p.product_id] ?? 0,
+                    cart_id: row.cart_id,
+                    purchase_date: row.purchase_date,
+                });
+            }
+        }
+
+        return allProducts;
+    } catch (error) {
+        console.error("Failed to fetch clinic purchased product data:", error);
+        throw error;
+    }
 };
 
+
 export const getClinicCartProductModel = async (clinic_id) => {
-  try {
-    const query = `
+    try {
+        const query = `
       SELECT pp.* FROM tbl_product_purchase pp JOIN tbl_carts c ON pp.cart_id = c.cart_id WHERE c.clinic_id = ? ORDER BY created_at DESC
     `;
-    const results = await db.query(query,[clinic_id]);
-    return results;
-  } catch (error) {
-    console.error("Failed to fetch purchase products data:", error);
-    throw error;
-  }
+        const results = await db.query(query, [clinic_id]);
+        return results;
+    } catch (error) {
+        console.error("Failed to fetch purchase products data:", error);
+        throw error;
+    }
 };

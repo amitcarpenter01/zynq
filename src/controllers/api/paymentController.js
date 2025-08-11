@@ -1,4 +1,4 @@
-import { getProductsData, insertPayment, insertProductPurchase, updateCartPurchasedStatus, updateProductsStock, updateProductsStockBulk } from "../../models/payment.js";
+import { getProductsByCartId, getProductsData, insertPayment, insertProductPurchase, updateCartPurchasedStatus, updateProductsStock, updateProductsStockBulk } from "../../models/payment.js";
 import {
     createKlarnaSession,
     getKlarnaWebhookResponse,
@@ -12,14 +12,14 @@ import {
 } from "../../utils/responseHandler.js";
 import { v4 as uuidv4 } from "uuid";
 
-const process_earnings = async (metadata, user_id, products, cart_id) => {
+const process_earnings = async (metadata, user_id, products, cart_id, productDetails) => {
     try {
         const total_price = products.reduce((acc, item) => acc + Number(item.unit_price || 0), 0);
         const admin_earning_percentage = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE || "3");
 
         const admin_earnings = parseFloat(((total_price * admin_earning_percentage) / 100).toFixed(2));
         const clinic_earnings = parseFloat((total_price - admin_earnings).toFixed(2));
-
+        productDetails = JSON.stringify(productDetails);
         if (isNaN(total_price) || isNaN(admin_earnings) || isNaN(clinic_earnings)) {
             throw new Error("Computed earnings contain NaN values");
         }
@@ -29,7 +29,8 @@ const process_earnings = async (metadata, user_id, products, cart_id) => {
             cart_id,
             total_price,
             admin_earnings,
-            clinic_earnings
+            clinic_earnings,
+            productDetails
         );
 
         return { status: "SUCCESS", message: "Earnings processed successfully" };
@@ -44,6 +45,7 @@ const process_earnings = async (metadata, user_id, products, cart_id) => {
 const check_cart_stock = async (metadata) => {
     const [cart_id] = metadata.type_data.map((item) => item.type_id);
     const products = await getProductsData(cart_id);
+    const productDetails = await getProductsByCartId(cart_id);
 
     for (const product of products) {
         if (product.stock < product.cart_quantity) {
@@ -54,7 +56,7 @@ const check_cart_stock = async (metadata) => {
         }
     }
 
-    return { status: "SUCCESS", products, cart_id };
+    return { status: "SUCCESS", products, cart_id, productDetails };
 };
 
 export const initiatePayment = asyncHandler(async (req, res) => {
@@ -80,7 +82,7 @@ export const initiatePayment = asyncHandler(async (req, res) => {
 
         const { products, cart_id } = stockCheck;
 
-        const earningResult = await process_earnings(metadata, user_id, products, cart_id);
+        const earningResult = await process_earnings(metadata, user_id, products, cart_id, stockCheck.productDetails);
 
         if (earningResult.status === "FAILED") return handleError(res, 500, language, earningResult.message);
 
