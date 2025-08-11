@@ -20,11 +20,82 @@ dotenv.config();
 const APP_URL = process.env.APP_URL;
 const image_logo = process.env.LOGO_URL;
 
+export const addProduct = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            name: Joi.string().required(),
+            price: Joi.number().required(),
+            short_description: Joi.string().optional().allow('', null),
+            full_description: Joi.string().optional().allow('', null),
+            feature_text: Joi.string().optional().allow('', null),
+            size_label: Joi.string().optional().allow('', null),
+            benefit_text: Joi.string().optional().allow('', null),
+            how_to_use: Joi.string().optional().allow('', null),
+            ingredients: Joi.string().optional().allow('', null),
+            stock: Joi.number().optional().allow('', null),
+            treatment_ids: Joi.string().optional().allow('', null),
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) {
+            return joiErrorHandle(res, error);
+        }
+
+        const [clinic] = await clinicModels.get_clinic_by_zynq_user_id(req.user.id);
+        if (!clinic) {
+            return handleError(res, 404, "en", "CLINIC_NOT_FOUND");
+        }
+
+        const { treatment_ids } = value;
+        delete value.treatment_ids;
+
+        let treatment_ids_array = []
+        if (treatment_ids) {
+            treatment_ids_array = treatment_ids.split(',')
+        }
+
+        let product_id = uuidv4();
+        const productData = {
+            product_id: product_id,
+            clinic_id: clinic.clinic_id,
+            ...value
+        };
+
+        await clinicModels.insertProduct(productData);
+
+        const [product] = await clinicModels.get_product_by_id(product_id);
+        if (!product) {
+            return handleError(res, 404, "en", "PRODUCT_NOT_FOUND");
+        }
+
+        if (treatment_ids_array.length > 0) {
+            await clinicModels.insertProductTreatments(treatment_ids_array, product.product_id);
+        }
+
+
+        if (req.files.length > 0) {
+            await Promise.all(req.files.map(async (file) => {
+                let data = {
+                    product_id: product_id,
+                    image: file.filename,
+                }
+                await clinicModels.insertProductImage(data);
+            }));
+        }
+
+        return handleSuccess(res, 201, "en", "PRODUCT_ADDED_SUCCESSFULLY");
+
+    } catch (error) {
+        console.error("Error in addProduct:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
+};
 
 export const getAllProducts = async (req, res) => {
     try {
         const language = req?.user?.language || 'en';
         const userId = req?.user?.user_id;
+console.log('userId',userId);
 
         const {
             filters = {},
@@ -76,8 +147,24 @@ export const getAllProducts = async (req, res) => {
             offset
         };
 
-        const products = await apiModels.get_all_products_for_user(queryFilters);
+        let products = await apiModels.get_all_products_for_user(queryFilters);
+        const userCartProducts = await apiModels.getUserCartProduct(userId);
 
+        if (userCartProducts.length === 0) {
+            // Set all to 0
+            products = products.map(item => ({
+                ...item,
+                added_in_cart: 0
+            }));
+        } else {
+            // Make a Set of product IDs for fast lookup
+            const cartProductIds = new Set(userCartProducts.map(p => p.product_id));
+
+            products = products.map(item => ({
+                ...item,
+                added_in_cart: cartProductIds.has(item.product_id) ? 1 : 0
+            }));
+        }
         if (!products || products.length === 0) {
             return handleSuccess(res, 200, language, "PRODUCTS_FETCHED_SUCCESSFULLY", []);
         }
