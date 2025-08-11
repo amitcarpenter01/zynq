@@ -30,7 +30,8 @@ const process_earnings = async (metadata, user_id, products, cart_id, productDet
             total_price,
             admin_earnings,
             clinic_earnings,
-            productDetails
+            productDetails,
+            metadata.address_id
         );
 
         return { status: "SUCCESS", message: "Earnings processed successfully" };
@@ -65,7 +66,8 @@ export const initiatePayment = asyncHandler(async (req, res) => {
         currency,
         metadata,
         doctor_id,
-        clinic_id
+        clinic_id,
+        address_id
     } = req.body;
 
     const { user_id, language = "en" } = req.user;
@@ -73,6 +75,7 @@ export const initiatePayment = asyncHandler(async (req, res) => {
     metadata.user_id = user_id;
     metadata.doctor_id = doctor_id;
     metadata.clinic_id = clinic_id;
+    metadata.address_id = address_id;
 
     let result = { status: "SUCCESS", message: "Payment initiated successfully" };
     const payment_id = uuidv4();
