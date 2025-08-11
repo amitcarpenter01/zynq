@@ -155,7 +155,7 @@ export const getProductsByCartId = async (cart_id) => {
   try {
     const query = `
       SELECT
-        p.*
+        p.*, cp.quantity as cart_quantity
       FROM tbl_cart_products cp
       LEFT JOIN tbl_products p ON cp.product_id = p.product_id
       WHERE cp.cart_id = ?
@@ -246,7 +246,8 @@ export const insertProductPurchase = async (
   total_price,
   admin_earnings,
   clinic_earnings,
-  productDetails
+  productDetails,
+  address_id = null
 ) => (
   db.query(
     `
@@ -256,14 +257,17 @@ export const insertProductPurchase = async (
         total_price,
         admin_earnings,
         clinic_earnings,
-        product_details
-      ) VALUES (?, ?, ?, ?, ?, ?)
+        product_details,
+        address_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `,
     [user_id,
       cart_id,
       total_price,
       admin_earnings,
       clinic_earnings,
-      productDetails]
+      productDetails,
+      address_id
+    ]
   )
 )

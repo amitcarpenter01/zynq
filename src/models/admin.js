@@ -766,12 +766,16 @@ export const getAdminPurchasedProductModel = async () => {
         pp.purchase_id,
         pp.cart_id,
         pp.product_details, 
+        pp.total_price,
         pp.created_at AS purchase_date,
         u.user_id,
         u.full_name AS user_name,
-        u.email AS user_email
+        u.email AS user_email,
+        u.mobile_number,
+        a.address
       FROM tbl_product_purchase pp
       JOIN tbl_users u ON pp.user_id = u.user_id
+      LEFT JOIN tbl_address a ON pp.address_id = a.address_id
       ORDER BY pp.created_at DESC
     `;
         const purchaseRows = await db.query(query);
@@ -833,6 +837,7 @@ export const getAdminPurchasedProductModel = async () => {
                 user_id: row.user_id,
                 name: row.user_name || null,
                 email: row.user_email || null,
+                mobile_number: row.mobile_number || null,
             };
 
             const products = Array.isArray(row.product_details) ? row.product_details : [];
@@ -857,6 +862,8 @@ export const getAdminPurchasedProductModel = async () => {
                 purchase_id: purchaseId,
                 cart_id: row.cart_id,
                 purchase_date: row.purchase_date,
+                total_price: row.total_price,
+                address: row.address,
                 clinic,
                 user,
                 products: enrichedProducts,
