@@ -492,6 +492,28 @@ export const get_all_products_for_user = async ({
     }
 };
 
+export const getUserCartProduct = async (
+   user_id
+) => {
+    try {
+        let query = `
+            SELECT 
+                pt.product_id
+                
+            FROM tbl_carts AS ct
+            LEFT JOIN tbl_cart_products AS pt ON ct.cart_id  = pt.cart_id
+           
+            WHERE ct.cart_status = 'CART' And ct.user_id  = '${user_id}'
+        `;
+        console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>',query);
+        
+        return await db.query(query);
+    } catch (error) {
+        console.error("Database Error in getAllProductsForUser:", error.message);
+        throw new Error("Failed to fetch products.");
+    }
+};
+
 export const get_single_product_for_user = async (product_id) => {
     try {
         const query = `
@@ -1303,7 +1325,7 @@ export const addOrGetUserCart = async (clinic_id, user_id) => {
     try {
         let cartData;
         const result = await db.query(
-            `SELECT cart_id FROM tbl_carts WHERE clinic_id = ? AND user_id = ?`,
+            `SELECT cart_id FROM tbl_carts WHERE clinic_id = ? AND user_id = ? And cart_status = 'CART'`,
             [clinic_id, user_id]
         );
 
@@ -1329,12 +1351,10 @@ export const addOrGetUserCart = async (clinic_id, user_id) => {
 };
 
 export const addProductToUserCart = async (cart_id, product_id, quantity) => {
+    console.log('cart_id, product_id, quantity',cart_id, product_id, quantity);
+    
     try {
-        await db.query(
-            `DELETE FROM tbl_cart_products WHERE cart_id = ? AND product_id = ?`,
-            [cart_id, product_id]
-        );
-
+       
         await db.query(
             `INSERT INTO tbl_cart_products (cart_id, product_id, quantity) VALUES (?, ?, ?)`,
             [cart_id, product_id, quantity]
@@ -1342,6 +1362,21 @@ export const addProductToUserCart = async (cart_id, product_id, quantity) => {
     } catch (error) {
         console.error("Database Error in addProductToUserCart:", error);
         throw new Error("Failed to add product to user cart.");
+    }
+}
+
+export const deleteProductBeforeInsertData = async (cart_id, product_id, quantity) => {
+    console.log('delete called');
+    
+    try {
+         await db.query(
+            `DELETE FROM tbl_cart_products WHERE cart_id = ? AND product_id = ?`,
+            [cart_id, product_id]
+        );
+
+    } catch (error) {
+        console.error("Database Error in deleteProductFromUserCart:", error);
+        throw new Error("Failed to delete product from user cart.");
     }
 }
 

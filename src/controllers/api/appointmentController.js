@@ -385,6 +385,7 @@ export const getMyTreatmentPlans = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'draft');
+console.log('appointments',appointments);
 
         const now = dayjs.utc();
 
@@ -414,6 +415,7 @@ export const getMyTreatmentPlans = async (req, res) => {
                 now.isBefore(endUTC);
 
             const treatments = await appointmentModel.getAppointmentTreatments(app.appointment_id);
+            console.log('treatments>>>>>>>>>>', treatments);
 
             return {
                 ...app,
@@ -423,6 +425,7 @@ export const getMyTreatmentPlans = async (req, res) => {
                 treatments
             };
         }));
+        console.log('result', result);
 
         return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
     } catch (error) {
@@ -434,7 +437,7 @@ export const getMyTreatmentPlans = async (req, res) => {
 export const getBookedAppointments = async (req, res) => {
     try {
         const userId = req.user.user_id;
-        const appointments = await appointmentModel.getAppointmentsByUserId(userId);
+        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'booked');
         const total_spent = appointments.reduce((acc, appointment) => acc + Number(appointment.total_price), 0);
         const data = {
             total_spent: total_spent,
