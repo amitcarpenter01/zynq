@@ -2,6 +2,7 @@ import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedA
 import { get_product_images_by_product_ids } from '../../models/api.js';
 import { getClinicDoctorWallets } from '../../models/payment.js';
 import { asyncHandler, handleError, handleSuccess } from '../../utils/responseHandler.js';
+import { groupProductsByCartAndClinic } from '../api/productController.js';
 const APP_URL = process.env.APP_URL;
 export const get_dashboard = async (req, res) => {
     try {
@@ -69,39 +70,23 @@ export const getBookedAppointments = asyncHandler(async (req, res) => {
 
 export const getPurchasedProducts = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
-    const products = await getAdminPurchasedProductModel();
+
+    // 1️⃣ Fetch purchases with enriched products (including live stock and images)
+    const purchases = await getAdminPurchasedProductModel();
+
+    // 2️⃣ Fetch cart earnings info
     const carts = await getAdminCartProductModel();
-    const productIds = products.map(p => p.product_id);
-    const imageRows = await get_product_images_by_product_ids(productIds);
 
-    // 🧠 Group images by product_id
-    const imagesMap = {};
-    for (const row of imageRows) {
-        if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
-        imagesMap[row.product_id].push(
-            row.image.startsWith('http')
-                ? row.image
-                : `${APP_URL}clinic/product_image/${row.image}`
-        );
-    }
-
-    for (const product of products) {
-        product.product_images = imagesMap[product.product_id] || [];
-    }
+    // 3️⃣ Calculate totals
     const {
         total_clinic_earnings,
         total_admin_earnings,
         total_carts_earnings
     } = carts.reduce(
         (acc, cart) => {
-            const clinicEarning = Number(cart.clinic_earnings) || 0;
-            const adminEarning = Number(cart.admin_earnings) || 0;
-            const cartEarning = Number(cart.total_price) || 0;
-
-            acc.total_clinic_earnings += clinicEarning;
-            acc.total_admin_earnings += adminEarning;
-            acc.total_carts_earnings += cartEarning;
-
+            acc.total_clinic_earnings += Number(cart.clinic_earnings) || 0;
+            acc.total_admin_earnings += Number(cart.admin_earnings) || 0;
+            acc.total_carts_earnings += Number(cart.total_price) || 0;
             return acc;
         },
         {
@@ -111,14 +96,17 @@ export const getPurchasedProducts = asyncHandler(async (req, res) => {
         }
     );
 
+    // 4️⃣ Send response
     const data = {
-        total_clinic_earnings: total_clinic_earnings,
-        total_admin_earnings: total_admin_earnings,
-        total_carts_earnings: total_carts_earnings,
-        products: products,
-    }
+        total_clinic_earnings,
+        total_admin_earnings,
+        total_carts_earnings,
+        purchases,  // renamed for clarity
+    };
+
     return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
 });
+
 
 export const getAdminReviewsRatings = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';

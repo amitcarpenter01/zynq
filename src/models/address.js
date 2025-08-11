@@ -38,13 +38,16 @@ export const getSingleAddressByAddressId = async (address_id) => {
 
 export const getAddressesByUserId = async (user_id) => {
     try {
-        const result = await db.query('SELECT * FROM `tbl_address` WHERE user_id = ?', [user_id]);
+        const result = await db.query(
+            'SELECT * FROM `tbl_address` WHERE user_id = ? ORDER BY updated_at DESC',
+            [user_id]
+        );
         return result;
     } catch (error) {
         console.error("Failed to get address:", error);
         throw error;
     }
-}
+};
 
 export const deleteAddressByAddressId = async (address_id, user_id) => {
     try {
