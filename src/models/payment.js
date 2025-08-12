@@ -138,9 +138,11 @@ export const getProductsData = async (cart_id) => {
         cp.product_id,
         p.name AS name,
         p.price AS unit_price,
+        c.cart_status,
         p.stock,cp.quantity as cart_quantity
       FROM tbl_cart_products cp
       LEFT JOIN tbl_products p ON cp.product_id = p.product_id
+      LEFT JOIN tbl_carts c ON cp.cart_id = c.cart_id
       WHERE cp.cart_id = ?
     `;
     const results = await db.query(query, [cart_id]);
@@ -222,6 +224,22 @@ export const updateCartPurchasedStatus = async (cart_id) => {
     throw error;
   }
 };
+
+export const updateLatestAddress = async (user_id, address_id) => {
+  try {
+    const unselectQuery = `UPDATE tbl_address SET is_selected = 0 WHERE user_id = ?`;
+    await db.query(unselectQuery, [user_id]);
+
+    const selectQuery = `UPDATE tbl_address SET is_selected = 1 WHERE address_id = ?`;
+    const results = await db.query(selectQuery, [address_id]);
+
+    return results;
+  } catch (error) {
+    console.error("Failed to update address data:", error);
+    throw error;
+  }
+};
+
 
 export const getCartsTotalPrice = async (cart_id) => {
   try {
