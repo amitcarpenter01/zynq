@@ -88,4 +88,6 @@ router.get('/commission-rates', authenticateAdmin, dashboardControllers.getAdmin
 
 router.put('/commission-rates', authenticateAdmin, validate(updateAdminCommissionRatesSchema, "body"), dashboardControllers.updateAdminCommissionRates);
 
+router.get('/payments/get-payment-history', authenticateAdmin, dashboardControllers.getPaymentHistory);
+
 export default router;

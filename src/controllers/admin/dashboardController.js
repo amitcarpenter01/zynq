@@ -107,6 +107,25 @@ export const getPurchasedProducts = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
 });
 
+export const getPaymentHistory = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+
+    const [
+        purchases,
+        appointments
+    ] = await Promise.all([
+        getAdminPurchasedProductModel(),
+        getAdminBookedAppointmentsModel()
+    ])
+
+    const data = {
+        products: purchases,
+        appointments: appointments
+    }
+
+    return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
+});
+
 
 export const getAdminReviewsRatings = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
