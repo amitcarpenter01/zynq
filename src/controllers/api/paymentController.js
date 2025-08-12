@@ -1,4 +1,4 @@
-import { getProductsByCartId, getProductsData, insertPayment, insertProductPurchase, updateCartPurchasedStatus, updateProductsStock, updateProductsStockBulk } from "../../models/payment.js";
+import { getProductsByCartId, getProductsData, insertPayment, insertProductPurchase, updateCartPurchasedStatus, updateLatestAddress, updateProductsStock, updateProductsStockBulk } from "../../models/payment.js";
 import {
     createKlarnaSession,
     getKlarnaWebhookResponse,
@@ -49,6 +49,13 @@ const check_cart_stock = async (metadata) => {
     const productDetails = await getProductsByCartId(cart_id);
 
     for (const product of products) {
+        if (product.cart_status === "PURCHASED") {
+            return {
+                status: "FAILED",
+                message: `Cart has already been purchased.`,
+            }
+        }
+
         if (product.stock < product.cart_quantity) {
             return {
                 status: "FAILED",
@@ -89,10 +96,17 @@ export const initiatePayment = asyncHandler(async (req, res) => {
 
         if (earningResult.status === "FAILED") return handleError(res, 500, language, earningResult.message);
 
-        await Promise.all([
+        const promises = [
             updateProductsStockBulk(products),
             updateCartPurchasedStatus(cart_id),
-        ]);
+        ];
+
+        if (address_id) {
+            promises.push(updateLatestAddress(user_id, address_id));
+        }
+
+        await Promise.all(promises);
+
 
         result = earningResult
     }

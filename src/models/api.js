@@ -1338,7 +1338,7 @@ export const addOrGetUserCart = async (clinic_id, user_id) => {
             );
 
             cartData = await db.query(
-                `SELECT cart_id FROM tbl_carts WHERE clinic_id = ? AND user_id = ?`,
+                `SELECT cart_id FROM tbl_carts WHERE clinic_id = ? AND user_id = ? And cart_status = 'CART'`,
                 [clinic_id, user_id]
             );
         }
