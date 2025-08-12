@@ -711,19 +711,34 @@ export const update_support_ticket = async (support_ticket_id, updateData) => {
 
 export const getAdminBookedAppointmentsModel = async () => {
     let query = `
-    SELECT 
-      a.*,
-      d.*,
-      zu.email,
-      r.pdf,
-      c.clinic_name
-    FROM tbl_appointments a
-    INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
-    INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
-    LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id = a.report_id
-    INNER JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
-    WHERE a.save_type = 'booked'
-    ORDER BY a.start_time ASC
+SELECT
+  a.*,
+  d.name AS doctor_name,
+  c.clinic_name,
+  u.full_name AS user_name,
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'treatment_id', at.treatment_id,
+          'treatment_name', t.name,
+          'treatment_price', at.price
+        )
+      )
+      FROM tbl_appointment_treatments at
+      LEFT JOIN tbl_treatments t ON t.treatment_id = at.treatment_id
+      WHERE at.appointment_id = a.appointment_id
+        AND at.treatment_id IS NOT NULL
+    ),
+    JSON_ARRAY()
+  ) AS treatments
+FROM tbl_appointments a
+LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
+LEFT JOIN tbl_users u ON u.user_id = a.user_id
+WHERE a.save_type = 'booked'
+ORDER BY a.start_time ASC;
+
     `
 
     return await db.query(query);
