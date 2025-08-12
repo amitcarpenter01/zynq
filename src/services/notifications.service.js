@@ -8,11 +8,16 @@ import { getUserDataByReceiverIdAndRole, getUserDataByRole } from '../models/web
 import { extractUserData } from '../utils/misc.util.js';
 import { isEmpty } from '../utils/user_helper.js';
 import { sendNotificationSchema } from '../validations/notification.validation.js';
-// import admin from 'firebase-admin';
+import admin from 'firebase-admin';
+import fs from "fs";
 import dayjs from 'dayjs';
 import dotenv from "dotenv";
 dotenv.config();
-
+import path from "path";
+import { fileURLToPath } from 'url';
+// __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 // ============================================================================
 // HELPERS
 // ============================================================================
@@ -97,11 +102,14 @@ const getNotificationContent = (notification_type, full_name) => {
 // FCM NOTIFICATION SENDER
 // ============================================================================
 
-// if (!admin.apps.length) {
-//     admin.initializeApp({
-//         credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
-//     });
-// }
+if (!admin.apps.length) {
+    const serviceAccountPath = path.resolve(__dirname, `../../${process.env.FIREBASE_SERVICE_ACCOUNT}`);
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
+
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+    });
+}
 
 const isPushNotificationEnabled = async (receiver_id, receiver_type) => {
     let query = '';
@@ -116,7 +124,7 @@ const isPushNotificationEnabled = async (receiver_id, receiver_type) => {
         //   break;
 
         default:
-            return false;
+            return true;
     }
 
     try {

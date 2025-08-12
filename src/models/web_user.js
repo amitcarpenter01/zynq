@@ -56,14 +56,26 @@ export const get_web_user_by_reset_token = async (reset_token) => {
     }
 }
 
-export const update_jwt_token = async (token, id) => {
+export const update_jwt_fcm_token = async (token, fcm_token, id) => {
     try {
-        return await db.query(`UPDATE tbl_zqnq_users SET jwt_token = ? WHERE id = ?`, [token, id]);
+        let query = `UPDATE tbl_zqnq_users SET jwt_token = ?`;
+        const params = [token];
+
+        // Only update fcm_token if provided (not null or undefined)
+        if (fcm_token != null) {
+            query += `, fcm_token = ?`;
+            params.push(fcm_token);
+        }
+
+        query += ` WHERE id = ?`;
+        params.push(id);
+
+        return await db.query(query, params);
     } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to update jwt token.");
+        throw new Error("Failed to update JWT and/or FCM token.");
     }
-}
+};
 
 export const update_web_user_password = async (password, show_password, reset_token, reset_token_expiry, id) => {
     try {
