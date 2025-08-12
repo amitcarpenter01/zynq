@@ -860,6 +860,7 @@ export const getAdminPurchasedProductModel = async () => {
 
             purchases[purchaseId] = {
                 purchase_id: purchaseId,
+                purchase_type: "PRODUCT",
                 cart_id: row.cart_id,
                 purchase_date: row.purchase_date,
                 total_price: row.total_price,
