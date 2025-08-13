@@ -15,3 +15,7 @@ export const sendNotificationSchema = joi.object({
   receiver_id: stringValidation,
   system: booleanValidation.optional()
 });
+
+export const deleteSingleNotificationSchema = joi.object({
+  notification_id: stringValidation
+})

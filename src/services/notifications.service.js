@@ -426,6 +426,42 @@ export const toggleNotificationSetting = async (userData) => {
 };
 
 // ============================================================================
+// Delete NOTIFICATIONS
+// ============================================================================
+
+export const deleteSingleNotificationModel = async (userData, notification_id) => {
+    try {
+        const { user_id: receiver_id } = extractUserData(userData);
+
+        const deleteNotification = await db.query(
+            `DELETE FROM tbl_notifications
+             WHERE receiver_id = ? AND notification_id = ?`,
+            [receiver_id, notification_id]
+        );
+
+    } catch (error) {
+        console.error('Error in DeleteSingleNotification:', error);
+        throw new Error('Failed to delete notification');
+    }
+};
+
+export const deleteNotificationsModel = async (userData) => {
+    try {
+        const { user_id: receiver_id } = extractUserData(userData);
+
+        const deleteNotification = await db.query(
+            `DELETE FROM tbl_notifications
+             WHERE receiver_id = ?`,
+            [receiver_id]
+        );
+
+    } catch (error) {
+        console.error('Error in DeleteNotifications:', error);
+        throw new Error('Failed to delete notifications');
+    }
+};
+
+// ============================================================================
 // Appointment Notifications CRON
 // ============================================================================
 

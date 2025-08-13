@@ -25,7 +25,7 @@ import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validatio
 import { getSingleDoctorSchema, getAllDoctorsSchema, requestCallbackSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema, getSingleClinicSchema } from '../validations/clinic.validation.js';
 import { getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema, getTreatmentsSchema } from '../validations/treatment.validation.js';
-import { getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
+import { deleteNotifications, deleteSingleNotification, getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
 import { sendAppointmentNotifications } from '../services/notifications.service.js';
 import { toggleLanguage } from '../controllers/web_users/authController.js';
 import { getLegalDocuments } from '../controllers/api/legalController.js';
@@ -41,6 +41,7 @@ import { getUserSkinTypes } from '../models/clinic.js';
 import { addEditAddressSchema, deleteAddressSchema, getSingleAddressSchema } from '../validations/address.validation.js';
 import { addEditAddress, deleteAddress, getAddresses, getSingleAddress } from '../controllers/api/addressController.js';
 import { stripeSuccessHandler } from '../services/payments/stripe.js';
+import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
 
 const router = express.Router();
 
@@ -133,6 +134,8 @@ router.post('/appointment/ratings', authenticateUser, validate(rateAppointmentSc
 
 router.get('/notifications/get', authenticateUser, getNotifications);
 router.patch('/notifications/toggle-notification', authenticateUser, toggleNotification);
+router.delete('/notifications/:notification_id', authenticateUser, validate(deleteSingleNotificationSchema, "params"), deleteSingleNotification);
+router.delete('/notifications', authenticateUser, deleteNotifications);
 
 // -------------------------------------Concerns------------------------------------------------//
 
