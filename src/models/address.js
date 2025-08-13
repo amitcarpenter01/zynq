@@ -39,7 +39,7 @@ export const getSingleAddressByAddressId = async (address_id) => {
 export const getAddressesByUserId = async (user_id) => {
     try {
         const result = await db.query(
-            'SELECT * FROM `tbl_address` WHERE user_id = ? ORDER BY updated_at DESC',
+            'SELECT * FROM `tbl_address` WHERE user_id = ? ORDER BY created_at DESC',
             [user_id]
         );
         return result;

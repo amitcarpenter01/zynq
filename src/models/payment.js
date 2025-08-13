@@ -290,3 +290,17 @@ export const insertProductPurchase = async (
     ]
   )
 )
+
+export const updateShipmentStatusModel = async (purchase_id, shipment_status) => {
+  try {
+    await db.query(
+      `
+       UPDATE tbl_product_purchase SET shipment_status = ? WHERE purchase_id = ?
+     `,
+      [shipment_status, purchase_id]
+    )
+  } catch (error) {
+    console.error("Failed to update shipment status:", error);
+    throw error;
+  }
+}

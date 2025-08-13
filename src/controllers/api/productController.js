@@ -95,7 +95,6 @@ export const getAllProducts = async (req, res) => {
     try {
         const language = req?.user?.language || 'en';
         const userId = req?.user?.user_id;
-console.log('userId',userId);
 
         const {
             filters = {},
@@ -240,6 +239,7 @@ export const groupProductsByCartAndClinic = (products = []) => {
                 cart_id: product.cart_id,
                 clinic_id: product.clinic_id,
                 name: product.name,
+                shipment_status: product.shipment_status,
                 products: []
             };
         }

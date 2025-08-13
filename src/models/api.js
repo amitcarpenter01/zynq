@@ -1782,6 +1782,7 @@ export const getUserPurchasedProductModel = async (user_id) => {
         const query = `
             SELECT 
                 pp.cart_id,
+                pp.shipment_status,
                 pp.product_details, 
                 pp.created_at AS purchase_date
             FROM tbl_product_purchase pp
@@ -1826,7 +1827,8 @@ export const getUserPurchasedProductModel = async (user_id) => {
                     ...p,
                     stock: stockMap[p.product_id] ?? 0,
                     cart_id: row.cart_id,
-                    purchase_date: row.purchase_date
+                    purchase_date: row.purchase_date,
+                    shipment_status: row.shipment_status
                 });
             }
         }
