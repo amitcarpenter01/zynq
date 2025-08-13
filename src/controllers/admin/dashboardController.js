@@ -98,9 +98,9 @@ export const getPurchasedProducts = asyncHandler(async (req, res) => {
 
     // 4️⃣ Send response
     const data = {
-        total_clinic_earnings,
-        total_admin_earnings,
-        total_carts_earnings,
+        total_clinic_earnings: Number(total_clinic_earnings.toFixed(2)),
+        total_admin_earnings: Number(total_admin_earnings.toFixed(2)),
+        total_carts_earnings: Number(total_carts_earnings.toFixed(2)),
         purchases,  // renamed for clarity
     };
 
@@ -139,9 +139,9 @@ export const getSinglePurchasedProducts = asyncHandler(async (req, res) => {
 
     // 4️⃣ Send response
     const data = {
-        total_clinic_earnings,
-        total_admin_earnings,
-        total_carts_earnings,
+        total_clinic_earnings: Number(total_clinic_earnings.toFixed(2)),
+        total_admin_earnings: Number(total_admin_earnings.toFixed(2)),
+        total_carts_earnings: Number(total_carts_earnings.toFixed(2)),
         purchases,  // renamed for clarity
     };
 

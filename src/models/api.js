@@ -1787,6 +1787,8 @@ export const getUserPurchasedProductModel = async (user_id) => {
         pp.total_price,
         pp.created_at AS purchase_date,
         pp.shipment_status,
+        pp.shipped_date,
+        pp.delivered_date,
         a.address
       FROM tbl_product_purchase pp
       LEFT JOIN tbl_address a ON pp.address_id = a.address_id
@@ -1871,6 +1873,8 @@ export const getUserPurchasedProductModel = async (user_id) => {
                 total_price: row.total_price,
                 address: row.address,
                 shipment_status: row.shipment_status,
+                shipped_date: row.shipped_date || null,
+                delivered_date: row.delivered_date || null,
                 clinic,
                 products: enrichedProducts,
             };
@@ -1907,6 +1911,8 @@ export const getSingleUserPurchasedProductModel = async (user_id, purchase_id) =
         pp.total_price,
         pp.created_at AS purchase_date,
         pp.shipment_status,
+        pp.shipped_date,
+        pp.delivered_date,
         a.address
       FROM tbl_product_purchase pp
       LEFT JOIN tbl_address a ON pp.address_id = a.address_id
@@ -1991,6 +1997,8 @@ export const getSingleUserPurchasedProductModel = async (user_id, purchase_id) =
                 total_price: row.total_price,
                 address: row.address,
                 shipment_status: row.shipment_status,
+                shipped_date: row.shipped_date || null,
+                delivered_date: row.delivered_date || null,
                 clinic,
                 products: enrichedProducts,
             };

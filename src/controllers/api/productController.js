@@ -271,7 +271,7 @@ export const getUserPurchasedProducts = asyncHandler(async (req, res) => {
     );
 
     const data = {
-        total_spent: total_carts_spent,
+        total_spent: Number(total_carts_spent.toFixed(2)),
         purchases: products,
     }
     return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
@@ -298,7 +298,7 @@ export const getSingleUserPurchasedProducts = asyncHandler(async (req, res) => {
     );
 
     const data = {
-        total_spent: total_carts_spent,
+        total_spent: Number(total_carts_spent.toFixed(2)),
         purchases: products,
     }
     return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);

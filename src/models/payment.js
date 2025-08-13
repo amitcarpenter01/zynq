@@ -293,14 +293,30 @@ export const insertProductPurchase = async (
 
 export const updateShipmentStatusModel = async (purchase_id, shipment_status) => {
   try {
-    await db.query(
-      `
-       UPDATE tbl_product_purchase SET shipment_status = ? WHERE purchase_id = ?
-     `,
-      [shipment_status, purchase_id]
-    )
+    let dateColumn = null;
+
+    if (shipment_status === "SHIPPED") {
+      dateColumn = "shipped_date";
+    } else if (shipment_status === "DELIVERED") {
+      dateColumn = "delivered_date";
+    }
+
+    // Base query
+    let query = `UPDATE tbl_product_purchase SET shipment_status = ?`;
+    const params = [shipment_status];
+
+    // Add date update if applicable
+    if (dateColumn) {
+      query += `, ${dateColumn} = CURRENT_TIMESTAMP`;
+    }
+
+    query += ` WHERE purchase_id = ?`;
+    params.push(purchase_id);
+
+    await db.query(query, params);
+
   } catch (error) {
     console.error("Failed to update shipment status:", error);
     throw error;
   }
-}
+};
