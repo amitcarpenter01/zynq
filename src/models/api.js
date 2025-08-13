@@ -1135,6 +1135,41 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
     }
 };
 
+export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
+    try {
+        let query = `
+            SELECT
+                t.*,
+                ANY_VALUE(c.name) AS concern_name,
+                IFNULL(MIN(dt.price), 0) AS min_price,
+                IFNULL(MAX(dt.price), 0) AS max_price
+            FROM tbl_treatment_concerns tc
+            INNER JOIN tbl_treatments t ON tc.treatment_id = t.treatment_id
+            INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+            LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+        `;
+
+        let params = [];
+
+        // Add WHERE clause only if treatment_ids is not empty
+        if (Array.isArray(treatment_ids) && treatment_ids.length > 0) {
+            const placeholders = treatment_ids.map(() => '?').join(', ');
+            query += ` WHERE t.treatment_id IN (${placeholders})`;
+            params = treatment_ids;
+        }
+
+        query += ` GROUP BY t.treatment_id`;
+
+        const results = await db.query(query, params);
+
+        return formatBenefitsOnLang(results, lang);
+    } catch (error) {
+        console.error("Database Error in getTreatmentsByTreatmentIds:", error.message);
+        throw new Error("Failed to fetch treatments.");
+    }
+};
+
+
 export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
     try {
         if (!Array.isArray(concern_ids) || concern_ids.length === 0) {

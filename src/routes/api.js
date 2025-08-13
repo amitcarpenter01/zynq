@@ -24,7 +24,7 @@ import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validations/appointment.validation.js';
 import { getSingleDoctorSchema, getAllDoctorsSchema, requestCallbackSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema, getSingleClinicSchema } from '../validations/clinic.validation.js';
-import { getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema } from '../validations/treatment.validation.js';
+import { getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema, getTreatmentsSchema } from '../validations/treatment.validation.js';
 import { getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
 import { sendAppointmentNotifications } from '../services/notifications.service.js';
 import { toggleLanguage } from '../controllers/web_users/authController.js';
@@ -175,6 +175,7 @@ router.get("/payments/stripe/success", stripeSuccessHandler);
 
 router.get('/skin-types', authenticateUser, faceScanControllers.getClinicSkinTypes);
 router.get('/treatments', authenticateUser, faceScanControllers.getTreatments);
+router.post('/get-treatments-by-ids', authenticateUser, validate(getTreatmentsSchema, "body"), faceScanControllers.get_treatments_by_treatments);
 router.post("/get-all-search-results", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.search_home_entities);
 
 router.get('/payments/get-booked-appointments', authenticateUser, appointmentController.getBookedAppointments);
