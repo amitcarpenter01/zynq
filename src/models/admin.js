@@ -1096,3 +1096,13 @@ export const updateAdminCommissionRatesModel = async ({ APPOINTMENT_COMMISSION, 
         throw new Error("Failed to update admin commission rates");
     }
 };
+
+export const getAppointmentsById = async ( appointment_id) => {
+    const results = await db.query(`
+        SELECT  *
+        FROM tbl_appointments 
+        WHERE appointment_id = ?
+    `, [appointment_id]);
+
+    return results;
+};
