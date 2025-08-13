@@ -35,7 +35,7 @@ import { getWishlists, toggleWishlistProduct } from '../controllers/api/wishlist
 import { toggleWishlistProductSchema } from '../validations/wishlist.validation.js';
 import { addProductToCartSchema, deleteCartSchema, deleteProductFromCartSchema, getSingleCartSchema, } from '../validations/cart.validation.js';
 import { addProductToCart, deleteCart, deleteProductFromCart, getCarts, getSingleCart, getSingleCartByClinic } from '../controllers/api/cartController.js';
-import { initiatePaymentSchema, klarnaWebhookSchema } from '../validations/payment.validation.js';
+import { getSinglePurchasedProductSchema, initiatePaymentSchema, klarnaWebhookSchema } from '../validations/payment.validation.js';
 import { initiatePayment, klarnaWebhookHandler } from '../controllers/api/paymentController.js';
 import { getUserSkinTypes } from '../models/clinic.js';
 import { addEditAddressSchema, deleteAddressSchema, getSingleAddressSchema } from '../validations/address.validation.js';
@@ -178,6 +178,7 @@ router.get('/treatments', authenticateUser, faceScanControllers.getTreatments);
 router.post("/get-all-search-results", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.search_home_entities);
 
 router.get('/payments/get-booked-appointments', authenticateUser, appointmentController.getBookedAppointments);
+router.get('/payments/get-purchased-products/:purchase_id', authenticateUser, validate(getSinglePurchasedProductSchema, "params"), productControllers.getSingleUserPurchasedProducts);
 router.get('/payments/get-purchased-products', authenticateUser, productControllers.getUserPurchasedProducts);
 
 router.post('/address', authenticateUser, validate(addEditAddressSchema, "body"), addEditAddress);

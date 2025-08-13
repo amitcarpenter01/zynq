@@ -1137,3 +1137,42 @@ export const getClinicPurchasedProducts = asyncHandler(async (req, res) => {
     }
     return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
 });
+
+export const getSingleClinicPurchasedProducts = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const clinic_id = req.user.clinicData.clinic_id
+    const purchase_id = req.params.purchase_id
+    const products = await doctorModels.getSingleClinicPurchasedProductModel(clinic_id, purchase_id);
+    const carts = await doctorModels.getSingleClinicCartProductModel(clinic_id, purchase_id);
+
+    const {
+        total_clinic_earnings,
+        total_admin_earnings,
+        total_carts_earnings
+    } = carts.reduce(
+        (acc, cart) => {
+            const clinicEarning = Number(cart.clinic_earnings) || 0;
+            const adminEarning = Number(cart.admin_earnings) || 0;
+            const cartEarning = Number(cart.total_price) || 0;
+
+            acc.total_clinic_earnings += clinicEarning;
+            acc.total_admin_earnings += adminEarning;
+            acc.total_carts_earnings += cartEarning;
+
+            return acc;
+        },
+        {
+            total_clinic_earnings: 0,
+            total_admin_earnings: 0,
+            total_carts_earnings: 0
+        }
+    );
+
+    const data = {
+        total_clinic_earnings: total_clinic_earnings,
+        total_admin_earnings: total_admin_earnings,
+        total_carts_earnings: total_carts_earnings,
+        products: products,
+    }
+    return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
+});

@@ -256,23 +256,6 @@ export const getUserPurchasedProducts = asyncHandler(async (req, res) => {
     const products = await apiModels.getUserPurchasedProductModel(user_id);
     const carts = await apiModels.getUserCartProductModel(user_id);
 
-    const productIds = products.map(p => p.product_id);
-    const imageRows = await apiModels.get_product_images_by_product_ids(productIds);
-
-    // 🧠 Group images by product_id
-    const imagesMap = {};
-    for (const row of imageRows) {
-        if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
-        imagesMap[row.product_id].push(
-            row.image.startsWith('http')
-                ? row.image
-                : `${APP_URL}clinic/product_image/${row.image}`
-        );
-    }
-
-    for (const product of products) {
-        product.product_images = imagesMap[product.product_id] || [];
-    }
     const {
         total_carts_spent
     } = carts.reduce(
@@ -286,10 +269,37 @@ export const getUserPurchasedProducts = asyncHandler(async (req, res) => {
             total_carts_spent: 0
         }
     );
-    const groupedProducts = groupProductsByCartAndClinic(products);
+
     const data = {
         total_spent: total_carts_spent,
-        products: groupedProducts,
+        purchases: products,
+    }
+    return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
+});
+
+export const getSingleUserPurchasedProducts = asyncHandler(async (req, res) => {
+    const { language = "en", user_id } = req.user;
+    const purchase_id = req.params.purchase_id;
+    const products = await apiModels.getSingleUserPurchasedProductModel(user_id, purchase_id);
+    const carts = await apiModels.getSingleUserCartProductModel(user_id, purchase_id);
+
+    const {
+        total_carts_spent
+    } = carts.reduce(
+        (acc, cart) => {
+            const cartSpent = Number(cart.total_price) || 0;
+            acc.total_carts_spent += cartSpent;
+
+            return acc;
+        },
+        {
+            total_carts_spent: 0
+        }
+    );
+
+    const data = {
+        total_spent: total_carts_spent,
+        purchases: products,
     }
     return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
 });

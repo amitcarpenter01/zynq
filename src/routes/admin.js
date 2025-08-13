@@ -15,6 +15,7 @@ import { updateLegalDocumentsSchema } from '../validations/legal.validation.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { updateAdminCommissionRatesSchema } from '../validations/commission.validation.js.js';
 import { getNotifications } from '../controllers/api/notificationController.js';
+import { getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
 
 const router = express.Router();
 
@@ -80,6 +81,8 @@ router.get('/legal', getLegalDocuments);
 router.put('/legal', authenticateAdmin, validate(updateLegalDocumentsSchema, "body"), updateLegalDocuments);
 
 router.get('/payments/get-booked-appointments', authenticateAdmin, dashboardControllers.getBookedAppointments);
+
+router.get('/payments/get-purchased-products/:purchase_id', authenticateAdmin, validate(getSinglePurchasedProductSchema, "params"), dashboardControllers.getSinglePurchasedProducts);
 
 router.get('/payments/get-purchased-products', authenticateAdmin, dashboardControllers.getPurchasedProducts);
 

@@ -36,3 +36,7 @@ export const updateShipmentStatusSchema = Joi.object({
   purchase_id: stringValidation,
   shipment_status: stringValidation.valid("PENDING", "SHIPPED", "DELIVERED"),
 })
+
+export const getSinglePurchasedProductSchema = Joi.object({
+  purchase_id: stringValidation
+})
