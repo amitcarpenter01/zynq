@@ -1130,9 +1130,9 @@ export const getClinicPurchasedProducts = asyncHandler(async (req, res) => {
     );
 
     const data = {
-        total_clinic_earnings: total_clinic_earnings,
-        total_admin_earnings: total_admin_earnings,
-        total_carts_earnings: total_carts_earnings,
+        total_clinic_earnings: Number(total_clinic_earnings.toFixed(2)),
+        total_admin_earnings: Number(total_admin_earnings.toFixed(2)),
+        total_carts_earnings: Number(total_carts_earnings.toFixed(2)),
         products: products,
     }
     return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
@@ -1169,9 +1169,9 @@ export const getSingleClinicPurchasedProducts = asyncHandler(async (req, res) =>
     );
 
     const data = {
-        total_clinic_earnings: total_clinic_earnings,
-        total_admin_earnings: total_admin_earnings,
-        total_carts_earnings: total_carts_earnings,
+        total_clinic_earnings: Number(total_clinic_earnings.toFixed(2)),
+        total_admin_earnings: Number(total_admin_earnings.toFixed(2)),
+        total_carts_earnings: Number(total_carts_earnings.toFixed(2)),
         products: products,
     }
     return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);

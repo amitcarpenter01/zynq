@@ -714,8 +714,10 @@ export const getAdminBookedAppointmentsModel = async () => {
 SELECT
   a.*,
   d.name AS doctor_name,
+  zu.email AS doctor_email,
   c.clinic_name,
   u.full_name AS user_name,
+  u.mobile_number AS user_mobile,
   COALESCE(
     (
       SELECT JSON_ARRAYAGG(
@@ -734,6 +736,7 @@ SELECT
   ) AS treatments
 FROM tbl_appointments a
 LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
 LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
 LEFT JOIN tbl_users u ON u.user_id = a.user_id
 WHERE a.save_type = 'booked'
@@ -783,6 +786,8 @@ export const getAdminPurchasedProductModel = async () => {
         pp.product_details, 
         pp.total_price,
         pp.created_at AS purchase_date,
+        pp.shipped_date,
+        pp.delivered_date,
         pp.shipment_status,
         u.user_id,
         u.full_name AS user_name,
@@ -879,6 +884,8 @@ export const getAdminPurchasedProductModel = async () => {
                 purchase_type: "PRODUCT",
                 cart_id: row.cart_id,
                 purchase_date: row.purchase_date,
+                shipped_date: row.shipped_date || null,
+                delivered_date: row.delivered_date || null,
                 total_price: row.total_price,
                 address: row.address,
                 shipment_status: row.shipment_status,
