@@ -14,6 +14,7 @@ import { getLegalDocuments, updateLegalDocuments } from '../controllers/api/lega
 import { updateLegalDocumentsSchema } from '../validations/legal.validation.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { updateAdminCommissionRatesSchema } from '../validations/commission.validation.js.js';
+import { getNotifications } from '../controllers/api/notificationController.js';
 
 const router = express.Router();
 
@@ -89,5 +90,9 @@ router.get('/commission-rates', authenticateAdmin, dashboardControllers.getAdmin
 router.put('/commission-rates', authenticateAdmin, validate(updateAdminCommissionRatesSchema, "body"), dashboardControllers.updateAdminCommissionRates);
 
 router.get('/payments/get-payment-history', authenticateAdmin, dashboardControllers.getPaymentHistory);
+
+//=======================================Notifications=============================
+router.get('/notifications/get', authenticateAdmin, getNotifications);
+
 
 export default router;

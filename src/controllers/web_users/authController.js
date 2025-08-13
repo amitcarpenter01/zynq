@@ -39,7 +39,7 @@ export const login_web_user = async (req, res) => {
 
         const { email, password, fcm_token } = value;
 
-        const roleSelectedStatus = await dbOperations.getSelectedColumn('role_selected, role_id', 'tbl_zqnq_users', `WHERE email = '${email}'`);(email);
+        const roleSelectedStatus = await dbOperations.getSelectedColumn('role_selected, role_id', 'tbl_zqnq_users', `WHERE email = '${email}'`); (email);
         if (roleSelectedStatus.length > 0) {
             if (roleSelectedStatus[0].role_selected === 0 && roleSelectedStatus[0].role_id !== "3677a3e6-3196-11f0-9e07-0e8e5d906eef") {
                 return handleError(res, 400, language, "ROLE_TYPE_NOT_SELECTED");
@@ -57,11 +57,11 @@ export const login_web_user = async (req, res) => {
             return handleError(res, 400, language, "INVALID_EMAIL_PASSWORD");
         }
 
-        const token = jwt.sign({ web_user_id: existingWebUser.id, email: existingWebUser.email, role: existingWebUser.role_name }, WEB_JWT_SECRET, {
+        const token = jwt.sign({ web_user_id: existingWebUser.id, fcm_token: fcm_token, email: existingWebUser.email, role: existingWebUser.role_name }, WEB_JWT_SECRET, {
             expiresIn: JWT_EXPIRY
         });
 
-        await webModels.update_jwt_token(token, existingWebUser.id);
+        await webModels.update_jwt_fcm_token(token, fcm_token, existingWebUser.id);
         const [user_data] = await webModels.get_web_user_by_id(existingWebUser.id);
         const [get_clinic] = await clinicModels.get_clinic_by_zynq_user_id(existingWebUser.id);
         const [get_doctor] = await get_doctor_by_zynq_user_id(existingWebUser.id);
@@ -70,7 +70,7 @@ export const login_web_user = async (req, res) => {
             const form_stage = get_clinic.form_stage;
             user_data.form_stage = form_stage;
             user_data.is_onboarded = get_clinic.is_onboarded;
-            user_data.clinic_name = get_clinic.clinic_name;   
+            user_data.clinic_name = get_clinic.clinic_name;
         }
 
         if (get_doctor) {
@@ -294,94 +294,94 @@ export const change_password = async (req, res) => {
 // };
 
 export const create_call_log_user = async (req, res) => {
-  try {
-    const {
-      call_id,
-      receiver_doctor_id,
-      status,
-      started_at // ← Accept started_at from frontend
-    } = req.body;
+    try {
+        const {
+            call_id,
+            receiver_doctor_id,
+            status,
+            started_at // ← Accept started_at from frontend
+        } = req.body;
 
-    const { id: sender_user_id, role_name } = req.user;
-    console.log('req.user', req.user);
-    
+        const { id: sender_user_id, role_name } = req.user;
+        console.log('req.user', req.user);
 
-    if (role_name !== 'USER') {
-      return handleError(res, 403, 'en', "Only users can access this endpoint");
+
+        if (role_name !== 'USER') {
+            return handleError(res, 403, 'en', "Only users can access this endpoint");
+        }
+
+        if (!call_id || !status || !receiver_doctor_id || !started_at) {
+            return handleError(res, 400, 'en', "Missing required fields");
+        }
+
+        await webModels.createOrUpdateCallLog({
+            call_id,
+            caller_id: sender_user_id,
+            sender_user_id,
+            sender_doctor_id: null,
+            receiver_user_id: null,
+            receiver_doctor_id,
+            status,
+            started_at // ← Pass to model
+        });
+
+        return handleSuccess(res, 200, 'en', "Call log created by user");
+    } catch (error) {
+        console.error("Error in create_call_log_user:", error);
+        return handleError(res, 500, 'en', error.message);
     }
-
-    if (!call_id || !status || !receiver_doctor_id || !started_at) {
-      return handleError(res, 400, 'en', "Missing required fields");
-    }
-
-    await webModels.createOrUpdateCallLog({
-      call_id,
-      caller_id: sender_user_id,
-      sender_user_id,
-      sender_doctor_id: null,
-      receiver_user_id: null,
-      receiver_doctor_id,
-      status,
-      started_at // ← Pass to model
-    });
-
-    return handleSuccess(res, 200, 'en', "Call log created by user");
-  } catch (error) {
-    console.error("Error in create_call_log_user:", error);
-    return handleError(res, 500, 'en', error.message);
-  }
 };
 
 export const create_call_log_doctor = async (req, res) => {
-  try {
-    const {
-      call_id,
-      receiver_user_id,
-      status,
-      started_at // <-- New field from frontend
-    } = req.body;
+    try {
+        const {
+            call_id,
+            receiver_user_id,
+            status,
+            started_at // <-- New field from frontend
+        } = req.body;
 
-    const { id: caller_id, role_name, doctorData } = req.user;
+        const { id: caller_id, role_name, doctorData } = req.user;
 
-    if (role_name !== 'DOCTOR') {
-      return handleError(res, 403, 'en', "Only doctors can access this endpoint");
+        if (role_name !== 'DOCTOR') {
+            return handleError(res, 403, 'en', "Only doctors can access this endpoint");
+        }
+
+        if (!call_id || !status || !receiver_user_id || !started_at) {
+            return handleError(res, 400, 'en', "Missing required fields");
+        }
+
+        const sender_doctor_id = doctorData?.doctor_id;
+
+        await webModels.createOrUpdateCallLog({
+            call_id,
+            caller_id,
+            sender_user_id: null,
+            sender_doctor_id,
+            receiver_user_id,
+            receiver_doctor_id: null,
+            status,
+            started_at // Pass to model
+        });
+
+        return handleSuccess(res, 200, 'en', "Call log created by doctor");
+    } catch (error) {
+        console.error("Error in create_call_log_doctor:", error);
+        return handleError(res, 500, 'en', error.message);
     }
-
-    if (!call_id || !status || !receiver_user_id || !started_at) {
-      return handleError(res, 400, 'en', "Missing required fields");
-    }
-
-    const sender_doctor_id = doctorData?.doctor_id;
-
-    await webModels.createOrUpdateCallLog({
-      call_id,
-      caller_id,
-      sender_user_id: null,
-      sender_doctor_id,
-      receiver_user_id,
-      receiver_doctor_id: null,
-      status,
-      started_at // Pass to model
-    });
-
-    return handleSuccess(res, 200, 'en', "Call log created by doctor");
-  } catch (error) {
-    console.error("Error in create_call_log_doctor:", error);
-    return handleError(res, 500, 'en', error.message);
-  }
 };
 
 
 
 export const get_all_call_logs = async (req, res) => {
-  try {
-    const logs = await webModels.getAllCallLogs();
+    try {
+        const logs = await webModels.getAllCallLogs();
 
-    return handleSuccess(res, 200, 'en', "Fetched all call logs successfully", { logs });
-  } catch (error) {
-    console.error("Error fetching call logs:", error);
-    return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
-  }
+        return handleSuccess(res, 200, 'en', "Fetched all call logs successfully", { logs });
+    } catch (error) {
+        console.error("Error fetching call logs:", error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
+    }
 };
 export const onboardingByRoleId = async (req, res) => {
     try {
@@ -401,14 +401,14 @@ export const onboardingByRoleId = async (req, res) => {
             const updateRoleSelected = await dbOperations.updateData('tbl_zqnq_users', { role_selected: 1 }, `WHERE id = '${id}' `);
             if (role_id == '407595e3-3196-11f0-9e07-0e8e5d906eef') {
                 const insert_doctor = await dbOperations.insertData('tbl_doctors', { zynq_user_id: id });
-                const getDoctorId = await dbOperations.getSelectedColumn('doctor_id','tbl_doctors',  `where zynq_user_id ='${id}'`);
+                const getDoctorId = await dbOperations.getSelectedColumn('doctor_id', 'tbl_doctors', `where zynq_user_id ='${id}'`);
                 const getClinic = await dbOperations.getSelectedColumn('clinic_id', 'tbl_clinics', `where zynq_user_id ='${id}'`);
-      
+
                 const mapData =
                 {
                     doctor_id: getDoctorId[0].doctor_id,
                     clinic_id: getClinic[0].clinic_id,
-                    is_invitation_accepted :1
+                    is_invitation_accepted: 1
                 }
 
                 await dbOperations.insertData('tbl_doctor_clinic_map', mapData)
@@ -436,7 +436,7 @@ export const verifyRoleSelected = async (req, res) => {
     try {
         const schema = Joi.object({
             id: Joi.string().required(),
-            
+
         });
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
@@ -446,9 +446,9 @@ export const verifyRoleSelected = async (req, res) => {
         const zynqUser = await dbOperations.getData('tbl_zqnq_users', `WHERE id = '${id}' `);
 
         if (zynqUser.length > 0) {
-            if(zynqUser[0].role_selected == 1){
+            if (zynqUser[0].role_selected == 1) {
                 return handleError(res, 200, 'en', "ROLE_ALREADY_SELECTED");
-            }else{
+            } else {
                 return handleSuccess(res, 200, 'en', "ROLE_NOT_SELECTED");
             }
         } else {

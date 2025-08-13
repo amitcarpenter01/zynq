@@ -2,3 +2,4 @@ node_modules
 .env
 public
 src/uploads
+zynq-53745-firebase-adminsdk-fbsvc-99bfaa31e4.json

@@ -139,6 +139,7 @@ export const getProductsData = async (cart_id) => {
         p.name AS name,
         p.price AS unit_price,
         c.cart_status,
+        c.clinic_id,
         p.stock,cp.quantity as cart_quantity
       FROM tbl_cart_products cp
       LEFT JOIN tbl_products p ON cp.product_id = p.product_id

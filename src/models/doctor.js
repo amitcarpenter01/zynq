@@ -819,7 +819,11 @@ export const createOrUpdateCallLog = async ({
 
 export const getDocterByDocterId = async (doctor_id) => {
     try {
-        const result = await db.query('SELECT * FROM tbl_doctors WHERE doctor_id = ?', [doctor_id]);
+        const result = await db.query(`
+            SELECT d.*, zu.email 
+            FROM tbl_doctors d
+            LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+            WHERE d.doctor_id = ?`, [doctor_id]);
         return result;
     } catch (error) {
         console.error("Database Error:", error.message);

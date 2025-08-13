@@ -233,12 +233,13 @@ export const login_with_otp = async (req, res) => {
             mobile_number: Joi.string().required(),
             otp: Joi.string().length(4).required(),
             language: Joi.string().valid("en", "sv").optional().allow("", null),
+            fcm_token: Joi.string().optional().allow("", null),
         });
 
         const { error, value } = loginOtpSchema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const { mobile_number, otp, language } = value;
+        const { mobile_number, otp, language, fcm_token } = value;
         console.log('value>>>>>>>>>>>>>.', value);
 
         const [user] = await apiModels.get_user_by_mobile_number(mobile_number);
@@ -255,11 +256,12 @@ export const login_with_otp = async (req, res) => {
             return handleError(res, 400, language || 'en', "INVALID_OTP");
         }
 
-        const payload = { user_id: user.user_id, mobile_number: user.mobile_number };
+        const payload = { user_id: user.user_id, mobile_number: user.mobile_number, fcm_token: fcm_token };
         const token = generateAccessToken(payload);
 
         const user_data = {
             jwt_token: token,
+            fcm_token: fcm_token,
             otp: "",
             is_verified: true,
         };

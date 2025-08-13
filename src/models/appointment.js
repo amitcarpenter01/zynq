@@ -164,11 +164,14 @@ export const getAppointmentsById = async (user_id, appointment_id) => {
             d.*,
             zu.email,
             r.pdf,
-            c.clinic_name
+            c.clinic_name,
+            cl.latitude,
+            cl.longitude
         FROM tbl_appointments a
         INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
         INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
         LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id = a.report_id
+        LEFT JOIN tbl_clinic_locations cl ON cl.clinic_id = a.clinic_id
         INNER JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
         WHERE a.user_id = ? AND a.appointment_id = ?
     `, [user_id, appointment_id]);

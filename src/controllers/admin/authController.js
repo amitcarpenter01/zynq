@@ -38,7 +38,7 @@ export const login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return handleError(res, 404, "en", "Incorrect password.");
 
-        const token = generateAccessTokenAdmin({ id: user.admin_id });
+        const token = generateAccessTokenAdmin({ id: user.admin_id, fcm_token });
         await adminModels.updateData(user.admin_id, token, fcm_token);
 
         return handleSuccess(res, 200, "en", "Login successful.", {
