@@ -14,8 +14,9 @@ import { getLegalDocuments, updateLegalDocuments } from '../controllers/api/lega
 import { updateLegalDocumentsSchema } from '../validations/legal.validation.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { updateAdminCommissionRatesSchema } from '../validations/commission.validation.js.js';
-import { getNotifications } from '../controllers/api/notificationController.js';
+import { deleteNotifications, deleteSingleNotification, getNotifications } from '../controllers/api/notificationController.js';
 import { getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
+import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
 
 const router = express.Router();
 
@@ -61,15 +62,15 @@ router.post('/admin-response-to-support-ticket', supportControllers.admin_respon
 
 //==================================== Call Logs Managment ==============================
 
-router.get('/call-logs',  authenticateAdmin,authControllers.get_all_call_logs);
+router.get('/call-logs', authenticateAdmin, authControllers.get_all_call_logs);
 
 //==================================== Appointments ==============================
- 
-router.get('/getAllappointments',authenticateAdmin, authControllers.get_all_appointments);
+
+router.get('/getAllappointments', authenticateAdmin, authControllers.get_all_appointments);
 
 //==============================Enrollememt ===============================
 
-router.get('/get-all-enrollments',authenticateAdmin, authControllers.get_all_enrollments);
+router.get('/get-all-enrollments', authenticateAdmin, authControllers.get_all_enrollments);
 
 
 //==============================Wallets ===================================
@@ -96,6 +97,7 @@ router.get('/payments/get-payment-history', authenticateAdmin, dashboardControll
 
 //=======================================Notifications=============================
 router.get('/notifications/get', authenticateAdmin, getNotifications);
-
+router.delete('/notifications/:notification_id', authenticateAdmin, validate(deleteSingleNotificationSchema, "params"), deleteSingleNotification);
+router.delete('/notifications', authenticateAdmin, deleteNotifications);
 
 export default router;
