@@ -259,6 +259,8 @@ export const sendNotification = async ({
             body
         });
 
+        console.log("Notification recorded in DB")
+
         const payload = buildNotificationPayload({
             type,
             type_id,
@@ -274,6 +276,8 @@ export const sendNotification = async ({
         if (token && isPushEnabled) {
             await pushToFCM(payload);
         }
+
+        console.log("Notification sent via FCM")
     } catch (error) {
         console.error('Error in sendNotification:', error);
         // throw error;
