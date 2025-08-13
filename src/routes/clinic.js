@@ -94,6 +94,6 @@ router.post("/send-response-to-doctor", authenticate(['CLINIC']), supportControl
 
 router.get('/getMyAppointments', authenticate(['CLINIC', 'SOLO_DOCTOR']), appointmentControllers.getMyAppointmentsClinic);
 
-router.patch('/update-shipment-status', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(updateShipmentStatusSchema, "body"),updateShipmentStatus);
+router.patch('/update-shipment-status', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(updateShipmentStatusSchema, "body"), updateShipmentStatus);
 
 export default router;
