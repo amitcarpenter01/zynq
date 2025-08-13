@@ -172,6 +172,7 @@ const pushToFCM = async (message) => {
             notification: message.notification,
             data: message.data
         });
+        console.log("response",response)
         return response;
     } catch (error) {
         console.error('FCM Error - pushToFCM:', error);
