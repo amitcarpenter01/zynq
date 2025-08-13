@@ -237,5 +237,6 @@
   "DRAFT_SAVED_SUCCESSFULLY": "Your treatment plan has been saved as a draft. You can return to the 'My Plans' section in your profile to book it later.",
   "ADDRESS_UPDATED_SUCCESSFULLY": "Address updated successfully",
   "ADDRESS_DELETED_SUCCESSFULLY": "Address deleted successfully",
-  "ADDRESS_FETCHED_SUCCESSFULLY": "Address fetched successfully"
+  "ADDRESS_FETCHED_SUCCESSFULLY": "Address fetched successfully",
+  "SHIPMENT_STATUS_UPDATED_SUCCESSFULLY": "Shipment status updated successfully"
 }

@@ -230,5 +230,6 @@
   "DRAFT_SAVED_SUCCESSFULLY": "Din behandlingsplan har sparats som ett utkast. Du kan gå tillbaka till avsnittet 'Mina planer' i din profil för att boka den senare.",
   "ADDRESS_DELETED_SUCCESSFULLY": "Adress raderad",
   "ADDRESS_UPDATED_SUCCESSFULLY": "Adress uppdaterad",
-  "ADDRESS_FETCHED_SUCCESSFULLY": "Adress hittades"
+  "ADDRESS_FETCHED_SUCCESSFULLY": "Adress hittades",
+  "SHIPMENT_STATUS_UPDATED_SUCCESSFULLY": "Fraktstatus uppdaterad"
 }

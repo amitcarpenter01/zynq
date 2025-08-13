@@ -928,7 +928,7 @@ export const getClinicPurchasedProductModel = async (clinic_id) => {
     try {
         // Step 1: Get purchase rows with product_details for carts belonging to this clinic
         const purchaseQuery = `
-      SELECT pp.cart_id, pp.product_details, pp.created_at AS purchase_date
+      SELECT pp.cart_id, pp.product_details, pp.shipment_status, pp.created_at AS purchase_date
       FROM tbl_product_purchase pp
       JOIN tbl_carts c ON pp.cart_id = c.cart_id
       WHERE c.clinic_id = ?

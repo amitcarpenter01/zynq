@@ -329,20 +329,7 @@ export const saveOrBookAppointment = async (req, res) => {
             start_time: normalizedStart,
             end_time: normalizedEnd
         };
-        const doctor = await getDocterByDocterId(doctor_id);
-        await sendEmail({
-            to: doctor[0].email,
-            subject: appointmentBookedTemplate.subject({
-                user_name: req?.user?.full_name,
-                appointment_date: normalizedStart
-            }),
-            html: appointmentBookedTemplate.body({
-                user_name: req?.user?.full_name,
-                doctor_name: doctor[0].name,
-                appointment_date: normalizedStart,
-                total_price: total_price,
-            }),
-        });
+
 
         if (inputId) {
             await appointmentModel.updateAppointment(appointmentData);
@@ -374,26 +361,42 @@ export const saveOrBookAppointment = async (req, res) => {
                 receiver_type: "DOCTOR"
             })
 
+            await sendEmail({
+                to: doctor[0].email,
+                subject: appointmentBookedTemplate.subject({
+                    user_name: req?.user?.full_name,
+                    appointment_date: normalizedStart
+                }),
+                html: appointmentBookedTemplate.body({
+                    user_name: req?.user?.full_name,
+                    doctor_name: doctor[0].name,
+                    appointment_date: normalizedStart,
+                    total_price: total_price,
+                }),
+            });
+
             if (chatId.length < 1) {
                 let doctorId = doctor[0].zynq_user_id
                 let chatCreatedSuccessfully = await createChat(user_id, doctorId);
                 chat_id = chatCreatedSuccessfully.insertId
             }
-            else{
+
+
+            else {
                 chat_id = chatId[0].id
             }
         }
         const language = req?.user?.language || 'en';
 
-        const appointmentDetails = await getAppointmentDetails(user_id,appointment_id)
+        const appointmentDetails = await getAppointmentDetails(user_id, appointment_id)
 
         return handleSuccess(
             res,
             201,
             language,
-            
+
             save_type === 'booked' ? 'APPOINTMENT_BOOKED_SUCCESSFULLY' : 'DRAFT_SAVED_SUCCESSFULLY',
-            { appointment_id, chat_id , appointmentDetails:appointmentDetails}
+            { appointment_id, chat_id, appointmentDetails: appointmentDetails }
         );
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {

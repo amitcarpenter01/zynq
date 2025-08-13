@@ -1,4 +1,4 @@
-import { getProductsByCartId, getProductsData, insertPayment, insertProductPurchase, updateCartPurchasedStatus, updateLatestAddress, updateProductsStock, updateProductsStockBulk } from "../../models/payment.js";
+import { getProductsByCartId, getProductsData, insertPayment, insertProductPurchase, updateCartPurchasedStatus, updateLatestAddress, updatePaymentStatus, updateProductsStock, updateProductsStockBulk, updateShipmentStatusModel } from "../../models/payment.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 import {
     createKlarnaSession,
@@ -177,4 +177,10 @@ export const klarnaWebhookHandler = asyncHandler(async (req, res) => {
     await updatePaymentStatus(order_id, newStatus);
 
     return handleSuccess(res, 200, "en", "PAYMENT_STATUS_UPDATED_SUCCESSFULLY");
+});
+
+export const updateShipmentStatus = asyncHandler(async (req, res) => {
+    const { purchase_id, shipment_status } = req.body;
+    await updateShipmentStatusModel(purchase_id, shipment_status);
+    return handleSuccess(res, 200, "en", "SHIPMENT_STATUS_UPDATED_SUCCESSFULLY");
 });
