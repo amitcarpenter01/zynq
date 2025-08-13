@@ -4,7 +4,7 @@ import * as appointmentModel from '../../models/appointment.js';
 import dayjs from 'dayjs';
 import { createChat, getChatBetweenUsers } from '../../models/chat.js';
 import { getDocterByDocterId } from '../../models/doctor.js';
-import { formatImagePath, isEmpty } from '../../utils/user_helper.js';
+import { formatImagePath } from '../../utils/user_helper.js';
 import { getAppointmentDetails, isEmpty } from '../../utils/user_helper.js';
 const APP_URL = process.env.APP_URL;
 const ADMIN_EARNING_PERCENTAGE = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE) || 3;
