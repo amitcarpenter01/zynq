@@ -1099,29 +1099,13 @@ export const getDashboard = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, 'en', 'DASHBOARD_DATA', dashboardData);
 })
 
+
 export const getClinicPurchasedProducts = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
     const clinic_id = req.user.clinicData.clinic_id
     const products = await doctorModels.getClinicPurchasedProductModel(clinic_id);
     const carts = await doctorModels.getClinicCartProductModel(clinic_id);
 
-    const productIds = products.map(p => p.product_id);
-    const imageRows = await get_product_images_by_product_ids(productIds);
-
-    // 🧠 Group images by product_id
-    const imagesMap = {};
-    for (const row of imageRows) {
-        if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
-        imagesMap[row.product_id].push(
-            row.image.startsWith('http')
-                ? row.image
-                : `${APP_URL}clinic/product_image/${row.image}`
-        );
-    }
-
-    for (const product of products) {
-        product.product_images = imagesMap[product.product_id] || [];
-    }
     const {
         total_clinic_earnings,
         total_admin_earnings,
