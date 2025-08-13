@@ -1,4 +1,5 @@
 import { getProductsByCartId, getProductsData, insertPayment, insertProductPurchase, updateCartPurchasedStatus, updateLatestAddress, updateProductsStock, updateProductsStockBulk } from "../../models/payment.js";
+import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 import {
     createKlarnaSession,
     getKlarnaWebhookResponse,
@@ -99,6 +100,15 @@ export const initiatePayment = asyncHandler(async (req, res) => {
         const promises = [
             updateProductsStockBulk(products),
             updateCartPurchasedStatus(cart_id),
+            sendNotification({
+                userData: req.user,
+                type: "PURCHASE",
+                type_id: cart_id,
+                notification_type: NOTIFICATION_MESSAGES.cart_purchased,
+                receiver_id: products[0].clinic_id,
+                receiver_type: "CLINIC"
+            })
+
         ];
 
         if (address_id) {

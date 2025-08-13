@@ -69,6 +69,10 @@ export const NOTIFICATION_MESSAGES = {
         title: 'Callback Request',
         getBody: (name) => `${name} requested a callback.`
     },
+    cart_purchased: {
+        title: 'Order Placed',
+        getBody: (name) => ` ${name} has placed an order`
+    },
     default: {
         title: (name) => `${name} Notification`,
         getBody: () => `You have a new notification.`

@@ -4,12 +4,14 @@ import * as appointmentModel from '../../models/appointment.js';
 import dayjs from 'dayjs';
 import { createChat, getChatBetweenUsers } from '../../models/chat.js';
 import { getDocterByDocterId } from '../../models/doctor.js';
-import { isEmpty } from '../../utils/user_helper.js';
+import { formatImagePath, isEmpty } from '../../utils/user_helper.js';
 const APP_URL = process.env.APP_URL;
 const ADMIN_EARNING_PERCENTAGE = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE) || 3;
 import { v4 as uuidv4 } from 'uuid';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
+import { sendEmail } from '../../services/send_email.js';
+import { appointmentBookedTemplate } from '../../utils/templates.js';
 
 export const bookAppointment = async (req, res) => {
     try {
@@ -326,6 +328,20 @@ export const saveOrBookAppointment = async (req, res) => {
             start_time: normalizedStart,
             end_time: normalizedEnd
         };
+        const doctor = await getDocterByDocterId(doctor_id);
+        await sendEmail({
+            to: doctor[0].email,
+            subject: appointmentBookedTemplate.subject({
+                user_name: req?.user?.full_name,
+                appointment_date: normalizedStart
+            }),
+            html: appointmentBookedTemplate.body({
+                user_name: req?.user?.full_name,
+                doctor_name: doctor[0].name,
+                appointment_date: normalizedStart,
+                total_price: total_price,
+            }),
+        });
 
         if (inputId) {
             await appointmentModel.updateAppointment(appointmentData);
@@ -385,7 +401,7 @@ export const getMyTreatmentPlans = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'draft');
-console.log('appointments',appointments);
+        console.log('appointments', appointments);
 
         const now = dayjs.utc();
 
