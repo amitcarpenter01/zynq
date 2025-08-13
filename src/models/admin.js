@@ -714,8 +714,10 @@ export const getAdminBookedAppointmentsModel = async () => {
 SELECT
   a.*,
   d.name AS doctor_name,
+  zu.email AS doctor_email,
   c.clinic_name,
   u.full_name AS user_name,
+  u.mobile_number AS user_mobile,
   COALESCE(
     (
       SELECT JSON_ARRAYAGG(
@@ -734,6 +736,7 @@ SELECT
   ) AS treatments
 FROM tbl_appointments a
 LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
 LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
 LEFT JOIN tbl_users u ON u.user_id = a.user_id
 WHERE a.save_type = 'booked'
