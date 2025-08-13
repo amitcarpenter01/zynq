@@ -119,7 +119,11 @@ router.post('/bookAppointment', authenticateUser, appointmentController.bookAppo
 
 router.post('/saveOrBookAppointment', authenticateUser, appointmentController.saveOrBookAppointment);
 
+router.post('/cancelAppointment', authenticateUser, appointmentController.cancelAppointment);
+
 router.get('/getMyAppointments', authenticateUser, appointmentController.getMyAppointmentsUser);
+
+router.get('/wallet',authenticateUser, appointmentController.getMyWallet);
 
 router.get('/getMyTreatmentPlans', authenticateUser, appointmentController.getMyTreatmentPlans);
 

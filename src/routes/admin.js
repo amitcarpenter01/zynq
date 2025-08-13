@@ -100,4 +100,11 @@ router.get('/notifications/get', authenticateAdmin, getNotifications);
 router.delete('/notifications/:notification_id', authenticateAdmin, validate(deleteSingleNotificationSchema, "params"), deleteSingleNotification);
 router.delete('/notifications', authenticateAdmin, deleteNotifications);
 
+//=======================================Appointment=============================
+
+router.post('/cancelAppointment', authenticateAdmin, authControllers.cancelAppointment);
+
+router.post('/completeRefundToWallet', authenticateAdmin, authControllers.completeRefundToWallet);
+
+router.get('/refundHistory', authenticateAdmin, authControllers.getRefundHistory);
 export default router;

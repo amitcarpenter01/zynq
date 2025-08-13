@@ -7,10 +7,13 @@ import { fileURLToPath } from "url";
 
 import * as apiModels from "../../models/api.js";
 import * as adminModels from "../../models/admin.js";
+import * as walletModel from '../../models/wallet.js';
 import { sendEmail } from "../../services/send_email.js";
 import { generateAccessTokenAdmin, generateAccessTokenVerifyAdmin } from "../../utils/user_helper.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import * as appointmentModel from '../../models/appointment.js';
 import { updateMissedAppointmentStatusModel } from "../../models/appointment.js";
+import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
 
@@ -375,4 +378,105 @@ export const get_all_enrollments = async (req, res) => {
         console.error("❌ Error fetching appointments:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR " + error.message);
     }
+};
+
+export const cancelAppointment = async (req, res) => {
+    try {
+        const { appointment_id, reason } = req.body;
+        const schema = Joi.object({
+            appointment_id: Joi.string().required(),
+            reason: Joi.string().required(),
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const admin_id = req.admin.admin_id;
+
+
+        const appointmentDetails = await adminModels.getAppointmentsById(appointment_id);
+        const appointment = appointmentDetails[0]
+        console.log("appointment.user_id", appointment.user_id)
+        if (!appointment) return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+
+
+
+        await appointmentModel.cancelAppointment(appointment_id, {
+            status: 'Cancelled',
+            cancelled_by: 'admin',
+            cancelled_by_id: admin_id,
+            cancel_reason: reason,
+            payment_status: appointment.is_paid ? 'refund_initiated' : appointment.payment_status
+        });
+
+        return handleSuccess(res, 200, 'en', 'APPOINTMENT_CANCELLED_SUCCESSFULLY');
+    } catch (err) {
+        console.error(err);
+        return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+    }
+};
+
+
+
+
+export const completeRefundToWallet = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            appointment_id: Joi.string().required(),
+            amount: Joi.number().positive().required() // defaults to appointment total_price
+        });
+        const { error, value } = schema.validate(req.body);
+        if (error) return handleError(res, 422, 'en', error.message);
+
+        const { appointment_id, amount } = value;
+
+        const rows = await adminModels.getAppointmentsById(appointment_id);
+        const appt = rows?.[0];
+        if (!appt) return handleError(res, 404, 'en', 'APPOINTMENT_NOT_FOUND');
+
+        if (appt.payment_status !== 'refund_initiated') {
+            return handleError(res, 400, 'en', 'REFUND_NOT_INITIATED');
+        }
+        const alreadyRefunded = await walletModel.checkAlreadyRefunded(appointment_id);
+
+        if (alreadyRefunded) {
+            return handleError(res, 400, 'en', 'REFUND_ALREADY_PAID');
+        }
+
+        const refundAmount = Number(amount || appt.total_price);
+
+        // wallet ops
+        const wallet = await walletModel.getOrCreateWalletByUserId(appt.user_id);
+        await walletModel.adjustBalance(wallet.wallet_id, refundAmount);
+        const transaction_id = uuidv4();
+        await walletModel.insertWalletTx({
+            transaction_id: transaction_id,
+            wallet_id: wallet.wallet_id,
+            appointment_id: appt.appointment_id,
+            amount: refundAmount,
+            type: 'refund',
+            description: 'Manual refund to wallet for cancelled appointment'
+        });
+
+        await walletModel.updatePaymentStatus(appointment_id, 'refund_completed');
+
+        return handleSuccess(res, 200, 'en', 'REFUND_COMPLETED', {
+            appointment_id,
+            refunded: refundAmount
+        });
+    } catch (err) {
+        console.error('completeRefundToWallet error:', err);
+        return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+    }
+};
+
+
+export const getRefundHistory = async (req, res) => {
+  try {
+    const { transactions } = await walletModel.getRefundHistory();
+    return handleSuccess(res, 200, 'en', 'WALLET_SUMMARY', {  transactions });
+  } catch (err) {
+    console.error('getMyWallet error:', err);
+    return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+  }
 };

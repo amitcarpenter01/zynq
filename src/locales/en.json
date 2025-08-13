@@ -239,5 +239,9 @@
   "ADDRESS_DELETED_SUCCESSFULLY": "Address deleted successfully",
   "ADDRESS_FETCHED_SUCCESSFULLY": "Address fetched successfully",
   "SHIPMENT_STATUS_UPDATED_SUCCESSFULLY": "Shipment status updated successfully",
-  "NOTIFICATION_DELETED_SUCCESSFULLY": "Notification deleted successfully"
+  "NOTIFICATION_DELETED_SUCCESSFULLY": "Notification deleted successfully",
+  "NOT_ALLOWED":"Not Allowed to cancel the appointment",
+  "APPOINTMENT_CANCELLED_SUCCESSFULLY":"Appointment Cancelled Successfully",
+  "REFUND_NOT_INITIATED":"Refund Not Initiated",
+  "REFUND_ALREADY_PAID":"Refund for this Appointment is Already paid"
 }
