@@ -25,7 +25,7 @@ const process_earnings = async (metadata, user_id, products, cart_id, productDet
             throw new Error("Computed earnings contain NaN values");
         }
 
-        await insertProductPurchase(
+        const { insertId: purchase_id } = await insertProductPurchase(
             user_id,
             cart_id,
             total_price,
@@ -35,7 +35,7 @@ const process_earnings = async (metadata, user_id, products, cart_id, productDet
             metadata.address_id
         );
 
-        return { status: "SUCCESS", message: "Earnings processed successfully" };
+        return { status: "SUCCESS", message: "Earnings processed successfully", purchase_id };
     } catch (error) {
         return {
             status: "FAILED",
@@ -103,7 +103,7 @@ export const initiatePayment = asyncHandler(async (req, res) => {
             sendNotification({
                 userData: req.user,
                 type: "PURCHASE",
-                type_id: cart_id,
+                type_id: `${earningResult.purchase_id}`,
                 notification_type: NOTIFICATION_MESSAGES.cart_purchased,
                 receiver_id: products[0].clinic_id,
                 receiver_type: "CLINIC"
