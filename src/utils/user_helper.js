@@ -3,10 +3,14 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import base64url from 'base64url';
 import dotenv from "dotenv";
+import dayjs from 'dayjs';
 dotenv.config();
 const APP_URL = process.env.APP_URL;
 
 import { handleError, handleSuccess } from '../utils/responseHandler.js';
+import * as appointmentModel from '../models/appointment.js';
+import { getDocterByDocterId } from '../models/doctor.js';
+import { getChatBetweenUsers } from '../models/chat.js';
 
 export const generateRandomString = async (length) => {
     const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -103,3 +107,45 @@ export const splitIDs = (str = "") =>
         
 export const formatImagePath = (path, folder) =>
     !path ? null : path.startsWith('http') ? path : `${APP_URL}${folder}/${path}`;
+
+
+export const getAppointmentDetails = async (userId, appointmentId) => {
+    const appointments = await appointmentModel.getAppointmentsById(userId, appointmentId);
+
+    if (!appointments || appointments.length === 0) {
+        return {}; // No appointment found
+    }
+
+    const app = appointments[0]; // Since appointment_id is unique, take the first result
+
+    const doctor = await getDocterByDocterId(app.doctor_id);
+    const chatId = await getChatBetweenUsers(userId, doctor[0].zynq_user_id);
+    app.chatId = chatId.length > 0 ? chatId[0].id : null;
+
+    if (app.profile_image && !app.profile_image.startsWith('http')) {
+        app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
+    }
+
+    if (app.pdf && !app.pdf.startsWith('http')) {
+        app.pdf = `${APP_URL}${app.pdf}`;
+    }
+
+    const localFormattedStart = app.start_time ? dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss") : null;
+    const localFormattedEnd = app.end_time ? dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss") : null;
+
+    const startUTC = localFormattedStart ? dayjs.utc(localFormattedStart) : null;
+    const endUTC = localFormattedEnd ? dayjs.utc(localFormattedEnd) : null;
+    const now = dayjs.utc();
+
+    const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
+
+    const treatments = await appointmentModel.getAppointmentTreatments(appointmentId);
+
+    return {
+        ...app,
+        start_time: localFormattedStart ? startUTC.toISOString() : null,
+        end_time: localFormattedEnd ? endUTC.toISOString() : null,
+        videoCallOn,
+        treatments
+    };
+};

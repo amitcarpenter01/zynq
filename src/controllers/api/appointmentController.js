@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { createChat, getChatBetweenUsers } from '../../models/chat.js';
 import { getDocterByDocterId } from '../../models/doctor.js';
 import { formatImagePath, isEmpty } from '../../utils/user_helper.js';
+import { getAppointmentDetails, isEmpty } from '../../utils/user_helper.js';
 const APP_URL = process.env.APP_URL;
 const ADMIN_EARNING_PERCENTAGE = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE) || 3;
 import { v4 as uuidv4 } from 'uuid';
@@ -378,15 +379,21 @@ export const saveOrBookAppointment = async (req, res) => {
                 let chatCreatedSuccessfully = await createChat(user_id, doctorId);
                 chat_id = chatCreatedSuccessfully.insertId
             }
+            else{
+                chat_id = chatId[0].id
+            }
         }
         const language = req?.user?.language || 'en';
+
+        const appointmentDetails = await getAppointmentDetails(user_id,appointment_id)
 
         return handleSuccess(
             res,
             201,
             language,
+            
             save_type === 'booked' ? 'APPOINTMENT_BOOKED_SUCCESSFULLY' : 'DRAFT_SAVED_SUCCESSFULLY',
-            { appointment_id, chat_id }
+            { appointment_id, chat_id , appointmentDetails:appointmentDetails}
         );
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
