@@ -124,6 +124,13 @@ export const get_treatments_by_concerns = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
 })
 
+export const get_treatments_by_treatments = asyncHandler(async (req, res) => {
+    const { treatment_ids } = req.body;
+    const language = req?.user?.language || 'en';
+    const treatments = await apiModels.getTreatmentsByTreatmentIds(treatment_ids, language);
+    return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
+})
+
 export const get_tips_by_concerns = asyncHandler(async (req, res) => {
     const { concern_ids } = req.body;
     const language = req?.user?.language || 'en';
@@ -146,7 +153,7 @@ export const getClinicSkinTypes = async (req, res) => {
 export const getTreatments = async (req, res) => {
     try {
         const language = req?.user?.language || 'sv';
-        const treatments = await getUserTreatments("en");
+        const treatments = await getUserTreatments(language);
         return handleSuccess(res, 200, language, "TREATMENTS_FETCHED_SUCCESSFULLY", treatments);
     }
     catch (error) {

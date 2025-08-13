@@ -8,10 +8,14 @@ import {
 export const getTreatmentsByConcernSchema = joi.object({
   concern_id: stringValidation,
 });
- 
+
 export const getTreatmentsByConcersSchema = joi.object({
   concern_ids: idArrayValidation,
 })
 export const getTipsByConcernsSchema = joi.object({
   concern_ids: idArrayValidation,
 })
+
+export const getTreatmentsSchema = joi.object({
+  treatment_ids: idArrayValidation.optional(),
+});
