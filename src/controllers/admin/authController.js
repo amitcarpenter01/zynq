@@ -14,6 +14,7 @@ import { handleError, handleSuccess, joiErrorHandle } from "../../utils/response
 import * as appointmentModel from '../../models/appointment.js';
 import { updateMissedAppointmentStatusModel } from "../../models/appointment.js";
 import { v4 as uuidv4 } from 'uuid';
+import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 
 dotenv.config();
 
@@ -459,7 +460,14 @@ export const completeRefundToWallet = async (req, res) => {
         });
 
         await walletModel.updatePaymentStatus(appointment_id, 'refund_completed');
-
+        await sendNotification({
+            userData: req.user,
+            type: "REFUND",
+            type_id: appt.appointment_id,
+            notification_type: NOTIFICATION_MESSAGES.booking_refunded,
+            receiver_type: "USER",
+            receiver_id: appt.user_id
+        })
         return handleSuccess(res, 200, 'en', 'REFUND_COMPLETED', {
             appointment_id,
             refunded: refundAmount
@@ -472,11 +480,11 @@ export const completeRefundToWallet = async (req, res) => {
 
 
 export const getRefundHistory = async (req, res) => {
-  try {
-    const { transactions } = await walletModel.getRefundHistory();
-    return handleSuccess(res, 200, 'en', 'WALLET_SUMMARY', {  transactions });
-  } catch (err) {
-    console.error('getMyWallet error:', err);
-    return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
-  }
+    try {
+        const { transactions } = await walletModel.getRefundHistory();
+        return handleSuccess(res, 200, 'en', 'WALLET_SUMMARY', { transactions });
+    } catch (err) {
+        console.error('getMyWallet error:', err);
+        return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+    }
 };

@@ -107,6 +107,20 @@ export const initiatePayment = asyncHandler(async (req, res) => {
                 notification_type: NOTIFICATION_MESSAGES.cart_purchased,
                 receiver_id: products[0].clinic_id,
                 receiver_type: "CLINIC"
+            }),
+            sendNotification({
+                userData: {
+                    user_id: products[0]?.clinic_id,
+                    role: "CLINIC",
+                    full_name: products[0]?.clinic_name || "Clinic",
+                    token: products[0]?.token || null
+                },
+                type: "PURCHASE",
+                type_id: `${earningResult.purchase_id}`,
+                notification_type: NOTIFICATION_MESSAGES.cart_purchased_user,
+                receiver_id: user_id,
+                receiver_type: "USER",
+                system: true
             })
 
         ];
@@ -181,6 +195,7 @@ export const klarnaWebhookHandler = asyncHandler(async (req, res) => {
 
 export const updateShipmentStatus = asyncHandler(async (req, res) => {
     const { purchase_id, shipment_status } = req.body;
-    await updateShipmentStatusModel(purchase_id, shipment_status);
+    const userData = req.user;
+    await updateShipmentStatusModel(purchase_id, shipment_status, userData);
     return handleSuccess(res, 200, "en", "SHIPMENT_STATUS_UPDATED_SUCCESSFULLY");
 });
