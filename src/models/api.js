@@ -2063,3 +2063,18 @@ export const getSingleUserCartProductModel = async (user_id, purchase_id) => {
         throw error;
     }
 };
+
+export const getSinglePurchasedProductsModel = async (purchase_id) => {
+    try {
+        const query = `
+      SELECT pp.* 
+      FROM tbl_product_purchase pp 
+      WHERE pp.purchase_id = ?
+      ORDER BY created_at DESC
+    `;
+        return await db.query(query, [purchase_id]);
+    } catch (error) {
+        console.error("Failed to fetch purchase products data:", error);
+        throw error;
+    }
+}

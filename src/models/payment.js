@@ -1,4 +1,6 @@
 import db from "../config/db.js";
+import { NOTIFICATION_MESSAGES, sendNotification } from "../services/notifications.service.js";
+import { getSinglePurchasedProductsModel, getSingleUserPurchasedProductModel } from "./api.js";
 
 export const insertPayment = async (
   payment_id,
@@ -291,29 +293,52 @@ export const insertProductPurchase = async (
   )
 )
 
-export const updateShipmentStatusModel = async (purchase_id, shipment_status) => {
+export const updateShipmentStatusModel = async (purchase_id, shipment_status, userData) => {
   try {
     let dateColumn = null;
 
-    if (shipment_status === "SHIPPED") {
-      dateColumn = "shipped_date";
-    } else if (shipment_status === "DELIVERED") {
-      dateColumn = "delivered_date";
+    const [purchaseData] = await getSinglePurchasedProductsModel(purchase_id);
+
+    if (purchaseData) {
+      if (shipment_status === "SHIPPED") {
+        dateColumn = "shipped_date";
+
+        sendNotification({
+          userData: userData,
+          type: "SHIPMENT",
+          type_id: purchase_id,
+          notification_type: NOTIFICATION_MESSAGES.shipment_shipped,
+          receiver_type: "USER",
+          receiver_id: purchaseData.user_id
+        })
+
+      } else if (shipment_status === "DELIVERED") {
+        dateColumn = "delivered_date";
+        sendNotification({
+          userData: userData,
+          type: "SHIPMENT",
+          type_id: purchase_id,
+          notification_type: NOTIFICATION_MESSAGES.shipment_delivered,
+          receiver_type: "USER",
+          receiver_id: purchaseData.user_id
+        })
+      }
+
+      // Base query
+      let query = `UPDATE tbl_product_purchase SET shipment_status = ?`;
+      const params = [shipment_status];
+
+      // Add date update if applicable
+      if (dateColumn) {
+        query += `, ${dateColumn} = CURRENT_TIMESTAMP`;
+      }
+
+      query += ` WHERE purchase_id = ?`;
+      params.push(purchase_id);
+
+      await db.query(query, params);
     }
 
-    // Base query
-    let query = `UPDATE tbl_product_purchase SET shipment_status = ?`;
-    const params = [shipment_status];
-
-    // Add date update if applicable
-    if (dateColumn) {
-      query += `, ${dateColumn} = CURRENT_TIMESTAMP`;
-    }
-
-    query += ` WHERE purchase_id = ?`;
-    params.push(purchase_id);
-
-    await db.query(query, params);
 
   } catch (error) {
     console.error("Failed to update shipment status:", error);

@@ -73,9 +73,25 @@ export const NOTIFICATION_MESSAGES = {
         title: 'Order Placed',
         getBody: (name) => ` ${name} has placed an order`
     },
+    cart_purchased_user: {
+        title: 'Order Placed',
+        getBody: () => `Order has been successfully placed`
+    },
     appointment_cancelled: {
         title: 'Appointment',
         getBody: (name) => `${name} cancelled an appointment.`
+    },
+    shipment_shipped: {
+        title: 'Shipment Shipped',
+        getBody: (name) => `${name} has shipped the order`
+    },
+    shipment_delivered: {
+        title: 'Shipment Delivered',
+        getBody: (name) => `${name} has delivered the order`
+    },
+    booking_refunded: {
+        title: 'Booking Refunded',
+        getBody: () => `Your booking has been refunded`
     },
     default: {
         title: (name) => `${name} Notification`,
