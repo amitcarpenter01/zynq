@@ -14,8 +14,10 @@ export const get_products_managment = async (req, res) => {
             products.map(async (product) => {
                 product.total_revenue = 0;
                 const findProductImages = await adminModels.get_product_images_by_product_id(product.product_id, process.env.APP_URL + 'clinic/product_image/')
+                const treatments = await adminModels.getTreatmentsOfProducts(product.product_id)
                 return {
                     ...product,
+                    treatments,
                     findProductImages
                 };
             })

@@ -86,6 +86,16 @@ export const get_latest_clinic = async () => {
     }
 };
 
+
+export const get_admin_earning = async () => {
+    try {
+        return await db.query('SELECT ((SELECT COALESCE(SUM(admin_earnings), 0) FROM tbl_product_purchase) +(SELECT COALESCE(SUM(admin_earnings), 0) FROM tbl_appointments) ) AS total_earnings;');
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get dashboard clinic data.");
+    }
+};
+
 //======================================= User Managment =========================================
 export const get_users_managment = async () => {
     try {
@@ -863,16 +873,19 @@ export const getAdminPurchasedProductModel = async () => {
 
             const products = Array.isArray(row.product_details) ? row.product_details : [];
 
-            const enrichedProducts = products.map(p => {
+            const enrichedProducts = await Promise.all(products.map(async (p) => {
                 const prodInfo = productInfoMap[p.product_id] || {};
+                const treatments = await getTreatmentsOfProducts(p.product_id)
+
                 return {
                     ...p,                                // keeps snapshot price, product_name, etc.
                     stock: prodInfo.stock ?? 0,          // live stock added
                     clinic_id: prodInfo.clinic_id ?? null,
+                    treatments,
                     // remove overwriting price and product_name here
                     product_images: imagesMap[p.product_id] || [],
                 };
-            });
+            }))
 
 
             // Clinic from first product's clinic_id (if exists)
@@ -1097,7 +1110,7 @@ export const updateAdminCommissionRatesModel = async ({ APPOINTMENT_COMMISSION, 
     }
 };
 
-export const getAppointmentsById = async ( appointment_id) => {
+export const getAppointmentsById = async (appointment_id) => {
     const results = await db.query(`
         SELECT  *
         FROM tbl_appointments 
@@ -1105,4 +1118,18 @@ export const getAppointmentsById = async ( appointment_id) => {
     `, [appointment_id]);
 
     return results;
+};
+
+
+export const getTreatmentsOfProducts = async (product_id) => {
+    try {
+        const query = `
+    SELECT t.* FROM tbl_product_treatments pt JOIN tbl_treatments t ON t.treatment_id = pt.treatment_id WHERE pt.product_id = ?;
+    `;
+        const results = await db.query(query, [product_id]);
+        return results;
+    } catch (error) {
+        console.error("Failed to fetch purchase products data:", error);
+        throw error;
+    }
 };

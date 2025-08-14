@@ -107,4 +107,6 @@ router.post('/cancelAppointment', authenticateAdmin, authControllers.cancelAppoi
 router.post('/completeRefundToWallet', authenticateAdmin, authControllers.completeRefundToWallet);
 
 router.get('/refundHistory', authenticateAdmin, authControllers.getRefundHistory);
+
+router.get('/getUserAppointments/:user_id', authenticateAdmin, authControllers.getUserAppointmentOfUser);
 export default router;

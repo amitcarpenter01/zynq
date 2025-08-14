@@ -1,4 +1,4 @@
-import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel, getAdminCommissionRatesModel, updateAdminCommissionRatesModel, getSingleAdminPurchasedProductModel, getSingleAdminCartProductModel } from '../../models/admin.js';
+import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel, getAdminCommissionRatesModel, updateAdminCommissionRatesModel, getSingleAdminPurchasedProductModel, getSingleAdminCartProductModel, get_admin_earning } from '../../models/admin.js';
 import { get_product_images_by_product_ids } from '../../models/api.js';
 import { getClinicDoctorWallets } from '../../models/payment.js';
 import { asyncHandler, handleError, handleSuccess } from '../../utils/responseHandler.js';
@@ -10,14 +10,14 @@ export const get_dashboard = async (req, res) => {
             get_clinics(),
             get_doctors(),
             get_users(),
-            get_latest_clinic()
+            get_latest_clinic(),
         ])
-
+        const admin_earnings = await get_admin_earning()
         const data = {
             get_clinics: get_clinic.length,
             get_doctors: get_doctor.length,
             get_users: get_user.length,
-            get_earnings: 0,
+            get_earnings: parseFloat(admin_earnings[0].total_earnings),
             latest_clinic
         }
 
