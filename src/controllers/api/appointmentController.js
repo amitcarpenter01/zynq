@@ -347,7 +347,7 @@ export const saveOrBookAppointment = async (req, res) => {
         }
 
         let chat_id = 0;
-
+        const appointmentDetails = await getAppointmentDetails(user_id, appointment_id)
         if (save_type == 'booked') {
             let user_id = req.user.user_id
             const doctor = await getDocterByDocterId(doctor_id);
@@ -363,6 +363,7 @@ export const saveOrBookAppointment = async (req, res) => {
                 receiver_type: "DOCTOR"
             })
 
+
             await sendEmail({
                 to: doctor[0].email,
                 subject: appointmentBookedTemplate.subject({
@@ -374,6 +375,7 @@ export const saveOrBookAppointment = async (req, res) => {
                     doctor_name: doctor[0].name,
                     appointment_date: normalizedStart,
                     total_price: total_price,
+                    clinic_name: appointmentDetails.clinic_name,
                 }),
             });
 
@@ -390,7 +392,7 @@ export const saveOrBookAppointment = async (req, res) => {
         }
         const language = req?.user?.language || 'en';
 
-        const appointmentDetails = await getAppointmentDetails(user_id, appointment_id)
+
 
         return handleSuccess(
             res,

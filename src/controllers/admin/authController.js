@@ -480,11 +480,17 @@ export const completeRefundToWallet = async (req, res) => {
 
 
 export const getRefundHistory = async (req, res) => {
-    try {
-        const { transactions } = await walletModel.getRefundHistory();
-        return handleSuccess(res, 200, 'en', 'WALLET_SUMMARY', { transactions });
-    } catch (err) {
-        console.error('getMyWallet error:', err);
-        return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
-    }
+  try {
+    const { transactions } = await walletModel.getRefundHistory();
+
+    await Promise.all(transactions.map(async(t)=>{
+        t.treatments = await appointmentModel.getAppointmentTreatments(t.appointment_id);
+        return t;
+    }))
+  
+    return handleSuccess(res, 200, 'en', 'WALLET_SUMMARY', {  transactions });
+  } catch (err) {
+    console.error('getMyWallet error:', err);
+    return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+  }
 };
