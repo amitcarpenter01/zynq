@@ -637,3 +637,13 @@ export const updateMissedAppointmentStatusModel = async () => {
 
     return await db.query(query);
 }
+
+
+export const cancelAppointment = async (appointment_id, data) => {
+
+    const result = await db.query(
+        `UPDATE tbl_appointments SET status = ? , cancelled_by = ? , cancelled_by_id = ?, cancel_reason = ? , payment_status = ? WHERE appointment_id = ?`,
+        [data.status, data.cancelled_by, data.cancelled_by_id, data.cancel_reason, data.payment_status, appointment_id]
+    );
+    return result.affectedRows;
+};

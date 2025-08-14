@@ -171,7 +171,7 @@ const initializeSocket = (server) => {
                         const receiverData = await detectUserDataById(receiverId[0])
                         if (!isEmpty(receiverData)) {
                             await sendNotification({
-                                userData: decoded.userData, type: "CHAT", type_id: chatId, notification_type: NOTIFICATION_MESSAGES.chat_message, receiver_type: receiverData.role, receiver_id: receiverData.user_id, system: true
+                                userData: decoded.userData, type: "CHAT", type_id: `${chatId}`, notification_type: NOTIFICATION_MESSAGES.chat_message, receiver_type: receiverData.role, receiver_id: receiverData.user_id, system: true
                             })
                         }
 

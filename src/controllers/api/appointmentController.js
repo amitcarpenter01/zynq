@@ -1,6 +1,7 @@
 import Joi from 'joi';
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from '../../utils/responseHandler.js';
 import * as appointmentModel from '../../models/appointment.js';
+import * as walletModel from '../../models/wallet.js';
 import dayjs from 'dayjs';
 import { createChat, getChatBetweenUsers } from '../../models/chat.js';
 import { getDocterByDocterId } from '../../models/doctor.js';
@@ -258,7 +259,6 @@ export const rateAppointment = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language, "APPOINTMENT_RATED_SUCCESSFULLY");
 });
 
-
 export const saveOrBookAppointment = async (req, res) => {
     try {
 
@@ -313,6 +313,7 @@ export const saveOrBookAppointment = async (req, res) => {
             : null;
         const admin_earnings = Number(((total_price * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2));
         const clinic_earnings = Number(total_price) - admin_earnings;
+        const is_paid = total_price > 0 ? 1 : 0;
 
         const appointmentData = {
             appointment_id,
@@ -327,7 +328,8 @@ export const saveOrBookAppointment = async (req, res) => {
             status: save_type === 'booked' ? 'Scheduled' : 'Scheduled',
             save_type,
             start_time: normalizedStart,
-            end_time: normalizedEnd
+            end_time: normalizedEnd,
+            is_paid
         };
 
 
@@ -491,3 +493,54 @@ export const requestCallback = asyncHandler(async (req, res) => {
 
     return handleSuccess(res, 200, language, "CALLBACK_REQUESTED_SUCCESSFULLY");
 })
+
+export const cancelAppointment = async (req, res) => {
+    try {
+        const { appointment_id, reason } = req.body;
+        const schema = Joi.object({
+            appointment_id: Joi.string().required(),
+            reason: Joi.string().required(),
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const user_id = req.user.user_id;
+        console.log("user_id", user_id)
+
+
+        const appointmentDetails = await appointmentModel.getAppointmentsById(user_id, appointment_id);
+        const appointment = appointmentDetails[0]
+        console.log("appointment.user_id", appointment.user_id)
+        if (!appointment) return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+        if (appointment.user_id !== user_id) return handleError(res, 404, "en", "NOT_ALLOWED");
+        if (appointment.is_paid) {
+            console.log("here>>>>>")
+            return handleError(res, 404, "en", "NOT_ALLOWED");
+        }
+
+
+        await appointmentModel.cancelAppointment(appointment_id, {
+            status: 'Cancelled',
+            cancelled_by: 'user',
+            cancelled_by_id: user_id,
+            cancel_reason: reason,
+            payment_status: appointment.is_paid ? 'refund_initiated' : appointment.payment_status
+        });
+
+        return handleSuccess(res, 200, 'en', 'APPOINTMENT_CANCELLED_SUCCESSFULLY');
+    } catch (err) {
+        console.error(err);
+        return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+    }
+};
+
+export const getMyWallet = async (req, res) => {
+  try {
+    const { wallet, transactions } = await walletModel.getWalletWithTx(req.user.user_id, 1000, 0);
+    return handleSuccess(res, 200, 'en', 'WALLET_SUMMARY', { wallet, transactions });
+  } catch (err) {
+    console.error('getMyWallet error:', err);
+    return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+  }
+};
