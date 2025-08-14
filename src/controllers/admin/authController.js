@@ -474,6 +474,12 @@ export const completeRefundToWallet = async (req, res) => {
 export const getRefundHistory = async (req, res) => {
   try {
     const { transactions } = await walletModel.getRefundHistory();
+
+    await Promise.all(transactions.map(async(t)=>{
+        t.treatments = await appointmentModel.getAppointmentTreatments(t.appointment_id);
+        return t;
+    }))
+  
     return handleSuccess(res, 200, 'en', 'WALLET_SUMMARY', {  transactions });
   } catch (err) {
     console.error('getMyWallet error:', err);
