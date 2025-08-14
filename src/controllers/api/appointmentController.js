@@ -528,7 +528,16 @@ export const cancelAppointment = async (req, res) => {
             payment_status: appointment.is_paid ? 'refund_initiated' : appointment.payment_status
         });
 
-        return handleSuccess(res, 200, 'en', 'APPOINTMENT_CANCELLED_SUCCESSFULLY');
+        handleSuccess(res, 200, 'en', 'APPOINTMENT_CANCELLED_SUCCESSFULLY');
+
+        await sendNotification({
+            userData: req.user,
+            type: "APPOINTMENT",
+            type_id: appointment_id,
+            notification_type: NOTIFICATION_MESSAGES.appointment_cancelled,
+            receiver_id: appointment.doctor_id,
+            receiver_type: "DOCTOR"
+        })
     } catch (err) {
         console.error(err);
         return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
@@ -536,11 +545,11 @@ export const cancelAppointment = async (req, res) => {
 };
 
 export const getMyWallet = async (req, res) => {
-  try {
-    const { wallet, transactions } = await walletModel.getWalletWithTx(req.user.user_id, 1000, 0);
-    return handleSuccess(res, 200, 'en', 'WALLET_SUMMARY', { wallet, transactions });
-  } catch (err) {
-    console.error('getMyWallet error:', err);
-    return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
-  }
+    try {
+        const { wallet, transactions } = await walletModel.getWalletWithTx(req.user.user_id, 1000, 0);
+        return handleSuccess(res, 200, 'en', 'WALLET_SUMMARY', { wallet, transactions });
+    } catch (err) {
+        console.error('getMyWallet error:', err);
+        return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+    }
 };

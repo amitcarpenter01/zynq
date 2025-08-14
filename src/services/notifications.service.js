@@ -73,6 +73,10 @@ export const NOTIFICATION_MESSAGES = {
         title: 'Order Placed',
         getBody: (name) => ` ${name} has placed an order`
     },
+    appointment_cancelled: {
+        title: 'Appointment',
+        getBody: (name) => `${name} cancelled an appointment.`
+    },
     default: {
         title: (name) => `${name} Notification`,
         getBody: () => `You have a new notification.`
@@ -172,7 +176,7 @@ const pushToFCM = async (message) => {
             notification: message.notification,
             data: message.data
         });
-        console.log("response",response)
+        console.log("response", response)
         return response;
     } catch (error) {
         console.error('FCM Error - pushToFCM:', error);
