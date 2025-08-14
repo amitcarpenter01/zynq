@@ -7,7 +7,7 @@ import { uploadCertificationFieldsTo, uploadFileTo } from '../services/doctor_mu
 import * as supportControllers from "../controllers/doctor/supportController.js";
 import * as appointmentControllers from "../controllers/doctor/appointmentController.js";
 import { validate } from '../middleware/validation.middleware.js';
-import { rescheduleAppointmentSchema } from '../validations/appointment.validation.js';
+import { getSinglePatientRecordSchema, rescheduleAppointmentSchema } from '../validations/appointment.validation.js';
 import { getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
 
 
@@ -106,6 +106,7 @@ router.post(
 // -------------------------------------Patient Records------------------------------------------------//
 
 router.get('/patient-records', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), appointmentControllers.getPatientRecords);
+router.get('/patient-records/:patient_id', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(getSinglePatientRecordSchema, "params"), appointmentControllers.getSinglePatientRecord);
 
 // -------------------------------------Dashboards------------------------------------------------//
 

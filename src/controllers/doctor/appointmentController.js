@@ -266,6 +266,12 @@ export const getPatientRecords = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, 'en', "PATIENT_RECORDS", patientRecords);
 })
 
+export const getSinglePatientRecord = asyncHandler(async (req, res) => {
+    const patient_id = req.params.patient_id;
+    const patientRecords = await appointmentModel.getSinglePatientRecord(req.user, patient_id);
+    return handleSuccess(res, 200, 'en', "PATIENT_RECORD", patientRecords);
+})
+
 export const getReviewsAndRatings = asyncHandler(async (req, res) => {
     const reviews = await appointmentModel.getRatings(req.user);
     return handleSuccess(res, 200, 'en', "REVIEWS_FETCHED", reviews);

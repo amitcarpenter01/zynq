@@ -17,3 +17,7 @@ export const rateAppointmentSchema = joi.object({
   rating: numberValidation.min(1).max(5),
   review: stringValidation.optional()
 });
+
+export const getSinglePatientRecordSchema = joi.object({
+  patient_id: stringValidation
+})
