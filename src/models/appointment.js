@@ -25,14 +25,14 @@ export const checkIfSlotAlreadyBooked = async (doctor_id, start_time) => {
     }
 };
 
-export const getAppointmentsByUserId = async (user_id,status) => {
+export const getAppointmentsByUserId = async (user_id, status) => {
     const results = await db.query(` 
         SELECT a.*,d.*,zu.email,r.pdf,c.clinic_name FROM tbl_appointments a INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
         INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
         INNER JOIN tbl_clinics c ON c.clinic_id  = a.clinic_id
         WHERE a.user_id = ? AND save_type  = ?
         ORDER BY  start_time ASC
-    `, [user_id,status]);
+    `, [user_id, status]);
     return results;
 };
 
@@ -400,8 +400,8 @@ export const getAppointmentsByRole = async (id, role) => {
             doctor_id: row.doctor_id,
             clinic_id: row.clinic_id,
             status: row.appointment_status,
-            start_time: dayjs.utc(row.start_time).toISOString(),
-            end_time: dayjs.utc(row.end_time).toISOString(),
+            start_time: row.start_time,
+            end_time: row.end_time,
             type: row.appointment_type,
             report_id: row.report_id,
             created_at: appointmentCreatedAt,
