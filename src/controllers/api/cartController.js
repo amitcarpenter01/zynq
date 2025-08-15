@@ -1,4 +1,4 @@
-import { addOrGetUserCart, addProductToUserCart, deleteCartByCartId, deleteProductFromUserCart, get_product_images_by_product_ids, getSingleCartByCartId, getSingleCartByClinicId, getUserCarts, deleteProductBeforeInsertData } from "../../models/api.js";
+import { addOrGetUserCart, addProductToUserCart, deleteCartByCartId, deleteProductFromUserCart, get_product_images_by_product_ids, getSingleCartByCartId, getSingleCartByClinicId, getUserCarts, deleteProductBeforeInsertData, checkProductStock } from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
 import { formatImagePath, isEmpty } from "../../utils/user_helper.js";
 
@@ -13,6 +13,10 @@ export const addProductToCart = asyncHandler(async (req, res) => {
         return handleSuccess(res, 200, language, "CART_UPDATED_SUCCESSFULLY");
     }
     await deleteProductBeforeInsertData(cartData.cart_id, product_id, quantity)
+    const hasStock = await checkProductStock(product_id, quantity);
+    if (!hasStock) {
+        return handleError(res, 400, language, "Product is out of stock.");
+    }
     const productData = await addProductToUserCart(cartData.cart_id, product_id, quantity);
     return handleSuccess(res, 200, language, "CART_UPDATED_SUCCESSFULLY");
 });
