@@ -145,6 +145,7 @@ router.delete('/notifications', authenticateUser, deleteNotifications);
 
 router.post('/get_treatments_by_concern_id', faceScanControllers.get_treatments_by_concern_id);
 router.post('/get_treatments_by_concerns', validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
+router.get('/get_treatments', faceScanControllers.get_treatments);
 router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
 router.post('/get_tips_by_concerns', validate(getTipsByConcernsSchema, "body"), faceScanControllers.get_tips_by_concerns);
 router.patch('/toggle-language', authenticateUser, toggleLanguage);
