@@ -104,9 +104,15 @@ export const splitIDs = (str = "") =>
         .split(",")
         .map(s => s.trim())
         .filter(Boolean);
-        
-export const formatImagePath = (path, folder) =>
-    !path ? null : path.startsWith('http') ? path : `${APP_URL}${folder}/${path}`;
+
+export const formatImagePath = (path, folder = '') =>
+    !path
+        ? null
+        : path.startsWith('http')
+            ? path
+            : folder
+                ? `${APP_URL}${folder}/${path}`
+                : `${APP_URL}${path}`;
 
 
 export const getAppointmentDetails = async (userId, appointmentId) => {
