@@ -930,7 +930,8 @@ const APP_URL = process.env.APP_URL
 
 export const getClinicPurchasedProductModel = async (clinic_id) => {
     try {
-        const query = `
+        // 1️⃣ Fetch all purchases with user & address data
+        const purchaseRows = await db.query(`
             SELECT 
                 pp.purchase_id,
                 pp.cart_id,
@@ -949,78 +950,59 @@ export const getClinicPurchasedProductModel = async (clinic_id) => {
             JOIN tbl_users u ON pp.user_id = u.user_id
             LEFT JOIN tbl_address a ON pp.address_id = a.address_id
             ORDER BY pp.created_at DESC
-        `;
-        const purchaseRows = await db.query(query);
+        `);
 
-        // 1️⃣ Collect all product IDs from purchases for this clinic
-        let allProductIds = [];
-        let filteredPurchases = [];
+        // 2️⃣ Extract all unique product IDs from purchases
+        const allProductIds = [
+            ...new Set(
+                purchaseRows.flatMap(row =>
+                    Array.isArray(row.product_details)
+                        ? row.product_details.map(p => p.product_id)
+                        : []
+                )
+            )
+        ];
 
-        for (const row of purchaseRows) {
-            const products = Array.isArray(row.product_details) ? row.product_details : [];
-            const productIds = products.map(p => p.product_id);
-            allProductIds.push(...productIds);
-            filteredPurchases.push(row);
-        }
-        allProductIds = [...new Set(allProductIds)];
+        if (!allProductIds.length) return [];
 
-        // 2️⃣ Fetch product info for this clinic only
-        let productInfoMap = {};
-        if (allProductIds.length) {
-            const productRows = await db.query(
-                `SELECT product_id, stock, clinic_id FROM tbl_products WHERE clinic_id = ? AND product_id IN (?)`,
-                [clinic_id, allProductIds]
-            );
-            productInfoMap = productRows.reduce((map, p) => {
-                map[p.product_id] = p;
-                return map;
-            }, {});
-        }
+        // 3️⃣ Fetch product info for this clinic only
+        const productRows = await db.query(
+            `SELECT product_id, stock, clinic_id FROM tbl_products WHERE clinic_id = ? AND product_id IN (?)`,
+            [clinic_id, allProductIds]
+        );
 
-        // 3️⃣ Fetch clinic info (single clinic)
-        const clinicRows = await db.query(
+        const productInfoMap = Object.fromEntries(productRows.map(p => [p.product_id, p]));
+
+        // 4️⃣ Fetch clinic info once
+        const clinic = await db.query(
             `SELECT clinic_id, clinic_name, address, clinic_logo FROM tbl_clinics WHERE clinic_id = ?`,
             [clinic_id]
-        );
-        const clinicMap = clinicRows.reduce((map, c) => {
-            map[c.clinic_id] = c;
+        ).then(rows => rows[0] || null);
+
+        // 5️⃣ Fetch product images for relevant products
+        const imageRows = await get_product_images_by_product_ids(Object.keys(productInfoMap));
+        const imagesMap = imageRows.reduce((map, row) => {
+            if (!map[row.product_id]) map[row.product_id] = [];
+            map[row.product_id].push(
+                row.image.startsWith('http') ? row.image : `${APP_URL}clinic/product_image/${row.image}`
+            );
             return map;
         }, {});
 
-        // 4️⃣ Fetch product images
-        let imagesMap = {};
-        if (allProductIds.length) {
-            const imageRows = await get_product_images_by_product_ids(allProductIds);
-            imagesMap = imageRows.reduce((map, row) => {
-                if (!map[row.product_id]) map[row.product_id] = [];
-                map[row.product_id].push(
-                    row.image.startsWith('http') ? row.image : `${APP_URL}clinic/product_image/${row.image}`
-                );
-                return map;
-            }, {});
-        }
+        // 6️⃣ Build purchases with enriched products
+        const purchases = purchaseRows.map(row => {
+            const enrichedProducts = (Array.isArray(row.product_details) ? row.product_details : [])
+                .filter(p => productInfoMap[p.product_id]) // only clinic's products
+                .map(p => ({
+                    ...p,
+                    stock: productInfoMap[p.product_id].stock ?? 0,
+                    clinic_id: productInfoMap[p.product_id].clinic_id ?? null,
+                    product_images: imagesMap[p.product_id] || [],
+                }));
 
-        // 5️⃣ Build purchases with enriched products
-        const purchases = {};
-        for (const row of filteredPurchases) {
-            const products = Array.isArray(row.product_details) ? row.product_details : [];
-            const enrichedProducts = products
-                .filter(p => productInfoMap[p.product_id]) // keep only products from this clinic
-                .map(p => {
-                    const prodInfo = productInfoMap[p.product_id] || {};
-                    return {
-                        ...p,
-                        stock: prodInfo.stock ?? 0,
-                        clinic_id: prodInfo.clinic_id ?? null,
-                        product_images: imagesMap[p.product_id] || [],
-                    };
-                });
+            if (!enrichedProducts.length) return null;
 
-            if (!enrichedProducts.length) continue; // skip if no clinic products
-
-            const clinic = clinicMap[clinic_id] || null;
-
-            purchases[row.purchase_id] = {
+            return {
                 purchase_id: row.purchase_id,
                 purchase_type: "PRODUCT",
                 cart_id: row.cart_id,
@@ -1039,9 +1021,10 @@ export const getClinicPurchasedProductModel = async (clinic_id) => {
                 },
                 products: enrichedProducts,
             };
-        }
+        }).filter(Boolean); // remove nulls
 
-        return Object.values(purchases);
+        return purchases;
+
     } catch (error) {
         console.error("Failed to fetch clinic purchased product data:", error);
         throw error;
