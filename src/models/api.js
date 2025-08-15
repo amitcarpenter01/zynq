@@ -1135,6 +1135,32 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
     }
 };
 
+export const getAllTreatments = async (lang) => {
+    try {
+        const query = `
+            SELECT
+                t.*,
+                ANY_VALUE(c.name) AS concern_name,
+                IFNULL(MIN(dt.price), 0) AS min_price,
+                IFNULL(MAX(dt.price), 0) AS max_price
+            FROM tbl_treatment_concerns tc
+            INNER JOIN tbl_treatments t ON tc.treatment_id = t.treatment_id
+            INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+            LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+            GROUP BY t.treatment_id
+        `;
+
+        const results = await db.query(query);
+
+        // Format benefits based on language
+        return formatBenefitsOnLang(results, lang);
+
+    } catch (error) {
+        console.error("Database Error in getTreatmentsByConcernIds:", error.message);
+        throw new Error("Failed to fetch treatments by concern IDs.");
+    }
+};
+
 export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
     try {
         let query = `
