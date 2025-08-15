@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import ejs from "ejs";
 import path from "path";
 import { fileURLToPath } from "url";
+import dayjs from 'dayjs';
 
 import * as apiModels from "../../models/api.js";
 import * as adminModels from "../../models/admin.js";
@@ -480,17 +481,67 @@ export const completeRefundToWallet = async (req, res) => {
 
 
 export const getRefundHistory = async (req, res) => {
-  try {
-    const { transactions } = await walletModel.getRefundHistory();
+    try {
+        const { transactions } = await walletModel.getRefundHistory();
 
-    await Promise.all(transactions.map(async(t)=>{
-        t.treatments = await appointmentModel.getAppointmentTreatments(t.appointment_id);
-        return t;
-    }))
-  
-    return handleSuccess(res, 200, 'en', 'WALLET_SUMMARY', {  transactions });
-  } catch (err) {
-    console.error('getMyWallet error:', err);
-    return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
-  }
+        await Promise.all(transactions.map(async (t) => {
+            t.treatments = await appointmentModel.getAppointmentTreatments(t.appointment_id);
+            return t;
+        }))
+
+        return handleSuccess(res, 200, 'en', 'WALLET_SUMMARY', { transactions });
+    } catch (err) {
+        console.error('getMyWallet error:', err);
+        return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+    }
+};
+
+
+export const getUserAppointmentOfUser = async (req, res) => {
+    try {
+
+        const schema = Joi.object({
+            user_id: Joi.string().required(),
+        });
+        const { error, value } = schema.validate(req.params);
+        if (error) return handleError(res, 422, 'en', error.message);
+
+        const { user_id } = value;
+        const appointments = await appointmentModel.getAppointmentsByUserId(user_id, 'booked');
+
+
+         const now = dayjs.utc();
+        const result = await Promise.all(appointments.map(async (app) => {
+
+            const localFormattedStart = app.start_time ? dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss") : null;
+            const localFormattedEnd = app.end_time ? dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss") : null;
+
+            if (app.profile_image && !app.profile_image.startsWith('http')) {
+                app.profile_image = `${process.env.APP_URL}doctor/profile_images/${app.profile_image}`;
+            }
+
+            if (app.pdf && !app.pdf.startsWith('http')) {
+                app.pdf = `${process.env.APP_URL}${app.pdf}`;
+            }
+
+            const startUTC = localFormattedStart ? dayjs.utc(localFormattedStart) : null;
+            const endUTC = localFormattedEnd ? dayjs.utc(localFormattedEnd) : null;
+
+
+            const treatments = await appointmentModel.getAppointmentTreatments(app.appointment_id);
+
+            return {
+                ...app,
+                start_time: startUTC ? startUTC.toISOString() : null,
+                end_time: endUTC ? endUTC.toISOString() : null,
+                treatments
+            };
+        }));
+
+
+        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
+    } catch (error) {
+        console.error("Error fetching user appointments:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
 };
