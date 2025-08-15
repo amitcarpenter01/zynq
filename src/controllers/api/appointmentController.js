@@ -470,7 +470,7 @@ export const getBookedAppointments = async (req, res) => {
         const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'booked');
         const total_spent = appointments.reduce((acc, appointment) => acc + Number(appointment.total_price), 0);
         const data = {
-            total_spent: total_spent,
+            total_spent: Number(total_spent.toFixed(2)) || 0.00,
             appointments: appointments,
         }
         return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", data);

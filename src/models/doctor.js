@@ -871,22 +871,22 @@ export const getDashboardDataByRole = async (id, role) => {
     }
 
     const isClinic = role === 'CLINIC';
+    const isSoloDoctor = role === 'SOLO_DOCTOR';
     const whereField = isClinic ? 'a.clinic_id' : 'a.doctor_id';
     const values = [id];
 
-    // SELECT fields
+    // SELECT fields for main stats
     const selectFields = [
         'COUNT(DISTINCT a.user_id) AS total_patients',
-        `COUNT(CASE WHEN DATE(a.start_time) = CURDATE() THEN 1 ELSE NULL END) AS today_appointments`,
+        'COUNT(a.appointment_id) AS total_appointments',
         'ROUND(AVG(ar.rating), 2) AS average_rating',
-        isClinic ? 'c.total_earnings AS total_earnings, c.wallet_balance AS wallet_balance' : 'd.total_earnings AS total_earnings, d.wallet_balance AS wallet_balance'
     ];
 
     if (isClinic) {
         selectFields.push('COUNT(DISTINCT map.doctor_id) AS total_doctors');
     }
 
-    // JOINs
+    // JOIN clauses
     const joinClauses = [
         'LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id',
         isClinic
@@ -907,6 +907,64 @@ export const getDashboardDataByRole = async (id, role) => {
 
     try {
         const [dashboard] = await db.query(query, values);
+
+        // Add earnings fields for DOCTOR, SOLO_DOCTOR and CLINIC
+        if (isClinic || isSoloDoctor || role === 'DOCTOR') {
+            let clinicId = id;
+
+            // For SOLO_DOCTOR, get the clinic_id
+            if (isSoloDoctor) {
+                const [doctor] = await db.query(
+                    `SELECT dcm.clinic_id
+                     FROM tbl_doctors d
+                     JOIN tbl_doctor_clinic_map dcm ON dcm.doctor_id = d.doctor_id
+                     WHERE d.doctor_id = ? LIMIT 1`,
+                    [id]
+                );
+                clinicId = doctor?.clinic_id || null;
+            }
+
+            if (role === 'DOCTOR') {
+                // For regular doctor, earnings only from their booked appointments
+                const [appointmentEarningsRow] = await db.query(
+                    `
+                    SELECT ROUND(IFNULL(SUM(a.clinic_earnings), 0), 2) AS clinic_appointment_earnings
+                    FROM tbl_appointments a
+                    WHERE a.doctor_id = ? AND a.save_type = 'booked'
+                    `,
+                    [id]
+                );
+                dashboard.clinic_appointment_earnings = appointmentEarningsRow?.clinic_appointment_earnings || 0;
+            } else if (clinicId) {
+                // Product earnings
+                const [productEarningsRow] = await db.query(
+                    `
+                    SELECT ROUND(IFNULL(SUM(pp.clinic_earnings), 0), 2) AS clinic_product_earnings
+                    FROM tbl_product_purchase pp
+                    JOIN tbl_carts c ON pp.cart_id = c.cart_id
+                    WHERE c.clinic_id = ?
+                    `,
+                    [clinicId]
+                );
+
+                // Appointment earnings
+                const [appointmentEarningsRow] = await db.query(
+                    `
+                    SELECT ROUND(IFNULL(SUM(a.clinic_earnings), 0), 2) AS clinic_appointment_earnings
+                    FROM tbl_appointments a
+                    WHERE a.clinic_id = ? AND a.save_type = 'booked'
+                    `,
+                    [clinicId]
+                );
+
+                dashboard.clinic_product_earnings = productEarningsRow?.clinic_product_earnings || 0;
+                dashboard.clinic_appointment_earnings = appointmentEarningsRow?.clinic_appointment_earnings || 0;
+            } else {
+                dashboard.clinic_product_earnings = 0;
+                dashboard.clinic_appointment_earnings = 0;
+            }
+        }
+
         return dashboard;
     } catch (error) {
         console.error('[DashboardDataError]', error);

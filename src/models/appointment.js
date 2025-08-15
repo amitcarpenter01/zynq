@@ -365,7 +365,7 @@ export const getAppointmentsByRole = async (id, role) => {
                 latitude: row.user_latitude,
                 longitude: row.user_longitude,
                 isOnline: row.user_isOnline,
-                profile_image: formatImagePath(row.user_profile_image, 'user/profile_images'),
+                profile_image: formatImagePath(row.user_profile_image, ''),
                 appointments: [],
                 face_scans: [],
                 lastBooked: appointmentCreatedAt
@@ -605,7 +605,7 @@ export const getAppointmentsByRoleAndSinglePatient = async (id, role, patient_id
                 latitude: row.user_latitude,
                 longitude: row.user_longitude,
                 isOnline: row.user_isOnline,
-                profile_image: formatImagePath(row.user_profile_image, 'user/profile_images'),
+                profile_image: formatImagePath(row.user_profile_image, ''),
                 appointments: [],
                 face_scans: [],
                 lastBooked: appointmentCreatedAt

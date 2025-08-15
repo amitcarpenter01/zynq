@@ -305,9 +305,9 @@ export const getDoctorBookedAppointments = asyncHandler(async (req, res) => {
     );
 
     const data = {
-        total_clinic_earnings: total_clinic_earnings,
-        total_admin_earnings: total_admin_earnings,
-        total_appointments_earnings: total_appointments_earnings,
+        total_clinic_earnings: Number(total_clinic_earnings.toFixed(2)) || 0.00,
+        total_admin_earnings: Number(total_admin_earnings.toFixed(2)) || 0.00,
+        total_appointments_earnings: Number(total_appointments_earnings.toFixed(2)) || 0.00,
         appointments: appointments,
     }
     return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", data);
