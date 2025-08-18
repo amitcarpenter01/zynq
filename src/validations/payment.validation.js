@@ -40,3 +40,9 @@ export const updateShipmentStatusSchema = Joi.object({
 export const getSinglePurchasedProductSchema = Joi.object({
   purchase_id: stringValidation
 })
+
+export const addWalletAmountSchema = Joi.object({
+  user_id: stringValidation,
+  user_type: stringValidation.valid("DOCTOR", "CLINIC", "SOLO-DOCTOR"),
+  amount: numberValidation
+})

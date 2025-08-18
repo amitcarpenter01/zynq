@@ -15,7 +15,7 @@ import { updateLegalDocumentsSchema } from '../validations/legal.validation.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { updateAdminCommissionRatesSchema } from '../validations/commission.validation.js.js';
 import { deleteNotifications, deleteSingleNotification, getNotifications } from '../controllers/api/notificationController.js';
-import { getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
+import { addWalletAmountSchema, getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
 import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
 
 const router = express.Router();
@@ -95,6 +95,8 @@ router.put('/commission-rates', authenticateAdmin, validate(updateAdminCommissio
 
 router.get('/payments/get-payment-history', authenticateAdmin, dashboardControllers.getPaymentHistory);
 
+router.get('/payments/get-earnings', authenticateAdmin, dashboardControllers.getEarnings);
+
 //=======================================Notifications=============================
 router.get('/notifications/get', authenticateAdmin, getNotifications);
 router.delete('/notifications/:notification_id', authenticateAdmin, validate(deleteSingleNotificationSchema, "params"), deleteSingleNotification);
@@ -109,4 +111,7 @@ router.post('/completeRefundToWallet', authenticateAdmin, authControllers.comple
 router.get('/refundHistory', authenticateAdmin, authControllers.getRefundHistory);
 
 router.get('/getUserAppointments/:user_id', authenticateAdmin, authControllers.getUserAppointmentOfUser);
+
+router.post('/payments/add-wallet-amount', authenticateAdmin, validate(addWalletAmountSchema, "body"), dashboardControllers.addWalletAmount);
+
 export default router;

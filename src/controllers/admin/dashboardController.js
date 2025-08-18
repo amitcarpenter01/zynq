@@ -1,4 +1,4 @@
-import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel, getAdminCommissionRatesModel, updateAdminCommissionRatesModel, getSingleAdminPurchasedProductModel, getSingleAdminCartProductModel, get_admin_earning } from '../../models/admin.js';
+import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel, getAdminCommissionRatesModel, updateAdminCommissionRatesModel, getSingleAdminPurchasedProductModel, getSingleAdminCartProductModel, get_admin_earning, addWalletAmountModel } from '../../models/admin.js';
 import { get_product_images_by_product_ids } from '../../models/api.js';
 import { getClinicDoctorWallets } from '../../models/payment.js';
 import { asyncHandler, handleError, handleSuccess } from '../../utils/responseHandler.js';
@@ -167,6 +167,71 @@ export const getPaymentHistory = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
 });
 
+export const getEarnings = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || "en";
+
+    const [
+        purchases,
+        appointments
+    ] = await Promise.all([
+        getAdminPurchasedProductModel(),
+        getAdminBookedAppointmentsModel()
+    ])
+    const {
+        total_doctor_earnings: total_appointment_doctor_earnings,
+        total_admin_earnings: total_appointment_admin_earnings,
+        total_earnings: total_appointment_earnings
+    } = appointments.reduce(
+        (acc, appointment) => {
+            acc.total_doctor_earnings += Number(appointment.clinic_earnings) || 0;
+            acc.total_admin_earnings += Number(appointment.admin_earnings) || 0;
+            acc.total_earnings += Number(appointment.total_price) || 0;
+            return acc;
+        },
+        {
+            total_doctor_earnings: 0,
+            total_admin_earnings: 0,
+            total_earnings: 0
+        }
+    );
+
+    const {
+        total_clinic_earnings: total_product_clinic_earnings,
+        total_admin_earnings: total_product_admin_earnings,
+        total_earnings: total_product_earnings
+    } = purchases.reduce(
+        (acc, cart) => {
+            acc.total_clinic_earnings += Number(cart.clinic_earnings) || 0;
+            acc.total_admin_earnings += Number(cart.admin_earnings) || 0;
+            acc.total_earnings += Number(cart.total_price) || 0;
+            return acc;
+        },
+        {
+            total_clinic_earnings: 0,
+            total_admin_earnings: 0,
+            total_earnings: 0
+        }
+    );
+
+    const data = {
+        // Appointments
+        total_appointment_earnings: Number(total_appointment_earnings.toFixed(2)),
+        total_appointment_admin_earnings: Number(total_appointment_admin_earnings.toFixed(2)),
+        total_appointment_doctor_earnings: Number(total_appointment_doctor_earnings.toFixed(2)),
+
+        // Products
+        total_product_earnings: Number(total_product_earnings.toFixed(2)),
+        total_product_admin_earnings: Number(total_product_admin_earnings.toFixed(2)),
+        total_product_clinic_earnings: Number(total_product_clinic_earnings.toFixed(2)),
+
+        total_admin_earnings: Number((total_appointment_admin_earnings + total_product_admin_earnings).toFixed(2)),
+        total_platform_earnings: Number((total_appointment_earnings + total_product_earnings).toFixed(2)),
+        appointments,
+        purchases
+    };
+
+    return handleSuccess(res, 200, language, "EARNINGS_FETCHED", data);
+});
 
 export const getAdminReviewsRatings = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
@@ -185,4 +250,11 @@ export const updateAdminCommissionRates = asyncHandler(async (req, res) => {
     const { APPOINTMENT_COMMISSION, PRODUCT_COMMISSION } = req.body;
     await updateAdminCommissionRatesModel({ APPOINTMENT_COMMISSION, PRODUCT_COMMISSION });
     return handleSuccess(res, 200, language, "COMMISSION_RATES_UPDATED",);
+})
+
+export const addWalletAmount = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const { user_id, user_type, amount } = req.body;
+    await addWalletAmountModel(user_id, user_type, amount);
+    return handleSuccess(res, 200, language, "WALLET_AMOUNT_ADDED",);
 })
