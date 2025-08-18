@@ -878,11 +878,13 @@ const getDoctorDashboard = async (doctorId) => {
         CASE WHEN a.save_type = 'booked' AND a.total_price > 0 
              THEN a.clinic_earnings ELSE 0 END
       ), 0), 2) AS clinic_appointment_earnings,
-      (
-        SELECT ROUND(IFNULL(SUM(amount), 0), 2)
-        FROM zynq_users_wallets w
-        WHERE w.user_id = ? AND w.user_type = 'DOCTOR'
-      ) AS wallet_earnings
+(
+  SELECT ROUND(IFNULL(zw.amount, 0), 2)
+  FROM zynq_users_wallets zw
+  WHERE zw.user_id = ? AND zw.user_type = 'DOCTOR'
+  LIMIT 1
+) AS wallet_earnings
+
     FROM tbl_appointments a
     LEFT JOIN tbl_appointment_ratings ar 
            ON a.appointment_id = ar.appointment_id
@@ -928,11 +930,12 @@ const getSoloDoctorDashboard = async (doctorId, clinicId) => {
       ) AS clinic_appointment_earnings,
 
       -- Wallet earnings
-      (
-        SELECT ROUND(IFNULL(SUM(amount), 0), 2)
-        FROM zynq_users_wallets zw
-        WHERE zw.user_id = ? AND zw.user_type = 'SOLO_DOCTOR'
-      ) AS wallet_earnings
+(
+  SELECT ROUND(IFNULL(zw.amount, 0), 2)
+  FROM zynq_users_wallets zw
+  WHERE zw.user_id = ? AND zw.user_type = 'SOLO_DOCTOR'
+  LIMIT 1
+) AS wallet_earnings
 
     FROM tbl_appointments a
     LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id
@@ -975,11 +978,14 @@ const getClinicDashboard = async (clinicId) => {
       ROUND(IFNULL(SUM(pp.clinic_earnings), 0), 2) AS clinic_product_earnings,
 
       -- Inline wallet earnings
-      (
-        SELECT ROUND(IFNULL(SUM(amount), 0), 2)
-        FROM zynq_users_wallets zw
-        WHERE zw.user_id = c.clinic_id AND zw.user_type = 'CLINIC'
-      ) AS wallet_earnings
+(
+  SELECT ROUND(IFNULL(zw.amount, 0), 2)
+  FROM zynq_users_wallets zw
+  WHERE zw.user_id = c.clinic_id 
+    AND zw.user_type = 'CLINIC'
+  LIMIT 1
+) AS wallet_earnings
+
 
     FROM tbl_clinics c
     LEFT JOIN tbl_appointments a ON a.clinic_id = c.clinic_id
