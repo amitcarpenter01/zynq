@@ -98,6 +98,7 @@ export const getAllProducts = async (req, res) => {
 
         const {
             filters = {},
+            sort = { by: 'latest', order: 'desc' },
             pagination = { page: 1, limit: 20 }
         } = req.body;
 
@@ -142,6 +143,7 @@ export const getAllProducts = async (req, res) => {
             treatment_ids: finalTreatmentIds,
             search,
             price,
+            sort,
             limit,
             offset
         };

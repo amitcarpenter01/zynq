@@ -22,10 +22,10 @@ export const getAllProductsSchema = Joi.object({
     recommended: booleanValidation.optional()
   }).optional(),
 
-  // sort: Joi.object({
-  //   by: Joi.string().valid('nearest', 'rating').default('nearest'),
-  //   order: orderValidation
-  // }).optional(),
+  sort: Joi.object({
+    by: Joi.string().valid('nearest', 'rating', 'price').default('nearest'),
+    order: orderValidation
+  }).optional(),
 
   pagination: Joi.object({
     page: numberValidation.min(1).default(1),

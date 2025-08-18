@@ -445,6 +445,7 @@ export const get_all_products_for_user = async ({
     treatment_ids = [],
     search = '',
     price = {},
+    sort = { by: 'latest', order: 'desc' },
     limit = 20,
     offset = 0
 }) => {
@@ -482,7 +483,14 @@ export const get_all_products_for_user = async ({
             params.push(price.max);
         }
 
-        query += ` GROUP BY p.product_id ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
+        let orderBy = 'ORDER BY';
+        if (sort.by === 'price') {
+            orderBy += ` p.price ${sort.order}`;
+        } else {
+            orderBy += ` p.created_at ${sort.order}`;
+        }
+
+        query += ` GROUP BY p.product_id ${orderBy} LIMIT ? OFFSET ?`;
         params.push(limit, offset);
 
         return await db.query(query, params);

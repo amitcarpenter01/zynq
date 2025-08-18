@@ -12,10 +12,16 @@ import {
     handleSuccess,
 } from "../../utils/responseHandler.js";
 import { v4 as uuidv4 } from "uuid";
+import { isEmpty } from "../../utils/user_helper.js";
+import { orderConfirmationTemplate, orderConfirmationTemplateClinic } from "../../utils/templates.js";
+import { sendEmail } from "../../services/send_email.js";
+import dayjs from 'dayjs';
+import { getSingleAddress } from "./addressController.js";
+import { getSingleAddressByAddressId } from "../../models/address.js";
 
 const process_earnings = async (metadata, user_id, products, cart_id, productDetails) => {
     try {
-        const total_price = products.reduce((acc, item) => acc + Number(item.unit_price || 0), 0);
+        const total_price = products.reduce((acc, item) => acc + Number(item.total_price || 0), 0);
         const admin_earning_percentage = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE || "3");
 
         const admin_earnings = parseFloat(((total_price * admin_earning_percentage) / 100).toFixed(2));
@@ -35,7 +41,7 @@ const process_earnings = async (metadata, user_id, products, cart_id, productDet
             metadata.address_id
         );
 
-        return { status: "SUCCESS", message: "Earnings processed successfully", purchase_id };
+        return { status: "SUCCESS", message: "Earnings processed successfully", purchase_id, total_price };
     } catch (error) {
         return {
             status: "FAILED",
@@ -48,6 +54,14 @@ const check_cart_stock = async (metadata) => {
     const [cart_id] = metadata.type_data.map((item) => item.type_id);
     const products = await getProductsData(cart_id);
     const productDetails = await getProductsByCartId(cart_id);
+    const address_data = await getSingleAddressByAddressId(metadata.address_id);
+
+    if (!products || products.length === 0) {
+        return {
+            status: "FAILED",
+            message: "No products found in cart.",
+        };
+    }
 
     for (const product of products) {
         if (product.cart_status === "PURCHASED") {
@@ -65,7 +79,7 @@ const check_cart_stock = async (metadata) => {
         }
     }
 
-    return { status: "SUCCESS", products, cart_id, productDetails };
+    return { status: "SUCCESS", products, cart_id, productDetails, address_data };
 };
 
 export const initiatePayment = asyncHandler(async (req, res) => {
@@ -97,9 +111,41 @@ export const initiatePayment = asyncHandler(async (req, res) => {
 
         if (earningResult.status === "FAILED") return handleError(res, 500, language, earningResult.message);
 
+        let pro = []
+        products.map((product) => {
+            let data = {
+                product_id: product.product_id,
+                name: product.name,
+                price: product.unit_price,
+                quantity: product.cart_quantity,
+                image_url: product.image_url || "product_img.png",
+            }
+            pro.push(data);
+        });
+        const emailData = {
+            orderDate: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+            customerName: req?.user?.full_name || "Customer",
+            totalAmount: earningResult.total_price,
+            products: pro,
+            logoUrl: process.env.LOGO_URL, // Optional - defaults to logo_2.png
+            bannerImageUrl: "https://51.21.123.99:4000/product_main.png",
+            customerAddress: stockCheck.address_data?.address || "Not provided",
+            customerState: stockCheck.address_data?.state || "Not provided",
+            customerCity: stockCheck.address_data?.city || "Not provided",
+            customerzipCode: stockCheck.address_data?.zip_code || "Not provided",
+            customerPhoneNumber: stockCheck.address_data?.phone_number || "Not provided",
+            clinicName: products[0].clinic_name || "Clinic",
+            clinicAddress: products[0].clinic_address || "Clinic Address",
+        };
+
+
+        const emailTemplate = orderConfirmationTemplate(emailData);
+        const emailClinicTemlate = orderConfirmationTemplateClinic(emailData);
+
         const promises = [
             updateProductsStockBulk(products),
             updateCartPurchasedStatus(cart_id),
+
             sendNotification({
                 userData: req.user,
                 type: "PURCHASE",
@@ -108,6 +154,7 @@ export const initiatePayment = asyncHandler(async (req, res) => {
                 receiver_id: products[0].clinic_id,
                 receiver_type: "CLINIC"
             }),
+
             sendNotification({
                 userData: {
                     user_id: products[0]?.clinic_id,
@@ -121,6 +168,18 @@ export const initiatePayment = asyncHandler(async (req, res) => {
                 receiver_id: user_id,
                 receiver_type: "USER",
                 system: true
+            }),
+
+            sendEmail({
+                to: req.user.email,
+                subject: emailTemplate.subject,
+                html: emailTemplate.body,
+            }),
+
+            sendEmail({
+                to: products[0].clinic_email,
+                subject: emailClinicTemlate.subject,
+                html: emailClinicTemlate.body,
             })
 
         ];

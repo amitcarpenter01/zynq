@@ -142,10 +142,18 @@ export const getProductsData = async (cart_id) => {
         p.price AS unit_price,
         c.cart_status,
         c.clinic_id,
-        p.stock,cp.quantity as cart_quantity
+        cl.clinic_name,
+        cl.address AS clinic_address,
+        zu.email AS clinic_email,
+        zu.fcm_token AS token,
+        p.stock,
+        cp.quantity as cart_quantity,
+        ROUND(p.price * cp.quantity, 2) AS total_price
       FROM tbl_cart_products cp
       LEFT JOIN tbl_products p ON cp.product_id = p.product_id
       LEFT JOIN tbl_carts c ON cp.cart_id = c.cart_id
+      LEFT JOIN tbl_clinics cl ON c.clinic_id = cl.clinic_id
+      LEFT JOIN tbl_zqnq_users zu ON c.clinic_id = zu.id
       WHERE cp.cart_id = ?
     `;
     const results = await db.query(query, [cart_id]);
