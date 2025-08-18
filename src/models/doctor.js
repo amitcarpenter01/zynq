@@ -865,168 +865,159 @@ export const getDoctorByDoctorID = async (doctor_id, clinic_id) => {
     }
 };
 
-
 // -----------------------------
-// Helpers
+// Role-specific dashboards
 // -----------------------------
+const getDoctorDashboard = async (doctorId) => {
+    const query = `
+    SELECT 
+      COUNT(DISTINCT a.user_id) AS total_patients,
+      COUNT(a.appointment_id) AS total_appointments,
+      ROUND(AVG(ar.rating), 2) AS average_rating,
+      ROUND(IFNULL(SUM(
+        CASE WHEN a.save_type = 'booked' AND a.total_price > 0 
+             THEN a.clinic_earnings ELSE 0 END
+      ), 0), 2) AS clinic_appointment_earnings,
+      (
+        SELECT ROUND(IFNULL(SUM(amount), 0), 2)
+        FROM zynq_users_wallets w
+        WHERE w.user_id = ? AND w.user_type = 'DOCTOR'
+      ) AS wallet_earnings
+    FROM tbl_appointments a
+    LEFT JOIN tbl_appointment_ratings ar 
+           ON a.appointment_id = ar.appointment_id
+    WHERE a.doctor_id = ?
+  `;
 
-// Build SELECT fields
-const buildSelectFields = (isClinic) => {
-    const baseFields = [
-        "COUNT(DISTINCT a.user_id) AS total_patients",
-        "COUNT(a.appointment_id) AS total_appointments",
-        "ROUND(AVG(ar.rating), 2) AS average_rating",
-    ];
+    const [dashboard = {}] = await db.query(query, [doctorId, doctorId]);
 
-    if (isClinic) {
-        baseFields.push("COUNT(DISTINCT map.doctor_id) AS total_doctors");
-    }
-
-    return baseFields.join(",\n        ");
-};
-
-// Build JOIN clauses
-const buildJoinClauses = (isClinic) => {
-    const joins = [
-        "LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id",
-        isClinic
-            ? "LEFT JOIN tbl_clinics c ON a.clinic_id = c.clinic_id"
-            : "LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id",
-    ];
-
-    if (isClinic) {
-        joins.push(
-            "LEFT JOIN tbl_doctor_clinic_map map ON map.clinic_id = a.clinic_id"
-        );
-    }
-
-    return joins.join("\n        ");
-};
-
-// Get Clinic ID if role is SOLO_DOCTOR
-const getClinicIdForSoloDoctor = async (doctorId) => {
-    const [doctor] = await db.query(
-        `
-    SELECT dcm.clinic_id
-    FROM tbl_doctors d
-    JOIN tbl_doctor_clinic_map dcm ON dcm.doctor_id = d.doctor_id
-    WHERE d.doctor_id = ? LIMIT 1
-  `,
-        [doctorId]
-    );
-    return doctor?.clinic_id || null;
-};
-
-// Get Earnings
-const getEarnings = async (role, id, clinicId) => {
-    const earnings = {
-        clinic_product_earnings: 0,
-        clinic_appointment_earnings: 0,
+    return {
+        total_patients: Number(dashboard.total_patients || 0),
+        total_appointments: Number(dashboard.total_appointments || 0),
+        average_rating: Number(dashboard.average_rating || 0),
+        total_doctors: 0,
+        clinic_product_earnings: 0, // doctors don’t earn from products
+        clinic_appointment_earnings: Number(dashboard.clinic_appointment_earnings || 0),
+        wallet_earnings: Number(dashboard.wallet_earnings || 0),
+        role: "DOCTOR",
     };
+};
 
-    if (role === "DOCTOR") {
-        const [row] = await db.query(
-            `
-      SELECT ROUND(IFNULL(SUM(a.clinic_earnings), 0), 2) AS clinic_appointment_earnings
-      FROM tbl_appointments a
-      WHERE a.doctor_id = ? AND a.save_type = 'booked' AND a.total_price > 0
-    `,
-            [id]
-        );
-        earnings.clinic_appointment_earnings = Number(row?.clinic_appointment_earnings).toFixed(2) || 0;
-        return earnings;
-    }
+const getSoloDoctorDashboard = async (doctorId, clinicId) => {
+    const query = `
+    SELECT 
+      COUNT(DISTINCT a.user_id) AS total_patients,
+      COUNT(a.appointment_id) AS total_appointments,
+      ROUND(AVG(ar.rating), 2) AS average_rating,
 
-    if (clinicId) {
-        const [[productRow], [appointmentRow]] = await Promise.all([
-            db.query(
-                `
-        SELECT ROUND(IFNULL(SUM(pp.clinic_earnings), 0), 2) AS clinic_product_earnings
+      -- Clinic product earnings (if solo doctor is mapped to a clinic)
+      (
+        SELECT ROUND(IFNULL(SUM(pp.clinic_earnings), 0), 2)
         FROM tbl_product_purchase pp
-        JOIN tbl_carts c ON pp.cart_id = c.cart_id
-        WHERE c.clinic_id = ?
-      `,
-                [clinicId]
-            ),
-            db.query(
-                `
-        SELECT ROUND(IFNULL(SUM(a.clinic_earnings), 0), 2) AS clinic_appointment_earnings
-        FROM tbl_appointments a
-        WHERE a.clinic_id = ? AND a.save_type = 'booked' AND a.total_price > 0
-      `,
-                [clinicId]
-            ),
-        ]);
+        JOIN tbl_carts cart ON pp.cart_id = cart.cart_id
+        WHERE cart.clinic_id = ?
+      ) AS clinic_product_earnings,
 
-        earnings.clinic_product_earnings = Number(productRow?.clinic_product_earnings).toFixed(2) || 0;
-        earnings.clinic_appointment_earnings = Number(appointmentRow?.clinic_appointment_earnings).toFixed(2) || 0;
-    }
+      -- Clinic appointment earnings
+      (
+        SELECT ROUND(IFNULL(SUM(sa.clinic_earnings), 0), 2)
+        FROM tbl_appointments sa
+        WHERE sa.clinic_id = ? 
+          AND sa.save_type = 'booked'
+          AND sa.total_price > 0
+      ) AS clinic_appointment_earnings,
 
-    return earnings;
+      -- Wallet earnings
+      (
+        SELECT ROUND(IFNULL(SUM(amount), 0), 2)
+        FROM zynq_users_wallets zw
+        WHERE zw.user_id = ? AND zw.user_type = 'SOLO_DOCTOR'
+      ) AS wallet_earnings
+
+    FROM tbl_appointments a
+    LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id
+    WHERE a.doctor_id = ?
+  `;
+
+    const [row = {}] = await db.query(query, [
+        clinicId,
+        clinicId,
+        doctorId,
+        doctorId
+    ]);
+
+    return {
+        total_patients: Number(row.total_patients || 0),
+        total_appointments: Number(row.total_appointments || 0),
+        average_rating: Number(row.average_rating || 0),
+        total_doctors: 0, // always 0 for solo doctor
+
+        clinic_product_earnings: Number(row.clinic_product_earnings || 0),
+        clinic_appointment_earnings: Number(row.clinic_appointment_earnings || 0),
+        wallet_earnings: Number(row.wallet_earnings || 0),
+
+        role: "SOLO_DOCTOR",
+    };
 };
 
-// Wallet earnings
-const getWalletEarnings = async (id, role) => {
-    const [row] = await db.query(
-        `
-    SELECT ROUND(IFNULL(SUM(amount), 0), 2) AS wallet_earnings
-    FROM zynq_users_wallets
-    WHERE user_id = ? AND user_type = ?
-  `,
-        [id, role]
-    );
-    return Number(row?.wallet_earnings).toFixed(2) || 0;
-};
+const getClinicDashboard = async (clinicId) => {
+    const query = `
+    SELECT 
+      COUNT(DISTINCT a.user_id) AS total_patients,
+      COUNT(a.appointment_id) AS total_appointments,
+      ROUND(AVG(ar.rating), 2) AS average_rating,
+      COUNT(DISTINCT map.doctor_id) AS total_doctors,
 
-// -----------------------------
-// Main Function
-// -----------------------------
-export const getDashboardDataByRole = async (id, role) => {
-    const isClinic = role === "CLINIC";
-    const isSoloDoctor = role === "SOLO_DOCTOR";
-    const whereField = isClinic ? "a.clinic_id" : "a.doctor_id";
+      ROUND(IFNULL(SUM(CASE 
+        WHEN a.save_type = 'booked' AND a.total_price > 0 THEN a.clinic_earnings 
+        ELSE 0 END), 0), 2) AS clinic_appointment_earnings,
 
-    try {
-        // Base Dashboard query
-        const query = `
-            SELECT ${buildSelectFields(isClinic)}
-            FROM tbl_appointments a
-            ${buildJoinClauses(isClinic)}
-            WHERE ${whereField} = ?
-        `;
-        const [dashboard = {}] = await db.query(query, [id]);
+      ROUND(IFNULL(SUM(pp.clinic_earnings), 0), 2) AS clinic_product_earnings,
 
-        // Earnings
-        const clinicId = isSoloDoctor ? await getClinicIdForSoloDoctor(id) : id;
-        const earnings = await getEarnings(role, id, clinicId);
+      -- Inline wallet earnings
+      (
+        SELECT ROUND(IFNULL(SUM(amount), 0), 2)
+        FROM zynq_users_wallets zw
+        WHERE zw.user_id = c.clinic_id AND zw.user_type = 'CLINIC'
+      ) AS wallet_earnings
 
-        // Wallet
-        const wallet_earnings = await getWalletEarnings(id, role);
+    FROM tbl_clinics c
+    LEFT JOIN tbl_appointments a ON a.clinic_id = c.clinic_id
+    LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id
+    LEFT JOIN tbl_doctor_clinic_map map ON map.clinic_id = c.clinic_id
+    LEFT JOIN tbl_carts cart ON cart.clinic_id = c.clinic_id
+    LEFT JOIN tbl_product_purchase pp ON pp.cart_id = cart.cart_id
+    WHERE c.clinic_id = ?
+  `;
 
-        // ✅ Normalize response: always send all expected fields
-        return {
-            total_patients: Number(dashboard.total_patients || 0),
-            total_appointments: Number(dashboard.total_appointments || 0),
-            average_rating: Number(dashboard.average_rating || 0),
-            total_doctors: isClinic ? Number(dashboard.total_doctors || 0) : 0,
+    const [row = {}] = await db.query(query, [clinicId]);
 
-            clinic_product_earnings: Number(earnings.clinic_product_earnings || 0),
-            clinic_appointment_earnings: Number(earnings.clinic_appointment_earnings || 0),
-
-            wallet_earnings: Number(wallet_earnings || 0),
-            role,
-        };
-    } catch (error) {
-        console.error("[DashboardDataError]", error);
-        throw new Error("Failed to fetch dashboard data.");
-    }
+    return {
+        total_patients: Number(row.total_patients || 0),
+        total_appointments: Number(row.total_appointments || 0),
+        average_rating: Number(row.average_rating || 0),
+        total_doctors: Number(row.total_doctors || 0),
+        clinic_product_earnings: Number(row.clinic_product_earnings || 0),
+        clinic_appointment_earnings: Number(row.clinic_appointment_earnings || 0),
+        wallet_earnings: Number(row.wallet_earnings || 0),
+        role: "CLINIC",
+    };
 };
 
 export const getDashboardData = async (userData) => {
     try {
         const { user_id, role } = extractUserData(userData);
-        let results = await getDashboardDataByRole(user_id, role);
-        return results;
+
+        switch (role) {
+            case "DOCTOR":
+                return await getDoctorDashboard(user_id);
+            case "SOLO_DOCTOR":
+                return await getSoloDoctorDashboard(user_id, userData.clinicData.clinic_id);
+            case "CLINIC":
+                return await getClinicDashboard(user_id);
+            default:
+                throw new Error("Unsupported role");
+        }
     }
     catch (error) {
         console.error("Database Error:", error.message);
