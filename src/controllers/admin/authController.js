@@ -425,7 +425,7 @@ export const completeRefundToWallet = async (req, res) => {
     try {
         const schema = Joi.object({
             appointment_id: Joi.string().required(),
-            amount: Joi.number().positive().required() // defaults to appointment total_price
+            amount: Joi.number().required() // defaults to appointment total_price
         });
         const { error, value } = schema.validate(req.body);
         if (error) return handleError(res, 422, 'en', error.message);
