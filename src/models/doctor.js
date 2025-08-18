@@ -929,7 +929,7 @@ const getEarnings = async (role, id, clinicId) => {
             `
       SELECT ROUND(IFNULL(SUM(a.clinic_earnings), 0), 2) AS clinic_appointment_earnings
       FROM tbl_appointments a
-      WHERE a.doctor_id = ? AND a.save_type = 'booked'
+      WHERE a.doctor_id = ? AND a.save_type = 'booked' AND a.total_price > 0
     `,
             [id]
         );
@@ -952,7 +952,7 @@ const getEarnings = async (role, id, clinicId) => {
                 `
         SELECT ROUND(IFNULL(SUM(a.clinic_earnings), 0), 2) AS clinic_appointment_earnings
         FROM tbl_appointments a
-        WHERE a.clinic_id = ? AND a.save_type = 'booked'
+        WHERE a.clinic_id = ? AND a.save_type = 'booked' AND a.total_price > 0
       `,
                 [clinicId]
             ),

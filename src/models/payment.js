@@ -153,7 +153,7 @@ export const getProductsData = async (cart_id) => {
       LEFT JOIN tbl_products p ON cp.product_id = p.product_id
       LEFT JOIN tbl_carts c ON cp.cart_id = c.cart_id
       LEFT JOIN tbl_clinics cl ON c.clinic_id = cl.clinic_id
-      LEFT JOIN tbl_zqnq_users zu ON c.clinic_id = zu.id
+      LEFT JOIN tbl_zqnq_users zu ON cl.zynq_user_id = zu.id
       WHERE cp.cart_id = ?
     `;
     const results = await db.query(query, [cart_id]);
