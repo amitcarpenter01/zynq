@@ -142,7 +142,9 @@ export const getProductsData = async (cart_id) => {
         p.price AS unit_price,
         c.cart_status,
         c.clinic_id,
-        p.stock,cp.quantity as cart_quantity
+        p.stock,
+        cp.quantity as cart_quantity,
+        ROUND(p.price * cp.quantity, 2) AS total_price
       FROM tbl_cart_products cp
       LEFT JOIN tbl_products p ON cp.product_id = p.product_id
       LEFT JOIN tbl_carts c ON cp.cart_id = c.cart_id

@@ -15,7 +15,7 @@ import { v4 as uuidv4 } from "uuid";
 
 const process_earnings = async (metadata, user_id, products, cart_id, productDetails) => {
     try {
-        const total_price = products.reduce((acc, item) => acc + Number(item.unit_price || 0), 0);
+        const total_price = products.reduce((acc, item) => acc + Number(item.total_price || 0), 0);
         const admin_earning_percentage = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE || "3");
 
         const admin_earnings = parseFloat(((total_price * admin_earning_percentage) / 100).toFixed(2));
