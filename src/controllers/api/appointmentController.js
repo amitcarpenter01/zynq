@@ -8,12 +8,12 @@ import { getDocterByDocterId } from '../../models/doctor.js';
 import { formatImagePath } from '../../utils/user_helper.js';
 import { getAppointmentDetails, isEmpty } from '../../utils/user_helper.js';
 const APP_URL = process.env.APP_URL;
-const ADMIN_EARNING_PERCENTAGE = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE) || 3;
 import { v4 as uuidv4 } from 'uuid';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
 import { sendEmail } from '../../services/send_email.js';
 import { appointmentBookedTemplate } from '../../utils/templates.js';
+import { getAdminCommissionRatesModel } from '../../models/admin.js';
 
 export const bookAppointment = async (req, res) => {
     try {
@@ -311,6 +311,9 @@ export const saveOrBookAppointment = async (req, res) => {
         const normalizedEnd = end_time
             ? dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss")
             : null;
+
+        const [{ APPOINTMENT_COMMISSION }] = await getAdminCommissionRatesModel();
+        const ADMIN_EARNING_PERCENTAGE = APPOINTMENT_COMMISSION || 3;
         const admin_earnings = Number(((total_price * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2));
         const clinic_earnings = Number(total_price) - admin_earnings;
         const is_paid = total_price > 0 ? 1 : 0;

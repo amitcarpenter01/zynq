@@ -16,13 +16,13 @@ import { isEmpty } from "../../utils/user_helper.js";
 import { orderConfirmationTemplate, orderConfirmationTemplateClinic } from "../../utils/templates.js";
 import { sendEmail } from "../../services/send_email.js";
 import dayjs from 'dayjs';
-import { getSingleAddress } from "./addressController.js";
 import { getSingleAddressByAddressId } from "../../models/address.js";
+import { getAdminCommissionRatesModel } from "../../models/admin.js";
 
-const process_earnings = async (metadata, user_id, products, cart_id, productDetails) => {
+const process_earnings = async (metadata, user_id, products, cart_id, productDetails, PRODUCT_COMMISSION) => {
     try {
         const total_price = products.reduce((acc, item) => acc + Number(item.total_price || 0), 0);
-        const admin_earning_percentage = parseFloat(process.env.ADMIN_EARNING_PERCENTAGE || "3");
+        const admin_earning_percentage = parseFloat(PRODUCT_COMMISSION || 3);
 
         const admin_earnings = parseFloat(((total_price * admin_earning_percentage) / 100).toFixed(2));
         const clinic_earnings = parseFloat((total_price - admin_earnings).toFixed(2));
@@ -52,9 +52,13 @@ const process_earnings = async (metadata, user_id, products, cart_id, productDet
 
 const check_cart_stock = async (metadata) => {
     const [cart_id] = metadata.type_data.map((item) => item.type_id);
-    const products = await getProductsData(cart_id);
-    const productDetails = await getProductsByCartId(cart_id);
-    const address_data = await getSingleAddressByAddressId(metadata.address_id);
+
+    const [products, productDetails, address_data, [{ PRODUCT_COMMISSION }]] = await Promise.all([
+        getProductsData(cart_id),
+        getProductsByCartId(cart_id),
+        getSingleAddressByAddressId(metadata.address_id),
+        getAdminCommissionRatesModel()
+    ]);
 
     if (!products || products.length === 0) {
         return {
@@ -79,7 +83,7 @@ const check_cart_stock = async (metadata) => {
         }
     }
 
-    return { status: "SUCCESS", products, cart_id, productDetails, address_data };
+    return { status: "SUCCESS", products, cart_id, productDetails, address_data, PRODUCT_COMMISSION };
 };
 
 export const initiatePayment = asyncHandler(async (req, res) => {
@@ -107,7 +111,7 @@ export const initiatePayment = asyncHandler(async (req, res) => {
 
         const { products, cart_id } = stockCheck;
 
-        const earningResult = await process_earnings(metadata, user_id, products, cart_id, stockCheck.productDetails);
+        const earningResult = await process_earnings(metadata, user_id, products, cart_id, stockCheck.productDetails, stockCheck.PRODUCT_COMMISSION);
 
         if (earningResult.status === "FAILED") return handleError(res, 500, language, earningResult.message);
 
@@ -145,7 +149,18 @@ export const initiatePayment = asyncHandler(async (req, res) => {
         const promises = [
             updateProductsStockBulk(products),
             updateCartPurchasedStatus(cart_id),
+            sendEmail({
+                to: req.user.email,
+                subject: emailTemplate.subject,
+                html: emailTemplate.body,
+            }),
 
+            sendEmail({
+                to: products[0].clinic_email,
+                subject: emailClinicTemlate.subject,
+                html: emailClinicTemlate.body,
+            })
+            ,
             sendNotification({
                 userData: req.user,
                 type: "PURCHASE",
@@ -169,19 +184,6 @@ export const initiatePayment = asyncHandler(async (req, res) => {
                 receiver_type: "USER",
                 system: true
             }),
-
-            sendEmail({
-                to: req.user.email,
-                subject: emailTemplate.subject,
-                html: emailTemplate.body,
-            }),
-
-            sendEmail({
-                to: products[0].clinic_email,
-                subject: emailClinicTemlate.subject,
-                html: emailClinicTemlate.body,
-            })
-
         ];
 
         if (address_id) {
@@ -225,8 +227,6 @@ export const initiatePayment = asyncHandler(async (req, res) => {
     //     session.client_token,
     //     metadata
     // );
-
-
 
     return handleSuccess(res, 200, language, "Product Purchase Successfully", result);
 });
