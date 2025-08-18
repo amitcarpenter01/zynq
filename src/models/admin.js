@@ -749,8 +749,8 @@ LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
 LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
 LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
 LEFT JOIN tbl_users u ON u.user_id = a.user_id
-WHERE a.save_type = 'booked'
-ORDER BY a.start_time ASC;
+WHERE a.save_type = 'booked' AND a.total_price > 0
+ORDER BY a.created_at DESC;
 
     `
 

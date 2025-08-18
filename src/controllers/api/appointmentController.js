@@ -467,7 +467,7 @@ export const getMyTreatmentPlans = async (req, res) => {
 export const getBookedAppointments = async (req, res) => {
     try {
         const userId = req.user.user_id;
-        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'booked');
+        const appointments = await appointmentModel.getBookedAppointmentsByUserId(userId, 'booked');
         const total_spent = appointments.reduce((acc, appointment) => acc + Number(appointment.total_price), 0);
         const data = {
             total_spent: Number(total_spent.toFixed(2)) || 0.00,
