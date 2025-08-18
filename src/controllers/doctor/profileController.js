@@ -1095,10 +1095,10 @@ export const create_call_log_doctor = async (req, res) => {
 }
 
 export const getDashboard = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'sv';
     const dashboardData = await doctorModels.getDashboardData(req.user);
-    return handleSuccess(res, 200, 'en', 'DASHBOARD_DATA', dashboardData);
+    return handleSuccess(res, 200, language, 'DASHBOARD_DATA', dashboardData);
 })
-
 
 export const getClinicPurchasedProducts = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';

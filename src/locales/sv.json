@@ -233,8 +233,11 @@
   "ADDRESS_FETCHED_SUCCESSFULLY": "Adress hittades",
   "SHIPMENT_STATUS_UPDATED_SUCCESSFULLY": "Fraktstatus uppdaterad",
   "NOTIFICATION_DELETED_SUCCESSFULLY": "Notiser raderades",
-  "NOT_ALLOWED":"Inte tillåtet att avboka mötet",
-  "APPOINTMENT_CANCELLED_SUCCESSFULLY":"Mötet avbokades framgångsrikt",
-   "REFUND_NOT_INITIATED":"Återbetalning har inte påbörjats",
-  "REFUND_ALREADY_PAID":"Återbetalning för detta möte är redan utbetald"
+  "NOT_ALLOWED": "Inte tillåtet att avboka mötet",
+  "APPOINTMENT_CANCELLED_SUCCESSFULLY": "Mötet avbokades framgångsrikt",
+  "REFUND_NOT_INITIATED": "Återbetalning har inte påbörjats",
+  "REFUND_ALREADY_PAID": "Återbetalning för detta möte är redan utbetald",
+  "COMMISSION_RATES_UPDATED": "Kommissionsrate uppdaterad",
+  "WALLET_AMOUNT_ADDED": "Belopp tillagd",
+  "EARNINGS_FETCHED": "Inkomster hittades"
 }

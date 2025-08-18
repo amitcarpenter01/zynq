@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import { isEmpty } from "../utils/user_helper.js";
 import { get_product_images_by_product_ids } from "./api.js";
 
 //======================================= Admin =========================================
@@ -795,6 +796,8 @@ export const getAdminPurchasedProductModel = async () => {
                 pp.cart_id,
                 pp.product_details, 
                 pp.total_price,
+                pp.admin_earnings,
+                pp.clinic_earnings,
                 pp.created_at AS purchase_date,
                 pp.shipped_date,
                 pp.delivered_date,
@@ -805,7 +808,7 @@ export const getAdminPurchasedProductModel = async () => {
                 u.mobile_number,
                 a.address
             FROM tbl_product_purchase pp
-            JOIN tbl_users u ON pp.user_id = u.user_id
+            LEFT JOIN tbl_users u ON pp.user_id = u.user_id
             LEFT JOIN tbl_address a ON pp.address_id = a.address_id
             ORDER BY pp.created_at DESC
         `);
@@ -897,6 +900,8 @@ export const getAdminPurchasedProductModel = async () => {
                 shipped_date: row.shipped_date || null,
                 delivered_date: row.delivered_date || null,
                 total_price: row.total_price,
+                admin_earnings: row.admin_earnings,
+                clinic_earnings: row.clinic_earnings,
                 address: row.address,
                 shipment_status: row.shipment_status,
                 clinic,
@@ -1155,6 +1160,39 @@ export const getTreatmentsOfProductsBulk = async (productIds) => {
         return results;
     } catch (error) {
         console.error("Failed to fetch treatments for products:", error);
+        throw error;
+    }
+};
+
+export const addWalletAmountModel = async (user_id, user_type, amount) => {
+    try {
+        // Check if wallet exists
+        const [wallet] = await db.query(
+            `SELECT wallet_id, amount 
+            FROM zynq_users_wallets 
+            WHERE user_id = ? AND user_type = ? 
+            LIMIT 1`,
+            [user_id, user_type]
+        );
+
+        if (isEmpty(wallet)) {
+            await db.query(
+                `INSERT INTO zynq_users_wallets (user_id, user_type, amount) 
+                VALUES (?, ?, ?)`,
+                [user_id, user_type, amount]
+            );
+        } else {
+            const newAmount = parseFloat(wallet.amount) + parseFloat(amount);
+            await db.query(
+                `UPDATE zynq_users_wallets 
+                SET amount = ? 
+                WHERE wallet_id = ?`,
+                [newAmount, wallet.wallet_id]
+            );
+        }
+
+    } catch (error) {
+        console.error("addWalletAmountModel error:", error);
         throw error;
     }
 };
