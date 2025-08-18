@@ -17,8 +17,6 @@ export const get_clinic_by_zynq_user_id = async (zynq_user_id) => {
     }
 };
 
-console.log('get_clinic_by_zynq_user_id', get_clinic_by_zynq_user_id)
-
 export const get_zqnq_user_by_email = async (email) => {
     try {
         return await db.query(`SELECT * FROM tbl_zqnq_users WHERE email = ?`, [email]);

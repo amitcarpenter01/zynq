@@ -1420,10 +1420,7 @@ export const addOrGetUserCart = async (clinic_id, user_id) => {
 };
 
 export const addProductToUserCart = async (cart_id, product_id, quantity) => {
-    console.log('cart_id, product_id, quantity', cart_id, product_id, quantity);
-
     try {
-
         await db.query(
             `INSERT INTO tbl_cart_products (cart_id, product_id, quantity) VALUES (?, ?, ?)`,
             [cart_id, product_id, quantity]
