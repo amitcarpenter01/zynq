@@ -1,11 +1,5 @@
-import { getProductsByCartId, getProductsData, insertPayment, insertProductPurchase, updateCartPurchasedStatus, updateLatestAddress, updatePaymentStatus, updateProductsStock, updateProductsStockBulk, updateShipmentStatusModel } from "../../models/payment.js";
+import { createPaymentSession, getProductsByCartId, getProductsData, insertPayment, insertProductPurchase, processPaymentMetadata, updateCartPurchasedStatus, updateLatestAddress, updatePaymentStatus, updatePaymentStatusModel, updateProductsStock, updateProductsStockBulk, updateShipmentStatusModel } from "../../models/payment.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
-import {
-    createKlarnaSession,
-    getKlarnaWebhookResponse,
-    processKlarnaMetadata,
-} from "../../services/payments/klarna.js";
-import { createStripeSession, processStripeMetadata } from "../../services/payments/stripe.js";
 import {
     asyncHandler,
     handleError,
@@ -18,6 +12,7 @@ import { sendEmail } from "../../services/send_email.js";
 import dayjs from 'dayjs';
 import { getSingleAddressByAddressId } from "../../models/address.js";
 import { getAdminCommissionRatesModel } from "../../models/admin.js";
+import { stripe } from "../../../app.js";
 
 const process_earnings = async (metadata, user_id, products, cart_id, productDetails, PRODUCT_COMMISSION) => {
     try {
@@ -89,22 +84,18 @@ const check_cart_stock = async (metadata) => {
 export const initiatePayment = asyncHandler(async (req, res) => {
     let {
         payment_gateway,
-        currency,
         metadata,
-        doctor_id,
-        clinic_id,
         address_id
     } = req.body;
 
     const { user_id, language = "en" } = req.user;
 
     metadata.user_id = user_id;
-    metadata.doctor_id = doctor_id;
-    metadata.clinic_id = clinic_id;
     metadata.address_id = address_id;
 
+
     let result = { status: "SUCCESS", message: "Payment initiated successfully" };
-    const payment_id = uuidv4();
+
     if (metadata.type === "CART") {
         const stockCheck = await check_cart_stock(metadata);
         if (stockCheck.status === "FAILED") return handleError(res, 400, language, stockCheck.message);
@@ -195,61 +186,15 @@ export const initiatePayment = asyncHandler(async (req, res) => {
 
         result = earningResult
     }
-    let session;
 
-    // switch (payment_gateway) {
-    //     case "KLARNA":
-    //         metadata = await processKlarnaMetadata(metadata);
-    //         session = await createKlarnaSession({ payment_id: payment_id, currency: currency, metadata: metadata, });
-    //         break;
 
-    //     case "SWISH":
-    //         break;
 
-    //     case "STRIPE":
-    //         metadata = await processStripeMetadata(metadata);
-    //         session = await createStripeSession({ payment_id, currency, metadata });
-    //         break;
+    // const processedMetadata = await processPaymentMetadata({ payment_gateway, metadata });
+    // const session = await createPaymentSession({ payment_gateway, metadata: processedMetadata });
 
-    //     default:
-    //         break;
-    // }
-
-    // await insertPayment(
-    //     payment_id,
-    //     user_id,
-    //     doctor_id,
-    //     clinic_id,
-    //     payment_gateway, // provider
-    //     metadata.order_amount,
-    //     currency,
-    //     session.session_id, // provider_reference_id
-    //     session.client_token,
-    //     metadata
-    // );
+    // await insertPayment(metadata.order_amount, "PURCHASE", metadata.purchase_id, session.id, processedMetadata);
 
     return handleSuccess(res, 200, language, "Product Purchase Successfully", result);
-});
-
-export const klarnaWebhookHandler = asyncHandler(async (req, res) => {
-    const { order_id } = req.query;
-
-    const klarnaResponse = await getKlarnaWebhookResponse(order_id);
-    console.log("klarnaResponse", klarnaResponse);
-
-    const klarnaStatus = klarnaResponse?.data?.status;
-
-    const statusMap = {
-        AUTHORIZED: "COMPLETED",
-        CANCELLED: "CANCELLED",
-    };
-
-    const newStatus = statusMap[klarnaStatus] || "PENDING";
-
-
-    await updatePaymentStatus(order_id, newStatus);
-
-    return handleSuccess(res, 200, "en", "PAYMENT_STATUS_UPDATED_SUCCESSFULLY");
 });
 
 export const updateShipmentStatus = asyncHandler(async (req, res) => {
@@ -258,3 +203,40 @@ export const updateShipmentStatus = asyncHandler(async (req, res) => {
     await updateShipmentStatusModel(purchase_id, shipment_status, userData);
     return handleSuccess(res, 200, "en", "SHIPMENT_STATUS_UPDATED_SUCCESSFULLY");
 });
+
+export const stripeWebhookHandler = asyncHandler(async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+
+    const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+
+    console.log(event)
+
+    // await updatePaymentStatusModel(session_id, "PAID");
+    return handleSuccess(res, 200, "en", "PAYMENT_STATUS_UPDATED_SUCCESSFULLY");
+});
+
+export const stripeSuccessHandler = asyncHandler(async (req, res) => {
+    const { session_id } = req.query;
+    // await updatePaymentStatusModel(session_id, "CANCELLED");
+    const data = {
+        status: "SUCCESS",
+        session_id
+    }
+    return handleSuccess(res, 200, "en", "PAYMENT_STATUS_UPDATED_SUCCESSFULLY", data);
+});
+
+export const testPayment = asyncHandler(async (req, res) => {
+    const session = await createPaymentSession(
+        {
+            payment_gateway: "KLARNA",
+            metadata: {
+                order_lines: [
+                    {
+                        name: "Test",
+                        quantity: 1,
+                        unit_amount: 100 * 100,
+                    }]
+            }
+        });
+    return handleSuccess(res, 200, "en", "SESSION_CREATED_SUCCESSFULLY", session);
+})

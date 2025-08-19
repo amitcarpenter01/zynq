@@ -36,11 +36,10 @@ import { toggleWishlistProductSchema } from '../validations/wishlist.validation.
 import { addProductToCartSchema, deleteCartSchema, deleteProductFromCartSchema, getSingleCartSchema, } from '../validations/cart.validation.js';
 import { addProductToCart, deleteCart, deleteProductFromCart, getCarts, getSingleCart, getSingleCartByClinic } from '../controllers/api/cartController.js';
 import { getSinglePurchasedProductSchema, initiatePaymentSchema, klarnaWebhookSchema } from '../validations/payment.validation.js';
-import { initiatePayment, klarnaWebhookHandler } from '../controllers/api/paymentController.js';
+import { initiatePayment, stripeSuccessHandler, stripeWebhookHandler, testPayment } from '../controllers/api/paymentController.js';
 import { getUserSkinTypes } from '../models/clinic.js';
 import { addEditAddressSchema, deleteAddressSchema, getSingleAddressSchema } from '../validations/address.validation.js';
 import { addEditAddress, deleteAddress, getAddresses, getSingleAddress } from '../controllers/api/addressController.js';
-import { stripeSuccessHandler } from '../services/payments/stripe.js';
 import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
 
 const router = express.Router();
@@ -123,7 +122,7 @@ router.post('/cancelAppointment', authenticateUser, appointmentController.cancel
 
 router.get('/getMyAppointments', authenticateUser, appointmentController.getMyAppointmentsUser);
 
-router.get('/wallet',authenticateUser, appointmentController.getMyWallet);
+router.get('/wallet', authenticateUser, appointmentController.getMyWallet);
 
 router.get('/getMyTreatmentPlans', authenticateUser, appointmentController.getMyTreatmentPlans);
 
@@ -175,10 +174,9 @@ router.delete('/cart/:cart_id', authenticateUser, validate(deleteCartSchema, "pa
 // -------------------------------------Payments------------------------------------------------//
 
 router.post('/payments/initiate', authenticateUser, validate(initiatePaymentSchema, "body"), initiatePayment);
-// router.post('/payments/klarna/confirm-payment', authenticateUser, validate(confirmKlarnaPaymentSchema, "body"), initiatePayment);
-router.post("/payments/klarna/push", validate(klarnaWebhookSchema, "query"), klarnaWebhookHandler);
-router.get("/payments/stripe/success", stripeSuccessHandler);
-
+// router.post('/payments/webhook', stripeWebhookHandler);
+router.get('/payments/success', stripeSuccessHandler);
+router.post('/payments/test', testPayment)
 // -------------------------------------Generic------------------------------------------------//
 
 router.get('/skin-types', authenticateUser, faceScanControllers.getClinicSkinTypes);
