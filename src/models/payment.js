@@ -1,43 +1,32 @@
+import { stripe } from "../../app.js";
 import db from "../config/db.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../services/notifications.service.js";
-import { getSinglePurchasedProductsModel, getSingleUserPurchasedProductModel } from "./api.js";
+import { getSinglePurchasedProductsModel } from "./api.js";
 
 export const insertPayment = async (
-  payment_id,
-  user_id,
-  doctor_id,
-  clinic_id,
-  provider,
   amount,
-  currency,
-  provider_reference_id,
-  order_id,
+  type,
+  type_id,
+  session_id,
   metadata
 ) => {
   const query = `
     INSERT INTO tbl_payments (
-      payment_id,
-      user_id,
-      doctor_id,
-      clinic_id,
-      provider,
       amount,
-      currency,
       status,
-      provider_reference_id,
+      type,
+      type_id,
+      session_id,
       metadata
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?)
   `;
 
   const params = [
-    payment_id,
-    user_id,
-    doctor_id,
-    clinic_id,
-    provider,
     amount,
-    currency,
-    provider_reference_id,
+    "PENDING",
+    type,
+    type_id,
+    session_id,
     JSON.stringify(metadata),
   ];
 
@@ -353,3 +342,116 @@ export const updateShipmentStatusModel = async (purchase_id, shipment_status, us
     throw error;
   }
 };
+export const processKlarnaMetadata = async (metadata) => {
+  let order_lines = [];
+
+  switch (metadata?.type) {
+    case "APPOINTMENT": {
+      order_lines.push({
+        name: `Appointment Booking`,
+        quantity: 1,
+        unit_amount: Math.round(metadata.order_amount * 100), // minor units
+        total_amount: Math.round(metadata.order_amount * 100),
+      });
+      break;
+    }
+
+    case "CART": {
+      order_lines.push({
+        name: `Order #${metadata.purchase_id}`,
+        quantity: 1,
+        unit_amount: Math.round(metadata.order_amount * 100),
+        total_amount: Math.round(metadata.order_amount * 100),
+      });
+      break;
+    }
+
+    default:
+      throw new Error("Unsupported metadata type");
+  }
+
+  const order_amount_minor = order_lines.reduce(
+    (sum, item) => sum + item.total_amount,
+    0
+  );
+
+  const order_amount = order_amount_minor / 100;
+
+  return {
+    ...metadata,
+    order_lines,
+    order_amount, // for DB clarity (major units)
+    order_amount_minor, // for Stripe/Klarna (minor units)
+  };
+};
+export const processPaymentMetadata = async ({ payment_gateway, metadata }) => {
+  try {
+    switch (payment_gateway) {
+      case "KLARNA":
+        return processKlarnaMetadata(metadata);
+
+        break;
+
+      case "SWISH":
+
+        break;
+      default:
+        break;
+    }
+  } catch (error) {
+    console.error("Failed to process payment metadata:", error);
+    throw error;
+  }
+}
+
+export const createPaymentSession = async ({ payment_gateway, metadata }) => {
+  try {
+    switch (payment_gateway) {
+      case "KLARNA": {
+        const line_items = metadata.order_lines.map((line) => ({
+          price_data: {
+            currency: metadata.currency || "sek",
+            product_data: { name: line.name },
+            unit_amount: line.unit_amount,
+          },
+          quantity: line.quantity,
+        }));
+
+        return await stripe.checkout.sessions.create({
+          payment_method_types: ["klarna"],
+          mode: "payment",
+          line_items,
+          success_url: `${process.env.LOCAL_APP_URL}api/payments/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${process.env.LOCAL_APP_URL}api/payments/cancel/?session_id={CHECKOUT_SESSION_ID}`,
+          metadata: {
+            purchase_id: metadata.purchase_id,
+            user_id: metadata.user_id,
+            type: metadata.type,
+          },
+        });
+      }
+
+      default:
+        throw new Error(`Unsupported payment gateway: ${payment_gateway}`);
+    }
+  } catch (error) {
+    console.error("Failed to create payment session:", error);
+    throw error;
+  }
+};
+
+export const updatePaymentStatusModel = async (session_id, status) => {
+  try {
+    await db.query(
+      `
+        UPDATE tbl_payments
+        SET status = ?
+        WHERE session_id = ?
+      `,
+      [status, session_id]
+    );
+  } catch (error) {
+    console.error("Failed to update payment status:", error);
+    throw error;
+  }
+}
