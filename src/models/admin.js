@@ -93,24 +93,22 @@ export const get_admin_earning = async () => {
         const result = await db.query(
             `
             SELECT
-                (
-                    (SELECT COALESCE(SUM(admin_earnings), 0) 
-                     FROM tbl_product_purchase)
-                    +
-                    (SELECT COALESCE(SUM(admin_earnings), 0) 
-                     FROM tbl_appointments)
+                ROUND(
+                    ( (SELECT COALESCE(SUM(admin_earnings), 0) FROM tbl_product_purchase)
+                      +
+                      (SELECT COALESCE(SUM(admin_earnings), 0) FROM tbl_appointments)
+                    ), 2
                 ) AS total_admin_earnings,
 
-                (
-                SELECT COALESCE(SUM(balance), 0) 
-                FROM tbl_wallet
-                ) AS total_refunds,
-                (
-                    (SELECT COALESCE(SUM(total_price), 0) 
-                     FROM tbl_product_purchase)
-                    +
-                    (SELECT COALESCE(SUM(total_price), 0) 
-                     FROM tbl_appointments)
+                ROUND(
+                    (SELECT COALESCE(SUM(balance), 0) FROM tbl_wallet),
+                2) AS total_refunds,
+
+                ROUND(
+                    ( (SELECT COALESCE(SUM(total_price), 0) FROM tbl_product_purchase)
+                      +
+                      (SELECT COALESCE(SUM(total_price), 0) FROM tbl_appointments)
+                    ), 2
                 ) AS total_platform_earnings,
 
                 (
