@@ -1,4 +1,4 @@
-import { createPaymentSession, getCartMetadataByCartId, getProductsByCartId, getProductsData, insertPayment, insertProductPurchase, processPaymentMetadata, updateCartMetadata, updateCartPurchasedStatus, updateLatestAddress, updatePaymentStatus, updatePaymentStatusModel, updateProductsStock, updateProductsStockBulk, updateShipmentStatusModel } from "../../models/payment.js";
+import { createPaymentSession, getCartMetadataAndStatusByCartId, getProductsByCartId, getProductsData, insertPayment, insertProductPurchase, processPaymentMetadata, updateCartMetadata, updateCartPurchasedStatus, updateLatestAddress, updatePaymentStatus, updatePaymentStatusModel, updateProductsStock, updateProductsStockBulk, updateShipmentStatusModel } from "../../models/payment.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 import {
     asyncHandler,
@@ -145,16 +145,17 @@ export const initiatePayment = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language, "Payment initiated successfully", {
         status: earningResult.status,
         message: earningResult.message,
-        session
+        se
     });
 
 });
 
 export const updateShipmentStatus = asyncHandler(async (req, res) => {
     const { purchase_id, shipment_status } = req.body;
+    const language = req?.user?.language || 'en';
     const userData = req.user;
     await updateShipmentStatusModel(purchase_id, shipment_status, userData);
-    return handleSuccess(res, 200, "en", "SHIPMENT_STATUS_UPDATED_SUCCESSFULLY");
+    return handleSuccess(res, 200, language, "SHIPMENT_STATUS_UPDATED_SUCCESSFULLY");
 });
 
 export const stripeWebhookHandler = asyncHandler(async (req, res) => {
@@ -175,7 +176,12 @@ export const stripeSuccessHandler = asyncHandler(async (req, res) => {
         expand: ["payment_intent", "line_items"], // expand if needed
     });
 
-    const metadata = await getCartMetadataByCartId(session.metadata.cart_id);
+    const { metadata, cart_status } = await getCartMetadataAndStatusByCartId(session.metadata.cart_id);
+
+    if (cart_status === "PURCHASED") {
+        return handleError(res, 400, "en", "Cart has already been purchased.");
+
+    }
 
     const { insertId: purchase_id } = await insertProductPurchase(
         metadata.user_id,
@@ -265,6 +271,10 @@ export const stripeSuccessHandler = asyncHandler(async (req, res) => {
     await Promise.all(promises);
 
     return handleSuccess(res, 200, "en", "PAYMENT_PROCESSED_SUCCESSFULLY");
+});
+
+export const stripeCancelHandler = asyncHandler(async (req, res) => {
+    return handleSuccess(res, 200, "en", "PAYMENT_CANCELLED_SUCCESSFULLY");
 });
 
 export const testPayment = asyncHandler(async (req, res) => {

@@ -456,15 +456,15 @@ export const updateCartMetadata = async (cart_id, metadata) => {
 }
 
 
-export const getCartMetadataByCartId = async (cart_id) => {
+export const getCartMetadataAndStatusByCartId = async (cart_id) => {
     try {
         const [result] = await db.query(
-            `SELECT metadata FROM tbl_carts WHERE cart_id = ?
+            `SELECT metadata, cart_status FROM tbl_carts WHERE cart_id = ?
              `,
             [cart_id]
         );
         
-        return result.metadata;
+        return result;
     } catch (error) {
         console.error("Database Error in getUserCarts:", error);
         throw new Error("Failed to get user carts.");
