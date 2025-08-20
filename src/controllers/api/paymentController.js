@@ -145,7 +145,7 @@ export const initiatePayment = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language, "Payment initiated successfully", {
         status: earningResult.status,
         message: earningResult.message,
-        se
+        url : session.url
     });
 
 });
