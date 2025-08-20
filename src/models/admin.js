@@ -90,10 +90,41 @@ export const get_latest_clinic = async () => {
 
 export const get_admin_earning = async () => {
     try {
-        return await db.query('SELECT ((SELECT COALESCE(SUM(admin_earnings), 0) FROM tbl_product_purchase) +(SELECT COALESCE(SUM(admin_earnings), 0) FROM tbl_appointments) ) AS total_earnings;');
+        const result = await db.query(
+            `
+            SELECT
+                (
+                    (SELECT COALESCE(SUM(admin_earnings), 0) 
+                     FROM tbl_product_purchase)
+                    +
+                    (SELECT COALESCE(SUM(admin_earnings), 0) 
+                     FROM tbl_appointments)
+                ) AS total_admin_earnings,
+
+                (
+                SELECT COALESCE(SUM(balance), 0) 
+                FROM tbl_wallet
+                ) AS total_refunds,
+                (
+                    (SELECT COALESCE(SUM(total_price), 0) 
+                     FROM tbl_product_purchase)
+                    +
+                    (SELECT COALESCE(SUM(total_price), 0) 
+                     FROM tbl_appointments)
+                ) AS total_platform_earnings,
+
+                (
+                    SELECT COUNT(DISTINCT purchase_id) 
+                    FROM tbl_product_purchase
+                ) AS total_purchases
+            ;
+            `
+        );
+
+        return result[0]; // return first row with all fields
     } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to get dashboard clinic data.");
+        throw new Error("Failed to get admin earning data.");
     }
 };
 
