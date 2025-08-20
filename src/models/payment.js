@@ -267,7 +267,7 @@ export const insertProductPurchase = async (
   productDetails,
   address_id = null
 ) => (
-  db.query(
+  await db.query(
     `
       INSERT INTO tbl_product_purchase (
         user_id,
@@ -342,33 +342,17 @@ export const updateShipmentStatusModel = async (purchase_id, shipment_status, us
     throw error;
   }
 };
-export const processKlarnaMetadata = async (metadata) => {
+export const processKlarnaMetadata = (metadata) => {
   let order_lines = [];
 
-  switch (metadata?.type) {
-    case "APPOINTMENT": {
-      order_lines.push({
-        name: `Appointment Booking`,
-        quantity: 1,
-        unit_amount: Math.round(metadata.order_amount * 100), // minor units
-        total_amount: Math.round(metadata.order_amount * 100),
-      });
-      break;
-    }
+  order_lines.push({
+    name: `Order #${metadata.type_data[0].type_id}`,
+    quantity: 1,
+    unit_amount: Math.round(metadata.order_amount * 100),
+    total_amount: Math.round(metadata.order_amount * 100),
+  });
 
-    case "CART": {
-      order_lines.push({
-        name: `Order #${metadata.purchase_id}`,
-        quantity: 1,
-        unit_amount: Math.round(metadata.order_amount * 100),
-        total_amount: Math.round(metadata.order_amount * 100),
-      });
-      break;
-    }
 
-    default:
-      throw new Error("Unsupported metadata type");
-  }
 
   const order_amount_minor = order_lines.reduce(
     (sum, item) => sum + item.total_amount,
@@ -379,22 +363,21 @@ export const processKlarnaMetadata = async (metadata) => {
 
   return {
     ...metadata,
+    cart_id: metadata.type_data[0].type_id,
     order_lines,
     order_amount, // for DB clarity (major units)
     order_amount_minor, // for Stripe/Klarna (minor units)
   };
 };
-export const processPaymentMetadata = async ({ payment_gateway, metadata }) => {
+export const processPaymentMetadata = ({ payment_gateway, metadata }) => {
   try {
     switch (payment_gateway) {
       case "KLARNA":
         return processKlarnaMetadata(metadata);
 
-        break;
-
       case "SWISH":
-
         break;
+
       default:
         break;
     }
@@ -424,7 +407,7 @@ export const createPaymentSession = async ({ payment_gateway, metadata }) => {
           success_url: `${process.env.LOCAL_APP_URL}api/payments/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${process.env.LOCAL_APP_URL}api/payments/cancel/?session_id={CHECKOUT_SESSION_ID}`,
           metadata: {
-            purchase_id: metadata.purchase_id,
+            cart_id: metadata.cart_id,
             user_id: metadata.user_id,
             type: metadata.type,
           },
@@ -454,4 +437,36 @@ export const updatePaymentStatusModel = async (session_id, status) => {
     console.error("Failed to update payment status:", error);
     throw error;
   }
+}
+
+export const updateCartMetadata = async (cart_id, metadata) => {
+  try {
+    await db.query(
+      `
+        UPDATE tbl_carts
+        SET metadata = ?
+        WHERE cart_id = ?
+      `,
+      [JSON.stringify(metadata), cart_id]
+    );
+  } catch (error) {
+    console.error("Failed to update cart metadata:", error);
+    throw error;
+  }
+}
+
+
+export const getCartMetadataByCartId = async (cart_id) => {
+    try {
+        const [result] = await db.query(
+            `SELECT metadata FROM tbl_carts WHERE cart_id = ?
+             `,
+            [cart_id]
+        );
+        
+        return result.metadata;
+    } catch (error) {
+        console.error("Database Error in getUserCarts:", error);
+        throw new Error("Failed to get user carts.");
+    }
 }
