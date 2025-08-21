@@ -36,7 +36,7 @@ import { toggleWishlistProductSchema } from '../validations/wishlist.validation.
 import { addProductToCartSchema, deleteCartSchema, deleteProductFromCartSchema, getSingleCartSchema, } from '../validations/cart.validation.js';
 import { addProductToCart, deleteCart, deleteProductFromCart, getCarts, getSingleCart, getSingleCartByClinic } from '../controllers/api/cartController.js';
 import { getSinglePurchasedProductSchema, initiatePaymentSchema, klarnaWebhookSchema } from '../validations/payment.validation.js';
-import { initiatePayment, stripeSuccessHandler, stripeWebhookHandler, testPayment } from '../controllers/api/paymentController.js';
+import { initiatePayment, stripeCancelHandler, stripeSuccessHandler, stripeWebhookHandler, testPayment } from '../controllers/api/paymentController.js';
 import { getUserSkinTypes } from '../models/clinic.js';
 import { addEditAddressSchema, deleteAddressSchema, getSingleAddressSchema } from '../validations/address.validation.js';
 import { addEditAddress, deleteAddress, getAddresses, getSingleAddress } from '../controllers/api/addressController.js';
@@ -176,6 +176,7 @@ router.delete('/cart/:cart_id', authenticateUser, validate(deleteCartSchema, "pa
 router.post('/payments/initiate', authenticateUser, validate(initiatePaymentSchema, "body"), initiatePayment);
 // router.post('/payments/webhook', stripeWebhookHandler);
 router.get('/payments/success', stripeSuccessHandler);
+router.get('/payments/cancel', stripeCancelHandler);
 router.post('/payments/test', testPayment)
 // -------------------------------------Generic------------------------------------------------//
 

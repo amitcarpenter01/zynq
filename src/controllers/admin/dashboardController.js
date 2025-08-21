@@ -6,18 +6,22 @@ import { groupProductsByCartAndClinic } from '../api/productController.js';
 const APP_URL = process.env.APP_URL;
 export const get_dashboard = async (req, res) => {
     try {
-        const [get_clinic, get_doctor, get_user, latest_clinic] = await Promise.all([
+        const [get_clinic, get_doctor, get_user, latest_clinic, admin_earnings] = await Promise.all([
             get_clinics(),
             get_doctors(),
             get_users(),
             get_latest_clinic(),
+            get_admin_earning(),
         ])
-        const admin_earnings = await get_admin_earning()
+
         const data = {
             get_clinics: get_clinic.length,
             get_doctors: get_doctor.length,
             get_users: get_user.length,
-            get_earnings: parseFloat(admin_earnings[0].total_earnings),
+            get_earnings: parseFloat(admin_earnings.total_admin_earnings),
+            total_platform_earnings: parseFloat(admin_earnings.total_platform_earnings),
+            total_purchases: parseInt(admin_earnings.total_purchases),
+            total_refunds: parseFloat(admin_earnings.total_refunds),
             latest_clinic
         }
 

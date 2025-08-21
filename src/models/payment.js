@@ -267,7 +267,7 @@ export const insertProductPurchase = async (
   productDetails,
   address_id = null
 ) => (
-  db.query(
+  await db.query(
     `
       INSERT INTO tbl_product_purchase (
         user_id,
@@ -342,33 +342,17 @@ export const updateShipmentStatusModel = async (purchase_id, shipment_status, us
     throw error;
   }
 };
-export const processKlarnaMetadata = async (metadata) => {
+export const processKlarnaMetadata = (metadata) => {
   let order_lines = [];
 
-  switch (metadata?.type) {
-    case "APPOINTMENT": {
-      order_lines.push({
-        name: `Appointment Booking`,
-        quantity: 1,
-        unit_amount: Math.round(metadata.order_amount * 100), // minor units
-        total_amount: Math.round(metadata.order_amount * 100),
-      });
-      break;
-    }
+  order_lines.push({
+    name: `Order #${metadata.type_data[0].type_id}`,
+    quantity: 1,
+    unit_amount: Math.round(metadata.order_amount * 100),
+    total_amount: Math.round(metadata.order_amount * 100),
+  });
 
-    case "CART": {
-      order_lines.push({
-        name: `Order #${metadata.purchase_id}`,
-        quantity: 1,
-        unit_amount: Math.round(metadata.order_amount * 100),
-        total_amount: Math.round(metadata.order_amount * 100),
-      });
-      break;
-    }
 
-    default:
-      throw new Error("Unsupported metadata type");
-  }
 
   const order_amount_minor = order_lines.reduce(
     (sum, item) => sum + item.total_amount,
@@ -379,22 +363,21 @@ export const processKlarnaMetadata = async (metadata) => {
 
   return {
     ...metadata,
+    cart_id: metadata.type_data[0].type_id,
     order_lines,
     order_amount, // for DB clarity (major units)
     order_amount_minor, // for Stripe/Klarna (minor units)
   };
 };
-export const processPaymentMetadata = async ({ payment_gateway, metadata }) => {
+export const processPaymentMetadata = ({ payment_gateway, metadata }) => {
   try {
     switch (payment_gateway) {
       case "KLARNA":
         return processKlarnaMetadata(metadata);
 
-        break;
-
       case "SWISH":
-
         break;
+
       default:
         break;
     }
@@ -404,7 +387,7 @@ export const processPaymentMetadata = async ({ payment_gateway, metadata }) => {
   }
 }
 
-export const createPaymentSession = async ({ payment_gateway, metadata }) => {
+export const createPaymentSession = async ({ payment_gateway, metadata, redirect_url }) => {
   try {
     switch (payment_gateway) {
       case "KLARNA": {
@@ -417,14 +400,16 @@ export const createPaymentSession = async ({ payment_gateway, metadata }) => {
           quantity: line.quantity,
         }));
 
+        const success_url = `https://51.21.123.99/payment-success/?session_id={CHECKOUT_SESSION_ID}&redirect_url=${redirect_url}`;
+
         return await stripe.checkout.sessions.create({
           payment_method_types: ["klarna"],
           mode: "payment",
           line_items,
-          success_url: `${process.env.LOCAL_APP_URL}api/payments/success?session_id={CHECKOUT_SESSION_ID}`,
+          success_url,
           cancel_url: `${process.env.LOCAL_APP_URL}api/payments/cancel/?session_id={CHECKOUT_SESSION_ID}`,
           metadata: {
-            purchase_id: metadata.purchase_id,
+            cart_id: metadata.cart_id,
             user_id: metadata.user_id,
             type: metadata.type,
           },
@@ -440,6 +425,7 @@ export const createPaymentSession = async ({ payment_gateway, metadata }) => {
   }
 };
 
+
 export const updatePaymentStatusModel = async (session_id, status) => {
   try {
     await db.query(
@@ -453,5 +439,37 @@ export const updatePaymentStatusModel = async (session_id, status) => {
   } catch (error) {
     console.error("Failed to update payment status:", error);
     throw error;
+  }
+}
+
+export const updateCartMetadata = async (cart_id, metadata) => {
+  try {
+    await db.query(
+      `
+        UPDATE tbl_carts
+        SET metadata = ?
+        WHERE cart_id = ?
+      `,
+      [JSON.stringify(metadata), cart_id]
+    );
+  } catch (error) {
+    console.error("Failed to update cart metadata:", error);
+    throw error;
+  }
+}
+
+
+export const getCartMetadataAndStatusByCartId = async (cart_id) => {
+  try {
+    const [result] = await db.query(
+      `SELECT metadata, cart_status FROM tbl_carts WHERE cart_id = ?
+             `,
+      [cart_id]
+    );
+
+    return result;
+  } catch (error) {
+    console.error("Database Error in getUserCarts:", error);
+    throw new Error("Failed to get user carts.");
   }
 }

@@ -239,5 +239,6 @@
   "REFUND_ALREADY_PAID": "Återbetalning för detta möte är redan utbetald",
   "COMMISSION_RATES_UPDATED": "Kommissionsrate uppdaterad",
   "WALLET_AMOUNT_ADDED": "Belopp tillagd",
-  "EARNINGS_FETCHED": "Inkomster hittades"
+  "EARNINGS_FETCHED": "Inkomster hittades",
+  "PAYMENT_PROCESSED_SUCCESSFULLY" : "Betalning behandlades framgångsrikt"
 }
