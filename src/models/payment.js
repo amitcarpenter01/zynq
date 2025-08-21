@@ -387,7 +387,7 @@ export const processPaymentMetadata = ({ payment_gateway, metadata }) => {
   }
 }
 
-export const createPaymentSession = async ({ payment_gateway, metadata }) => {
+export const createPaymentSession = async ({ payment_gateway, metadata, redirect_url }) => {
   try {
     switch (payment_gateway) {
       case "KLARNA": {
@@ -400,11 +400,13 @@ export const createPaymentSession = async ({ payment_gateway, metadata }) => {
           quantity: line.quantity,
         }));
 
+        const success_url = `https://51.21.123.99/payment-success/?session_id={CHECKOUT_SESSION_ID}&redirect_url=${redirect_url}`;
+
         return await stripe.checkout.sessions.create({
           payment_method_types: ["klarna"],
           mode: "payment",
           line_items,
-          success_url: `${process.env.LOCAL_APP_URL}api/payments/success?session_id={CHECKOUT_SESSION_ID}`,
+          success_url,
           cancel_url: `${process.env.LOCAL_APP_URL}api/payments/cancel/?session_id={CHECKOUT_SESSION_ID}`,
           metadata: {
             cart_id: metadata.cart_id,
@@ -422,6 +424,7 @@ export const createPaymentSession = async ({ payment_gateway, metadata }) => {
     throw error;
   }
 };
+
 
 export const updatePaymentStatusModel = async (session_id, status) => {
   try {
@@ -457,16 +460,16 @@ export const updateCartMetadata = async (cart_id, metadata) => {
 
 
 export const getCartMetadataAndStatusByCartId = async (cart_id) => {
-    try {
-        const [result] = await db.query(
-            `SELECT metadata, cart_status FROM tbl_carts WHERE cart_id = ?
+  try {
+    const [result] = await db.query(
+      `SELECT metadata, cart_status FROM tbl_carts WHERE cart_id = ?
              `,
-            [cart_id]
-        );
-        
-        return result;
-    } catch (error) {
-        console.error("Database Error in getUserCarts:", error);
-        throw new Error("Failed to get user carts.");
-    }
+      [cart_id]
+    );
+
+    return result;
+  } catch (error) {
+    console.error("Database Error in getUserCarts:", error);
+    throw new Error("Failed to get user carts.");
+  }
 }

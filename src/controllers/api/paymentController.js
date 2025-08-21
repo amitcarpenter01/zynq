@@ -102,7 +102,7 @@ const check_cart_stock = async (metadata) => {
 };
 
 export const initiatePayment = asyncHandler(async (req, res) => {
-    let { payment_gateway, metadata, address_id } = req.body;
+    let { payment_gateway, metadata, address_id, redirect_url } = req.body;
     const { user_id, language = "en" } = req.user;
     metadata.address_id = address_id;
 
@@ -138,6 +138,7 @@ export const initiatePayment = asyncHandler(async (req, res) => {
         createPaymentSession({
             payment_gateway,
             metadata: processedMetadata,
+            redirect_url
         }),
         updateCartMetadata(cart_id, processedMetadata),
     ])
