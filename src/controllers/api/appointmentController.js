@@ -778,30 +778,30 @@ export const bookDirectAppointment = async (req, res) => {
             const doctor = await getDocterByDocterId(doctor_id);
             let chatId = await getChatBetweenUsers(user_id, doctor[0].zynq_user_id);
 
-            // await sendNotification({
-            //     userData: req.user,
-            //     type: "APPOINTMENT",
-            //     type_id: appointment_id,
-            //     notification_type: NOTIFICATION_MESSAGES.appointment_booked,
-            //     receiver_id: doctor_id,
-            //     receiver_type: "DOCTOR"
-            // })
+            await sendNotification({
+                userData: req.user,
+                type: "APPOINTMENT",
+                type_id: appointment_id,
+                notification_type: NOTIFICATION_MESSAGES.appointment_booked,
+                receiver_id: doctor_id,
+                receiver_type: "DOCTOR"
+            })
 
 
-            // await sendEmail({
-            //     to: doctor[0].email,
-            //     subject: appointmentBookedTemplate.subject({
-            //         user_name: req?.user?.full_name,
-            //         appointment_date: normalizedStart
-            //     }),
-            //     html: appointmentBookedTemplate.body({
-            //         user_name: req?.user?.full_name,
-            //         doctor_name: doctor[0].name,
-            //         appointment_date: normalizedStart,
-            //         total_price: total_price,
-            //         clinic_name: appointmentDetails.clinic_name,
-            //     }),
-            // });
+            await sendEmail({
+                to: doctor[0].email,
+                subject: appointmentBookedTemplate.subject({
+                    user_name: req?.user?.full_name,
+                    appointment_date: normalizedStart
+                }),
+                html: appointmentBookedTemplate.body({
+                    user_name: req?.user?.full_name,
+                    doctor_name: doctor[0].name,
+                    appointment_date: normalizedStart,
+                    total_price: total_price,
+                    clinic_name: appointmentDetails.clinic_name,
+                }),
+            });
 
             if (chatId.length < 1) {
                 let doctorId = doctor[0].zynq_user_id
