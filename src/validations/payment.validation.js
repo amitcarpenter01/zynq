@@ -17,6 +17,7 @@ export const initiatePaymentSchema = Joi.object({
   address_id: stringValidation.optional(),
   payment_gateway: gatewayTypeValidation,
   redirect_url : stringValidation.optional(),
+  cancel_url : stringValidation.optional(),
   currency: currencyValidation,
   metadata: Joi.object({
     type: Joi.string().valid('APPOINTMENT', 'TREATMENT', 'CART').required(),
