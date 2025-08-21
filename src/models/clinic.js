@@ -1695,14 +1695,14 @@ export const getDoctorAvailabilityBulk = async (doctorIds) => {
         const query = `SELECT * FROM tbl_doctor_availability WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
         const results = await db.query(query, doctorIds);
 
- 
+
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
             grouped[row.doctor_id].push(row);
         });
 
- 
+
         return grouped;
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -1716,14 +1716,14 @@ export const getDoctorReviewsBulk = async (doctorIds) => {
         const query = `SELECT * FROM tbl_doctor_reviews WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
         const results = await db.query(query, doctorIds);
 
- 
+
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
             grouped[row.doctor_id].push(row);
         });
 
- 
+
         return grouped;
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -1753,7 +1753,7 @@ export const getDoctorSeverityLevelsBulk = async (doctorIds) => {
 
 export const getChatsBetweenUserAndDoctors = async (userId, doctorUserIds) => {
     if (!doctorUserIds.length) return [];
- 
+
     return await db.query(
         `SELECT * FROM tbl_chats
          WHERE
@@ -1818,5 +1818,84 @@ export const deleteClinicImageById = async (clinic_image_id, clinic_id) => {
     } catch (error) {
         console.error("Error in deleteClinicImageById:", error);
         throw error;
+    }
+};
+
+
+export const calculateAndUpdateClinicProfileCompletion = async (clinic) => {
+    try {
+        let filledFieldsCount = 0;
+        let totalFieldsCount = 0;
+
+        const basicFields = [
+            "clinic_name",
+            "org_number",
+            "email",
+            "mobile_number",
+            "address",
+            "fee_range",
+            "website_url",
+            "clinic_description",
+            "clinic_logo",
+            "form_stage"
+        ];
+
+        totalFieldsCount += basicFields.length;
+        basicFields.forEach(field => {
+            if (clinic[field]) filledFieldsCount++;
+        });
+
+        // 2. Location
+        totalFieldsCount += 1;
+        if (clinic.location) filledFieldsCount++;
+
+        // 3. Treatments
+        totalFieldsCount += 1;
+        if (clinic.treatments && clinic.treatments.length > 0) filledFieldsCount++;
+
+        // 4. Operation Hours
+        totalFieldsCount += 1;
+        if (clinic.operation_hours && clinic.operation_hours.length > 0) filledFieldsCount++;
+
+        // 6. Expertise categories
+        const expertiseCategories = [
+            "skin_types",
+            "severity_levels",
+            "surgeries_level",
+            "aestheticDevices",
+            "skin_Conditions"
+        ];
+
+        totalFieldsCount += expertiseCategories.length;
+        expertiseCategories.forEach(category => {
+            if (clinic[category] && clinic[category].length > 0) filledFieldsCount++;
+        });
+
+        // 7. Documents
+        totalFieldsCount += 1;
+        if (clinic.documents && clinic.documents.length > 0) filledFieldsCount++;
+
+        // 8. Images
+        totalFieldsCount += 1;
+        if (clinic.images && clinic.images.length > 0) filledFieldsCount++;
+
+        // Final %
+        const completionPercentage =
+            totalFieldsCount > 0
+                ? Math.round((filledFieldsCount / totalFieldsCount) * 100)
+                : 0;
+
+        await db.query(
+            `UPDATE tbl_clinics 
+             SET profile_completion_percentage = ? 
+             WHERE clinic_id = ?`,
+            [completionPercentage, clinic.clinic_id]
+        );
+
+        return completionPercentage;
+
+    } catch (error) {
+        console.error("Error calculating/saving clinic profile completion:", error);
+        return 0;
     }
 };

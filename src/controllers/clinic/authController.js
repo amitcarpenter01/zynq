@@ -84,6 +84,7 @@ export const getProfile = async (req, res) => {
                     : `${APP_URL}clinic/files/${img.image_url}`,
             }));
 
+        clinic.profile_completion_percentage = await clinicModels.calculateAndUpdateClinicProfileCompletion(clinic);
 
         return handleSuccess(res, 200, language, "CLINIC_PROFILE_FETCHED", clinic);
     } catch (error) {
