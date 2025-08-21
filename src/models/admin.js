@@ -751,38 +751,46 @@ export const update_support_ticket = async (support_ticket_id, updateData) => {
 
 export const getAdminBookedAppointmentsModel = async () => {
     let query = `
-SELECT
-  a.*,
-  d.name AS doctor_name,
-  zu.email AS doctor_email,
-  c.clinic_name,
-  u.full_name AS user_name,
-  u.mobile_number AS user_mobile,
-  COALESCE(
-    (
-      SELECT JSON_ARRAYAGG(
-        JSON_OBJECT(
-          'treatment_id', at.treatment_id,
-          'treatment_name', t.name,
-          'treatment_price', at.price
-        )
-      )
-      FROM tbl_appointment_treatments at
-      LEFT JOIN tbl_treatments t ON t.treatment_id = at.treatment_id
-      WHERE at.appointment_id = a.appointment_id
-        AND at.treatment_id IS NOT NULL
-    ),
-    JSON_ARRAY()
-  ) AS treatments
-FROM tbl_appointments a
-LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
-LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
-LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
-LEFT JOIN tbl_users u ON u.user_id = a.user_id
-WHERE a.save_type = 'booked' AND a.total_price > 0
-ORDER BY a.created_at DESC;
+        SELECT
+          a.*,
+          d.name AS doctor_name,
+          zu.email AS doctor_email,
+          c.clinic_name,
+          u.full_name AS user_name,
+          u.mobile_number AS user_mobile,
+          
+          -- ✅ Commission percentage (Admin share from total)
+          CASE 
+            WHEN a.total_price > 0 
+              THEN ROUND((a.admin_earnings / a.total_price) * 100, 2) 
+            ELSE 0 
+          END AS commission_percentage,
 
-    `
+          COALESCE(
+            (
+              SELECT JSON_ARRAYAGG(
+                JSON_OBJECT(
+                  'treatment_id', at.treatment_id,
+                  'treatment_name', t.name,
+                  'treatment_price', at.price
+                )
+              )
+              FROM tbl_appointment_treatments at
+              LEFT JOIN tbl_treatments t ON t.treatment_id = at.treatment_id
+              WHERE at.appointment_id = a.appointment_id
+                AND at.treatment_id IS NOT NULL
+            ),
+            JSON_ARRAY()
+          ) AS treatments
+          
+        FROM tbl_appointments a
+        LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+        LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
+        LEFT JOIN tbl_users u ON u.user_id = a.user_id
+        WHERE a.save_type = 'booked' AND a.total_price > 0
+        ORDER BY a.created_at DESC;
+    `;
 
     return await db.query(query);
 };
@@ -842,7 +850,7 @@ export const getAdminPurchasedProductModel = async () => {
             ORDER BY pp.created_at DESC
         `);
 
-        // 1️⃣ Parse & collect all product IDs from all purchases
+        // 1️⃣ Parse & collect all product IDs
         const allProductIds = new Set();
         const parsedPurchases = purchaseRows.map(row => {
             const products = Array.isArray(row.product_details)
@@ -852,7 +860,7 @@ export const getAdminPurchasedProductModel = async () => {
             return { ...row, products };
         });
 
-        // 2️⃣ Fetch all product info in one go
+        // 2️⃣ Fetch product info
         const productRows = allProductIds.size
             ? await db.query(
                 `SELECT * FROM tbl_products WHERE product_id IN (?)`,
@@ -864,11 +872,12 @@ export const getAdminPurchasedProductModel = async () => {
             return map;
         }, {});
 
-        // 3️⃣ Collect unique clinic IDs
+        // 3️⃣ Fetch clinic info
         const allClinicIds = [...new Set(productRows.map(p => p.clinic_id).filter(Boolean))];
         const clinicRows = allClinicIds.length
             ? await db.query(
-                `SELECT clinic_id, clinic_name, address, clinic_logo FROM tbl_clinics WHERE clinic_id IN (?)`,
+                `SELECT clinic_id, clinic_name, address, clinic_logo 
+                 FROM tbl_clinics WHERE clinic_id IN (?)`,
                 [allClinicIds]
             )
             : [];
@@ -877,7 +886,7 @@ export const getAdminPurchasedProductModel = async () => {
             return map;
         }, {});
 
-        // 4️⃣ Fetch all product images in one go
+        // 4️⃣ Fetch product images
         const imageRows = allProductIds.size
             ? await get_product_images_by_product_ids([...allProductIds])
             : [];
@@ -889,9 +898,9 @@ export const getAdminPurchasedProductModel = async () => {
             return map;
         }, {});
 
-        // 5️⃣ Fetch treatments for all products in one query (avoids N calls)
+        // 5️⃣ Fetch treatments
         const treatmentsRows = allProductIds.size
-            ? await getTreatmentsOfProductsBulk([...allProductIds]) // make sure this supports array input
+            ? await getTreatmentsOfProductsBulk([...allProductIds])
             : [];
         const treatmentsMap = treatmentsRows.reduce((map, t) => {
             if (!map[t.product_id]) map[t.product_id] = [];
@@ -899,7 +908,7 @@ export const getAdminPurchasedProductModel = async () => {
             return map;
         }, {});
 
-        // 6️⃣ Build purchases with enriched product data
+        // 6️⃣ Build enriched purchases
         const purchases = parsedPurchases.map(row => {
             const user = {
                 user_id: row.user_id,
@@ -911,8 +920,8 @@ export const getAdminPurchasedProductModel = async () => {
             const enrichedProducts = row.products.map(p => {
                 const prodInfo = productInfoMap[p.product_id] || {};
                 return {
-                    ...p, // snapshot data from purchase time
-                    ...prodInfo, // live data from products table
+                    ...p, // snapshot from purchase
+                    ...prodInfo, // current product info
                     treatments: treatmentsMap[p.product_id] || [],
                     product_images: imagesMap[p.product_id] || [],
                 };
@@ -920,6 +929,12 @@ export const getAdminPurchasedProductModel = async () => {
 
             const clinic_id = enrichedProducts[0]?.clinic_id || null;
             const clinic = clinicMap[clinic_id] || null;
+
+            // ✅ Calculate commission percentage
+            const commission_percentage =
+                row.total_price > 0
+                    ? (row.admin_earnings / row.total_price) * 100
+                    : 0;
 
             return {
                 purchase_id: row.purchase_id,
@@ -931,6 +946,7 @@ export const getAdminPurchasedProductModel = async () => {
                 total_price: row.total_price,
                 admin_earnings: row.admin_earnings,
                 clinic_earnings: row.clinic_earnings,
+                commission_percentage: commission_percentage.toFixed(2), // ✅ Added
                 address: row.address,
                 shipment_status: row.shipment_status,
                 clinic,
@@ -941,7 +957,7 @@ export const getAdminPurchasedProductModel = async () => {
 
         return purchases;
     } catch (error) {
-        console.error("Failed to fetch admin purchased product data with user, clinic, and images:", error);
+        console.error("Failed to fetch admin purchased product data with user, clinic, images, and commission:", error);
         throw error;
     }
 };
