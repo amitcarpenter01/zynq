@@ -474,3 +474,35 @@ export const getCartMetadataAndStatusByCartId = async (cart_id) => {
     throw new Error("Failed to get user carts.");
   }
 }
+export const createPaymentSessionForAppointment = async ({ payment_gateway, metadata }) => {
+  try {
+    switch (payment_gateway) {
+      case "KLARNA": {
+        const line_items = metadata.order_lines.map((line) => ({
+          price_data: {
+            currency: metadata.currency || "sek",
+            product_data: { name: line.name },
+            unit_amount: line.unit_amount,
+          },
+          quantity: line.quantity,
+        }));
+
+        return await stripe.checkout.sessions.create({
+          payment_method_types: ["klarna"],
+          mode: "payment",
+          line_items,
+          success_url: `https://51.21.123.99/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
+          cancel_url: `https://51.21.123.99/payment-cancel/?&redirect_url=${metadata.cancel_url}`,
+          metadata: {
+          },
+        });
+      }
+
+      default:
+        throw new Error(`Unsupported payment gateway: ${payment_gateway}`);
+    }
+  } catch (error) {
+    console.error("Failed to create payment session:", error);
+    throw error;
+  }
+};

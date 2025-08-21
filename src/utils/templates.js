@@ -30,7 +30,7 @@ export const appointmentBookedTemplate = {
  
         <!-- Content -->
         <div style="padding:20px; color:#333; max-width:600px; margin:0 auto;">
-            <p>Hi <strong>${user_name}</strong>,</p>
+            <p>Hi <strong>${doctor_name}</strong>,</p>
  
             <p>A new appointment has been booked via the app. Here are the booking details:</p>
  

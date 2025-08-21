@@ -25,14 +25,14 @@ export const checkIfSlotAlreadyBooked = async (doctor_id, start_time) => {
     }
 };
 
-export const getAppointmentsByUserId = async (user_id, status) => {
+export const getAppointmentsByUserId = async (user_id, status,payment_status) => {
     const results = await db.query(` 
         SELECT a.*,d.*,zu.email,r.pdf,c.clinic_name FROM tbl_appointments a INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
         INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
         INNER JOIN tbl_clinics c ON c.clinic_id  = a.clinic_id
-        WHERE a.user_id = ? AND save_type  = ?
-        ORDER BY  start_time ASC
-    `, [user_id, status]);
+        WHERE a.user_id = ? AND save_type  = ? AND payment_status = ?
+        ORDER BY  start_time ASC 
+    `, [user_id, status,payment_status]);
     return results;
 };
 
@@ -909,4 +909,16 @@ export const cancelAppointment = async (appointment_id, data) => {
         [data.status, data.cancelled_by, data.cancelled_by_id, data.cancel_reason, data.payment_status, appointment_id]
     );
     return result.affectedRows;
+};
+
+
+export const updateAppointmentAsPaid = async (appointment_id, status) => {
+
+
+    const query = `
+    UPDATE tbl_appointments
+    SET payment_status = ?
+    WHERE appointment_id = ?
+  `;
+    return await db.query(query, [status, appointment_id]);
 };
