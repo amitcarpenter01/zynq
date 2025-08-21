@@ -197,4 +197,13 @@ router.delete('/address/:address_id', authenticateUser, validate(deleteAddressSc
 
 router.post('/request-callback/:doctor_id', authenticateUser, validate(requestCallbackSchema, "params"), appointmentController.requestCallback);
 
+// -------------------------------------Appointment Payment Flow------------------------------------------------//
+
+router.post('/save-appointment-draft', authenticateUser, appointmentController.saveAppointmentAsDraft);
+
+router.post('/book-direct-appointment', authenticateUser, appointmentController.bookDirectAppointment);
+
+router.post('/mark-appointment-paid', authenticateUser, appointmentController.markAppointmentAsPaid);
+
+
 export default router;
