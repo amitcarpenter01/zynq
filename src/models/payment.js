@@ -401,14 +401,14 @@ export const createPaymentSession = async ({ payment_gateway, metadata, redirect
         }));
 
         const success_url = `https://51.21.123.99/payment-success/?session_id={CHECKOUT_SESSION_ID}&redirect_url=${redirect_url}`;
-        this.cancel_url = `https://51.21.123.99/payment-cancel/?redirect_url=${cancel_url}`;
+        const redirect_cancel_url = `https://51.21.123.99/payment-cancel/?redirect_url=${cancel_url}`;
 
         return await stripe.checkout.sessions.create({
           payment_method_types: ["klarna"],
           mode: "payment",
           line_items,
           success_url,
-          cancel_url,
+          cancel_url: redirect_cancel_url,
           metadata: {
             cart_id: metadata.cart_id,
             user_id: metadata.user_id,
