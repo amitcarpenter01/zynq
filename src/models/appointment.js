@@ -25,14 +25,14 @@ export const checkIfSlotAlreadyBooked = async (doctor_id, start_time) => {
     }
 };
 
-export const getAppointmentsByUserId = async (user_id, status,payment_status) => {
+export const getAppointmentsByUserId = async (user_id, status, payment_status) => {
     const results = await db.query(` 
         SELECT a.*,d.*,zu.email,r.pdf,c.clinic_name FROM tbl_appointments a INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
         INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
         INNER JOIN tbl_clinics c ON c.clinic_id  = a.clinic_id
         WHERE a.user_id = ? AND save_type  = ? AND payment_status = ?
         ORDER BY  start_time ASC 
-    `, [user_id, status,payment_status]);
+    `, [user_id, status, payment_status]);
     return results;
 };
 
@@ -882,10 +882,10 @@ export const getDoctorBookedAppointmentsModel = async (role, user_id) => {
       r.pdf,
       c.clinic_name
     FROM tbl_appointments a
-    INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
-    INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+    LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+    LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
     LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id = a.report_id
-    INNER JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
+    LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
     WHERE ${whereClause} AND a.save_type = 'booked' AND a.total_price > 0 AND a.payment_status = 'paid'
     ORDER BY a.created_at DESC
     `
