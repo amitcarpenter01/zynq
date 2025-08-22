@@ -11,6 +11,7 @@ import * as adminModels from "../../models/admin.js";
 import { fileURLToPath } from 'url';
 import { sendEmail } from '../../services/send_email.js';
 import moment from 'moment/moment.js';
+import { calculateAndUpdateBulkClinicProfileCompletion } from '../../models/clinic.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -204,7 +205,7 @@ export const get_clinic_managment = async (req, res) => {
                 };
             })
         );
-console.log('fullClinicData',fullClinicData);
+        await calculateAndUpdateBulkClinicProfileCompletion(fullClinicData);
 
         return handleSuccess(res, 200, 'en', "Fetch clinic management successfully", { clinics: fullClinicData });
 

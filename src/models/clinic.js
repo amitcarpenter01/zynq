@@ -1899,3 +1899,104 @@ export const calculateAndUpdateClinicProfileCompletion = async (clinic) => {
         return 0;
     }
 };
+
+export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => {
+    try {
+        if (!clinics || clinics.length === 0) return [];
+
+        const results = await Promise.all(
+            clinics.map(async (clinic) => {
+                let filledFieldsCount = 0;
+                let totalFieldsCount = 0;
+                const missingFields = [];
+
+                // 1. Basic Fields
+                const basicFields = [
+                    "clinic_name",
+                    "zynq_user_id",
+                    "org_number",
+                    "email",
+                    "mobile_number",
+                    "address",
+                    "website_url",
+                    "clinic_description",
+                    "clinic_logo",
+                    "form_stage",
+                    "fee_range",
+                ];
+
+                totalFieldsCount += basicFields.length;
+                basicFields.forEach(field => {
+                    if (clinic[field]) {
+                        filledFieldsCount++;
+                    } else {
+                        missingFields.push(field);
+                    }
+                });
+
+                // 2. Treatments
+                totalFieldsCount += 1;
+                if (clinic.treatments && clinic.treatments.length > 0) {
+                    filledFieldsCount++;
+                } else {
+                    missingFields.push("treatments");
+                }
+
+                // 3. Expertise Categories
+                const expertiseCategories = {
+                    skinTypes: "skinTypes",
+                    surgeriesLevel: "surgeriesLevel",
+                    aestheticDevicesLevel: "aestheticDevicesLevel",
+                    skinConditionsLevel: "skinConditionsLevel"
+                };
+
+                totalFieldsCount += Object.keys(expertiseCategories).length;
+                Object.entries(expertiseCategories).forEach(([key, label]) => {
+                    if (clinic[key] && clinic[key].length > 0) {
+                        filledFieldsCount++;
+                    } else {
+                        missingFields.push(label);
+                    }
+                });
+
+                // Final %
+                const completionPercentage =
+                    totalFieldsCount > 0
+                        ? Math.round((filledFieldsCount / totalFieldsCount) * 100)
+                        : 0;
+
+                return {
+                    clinic_id: clinic.clinic_id,
+                    completionPercentage,
+                    missingFields
+                };
+            })
+        );
+
+        // 🔹 Bulk Update Query
+        if (results.length > 0) {
+            const caseStatements = results
+                .map(r => `WHEN '${r.clinic_id}' THEN ${r.completionPercentage}`)
+                .join(" ");
+
+            const clinicIds = results.map(r => `'${r.clinic_id}'`).join(", ");
+
+            const updateQuery = `
+                UPDATE tbl_clinics
+                SET profile_completion_percentage = CASE clinic_id
+                    ${caseStatements}
+                END
+                WHERE clinic_id IN (${clinicIds})
+            `;
+
+            await db.query(updateQuery);
+        }
+
+        return results;
+    } catch (error) {
+        console.error("Error calculating bulk clinic profile completion:", error);
+        throw error;
+    }
+};
+
+
