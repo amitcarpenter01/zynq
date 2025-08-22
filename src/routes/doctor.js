@@ -123,5 +123,6 @@ router.get('/payments/get-booked-appointments', authenticate(['DOCTOR', 'SOLO_DO
 router.get('/payments/get-purchased-products', authenticate(['CLINIC', 'SOLO_DOCTOR']), doctorController.getClinicPurchasedProducts);
 router.get('/payments/get-purchased-products/:purchase_id', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(getSinglePurchasedProductSchema, "params"), doctorController.getSingleClinicPurchasedProducts);
 
+router.get('/earnings', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), doctorController.getEarnings);
 
 export default router;

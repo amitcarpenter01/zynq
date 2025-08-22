@@ -470,39 +470,41 @@ export const clinicUnsubscribed = async (clinic_id) => {
 export const get_doctors_management = async () => {
     try {
         return await db.query(`
-            SELECT 
-                d.doctor_id, 
-                d.name, 
-                d.specialization, 
-                d.fee_per_session, 
-                d.phone, 
-                d.profile_image, 
-                d.rating, 
-                d.age, 
-                d.address, 
-                d.gender, 
-                d.experience_years, 
-                d.biography, 
-                d.profile_completion_percentage AS onboarding_progress, 
-                u.email,
+           SELECT 
+    d.doctor_id, 
+    d.name, 
+    d.specialization, 
+    d.fee_per_session, 
+    d.phone, 
+    d.profile_image, 
+    IFNULL(ROUND(AVG(ar.rating), 2), 0) AS rating, 
+    d.age, 
+    d.address, 
+    d.gender, 
+    d.experience_years, 
+    d.biography, 
+    d.profile_completion_percentage AS onboarding_progress, 
+    u.email,
 
-                -- ✅ Add user type based on role_id
-                CASE 
-                    WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
-                    WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
-                END AS user_type
+    CASE 
+        WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+        WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
+    END AS user_type
 
-            FROM tbl_doctors d
+FROM tbl_doctors d
+LEFT JOIN tbl_zqnq_users u 
+    ON u.id = d.zynq_user_id
+LEFT JOIN tbl_appointment_ratings ar
+    ON ar.doctor_id = d.doctor_id
 
-            LEFT JOIN tbl_zqnq_users u 
-                ON u.id = d.zynq_user_id
+WHERE u.role_id IN (
+    '407595e3-3196-11f0-9e07-0e8e5d906eef',
+    '3677a3e6-3196-11f0-9e07-0e8e5d906eef'
+)
 
-            WHERE u.role_id IN (
-                '407595e3-3196-11f0-9e07-0e8e5d906eef',  -- Solo Doctor
-                '3677a3e6-3196-11f0-9e07-0e8e5d906eef'   -- Doctor
-            )
+GROUP BY d.doctor_id
 
-            ORDER BY d.created_at DESC;
+ORDER BY d.created_at DESC;
         `);
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -788,7 +790,7 @@ export const getAdminBookedAppointmentsModel = async () => {
         LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
         LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
         LEFT JOIN tbl_users u ON u.user_id = a.user_id
-        WHERE a.save_type = 'booked' AND a.total_price > 0
+        WHERE a.save_type = 'booked' AND a.total_price > 0 And a.payment_status = 'paid'
         ORDER BY a.created_at DESC;
     `;
 

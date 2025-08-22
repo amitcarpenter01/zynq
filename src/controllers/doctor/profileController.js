@@ -7,6 +7,8 @@ import { createChat, fetchChatById, insertChatUsersActive, toActivateUsers } fro
 import { getIO, getUserSockets } from '../../utils/socketManager.js';
 import dbOperations from '../../models/common.js';
 import { get_product_images_by_product_ids } from "../../models/api.js";
+import { getDoctorBookedAppointmentsModel } from "../../models/appointment.js";
+import { extractUserData } from "../../utils/misc.util.js";
 dotenv.config();
 
 //const APP_URL = process.env.APP_URL;
@@ -1175,4 +1177,22 @@ export const getSingleClinicPurchasedProducts = asyncHandler(async (req, res) =>
         products: products,
     }
     return handleSuccess(res, 200, language, "PURCHASED_PRODUCTS_FETCHED", data);
+});
+
+export const getEarnings = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const clinic_id = req.user.clinicData.clinic_id
+    const { user_id, role } = extractUserData(req.user)
+
+    const [dashboardData, products, appointments] = await Promise.all([
+        doctorModels.getDashboardData(req.user),
+        doctorModels.getClinicPurchasedProductModel(clinic_id),
+        getDoctorBookedAppointmentsModel(role, user_id)
+    ])
+
+    return handleSuccess(res, 200, language, "EARNINGS_FETCHED", {
+        dashboardData,
+        products,
+        appointments
+    });
 });
