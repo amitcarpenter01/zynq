@@ -272,7 +272,7 @@ export const stripeSuccessHandler = asyncHandler(async (req, res) => {
 
     await Promise.all(promises);
 
-    return handleSuccess(res, 200, "en", "PAYMENT_PROCESSED_SUCCESSFULLY");
+    return handleSuccess(res, 200, "en", "PAYMENT_PROCESSED_SUCCESSFULLY", { purchase_id });
 });
 
 export const stripeCancelHandler = asyncHandler(async (req, res) => {
