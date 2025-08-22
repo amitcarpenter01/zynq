@@ -1181,14 +1181,24 @@ export const getSingleClinicPurchasedProducts = asyncHandler(async (req, res) =>
 
 export const getEarnings = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
-    const clinic_id = req.user.clinicData.clinic_id
+    const clinic_id = req?.user?.clinicData?.clinic_id
     const { user_id, role } = extractUserData(req.user)
 
-    const [dashboardData, products, appointments] = await Promise.all([
+    const promises = [
         doctorModels.getDashboardData(req.user),
-        doctorModels.getClinicPurchasedProductModel(clinic_id),
-        getDoctorBookedAppointmentsModel(role, user_id)
-    ])
+        getDoctorBookedAppointmentsModel(role, user_id),
+    ];
+
+    if (clinic_id) {
+        promises.push(doctorModels.getClinicPurchasedProductModel(clinic_id));
+    }
+
+    const results = await Promise.all(promises);
+
+    // destructure safely
+    const dashboardData = results[0];
+    const appointments = results[1];
+    const products = clinic_id ? results[2] : [];
 
     return handleSuccess(res, 200, language, "EARNINGS_FETCHED", {
         dashboardData,
