@@ -1859,7 +1859,13 @@ export const getUserPurchasedProductModel = async (user_id) => {
                 pp.shipment_status,
                 pp.shipped_date,
                 pp.delivered_date,
-                a.address
+                a.address,
+                a.name AS address_name,
+                a.email AS address_email,
+                a.city AS address_city,
+                a.state AS address_state,
+                a.zip_code AS address_zip_code,
+                a.phone_number AS address_phone_number
             FROM tbl_product_purchase pp
             LEFT JOIN tbl_address a ON pp.address_id = a.address_id
             WHERE pp.user_id = ?
@@ -1949,7 +1955,15 @@ export const getUserPurchasedProductModel = async (user_id) => {
                 cart_id: row.cart_id,
                 purchase_date: row.purchase_date,
                 total_price: row.total_price,
-                address: row.address,
+                address: {
+                    address: row.address || null,
+                    address_name: row.address_name || null,
+                    address_email: row.address_email || null,
+                    address_city: row.address_city || null,
+                    address_state: row.address_state || null,
+                    address_zip_code: row.address_zip_code || null,
+                    address_phone_number: row.address_phone_number || null,
+                },
                 shipment_status: row.shipment_status,
                 shipped_date: row.shipped_date || null,
                 delivered_date: row.delivered_date || null,
@@ -1990,7 +2004,13 @@ export const getSingleUserPurchasedProductModel = async (user_id, purchase_id) =
         pp.shipment_status,
         pp.shipped_date,
         pp.delivered_date,
-        a.address
+        a.address,
+        a.name AS address_name,
+        a.email AS address_email,
+        a.city AS address_city,
+        a.state AS address_state,
+        a.zip_code AS address_zip_code,
+        a.phone_number AS address_phone_number
       FROM tbl_product_purchase pp
       LEFT JOIN tbl_address a ON pp.address_id = a.address_id
       WHERE pp.user_id = ? AND pp.purchase_id = ?
@@ -2072,7 +2092,14 @@ export const getSingleUserPurchasedProductModel = async (user_id, purchase_id) =
                 cart_id: row.cart_id,
                 purchase_date: row.purchase_date,
                 total_price: row.total_price,
-                address: row.address,
+                address: {
+                    address_name: row.address_name || null,
+                    address_email: row.address_email || null,
+                    address_city: row.address_city || null,
+                    address_state: row.address_state || null,
+                    address_zip_code: row.address_zip_code || null,
+                    address_phone_number: row.address_phone_number || null,
+                },
                 shipment_status: row.shipment_status,
                 shipped_date: row.shipped_date || null,
                 delivered_date: row.delivered_date || null,
