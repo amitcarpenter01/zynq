@@ -1506,7 +1506,7 @@ export const getSingleCartByCartId = async (cart_id) => {
              LEFT JOIN tbl_cart_products cp ON ca.cart_id = cp.cart_id
              LEFT JOIN tbl_products p ON cp.product_id = p.product_id
              LEFT JOIN tbl_clinics cl ON ca.clinic_id = cl.clinic_id
-             WHERE ca.cart_id = ?
+             WHERE ca.cart_id = ? AND ca.cart_status = 'CART'
              ORDER BY ca.created_at DESC
              `,
             [cart_id]
