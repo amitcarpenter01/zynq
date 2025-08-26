@@ -78,7 +78,7 @@ export const NOTIFICATION_MESSAGES = {
         getBody: () => `Order has been successfully placed`
     },
     appointment_cancelled: {
-        title: 'Appointment',
+        title: 'Appointment Cancelled',
         getBody: (name) => `${name} cancelled an appointment.`
     },
     shipment_shipped: {

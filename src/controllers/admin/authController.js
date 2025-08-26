@@ -411,15 +411,35 @@ export const cancelAppointment = async (req, res) => {
             payment_status: appointment.is_paid ? 'refund_initiated' : appointment.payment_status
         });
 
-        return handleSuccess(res, 200, 'en', 'APPOINTMENT_CANCELLED_SUCCESSFULLY');
+        handleSuccess(res, 200, 'en', 'APPOINTMENT_CANCELLED_SUCCESSFULLY');
+
+        await Promise.all([
+            sendNotification(
+                {
+                    userData: req.user,
+                    type: "APPOINTMENT",
+                    type_id: appointment_id,
+                    notification_type: NOTIFICATION_MESSAGES.appointment_cancelled,
+                    receiver_type: "USER",
+                    receiver_id: appointment.user_id
+                }
+            ),
+            sendNotification(
+                {
+                    userData: req.user,
+                    type: "APPOINTMENT",
+                    type_id: appointment_id,
+                    notification_type: NOTIFICATION_MESSAGES.appointment_cancelled,
+                    receiver_type: "DOCTOR",
+                    receiver_id: appointment.doctor_id
+                }
+            )
+        ])
     } catch (err) {
         console.error(err);
         return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
     }
 };
-
-
-
 
 export const completeRefundToWallet = async (req, res) => {
     try {
@@ -507,10 +527,10 @@ export const getUserAppointmentOfUser = async (req, res) => {
         if (error) return handleError(res, 422, 'en', error.message);
 
         const { user_id } = value;
-        const appointments = await appointmentModel.getAppointmentsByUserId(user_id, 'booked','paid');
+        const appointments = await appointmentModel.getAppointmentsByUserId(user_id, 'booked', 'paid');
 
 
-         const now = dayjs.utc();
+        const now = dayjs.utc();
         const result = await Promise.all(appointments.map(async (app) => {
 
             const localFormattedStart = app.start_time ? dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss") : null;
