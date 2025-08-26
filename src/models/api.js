@@ -442,6 +442,7 @@ export const getDoctorTreatments = async (doctor_id) => {
 
 //======================================= Product =========================================
 export const get_all_products_for_user = async ({
+    user_id,
     treatment_ids = [],
     search = '',
     price = {},
@@ -452,16 +453,23 @@ export const get_all_products_for_user = async ({
     try {
         let query = `
             SELECT 
-                p.*, 
-                IF(cp.product_id IS NOT NULL, TRUE, FALSE) AS added_in_cart
-            FROM tbl_products AS p
-            LEFT JOIN tbl_product_treatments AS pt ON pt.product_id = p.product_id
-            LEFT JOIN tbl_treatments AS t ON t.treatment_id = pt.treatment_id
-            LEFT JOIN tbl_cart_products AS cp ON cp.product_id = p.product_id
+                p.*,
+                CASE WHEN cp.product_id IS NOT NULL THEN TRUE ELSE FALSE END AS added_in_cart
+            FROM tbl_products p
+            LEFT JOIN tbl_product_treatments pt ON pt.product_id = p.product_id
+            LEFT JOIN tbl_treatments t ON t.treatment_id = pt.treatment_id
+            LEFT JOIN tbl_cart_products cp 
+                ON cp.product_id = p.product_id
+                AND cp.cart_id = (
+                    SELECT c.cart_id 
+                    FROM tbl_carts c 
+                    WHERE c.user_id = ? 
+                    LIMIT 1
+                )
             WHERE 1=1
         `;
 
-        const params = [];
+        const params = [user_id];
 
         if (treatment_ids.length > 0) {
             query += ` AND pt.treatment_id IN (${treatment_ids.map(() => '?').join(', ')})`;
@@ -495,7 +503,7 @@ export const get_all_products_for_user = async ({
 
         return await db.query(query, params);
     } catch (error) {
-        console.error("Database Error in getAllProductsForUser:", error.message);
+        console.error("Database Error in get_all_products_for_user:", error.message);
         throw new Error("Failed to fetch products.");
     }
 };
@@ -522,7 +530,7 @@ export const getUserCartProduct = async (
     }
 };
 
-export const get_single_product_for_user = async (product_id) => {
+export const get_single_product_for_user = async (product_id, user_id) => {
     try {
         const query = `
 SELECT 
@@ -543,12 +551,23 @@ SELECT
         INNER JOIN tbl_treatments t ON t.treatment_id = pt.treatment_id
         WHERE pt.product_id = p.product_id
         GROUP BY pt.product_id
-    ), JSON_ARRAY()) AS treatments
+    ), JSON_ARRAY()) AS treatments,
+
+    -- Added in cart flag (specific to this user)
+    EXISTS (
+        SELECT 1
+        FROM tbl_cart_products cp
+        INNER JOIN tbl_carts c ON c.cart_id = cp.cart_id
+        WHERE cp.product_id = p.product_id
+          AND c.user_id = ?
+        LIMIT 1
+    ) AS added_in_cart
+
 FROM tbl_products p
 WHERE p.product_id = ?;
         `;
 
-        return await db.query(query, [product_id]);
+        return await db.query(query, [user_id, product_id]);
     } catch (error) {
         console.error("Database Error in get_single_product_for_user:", error.message);
         throw new Error("Failed to fetch product details.");
