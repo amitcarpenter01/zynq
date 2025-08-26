@@ -17,6 +17,7 @@ import { updateAdminCommissionRatesSchema } from '../validations/commission.vali
 import { deleteNotifications, deleteSingleNotification, getNotifications } from '../controllers/api/notificationController.js';
 import { addWalletAmountSchema, getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
 import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
+import { get_treatments } from '../controllers/api/faceScanController.js';
 
 const router = express.Router();
 
@@ -113,5 +114,7 @@ router.get('/refundHistory', authenticateAdmin, authControllers.getRefundHistory
 router.get('/getUserAppointments/:user_id', authenticateAdmin, authControllers.getUserAppointmentOfUser);
 
 router.post('/payments/add-wallet-amount', authenticateAdmin, validate(addWalletAmountSchema, "body"), dashboardControllers.addWalletAmount);
+
+router.get('/get_treatments', get_treatments);
 
 export default router;
