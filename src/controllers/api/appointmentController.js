@@ -98,7 +98,7 @@ export const getMyAppointmentsUser = async (req, res) => {
     try {
         await appointmentModel.updateMissedAppointmentStatusModel();
         const userId = req.user.user_id;
-        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'booked','paid');
+        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'booked','unpaid');
 
         const now = dayjs.utc();
 
@@ -418,7 +418,7 @@ export const saveOrBookAppointment = async (req, res) => {
 export const getMyTreatmentPlans = async (req, res) => {
     try {
         const userId = req.user.user_id;
-        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'draft','paid');
+        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'draft','unpaid');
         console.log('appointments', appointments);
 
         const now = dayjs.utc();
