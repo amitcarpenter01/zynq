@@ -247,5 +247,6 @@
   "COMMISSION_RATES_UPDATED": "Commission Rates Updated Successfully",
   "WALLET_AMOUNT_ADDED": "Wallet Amount Added Successfully",
   "EARNINGS_FETCHED": "Earnings Fetched Successfully",
-  "PAYMENT_PROCESSED_SUCCESSFULLY" : "Payment Processed Successfully"
+  "PAYMENT_PROCESSED_SUCCESSFULLY" : "Payment Processed Successfully",
+  "REFUND_COMPLETED" : "Refund Completed Successfully"
 }
