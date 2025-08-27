@@ -527,7 +527,7 @@ export const getUserAppointmentOfUser = async (req, res) => {
         if (error) return handleError(res, 422, 'en', error.message);
 
         const { user_id } = value;
-        const appointments = await appointmentModel.getAppointmentsByUserId(user_id, 'booked', 'paid');
+        const appointments = await appointmentModel.getAppointmentsByUserId(user_id, 'booked', 'unpaid');
 
 
         const now = dayjs.utc();

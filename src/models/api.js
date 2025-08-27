@@ -1040,7 +1040,7 @@ export const get_all_appointments = async () => {
             LEFT JOIN tbl_clinics c ON a.clinic_id = c.clinic_id
             LEFT JOIN tbl_face_scan_results fcr ON fcr.face_scan_result_id = a.report_id
             LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id
-            WHERE a.payment_status = 'paid'
+            WHERE a.payment_status != 'unpaid'
             ORDER BY a.created_at DESC
         `);
 
