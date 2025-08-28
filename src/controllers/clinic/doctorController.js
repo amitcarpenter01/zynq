@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const APP_URL = process.env.APP_URL;
-const image_logo = process.env.LOGO_URL;
+const image_logo = process.env.LOGO_URL_PNG;
 
 
 // export const sendDoctorInvitation = async (req, res) => {
