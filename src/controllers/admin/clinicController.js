@@ -174,7 +174,7 @@ export const add_clinic_managment = async (req, res) => {
 export const get_clinic_managment = async (req, res) => {
     try {
         console.log('fgjgkgj');
-        
+
         const clinics = await adminModels.get_clinic_managment();
 
         if (!clinics || clinics.length === 0) {
@@ -292,7 +292,7 @@ export const send_invitation = async (req, res) => {
                     postal_code: clinic.zip_code,
                     address: clinic.address,
                     password: password,
-                    logo: process.env.LOGO_URL,
+                    logo: process.env.LOGO_URL_PNG,
                     invitationLink: `${process.env.APP_URL}admin/subscribed/${is_subscribed}`,
                 }
             );
