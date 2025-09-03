@@ -1,14 +1,14 @@
 export const appointmentBookedTemplate = {
-    subject: ({ user_name, appointment_date }) =>
-        `New Appointment Booked by ${user_name} - Appointment Booked For ${appointment_date}`,
+  subject: ({ user_name, appointment_date }) =>
+    `New Appointment Booked by ${user_name} - Appointment Booked For ${appointment_date}`,
 
-    body: ({
-        user_name,
-        doctor_name,
-        appointment_date,
-        total_price,
-        clinic_name
-    }) => `
+  body: ({
+    user_name,
+    doctor_name,
+    appointment_date,
+    total_price,
+    clinic_name
+  }) => `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -35,7 +35,7 @@ export const appointmentBookedTemplate = {
             <p>A new appointment has been booked via the app. Here are the booking details:</p>
  
             <p><strong>User Name:</strong> ${user_name}</p>
-            <p><strong>Doctor Name:</strong> ${doctor_name}</p>
+            <p><strong>Expert Name:</strong> ${doctor_name}</p>
             <p><strong>Clinic Name:</strong> ${clinic_name}</p>
             <p><strong>Date & Time:</strong> ${appointment_date}</p>
             <p><strong>Amount Paid:</strong> ${total_price}</p>
@@ -60,18 +60,18 @@ export const appointmentBookedTemplate = {
 
 
 export const orderConfirmationTemplate = ({
-    orderDate,
-    customerName,
-    products,
-    totalAmount,
-    logoUrl = "https://51.21.123.99:4000/white_logo.png",
-    bannerImageUrl = "https://51.21.123.99:4000/product_main.png",
-    clinicAddress,
-    clinicName
+  orderDate,
+  customerName,
+  products,
+  totalAmount,
+  logoUrl = "https://51.21.123.99:4000/white_logo.png",
+  bannerImageUrl = "https://51.21.123.99:4000/product_main.png",
+  clinicAddress,
+  clinicName
 }) => {
-    return {
-        subject: `Your Order Purchased`,
-        body: `
+  return {
+    subject: `Your Order Purchased`,
+    body: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -226,26 +226,26 @@ export const orderConfirmationTemplate = ({
 </body>
 </html>
     `
-    };
+  };
 };
 
 export const orderConfirmationTemplateClinic = ({
-    orderDate,
-    customerName,
-    customerAddress,
-    clinicName,
-    products,
-    totalAmount,
-    logoUrl = "https://51.21.123.99:4000/white_logo.png",
-    bannerImageUrl = "https://51.21.123.99:4000/product_main.png",
-    customerState,
-    customerCity,
-    customerzipCode,
-    customerPhoneNumber
+  orderDate,
+  customerName,
+  customerAddress,
+  clinicName,
+  products,
+  totalAmount,
+  logoUrl = "https://51.21.123.99:4000/white_logo.png",
+  bannerImageUrl = "https://51.21.123.99:4000/product_main.png",
+  customerState,
+  customerCity,
+  customerzipCode,
+  customerPhoneNumber
 }) => {
-    return {
-        subject: `Your Order Purchased`,
-        body: `
+  return {
+    subject: `Your Order Purchased`,
+    body: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -404,5 +404,25 @@ export const orderConfirmationTemplateClinic = ({
 </body>
 </html>
     `
-    };
+  };
+};
+
+export const faceScanPDFTemplate = ({
+  logoUrl = "https://51.21.123.99:4000/logo1.png",
+  pdf, // URL to the PDF
+}) => {
+  return {
+    subject: `Face Scan Report PDF`,
+    body: `
+      <div style="text-align: center; font-family: Arial, sans-serif;">
+        <img src="${logoUrl}" alt="Logo" style="width: 150px; margin-bottom: 20px;" />
+        <h2>Face Scan Report</h2>
+        <p>Your face scan report is ready. Click the button below to view/download it:</p>
+        <a href="${pdf}" target="_blank" 
+           style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">
+          Download PDF
+        </a>
+      </div>
+    `
+  };
 };
