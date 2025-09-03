@@ -24,7 +24,7 @@ import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validations/appointment.validation.js';
 import { getSingleDoctorSchema, getAllDoctorsSchema, requestCallbackSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema, getSingleClinicSchema } from '../validations/clinic.validation.js';
-import { getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema, getTreatmentsSchema } from '../validations/treatment.validation.js';
+import { getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema, getTreatmentsSchema, sendFaceResultToEmailSchema } from '../validations/treatment.validation.js';
 import { deleteNotifications, deleteSingleNotification, getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
 import { sendAppointmentNotifications } from '../services/notifications.service.js';
 import { toggleLanguage } from '../controllers/web_users/authController.js';
@@ -205,5 +205,6 @@ router.post('/book-direct-appointment', authenticateUser, appointmentController.
 
 router.post('/mark-appointment-paid', authenticateUser, appointmentController.markAppointmentAsPaid);
 
+router.post('/send-face-result', validate(sendFaceResultToEmailSchema, "body"), faceScanControllers.sendFaceResultToEmail);
 
 export default router;

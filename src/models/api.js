@@ -123,6 +123,16 @@ export const get_face_scan_history = async (user_id) => {
     }
 };
 
+export const get_face_scan_result_by_id = async (face_scan_result_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_face_scan_results WHERE face_scan_result_id = ?`, [face_scan_result_id]);
+    } catch (error) {
+        console.error("DB Error in get_prompt_data:", error);
+        throw new Error("Failed to face scan historydata");
+    }
+};
+
 
 //======================================= Doctor =========================================
 export const getAllDoctors = async ({

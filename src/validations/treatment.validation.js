@@ -1,5 +1,6 @@
 import joi from "joi";
 import {
+  emailValidation,
   idArrayValidation,
   stringValidation,
 } from "../utils/joi.util.js";
@@ -19,3 +20,8 @@ export const getTipsByConcernsSchema = joi.object({
 export const getTreatmentsSchema = joi.object({
   treatment_ids: idArrayValidation.optional(),
 });
+
+export const sendFaceResultToEmailSchema = joi.object({
+  email: emailValidation,
+  face_scan_result_id: stringValidation
+})
