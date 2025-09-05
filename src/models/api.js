@@ -125,13 +125,23 @@ export const get_face_scan_history = async (user_id) => {
 
 export const get_face_scan_result_by_id = async (face_scan_result_id) => {
     try {
-        return await db.query(
-            `SELECT * FROM tbl_face_scan_results WHERE face_scan_result_id = ?`, [face_scan_result_id]);
+        let query, params;
+
+        if (face_scan_result_id) {
+            query = `SELECT * FROM tbl_face_scan_results WHERE face_scan_result_id = ?`;
+            params = [face_scan_result_id];
+        } else {
+            query = `SELECT * FROM tbl_face_scan_results ORDER BY created_at DESC LIMIT 1`;
+            params = [];
+        }
+
+        return await db.query(query, params);
     } catch (error) {
-        console.error("DB Error in get_prompt_data:", error);
-        throw new Error("Failed to face scan historydata");
+        console.error("DB Error in get_face_scan_result_by_id:", error);
+        throw new Error("Failed to fetch face scan result data");
     }
 };
+
 
 
 //======================================= Doctor =========================================
@@ -2186,5 +2196,18 @@ export const checkProductStock = async (product_id, quantity) => {
     } catch (error) {
         console.error("Failed to fetch product stock:", error);
         throw error;
+    }
+};
+
+export const get_user_by_email = async (email, user_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_users WHERE email = ? AND user_id != ?`,
+            [email, user_id]
+        );
+
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch user data.");
     }
 };

@@ -205,6 +205,6 @@ router.post('/book-direct-appointment', authenticateUser, appointmentController.
 
 router.post('/mark-appointment-paid', authenticateUser, appointmentController.markAppointmentAsPaid);
 
-router.post('/send-face-result', validate(sendFaceResultToEmailSchema, "body"), faceScanControllers.sendFaceResultToEmail);
+router.post('/send-face-result', authenticateUser, validate(sendFaceResultToEmailSchema, "body"), faceScanControllers.sendFaceResultToEmail);
 
 export default router;

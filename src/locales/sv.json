@@ -240,5 +240,8 @@
   "COMMISSION_RATES_UPDATED": "Kommissionsrate uppdaterad",
   "WALLET_AMOUNT_ADDED": "Belopp tillagd",
   "EARNINGS_FETCHED": "Inkomster hittades",
-  "PAYMENT_PROCESSED_SUCCESSFULLY": "Betalning behandlades framgångsrikt"
+  "PAYMENT_PROCESSED_SUCCESSFULLY": "Betalning behandlades framgångsrikt",
+  "USER_ALREADY_EXISTS": "Användare finns redan med samma e-postadress",
+  "EMAIL_NOT_FOUND": "E-postadress hittades inte",
+  "FACE_SCAN_RESULT_NOT_FOUND": "Face Scan Result Not Found"
 }

@@ -312,6 +312,7 @@ export const updateProfile = async (req, res) => {
             latitude: Joi.number().optional().allow(null),
             longitude: Joi.number().optional().allow(null),
             language: Joi.string().optional().allow("", null),
+            email: Joi.string().optional().allow("", null),
         });
 
         const { error, value } = updateProfileSchema.validate(req.body);
@@ -357,6 +358,18 @@ export const updateProfile = async (req, res) => {
             longitude,
             language
         };
+
+        if (value.email) {
+            const userExists = await apiModels.get_user_by_email(value.email, user.user_id);
+
+            if (userExists.length > 0) {
+                return handleError(res, 200, language, "USER_ALREADY_EXISTS");
+            }
+            else {
+                user_data.email = value.email
+            }
+        }
+
 
         console.log(user_data, "user_data");
 
