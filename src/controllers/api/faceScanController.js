@@ -171,7 +171,13 @@ export const getTreatments = async (req, res) => {
 
 export const sendFaceResultToEmail = async (req, res) => {
     try {
-        const { face_scan_result_id, email } = req.body;
+        let { face_scan_result_id } = req.body;
+
+        const email = req?.user?.email;
+
+        if (!email) {
+            return handleError(res, 400, "en", "EMAIL_NOT_FOUND");
+        }
 
         const [faceScanResult] = await apiModels.get_face_scan_result_by_id(face_scan_result_id);
 

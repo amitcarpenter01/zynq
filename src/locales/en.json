@@ -248,5 +248,8 @@
   "WALLET_AMOUNT_ADDED": "Wallet Amount Added Successfully",
   "EARNINGS_FETCHED": "Earnings Fetched Successfully",
   "PAYMENT_PROCESSED_SUCCESSFULLY": "Payment Processed Successfully",
-  "REFUND_COMPLETED": "Refund Completed Successfully"
+  "REFUND_COMPLETED": "Refund Completed Successfully",
+  "USER_ALREADY_EXISTS": "User Already Exists with the same email id",
+  "EMAIL_NOT_FOUND": "Email Not Found",
+  "FACE_SCAN_RESULT_NOT_FOUND" : "Face Scan Result Not Found"
 }
