@@ -15,12 +15,13 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-export const sendEmail = async ({ to, subject, html }) => {
+export const sendEmail = async ({ to, subject, html, attachments = [] }) => {
     const mailOptions = {
         from: EMAIL_USER,
         to,
         subject,
         html,
+        attachments
     };
 
     try {

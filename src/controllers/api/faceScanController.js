@@ -1,14 +1,10 @@
 import Joi from "joi";
-import ejs from 'ejs';
 import path from "path";
-import crypto from "crypto";
-import bcrypt from "bcrypt";
 import dotenv from "dotenv";
-import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from 'uuid';
 import * as apiModels from "../../models/api.js";
 import { sendEmail } from "../../services/send_email.js";
-import { generateAccessToken, isEmpty } from "../../utils/user_helper.js";
+import { isEmpty } from "../../utils/user_helper.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { getUserSkinTypes, getUserTreatments } from "../../models/clinic.js";
 import { faceScanPDFTemplate } from "../../utils/templates.js";
@@ -185,11 +181,20 @@ export const sendFaceResultToEmail = async (req, res) => {
 
         const pdf = faceScanResult.pdf ? `${APP_URL}${faceScanResult.pdf}` : null;
 
+        if (!pdf) return handleError(res, 404, "en", "PDF_NOT_FOUND");
+
         const { subject, body } = faceScanPDFTemplate({ pdf });
 
-        await sendEmail({ to: email, subject, html: body });
+        const attachments = [
+            {
+                filename: faceScanResult.pdf,
+                path: pdf,
+            }
+        ];
 
-        return handleSuccess(res, 200, "en", "REPORT_SENT_SUCCESSFULLY", pdf);
+        handleSuccess(res, 200, "en", "REPORT_SENT_SUCCESSFULLY", pdf);
+        
+        await sendEmail({ to: email, subject, html: body, attachments });
     }
     catch (error) {
         console.error("Error in getFaceScanPDF:", error);
