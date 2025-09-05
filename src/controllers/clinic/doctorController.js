@@ -160,8 +160,8 @@ export const sendDoctorInvitation = async (req, res) => {
     try {
 
         const schema = Joi.object({
-            emails: Joi.array().items(Joi.string().email()).required(),
-        });
+            emails: Joi.array().items(Joi.string().email().required()).min(1) .required() });
+
 
         if (typeof req.body.emails === 'string') {
             try {
