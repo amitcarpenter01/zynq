@@ -37,7 +37,7 @@ const worker = new Worker('emailQueue', async (job) => {
 
     const emailOptions = {
         to: email,
-        subject: "Doctor Invitation",
+        subject: "Expert Invitation",
         html: emailHtml,
     };
 

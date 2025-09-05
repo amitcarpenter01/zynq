@@ -249,8 +249,8 @@
   "EARNINGS_FETCHED": "Earnings Fetched Successfully",
   "PAYMENT_PROCESSED_SUCCESSFULLY": "Payment Processed Successfully",
   "REFUND_COMPLETED": "Refund Completed Successfully",
-  "USER_ALREADY_EXISTS": "User Already Exists with the same email id",
-  "EMAIL_NOT_FOUND": "An account with this email already exists. Please use a different email",
+  "EMAIL_NOT_FOUND": "Email not found",
+  "USER_ALREADY_EXISTS": "An account with this email already exists. Please use a different email",
   "FACE_SCAN_RESULT_NOT_FOUND": "Face Scan Result Not Found",
   "REPORT_SENT_SUCCESSFULLY": "Report sent successfully on your registered email",
   "PDF_NOT_FOUND": "PDF Not Found"
