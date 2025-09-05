@@ -169,7 +169,7 @@ export const sendFaceResultToEmail = async (req, res) => {
     try {
         let { face_scan_result_id } = req.body;
 
-        const email = req?.user?.email || "gouravvaidya.ctinfotech@gmail.com";
+        const email =  "gouravvaidya.ctinfotech@gmail.com";
 
         if (!email) {
             return handleError(res, 400, "en", "EMAIL_NOT_FOUND");
