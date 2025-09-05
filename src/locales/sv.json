@@ -241,8 +241,8 @@
   "WALLET_AMOUNT_ADDED": "Belopp tillagd",
   "EARNINGS_FETCHED": "Inkomster hittades",
   "PAYMENT_PROCESSED_SUCCESSFULLY": "Betalning behandlades framgångsrikt",
-  "USER_ALREADY_EXISTS": "Användare finns redan med samma e-postadress",
-  "EMAIL_NOT_FOUND": "En konto med den e-postadressen finns redan. Använd en annan e-postadress",
+  "EMAIL_NOT_FOUND": "E-postadress hittades inte",
+  "USER_ALREADY_EXISTS": "En konto med den e-postadressen finns redan. Använd en annan e-postadress",
   "FACE_SCAN_RESULT_NOT_FOUND": "Kontrollresultat hittades inte",
   "REPORT_SENT_SUCCESSFULLY": "Rapport skickades till din registrerade e-postadress",
   "PDF_NOT_FOUND" : "PDF hittades inte"
