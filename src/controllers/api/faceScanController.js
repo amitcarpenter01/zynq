@@ -169,21 +169,20 @@ export const sendFaceResultToEmail = async (req, res) => {
     try {
         let { face_scan_result_id } = req.body;
 
-        const email = req?.user?.email || null;
-        
+        const email = req?.user?.email;
+
         if (!email) {
             return handleError(res, 400, "en", "EMAIL_NOT_FOUND");
         }
 
-        const [faceScanResult] = await apiModels.get_face_scan_result_by_id(face_scan_result_id);
+        const [faceScanResult] = await apiModels.get_face_scan_result_by_id(req.user.user_id, face_scan_result_id);
 
         if (isEmpty(faceScanResult)) return handleError(res, 404, "en", "FACE_SCAN_RESULT_NOT_FOUND");
 
         const pdf = faceScanResult.pdf ? `${APP_URL}${faceScanResult.pdf}` : null;
 
         if (!pdf) return handleError(res, 404, "en", "PDF_NOT_FOUND");
-
-        const { subject, body } = faceScanPDFTemplate({ pdf });
+        const { subject, body } = faceScanPDFTemplate({ userName: req?.user?.full_name, pdf });
 
         const attachments = [
             {
@@ -191,8 +190,6 @@ export const sendFaceResultToEmail = async (req, res) => {
                 path: pdf,
             }
         ];
-
-        console.log("attachments - ");
 
         handleSuccess(res, 200, "en", "REPORT_SENT_SUCCESSFULLY", pdf);
 

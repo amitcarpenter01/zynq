@@ -123,7 +123,7 @@ export const get_face_scan_history = async (user_id) => {
     }
 };
 
-export const get_face_scan_result_by_id = async (face_scan_result_id) => {
+export const get_face_scan_result_by_id = async (user_id, face_scan_result_id) => {
     try {
         let query, params;
 
@@ -131,8 +131,8 @@ export const get_face_scan_result_by_id = async (face_scan_result_id) => {
             query = `SELECT * FROM tbl_face_scan_results WHERE face_scan_result_id = ?`;
             params = [face_scan_result_id];
         } else {
-            query = `SELECT * FROM tbl_face_scan_results ORDER BY created_at DESC LIMIT 1`;
-            params = [];
+            query = `SELECT * FROM tbl_face_scan_results WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`;
+            params = [user_id];
         }
 
         return await db.query(query, params);

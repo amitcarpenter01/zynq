@@ -409,20 +409,142 @@ export const orderConfirmationTemplateClinic = ({
 
 export const faceScanPDFTemplate = ({
   logoUrl = "https://51.21.123.99:4000/logo1.png",
-  pdf, // URL to the PDF
+  pdf,
+  userName = ""
 }) => {
   return {
     subject: `Face Scan Report PDF`,
     body: `
-      <div style="text-align: center; font-family: Arial, sans-serif;">
-        <img src="${logoUrl}" alt="Logo" style="width: 150px; margin-bottom: 20px;" />
-        <h2>Face Scan Report</h2>
-        <p>Your face scan report is ready. Click the button below to view/download it:</p>
-        <a href="${pdf}" target="_blank" 
-           style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">
-          Download PDF
-        </a>
-      </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Skin Analysis Report</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f7f9fc; font-family: 'Poppins', Arial, sans-serif;">
+
+  <!-- Main Wrapper -->
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#73c0cda8; padding:20px 0;">
+    <tr>
+      <td align="center">
+
+        <!-- Container -->
+        <table border="0" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:0px; overflow:hidden;">
+
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding:20px;">
+              <img src="${logoUrl}" alt="ZYNQ Logo" width="180" height="85" style="width:180px; height:85px; object-fit:contain; display:block; margin:0 auto;">
+            </td>
+          </tr>
+
+          <!-- Hero Image -->
+          <tr>
+            <td align="center" style="padding:0;">
+              <img src="https://51.21.123.99:4000/girl_img.png" alt="Skin Analysis Illustration" width="600" style="width:100%; max-width:600px; height:auto; display:block;">
+            </td>
+          </tr>
+
+          <!-- Intro Section -->
+          <tr>
+            <td style="padding:30px 20px; text-align:center;">
+              <h2 style="font-size:20px; color:#111111; margin:0 0 15px 0;">✨ Your Skin Analysis Report Is Here</h2>
+              <p style="font-size:14px; color:#555555; line-height:20px; margin:0 0 25px 0;">
+                Thank You ${userName} For Using ZYNQ AI-Powered Skin Analysis.<br>
+                We’ve Carefully Scanned Your Face And Generated A Personalized Report With Insights On Your Skin Health.
+              </p>
+              <a href="${pdf}" target="_blank" style="display:inline-block; background-color:#000000; color:#ffffff; text-decoration:none; padding:12px 24px; border-radius:4px; font-size:14px;">
+                Download Report
+              </a>
+            </td>
+          </tr>
+
+          <!-- Features Section -->
+          <tr>
+            <td style="background-color:#fff; padding:30px 20px; border-top: 1px solid #e6e6e6;">
+              <h3 style="font-size:18px; color:#111111; text-align:center; margin:0 0 20px 0;">Inside The Attached Report, You’ll Find</h3>
+
+              <!-- Item 1 -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                <tr>
+                  <td width="50" valign="top" style="text-align:center;">
+                    <img src="https://51.21.123.99:4000/Simplification.png" alt="Skin Score Icon" width="40" style="display:block; margin:0 auto;">
+                  </td>
+                  <td valign="top" style="padding-left:10px;">
+                    <h4 style="font-size:16px; margin:0; color:#111111;">Your Skin Score & Key Indicators</h4>
+                    <p style="font-size:13px; color:#555555; margin:5px 0 0 0; line-height:18px;">
+                      Get An Overview Of Your Overall Skin Health Score, With Detailed Metrics On Hydration, Tone, And Balance.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Item 2 -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                <tr>
+                  <td width="50" valign="top" style="text-align:center;">
+                    <img src="https://51.21.123.99:4000/Simplification_2.png" alt="Detailed Analysis Icon" width="40" style="display:block; margin:0 auto;">
+                  </td>
+                  <td valign="top" style="padding-left:10px;">
+                    <h4 style="font-size:16px; margin:0; color:#111111;">Detailed Analysis Of Concerns</h4>
+                    <p style="font-size:13px; color:#555555; margin:5px 0 0 0; line-height:18px;">
+                      Understand Specific Skin Issues Through AI-Powered Insights Covering Acne, Dark Spots, Wrinkles, And Elasticity Levels.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Item 3 -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td width="50" valign="top" style="text-align:center;">
+                    <img src="https://51.21.123.99:4000/Simplification_3.png" alt="Next Steps Icon" width="40" style="display:block; margin:0 auto;">
+                  </td>
+                  <td valign="top" style="padding-left:10px;">
+                    <h4 style="font-size:16px; margin:0; color:#111111;">Next Steps To Improve Your Skin Health</h4>
+                    <p style="font-size:13px; color:#555555; margin:5px 0 0 0; line-height:18px;">
+                      Get Personalized Recommendations, Lifestyle Tips, And Product Suggestions To Enhance Your Skin Over Time.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:30px 20px; text-align:center; background-color:#ffffff;">
+              <div style="padding-top: 0px; text-align: left;">
+                <h4 style="margin-bottom: 10px;">Cheers,</h4>
+                <p style="margin-top: 0px;">ZYNQ Team</p>
+              </div>
+            </td>
+          </tr>
+
+        </table>
+        <!-- End Container -->
+
+        <!-- Start footer -->
+        <table align="center" style="text-align: center; vertical-align: top; width: 100%; max-width: 600px; background-color: #282828;" width="600">
+          <tbody>
+            <tr>
+              <td style="padding:30px;">
+                <p style="margin-bottom:10px; margin-top: 0px; text-align:center; color:#fff;">Need More Help?</p>
+                <a href="#" style="color:#fff; text-decoration: underline; text-align:center; display: block;">We are here to help you out</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <!-- End footer -->
+
+      </td>
+    </tr>
+  </table>
+  <!-- End Main Wrapper -->
+
+</body>
+</html>
     `
   };
 };
