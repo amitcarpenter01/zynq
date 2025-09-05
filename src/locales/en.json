@@ -251,5 +251,6 @@
   "REFUND_COMPLETED": "Refund Completed Successfully",
   "USER_ALREADY_EXISTS": "User Already Exists with the same email id",
   "EMAIL_NOT_FOUND": "Email Not Found",
-  "FACE_SCAN_RESULT_NOT_FOUND" : "Face Scan Result Not Found"
+  "FACE_SCAN_RESULT_NOT_FOUND": "Face Scan Result Not Found",
+  "REPORT_SENT_SUCCESSFULLY": "Report sent successfully on your registered email"
 }
