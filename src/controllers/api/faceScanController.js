@@ -189,7 +189,7 @@ export const sendFaceResultToEmail = async (req, res) => {
 
         await sendEmail({ to: email, subject, html: body });
 
-        return handleSuccess(res, 200, "en", "PDF_FETCHED_SUCCESSFULLY", pdf);
+        return handleSuccess(res, 200, "en", "REPORT_SENT_SUCCESSFULLY", pdf);
     }
     catch (error) {
         console.error("Error in getFaceScanPDF:", error);
