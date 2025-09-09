@@ -742,7 +742,7 @@ export const getSinglePatientRecord = async (userData, patient_id) => {
 
 export const getRatingsByRole = async (id, role) => {
     try {
-        let whereClause;
+        let whereClause = ' ar.approval_status = `APPROVED` AND ';
         const values = [id];
 
         switch (role) {
@@ -769,7 +769,7 @@ export const getRatingsByRole = async (id, role) => {
                 u.profile_image,
                 u.age,
                 u.gender
-            FROM tbl_appointment_ratings AS ar
+            FROM tbl_appointment_ratings AS ar 
             INNER JOIN tbl_users AS u ON ar.user_id = u.user_id
             WHERE ${whereClause}
             ORDER BY ar.created_at DESC

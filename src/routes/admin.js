@@ -18,6 +18,9 @@ import { deleteNotifications, deleteSingleNotification, getNotifications } from 
 import { addWalletAmountSchema, getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
 import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
 import { get_treatments } from '../controllers/api/faceScanController.js';
+import { updateRatingStatusSchema } from '../validations/appointment.validation.js';
+import { addEditFAQSchema, getAllFAQSchema, getSingleFAQSchema } from '../validations/faq.validation.js';
+import { addEditFAQ, deleteFAQ, getAllFAQCategories, getAllFAQs, getSingleFAQ } from '../controllers/api/FAQController.js';
 
 const router = express.Router();
 
@@ -116,5 +119,15 @@ router.get('/getUserAppointments/:user_id', authenticateAdmin, authControllers.g
 router.post('/payments/add-wallet-amount', authenticateAdmin, validate(addWalletAmountSchema, "body"), dashboardControllers.addWalletAmount);
 
 router.get('/get_treatments', get_treatments);
+
+router.post('/update-rating-status', authenticateAdmin, validate(updateRatingStatusSchema, 'body'), dashboardControllers.updateRatingStatus)
+
+//=======================================FAQs===============================================
+
+router.post('/faq', authenticateAdmin, validate(addEditFAQSchema, 'body'), addEditFAQ);
+router.post('/faq/get-all-faqs', authenticateAdmin, validate(getAllFAQSchema, "body"), getAllFAQs);
+router.get('/faq/:faq_id', authenticateAdmin, validate(getSingleFAQSchema, 'params'), getSingleFAQ);
+router.delete('/faq/:faq_id', authenticateAdmin, validate(getSingleFAQSchema, 'params'), deleteFAQ);
+router.get('/faq-categories', getAllFAQCategories);
 
 export default router;

@@ -887,7 +887,8 @@ const getDoctorDashboard = async (doctorId) => {
 
     FROM tbl_appointments a
     LEFT JOIN tbl_appointment_ratings ar 
-           ON a.appointment_id = ar.appointment_id
+           ON a.appointment_id = ar.appointment_id 
+           AND ar.approval_status = 'APPROVED'
     WHERE a.doctor_id = ?
   `;
 
@@ -938,7 +939,7 @@ const getSoloDoctorDashboard = async (doctorId, clinicId) => {
 ) AS wallet_earnings
 
     FROM tbl_appointments a
-    LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id
+    LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id AND ar.approval_status = 'APPROVED'
     WHERE a.doctor_id = ?
   `;
 
@@ -989,7 +990,7 @@ const getClinicDashboard = async (clinicId) => {
 
     FROM tbl_clinics c
     LEFT JOIN tbl_appointments a ON a.clinic_id = c.clinic_id
-    LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id
+    LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id AND ar.approval_status = 'APPROVED'
     LEFT JOIN tbl_doctor_clinic_map map ON map.clinic_id = c.clinic_id
     LEFT JOIN tbl_carts cart ON cart.clinic_id = c.clinic_id
     LEFT JOIN tbl_product_purchase pp ON pp.cart_id = cart.cart_id

@@ -1516,7 +1516,7 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
             LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
             LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
             LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
-            LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id
+            LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
             WHERE dm.clinic_id IN (${clinicIds.map(() => '?').join(', ')})
               AND d.profile_completion_percentage >= 0

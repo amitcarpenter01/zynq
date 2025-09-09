@@ -21,3 +21,8 @@ export const rateAppointmentSchema = joi.object({
 export const getSinglePatientRecordSchema = joi.object({
   patient_id: stringValidation
 })
+
+export const updateRatingStatusSchema = joi.object({
+  appointment_rating_id: stringValidation,
+  approval_status: stringValidation.valid('APPROVED', 'REJECTED')
+})

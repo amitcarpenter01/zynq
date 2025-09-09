@@ -1,6 +1,7 @@
-import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel, getAdminCommissionRatesModel, updateAdminCommissionRatesModel, getSingleAdminPurchasedProductModel, getSingleAdminCartProductModel, get_admin_earning, addWalletAmountModel } from '../../models/admin.js';
+import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel, getAdminCommissionRatesModel, updateAdminCommissionRatesModel, getSingleAdminPurchasedProductModel, getSingleAdminCartProductModel, get_admin_earning, addWalletAmountModel, updateRatingStatusModel } from '../../models/admin.js';
 import { get_product_images_by_product_ids } from '../../models/api.js';
 import { getClinicDoctorWallets } from '../../models/payment.js';
+import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 import { asyncHandler, handleError, handleSuccess } from '../../utils/responseHandler.js';
 import { groupProductsByCartAndClinic } from '../api/productController.js';
 const APP_URL = process.env.APP_URL;
@@ -261,4 +262,24 @@ export const addWalletAmount = asyncHandler(async (req, res) => {
     const { user_id, user_type, amount } = req.body;
     await addWalletAmountModel(user_id, user_type, amount);
     return handleSuccess(res, 200, language, "WALLET_AMOUNT_ADDED",);
+})
+
+export const updateRatingStatus = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const { appointment_rating_id, approval_status } = req.body;
+    const [{ user_id, appointment_id }] = await updateRatingStatusModel(appointment_rating_id, approval_status);
+
+    const message_type = approval_status === "APPROVED" ? "appointment_rating_approved" : "appointment_rating_rejected";
+    const userData = req.user;
+
+    handleSuccess(res, 200, language, "RATING_STATUS_UPDATED", user_id);
+
+    await sendNotification({
+        userData: userData,
+        type: "APPOINTMENT",
+        type_id: appointment_id,
+        notification_type: NOTIFICATION_MESSAGES[message_type],
+        receiver_id: user_id,
+        receiver_type: "USER"
+    })
 })

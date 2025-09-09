@@ -809,6 +809,7 @@ export const getAdminReviewsModel = async () => {
                 ar.rating,
                 ar.review,
                 ar.created_at,
+                ar.approval_status,
                 u.user_id,
                 u.full_name,
                 u.profile_image,
@@ -1243,3 +1244,24 @@ export const addWalletAmountModel = async (user_id, user_type, amount) => {
         throw error;
     }
 };
+
+export const updateRatingStatusModel = async (appointment_rating_id, approval_status) => {
+    try {
+        await db.query(
+            `UPDATE tbl_appointment_ratings 
+            SET approval_status = ? 
+            WHERE appointment_rating_id = ?`,
+            [approval_status, appointment_rating_id]
+        );
+        return await db.query(
+            `SELECT user_id, appointment_id
+            FROM tbl_appointment_ratings 
+            WHERE appointment_rating_id = ?`,
+            [appointment_rating_id]
+        );
+
+    } catch (error) {
+        console.error("updateRatingStatusModel error:", error);
+        throw error;
+    }
+}

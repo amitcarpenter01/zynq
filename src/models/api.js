@@ -174,7 +174,7 @@ export const getAllDoctors = async ({
         `;
 
         if (needsRating) {
-            query += ` LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id`;
+            query += ` LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'`;
         }
 
         const joins = [];
@@ -279,7 +279,7 @@ export const getAllRecommendedDoctors = async ({
             LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
             LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
             LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
-            LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id
+            LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
         `;
 
@@ -660,7 +660,7 @@ export const getAllClinicsForUser = async ({
             LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
             LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
             LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
-            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id
+            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id AND ar.approval_status = 'APPROVED'
         `;
 
         const joins = [];
@@ -818,7 +818,7 @@ export const getNearbyClinicsForUser = async ({
             LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
             LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
             LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
-            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id
+            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id AND ar.approval_status = 'APPROVED'
         `;
 
         const joins = [];
@@ -938,7 +938,7 @@ export const getSingleClinicForUser = async (
             LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
             LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
             LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
-            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id
+            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id AND ar.approval_status = 'APPROVED'
             WHERE c.clinic_id = ?
         `;
 
@@ -1192,9 +1192,9 @@ export const getAllTreatments = async (lang) => {
                 ANY_VALUE(c.name) AS concern_name,
                 IFNULL(MIN(dt.price), 0) AS min_price,
                 IFNULL(MAX(dt.price), 0) AS max_price
-            FROM tbl_treatment_concerns tc
-            INNER JOIN tbl_treatments t ON tc.treatment_id = t.treatment_id
-            INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+            FROM tbl_treatments t
+            LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
+            LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
             LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
             GROUP BY t.treatment_id
         `;
@@ -1212,15 +1212,16 @@ export const getAllTreatments = async (lang) => {
 
 export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
     try {
+        console.log(treatment_ids);
         let query = `
             SELECT
                 t.*,
                 ANY_VALUE(c.name) AS concern_name,
                 IFNULL(MIN(dt.price), 0) AS min_price,
                 IFNULL(MAX(dt.price), 0) AS max_price
-            FROM tbl_treatment_concerns tc
-            INNER JOIN tbl_treatments t ON tc.treatment_id = t.treatment_id
-            INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+            FROM tbl_treatments t
+            LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
+            LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
             LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
         `;
 
@@ -1741,7 +1742,7 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', offset = 0 
             LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
             LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
             LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
-            LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id
+            LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
             WHERE d.profile_completion_percentage >= 0
         `;
@@ -1794,7 +1795,7 @@ export const getClinicsByNameSearchOnly = async ({ search = '', offset = 0 }) =>
             LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
             LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
             LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
-            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id
+            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id AND ar.approval_status = 'APPROVED'
             WHERE c.profile_completion_percentage >= 50
         `;
 

@@ -93,6 +93,14 @@ export const NOTIFICATION_MESSAGES = {
         title: 'Booking Refunded',
         getBody: () => `Your booking has been refunded`
     },
+    appointment_rating_approved: {
+        title: 'Appointment Rating Approved',
+        getBody: () => `Your rating has been approved.`
+    },
+    appointment_rating_rejected: {
+        title: 'Appointment Rating Rejected',
+        getBody: () => `Your rating has been rejected.`
+    },
     default: {
         title: (name) => `${name} Notification`,
         getBody: () => `You have a new notification.`
