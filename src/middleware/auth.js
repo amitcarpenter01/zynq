@@ -42,6 +42,50 @@ export const authenticateUser = async (req, res, next) => {
     }
 };
 
+export const optionalAuthenticateUser = async (req, res, next) => {
+    try {
+        const authorizationHeader = req.headers['authorization'];
+
+        if (!authorizationHeader) {
+            req.user = null;
+            return next();
+        }
+
+        const tokenParts = authorizationHeader.split(' ');
+
+        // Malformed or missing token → treat as guest (not error)
+        if (tokenParts[0] !== 'Bearer' || !tokenParts[1] || tokenParts[1] === 'null') {
+            req.user = null;
+            return next();
+        }
+
+        const token = tokenParts[1];
+
+        try {
+            const decodedToken = jwt.verify(token, USER_JWT_SECRET);
+
+            const [user] = await apiModels.get_user_by_user_id(decodedToken.user_id);
+
+            if (!user) {
+                // If token is valid but user not found → treat as guest
+                req.user = null;
+                return next();
+            }
+
+            req.user = { ...user, role: "USER" };
+            console.log(decodedToken.mobile_number, "User Connected");
+        } catch (err) {
+            // Invalid/expired token → treat as guest
+            req.user = null;
+        }
+
+        next();
+    } catch (error) {
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+
 export const authenticateAdmin = async (req, res, next) => {
     try {
         const authorizationHeader = req.headers["authorization"];

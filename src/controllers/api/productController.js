@@ -115,32 +115,19 @@ export const getAllProducts = async (req, res) => {
 
         let finalTreatmentIds = [...treatment_ids];
 
-        // Expand treatment_ids from concern_ids
         if (concern_ids.length > 0) {
             const fromConcerns = await apiModels.getTreatmentIdsByConcernIds(concern_ids);
             if (Array.isArray(fromConcerns) && fromConcerns.length > 0) {
                 finalTreatmentIds = [...new Set([...finalTreatmentIds, ...fromConcerns])];
             }
         }
-
-        // Fallback if no filters provided
-        const areAllFiltersEmpty =
-            finalTreatmentIds.length === 0 &&
-            search.trim().length === 0 &&
-            Object.keys(price).length === 0;
-
-        // if (areAllFiltersEmpty) {
-        //     const fallbackTreatmentIds = await getTreatmentIDsByUserID(userId);
-        //     // finalTreatmentIds = fallbackTreatmentIds || [];
-        // }
-
-        if (recommended) {
+        if (recommended && userId) {
             const fallbackTreatmentIds = await getTreatmentIDsByUserID(userId);
             finalTreatmentIds = fallbackTreatmentIds || [];
         }
 
         const queryFilters = {
-            user_id: req.user.user_id,
+            user_id: userId,
             treatment_ids: finalTreatmentIds,
             search,
             price,
@@ -150,23 +137,23 @@ export const getAllProducts = async (req, res) => {
         };
 
         let products = await apiModels.get_all_products_for_user(queryFilters);
-        const userCartProducts = await apiModels.getUserCartProduct(userId);
 
-        if (userCartProducts.length === 0) {
-            // Set all to 0
-            products = products.map(item => ({
-                ...item,
-                added_in_cart: 0
-            }));
+        if (userId) {
+            const userCartProducts = await apiModels.getUserCartProduct(userId);
+
+            if (userCartProducts.length === 0) {
+                products = products.map(item => ({ ...item, added_in_cart: 0 }));
+            } else {
+                const cartProductIds = new Set(userCartProducts.map(p => p.product_id));
+                products = products.map(item => ({
+                    ...item,
+                    added_in_cart: cartProductIds.has(item.product_id) ? 1 : 0
+                }));
+            }
         } else {
-            // Make a Set of product IDs for fast lookup
-            const cartProductIds = new Set(userCartProducts.map(p => p.product_id));
-
-            products = products.map(item => ({
-                ...item,
-                added_in_cart: cartProductIds.has(item.product_id) ? 1 : 0
-            }));
+            products = products.map(item => ({ ...item, added_in_cart: 0 }));
         }
+
         if (!products || products.length === 0) {
             return handleSuccess(res, 200, language, "PRODUCTS_FETCHED_SUCCESSFULLY", []);
         }
@@ -174,7 +161,6 @@ export const getAllProducts = async (req, res) => {
         const productIds = products.map(p => p.product_id);
         const imageRows = await apiModels.get_product_images_by_product_ids(productIds);
 
-        // 🧠 Group images by product_id
         const imagesMap = {};
         for (const row of imageRows) {
             if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
