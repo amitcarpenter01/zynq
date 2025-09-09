@@ -1,6 +1,6 @@
 import db from "../config/db.js";
 import { isEmpty } from "./user_helper.js";
-import dayjs from 'dayjs';
+import { translate } from "@vitalets/google-translate-api";
 
 export const getTreatmentIDsByUserID = async (UserID) => {
     const result = await db.query(`
@@ -122,3 +122,25 @@ export const formatBenefitsOnLang = (rows = [], lang = 'en') => {
         };
     });
 };
+
+export async function translateFAQ(question, answer) {
+    try {
+        return { ques_en: question, ans_en: answer, ques_sv: null, ans_sv: null };
+        const merged = `${question} -> ${answer}`;
+
+        const translateResult = await translate(merged, { to: "en" });
+        const translateTo = translateResult.raw.src === "en" ? "sv" : "en";
+
+        const translated = await translate(merged, { to: translateTo });
+
+        const [q_tr, a_tr] = translated.text.split(" -> ");
+
+        const [ques_en, ans_en] = translateTo === "en" ? [q_tr, a_tr] : [question, answer];
+        const [ques_sv, ans_sv] = translateTo === "sv" ? [q_tr, a_tr] : [question, answer];
+
+        return { ques_en, ans_en, ques_sv, ans_sv };
+    } catch (err) {
+        console.error("Translation failed:", err);
+        return { ques_en: question, ans_en: answer, ques_sv: null, ans_sv: null };
+    }
+}

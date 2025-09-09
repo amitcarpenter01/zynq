@@ -1,6 +1,6 @@
 import express from 'express';
 import { upload } from '../services/multer.js';
-import { authenticateAdmin, authenticateUser } from '../middleware/auth.js';
+import { authenticateAdmin, authenticateUser, optionalAuthenticateUser } from '../middleware/auth.js';
 import { authenticate } from '../middleware/web_user_auth.js';;
 import { uploadFile, uploadMultipleFiles } from '../services/multer.js';
 import { validate } from '../middleware/validation.middleware.js';
@@ -41,6 +41,8 @@ import { getUserSkinTypes } from '../models/clinic.js';
 import { addEditAddressSchema, deleteAddressSchema, getSingleAddressSchema } from '../validations/address.validation.js';
 import { addEditAddress, deleteAddress, getAddresses, getSingleAddress } from '../controllers/api/addressController.js';
 import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
+import { getAllFAQCategories, getAllFAQs } from '../controllers/api/FAQController.js';
+import { getAllFAQSchema } from '../validations/faq.validation.js';
 
 const router = express.Router();
 
@@ -84,7 +86,7 @@ router.post("/get-all-doctors", authenticateUser, validate(getAllDoctorsSchema, 
 router.post("/get-recommended-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
 router.get("/doctor/get/:clinic_id/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
 // //==================================== Product ==============================
-router.post("/get-all-products", authenticateUser, validate(getAllProductsSchema, "body"), productControllers.getAllProducts);
+router.post("/get-all-products", optionalAuthenticateUser, validate(getAllProductsSchema, "body"), productControllers.getAllProducts);
 router.get("/product/:product_id", authenticateUser, validate(getSingleProductSchema, "params"), productControllers.getSingleProduct);
 
 // ==================================== Clinic ==============================
@@ -206,5 +208,9 @@ router.post('/book-direct-appointment', authenticateUser, appointmentController.
 router.post('/mark-appointment-paid', authenticateUser, appointmentController.markAppointmentAsPaid);
 
 router.post('/send-face-result', authenticateUser, validate(sendFaceResultToEmailSchema, "body"), faceScanControllers.sendFaceResultToEmail);
+
+router.post('/get-all-faqs', authenticateUser, validate(getAllFAQSchema, "body"), getAllFAQs);
+
+router.get('/faq-categories', getAllFAQCategories);
 
 export default router;
