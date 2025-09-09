@@ -45,9 +45,9 @@ export const authenticateUser = async (req, res, next) => {
 export const optionalAuthenticateUser = async (req, res, next) => {
     try {
         const authorizationHeader = req.headers['authorization'];
-
         if (!authorizationHeader) {
-            req.user = null;
+            req.user = {};
+            req.user.language = req?.headers['language'] || 'en';
             return next();
         }
 

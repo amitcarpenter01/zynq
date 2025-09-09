@@ -87,7 +87,7 @@ router.post("/get-recommended-doctors", authenticateUser, validate(getAllDoctors
 router.get("/doctor/get/:clinic_id/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
 // //==================================== Product ==============================
 router.post("/get-all-products", optionalAuthenticateUser, validate(getAllProductsSchema, "body"), productControllers.getAllProducts);
-router.get("/product/:product_id", authenticateUser, validate(getSingleProductSchema, "params"), productControllers.getSingleProduct);
+router.get("/product/:product_id", optionalAuthenticateUser, validate(getSingleProductSchema, "params"), productControllers.getSingleProduct);
 
 // ==================================== Clinic ==============================
 router.post("/get-all-clinics", authenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_all_clinics);
@@ -183,7 +183,7 @@ router.post('/payments/test', testPayment)
 // -------------------------------------Generic------------------------------------------------//
 
 router.get('/skin-types', authenticateUser, faceScanControllers.getClinicSkinTypes);
-router.get('/treatments', authenticateUser, faceScanControllers.getTreatments);
+router.get('/treatments', optionalAuthenticateUser, faceScanControllers.getTreatments);
 router.post('/get-treatments-by-ids', authenticateUser, validate(getTreatmentsSchema, "body"), faceScanControllers.get_treatments_by_treatments);
 router.post("/get-all-search-results", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.search_home_entities);
 
