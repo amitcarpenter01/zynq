@@ -550,7 +550,7 @@ export const getUserCartProduct = async (
     }
 };
 
-export const get_single_product_for_user = async (product_id, user_id) => {
+export const get_single_product_for_user = async (product_id, user_id = null) => {
     try {
         const query = `
 SELECT 
@@ -573,15 +573,17 @@ SELECT
         GROUP BY pt.product_id
     ), JSON_ARRAY()) AS treatments,
 
-    -- Added in cart flag (specific to this user)
-    EXISTS (
-        SELECT 1
-        FROM tbl_cart_products cp
-        INNER JOIN tbl_carts c ON c.cart_id = cp.cart_id
-        WHERE cp.product_id = p.product_id
-          AND c.user_id = ?
-        LIMIT 1
-    ) AS added_in_cart
+    -- Added in cart flag (0 if user_id is null)
+    COALESCE((
+        SELECT EXISTS (
+            SELECT 1
+            FROM tbl_cart_products cp
+            INNER JOIN tbl_carts c ON c.cart_id = cp.cart_id
+            WHERE cp.product_id = p.product_id
+              AND c.user_id = ?
+            LIMIT 1
+        )
+    ), 0) AS added_in_cart
 
 FROM tbl_products p
 WHERE p.product_id = ?;

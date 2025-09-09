@@ -155,7 +155,7 @@ export const getClinicSkinTypes = async (req, res) => {
 
 export const getTreatments = async (req, res) => {
     try {
-        const language = req?.user?.language || 'sv';
+        const language = req?.user?.language || 'en';
         const treatments = await getUserTreatments(language);
         return handleSuccess(res, 200, language, "TREATMENTS_FETCHED_SUCCESSFULLY", treatments);
     }

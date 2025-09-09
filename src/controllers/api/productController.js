@@ -185,8 +185,8 @@ export const getAllProducts = async (req, res) => {
 export const getSingleProduct = async (req, res) => {
     try {
         const language = req?.user?.language || 'en';
-
-        const products = await apiModels.get_single_product_for_user(req.params.product_id, req.user.user_id);
+        const user_id = req?.user?.user_id
+        const products = await apiModels.get_single_product_for_user(req.params.product_id, user_id);
 
         if (!products || products.length === 0) {
             return handleSuccess(res, 200, language, "PRODUCTS_FETCHED_SUCCESSFULLY", []);
