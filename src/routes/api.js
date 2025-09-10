@@ -211,6 +211,6 @@ router.post('/send-face-result', authenticateUser, validate(sendFaceResultToEmai
 
 router.post('/get-all-faqs', optionalAuthenticateUser, validate(getAllFAQSchema, "body"), getAllFAQs);
 
-router.get('/faq-categories', getAllFAQCategories);
+router.get('/faq-categories', optionalAuthenticateUser, getAllFAQCategories);
 
 export default router;

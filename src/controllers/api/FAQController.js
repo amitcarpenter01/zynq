@@ -5,6 +5,12 @@ import { asyncHandler, handleError, handleSuccess } from '../../utils/responseHa
 
 import { isEmpty } from "../../utils/user_helper.js";
 
+// import OpenAI from "openai";
+
+// const openai = new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+// });
+
 export const getAllFAQs = asyncHandler(async (req, res) => {
     const { filters } = req.body;
     let faqData = await getAllFAQsModel(filters);
@@ -73,5 +79,7 @@ export const deleteFAQ = asyncHandler(async (req, res) => {
 });
 
 export const getAllFAQCategories = asyncHandler(async (req, res) => {
-    return handleSuccess(res, 200, 'en', "FAQ_CATEGORIES_FETCHED_SUCCESSFULLY", configs.faq_categories);
+    const lang = req?.user?.language || "en";
+    const data = configs.faq_categories.map(category => category[lang]);
+    return handleSuccess(res, 200, lang, "FAQ_CATEGORIES_FETCHED_SUCCESSFULLY", data);
 });

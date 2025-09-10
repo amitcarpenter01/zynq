@@ -12,10 +12,13 @@ export const getSingleFAQSchema = Joi.object({
 export const deleteFAQSchema = Joi.object({
   faq_id: stringValidation,
 })
+const allowedCategories = configs.faq_categories.flatMap(cat =>
+  [cat.en, cat.sv].filter(Boolean)
+);
 
 export const addEditFAQSchema = Joi.object({
   faq_id: stringValidation.optional(),
-  category: stringValidation.valid(...configs.faq_categories),
+  category: stringValidation.valid(...allowedCategories),
   question: stringValidation,
   answer: stringValidation,
   question_sv: stringValidation.when('is_manual', { is: false, then: Joi.optional() }),
