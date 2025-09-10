@@ -751,54 +751,79 @@ export const update_support_ticket = async (support_ticket_id, updateData) => {
     }
 }
 
-export const getAdminBookedAppointmentsModel = async () => {
-    let query = `
-        SELECT
-          a.*,
-          d.name AS doctor_name,
-          zu.email AS doctor_email,
-          c.clinic_name,
-          r.role,
-          u.full_name AS user_name,
-          u.mobile_number AS user_mobile,
-          
-          -- ✅ Commission percentage (Admin share from total)
-          CASE 
-            WHEN a.total_price > 0 
-              THEN ROUND((a.admin_earnings / a.total_price) * 100, 2) 
-            ELSE 0 
-          END AS commission_percentage,
+export const getAdminBookedAppointmentsModel = async ({ page, limit } = {}) => {
+    try {
+        let query = `
+            SELECT
+                a.*,
+                d.name AS doctor_name,
+                zu.email AS doctor_email,
+                c.clinic_name,
+                r.role,
+                u.full_name AS user_name,
+                u.mobile_number AS user_mobile,
 
-          COALESCE(
-            (
-              SELECT JSON_ARRAYAGG(
-                JSON_OBJECT(
-                  'treatment_id', at.treatment_id,
-                  'treatment_name', t.name,
-                  'treatment_price', at.price
-                )
-              )
-              FROM tbl_appointment_treatments at
-              LEFT JOIN tbl_treatments t ON t.treatment_id = at.treatment_id
-              WHERE at.appointment_id = a.appointment_id
-                AND at.treatment_id IS NOT NULL
-            ),
-            JSON_ARRAY()
-          ) AS treatments
-          
-        FROM tbl_appointments a
-        LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
-        LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
-        LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
-        LEFT JOIN tbl_users u ON u.user_id = a.user_id
-        LEFT JOIN tbl_zqnq_users zu2 ON zu2.id = d.zynq_user_id
-        LEFT JOIN tbl_roles r ON zu2.role_id = r.id
-        WHERE a.save_type = 'booked' AND a.total_price > 0 And a.payment_status != 'unpaid'
-        ORDER BY a.created_at DESC;
-    `;
+                -- ✅ Commission percentage (Admin share from total)
+                CASE 
+                    WHEN a.total_price > 0 
+                        THEN ROUND((a.admin_earnings / a.total_price) * 100, 2) 
+                    ELSE 0 
+                END AS commission_percentage,
 
-    return await db.query(query);
+                COALESCE(
+                    (
+                        SELECT JSON_ARRAYAGG(
+                            JSON_OBJECT(
+                                'treatment_id', at.treatment_id,
+                                'treatment_name', t.name,
+                                'treatment_price', at.price
+                            )
+                        )
+                        FROM tbl_appointment_treatments at
+                        LEFT JOIN tbl_treatments t ON t.treatment_id = at.treatment_id
+                        WHERE at.appointment_id = a.appointment_id
+                          AND at.treatment_id IS NOT NULL
+                    ),
+                    JSON_ARRAY()
+                ) AS treatments,
+
+                COUNT(*) OVER() AS total_count
+            FROM tbl_appointments a
+            LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+            LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+            LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
+            LEFT JOIN tbl_users u ON u.user_id = a.user_id
+            LEFT JOIN tbl_zqnq_users zu2 ON zu2.id = d.zynq_user_id
+            LEFT JOIN tbl_roles r ON zu2.role_id = r.id
+            WHERE a.save_type = 'booked' 
+              AND a.total_price > 0 
+              AND a.payment_status != 'unpaid'
+            ORDER BY a.created_at DESC
+        `;
+
+        // 2️⃣ Apply pagination if page & limit are provided
+        if (page && limit) {
+            const offset = (page - 1) * limit;
+            query += ` LIMIT ${limit} OFFSET ${offset}`;
+        }
+
+        // 3️⃣ Fetch appointments
+        const appointmentRows = await db.query(query);
+        if (!appointmentRows.length) return [];
+
+        // 4️⃣ Build enriched appointments
+        const appointments = appointmentRows.map(row => ({
+            ...row,
+            total_count: row.total_count // already from SQL
+        }));
+
+        return appointments;
+    } catch (error) {
+        console.error("Failed to fetch admin booked appointments:", error);
+        throw error;
+    }
 };
+
 
 export const getAdminReviewsModel = async () => {
     let query = `
@@ -831,9 +856,9 @@ export const getAdminReviewsModel = async () => {
 
 const APP_URL = process.env.APP_URL;
 
-export const getAdminPurchasedProductModel = async () => {
+export const getAdminPurchasedProductModel = async ({ page, limit } = {}) => {
     try {
-        const purchaseRows = await db.query(`
+        let purchaseQuery = `
             SELECT 
                 pp.purchase_id,
                 pp.cart_id,
@@ -850,7 +875,8 @@ export const getAdminPurchasedProductModel = async () => {
                 u.email AS user_email,
                 u.mobile_number,
                 a.address,
-                r.role
+                r.role,
+                COUNT(*) OVER() AS total_count
             FROM tbl_product_purchase pp
             LEFT JOIN tbl_users u ON pp.user_id = u.user_id
             LEFT JOIN tbl_address a ON pp.address_id = a.address_id
@@ -859,45 +885,52 @@ export const getAdminPurchasedProductModel = async () => {
             LEFT JOIN tbl_zqnq_users zu ON cl.zynq_user_id = zu.id
             LEFT JOIN tbl_roles r ON zu.role_id = r.id
             ORDER BY pp.created_at DESC
-        `);
+        `;
 
-        // 1️⃣ Parse & collect all product IDs
+        // 2️⃣ Apply pagination if page & limit are provided
+        if (page && limit) {
+            const offset = (page - 1) * limit;
+            purchaseQuery += ` LIMIT ${limit} OFFSET ${offset}`;
+        }
+
+        // 3️⃣ Fetch purchases
+        const purchaseRows = await db.query(purchaseQuery);
+        if (!purchaseRows.length) return [];
+
+        // 4️⃣ Collect all product IDs
         const allProductIds = new Set();
         const parsedPurchases = purchaseRows.map(row => {
             const products = Array.isArray(row.product_details)
                 ? row.product_details
                 : JSON.parse(row.product_details || "[]");
             products.forEach(p => allProductIds.add(p.product_id));
-            return { ...row, products };
+            return { ...row, products }; // no total_count here
         });
 
-        // 2️⃣ Fetch product info
         const productRows = allProductIds.size
             ? await db.query(
-                `SELECT * FROM tbl_products WHERE product_id IN (?)`,
-                [[...allProductIds]]
-            )
+                  `SELECT * FROM tbl_products WHERE product_id IN (?)`,
+                  [[...allProductIds]]
+              )
             : [];
         const productInfoMap = productRows.reduce((map, p) => {
             map[p.product_id] = p;
             return map;
         }, {});
 
-        // 3️⃣ Fetch clinic info
         const allClinicIds = [...new Set(productRows.map(p => p.clinic_id).filter(Boolean))];
         const clinicRows = allClinicIds.length
             ? await db.query(
-                `SELECT clinic_id, clinic_name, address, clinic_logo 
-                 FROM tbl_clinics WHERE clinic_id IN (?)`,
-                [allClinicIds]
-            )
+                  `SELECT clinic_id, clinic_name, address, clinic_logo 
+                   FROM tbl_clinics WHERE clinic_id IN (?)`,
+                  [allClinicIds]
+              )
             : [];
         const clinicMap = clinicRows.reduce((map, c) => {
             map[c.clinic_id] = c;
             return map;
         }, {});
 
-        // 4️⃣ Fetch product images
         const imageRows = allProductIds.size
             ? await get_product_images_by_product_ids([...allProductIds])
             : [];
@@ -909,7 +942,6 @@ export const getAdminPurchasedProductModel = async () => {
             return map;
         }, {});
 
-        // 5️⃣ Fetch treatments
         const treatmentsRows = allProductIds.size
             ? await getTreatmentsOfProductsBulk([...allProductIds])
             : [];
@@ -919,7 +951,6 @@ export const getAdminPurchasedProductModel = async () => {
             return map;
         }, {});
 
-        // 6️⃣ Build enriched purchases
         const purchases = parsedPurchases.map(row => {
             const user = {
                 user_id: row.user_id,
@@ -931,8 +962,8 @@ export const getAdminPurchasedProductModel = async () => {
             const enrichedProducts = row.products.map(p => {
                 const prodInfo = productInfoMap[p.product_id] || {};
                 return {
-                    ...p, // snapshot from purchase
-                    ...prodInfo, // current product info
+                    ...p,
+                    ...prodInfo,
                     treatments: treatmentsMap[p.product_id] || [],
                     product_images: imagesMap[p.product_id] || [],
                 };
@@ -941,7 +972,6 @@ export const getAdminPurchasedProductModel = async () => {
             const clinic_id = enrichedProducts[0]?.clinic_id || null;
             const clinic = clinicMap[clinic_id] || null;
 
-            // ✅ Calculate commission percentage
             const commission_percentage =
                 row.total_price > 0
                     ? (row.admin_earnings / row.total_price) * 100
@@ -957,19 +987,20 @@ export const getAdminPurchasedProductModel = async () => {
                 total_price: row.total_price,
                 admin_earnings: row.admin_earnings,
                 clinic_earnings: row.clinic_earnings,
-                commission_percentage: commission_percentage.toFixed(2), // ✅ Added
+                commission_percentage: commission_percentage.toFixed(2),
                 address: row.address,
                 shipment_status: row.shipment_status,
-                role : row.role,
+                role: row.role,
                 clinic,
                 user,
                 products: enrichedProducts,
+                total_count: row.total_count,
             };
         });
 
         return purchases;
     } catch (error) {
-        console.error("Failed to fetch admin purchased product data with user, clinic, images, and commission:", error);
+        console.error("Failed to fetch admin purchased product data:", error);
         throw error;
     }
 };

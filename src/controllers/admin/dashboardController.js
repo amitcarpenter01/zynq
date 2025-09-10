@@ -160,8 +160,8 @@ export const getPaymentHistory = asyncHandler(async (req, res) => {
         purchases,
         appointments
     ] = await Promise.all([
-        getAdminPurchasedProductModel(),
-        getAdminBookedAppointmentsModel()
+        getAdminPurchasedProductModel({ page: 1, limit: 10 }),
+        getAdminBookedAppointmentsModel({ page: 1, limit: 10 })
     ])
 
     const data = {
