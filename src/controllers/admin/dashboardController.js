@@ -260,9 +260,10 @@ export const updateAdminCommissionRates = asyncHandler(async (req, res) => {
 
 export const addWalletAmount = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
-    const { user_id, user_type, amount } = req.body;
+    const { user_id, user_type, amount, order_type, order_id } = req.body;
     await addWalletAmountModel(user_id, user_type, amount);
-    return handleSuccess(res, 200, language, "WALLET_AMOUNT_ADDED",);
+    handleSuccess(res, 200, language, "WALLET_AMOUNT_ADDED",);
+    await updateOrderModel(order_type, order_id);
 })
 
 export const updateRatingStatus = asyncHandler(async (req, res) => {

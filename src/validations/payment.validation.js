@@ -46,7 +46,9 @@ export const getSinglePurchasedProductSchema = Joi.object({
 export const addWalletAmountSchema = Joi.object({
   user_id: stringValidation,
   user_type: stringValidation.valid("DOCTOR", "CLINIC", "SOLO-DOCTOR"),
-  amount: numberValidation
+  amount: numberValidation,
+  order_type: stringValidation.valid("PURCHASE", "APPOINTMENT"),
+  order_id: stringValidation
 })
 
 export const getPaymentHistorySchema = Joi.object({
