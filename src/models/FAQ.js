@@ -3,7 +3,11 @@ import db from "../config/db.js";
 export const getAllFAQsModel = async (filters = {}) => {
     try {
         const { search, category } = filters;
-        let query = 'SELECT * FROM `tbl_faqs`';
+        let query = `
+        SELECT f.*, fc.english AS category, fc.swedish, fc.faq_category_id
+        FROM tbl_faqs f
+        LEFT JOIN tbl_faq_categories fc ON f.category = fc.faq_category_id
+        `;
         const params = [];
 
         const whereClauses = [];
@@ -41,7 +45,11 @@ export const getAllFAQsModel = async (filters = {}) => {
 
 export const getSingleFAQModel = async (faq_id) => {
     try {
-        return await db.query('SELECT * FROM `tbl_faqs` WHERE faq_id = ?', [faq_id]);
+        return await db.query(`
+            SELECT f.*, fc.english AS category, fc.swedish, fc.faq_category_id 
+            FROM tbl_faqs f
+            LEFT JOIN tbl_faq_categories fc ON f.category = fc.faq_category_id
+            WHERE f.faq_id = ?`, [faq_id]);
     } catch (error) {
         console.error("Failed to get single FAQ:", error);
         throw error;
@@ -71,6 +79,26 @@ export const updateFAQModel = async (faq_id, data) => {
         return await db.query('UPDATE `tbl_faqs` SET ? WHERE faq_id = ?', [data, faq_id]);
     } catch (error) {
         console.error(`Failed to update FAQ (ID: ${faq_id}):`, error);
+        throw error;
+    }
+};
+
+export const getAllFAQCategoriesModel = async (lang = "en") => {
+    try {
+        // Map language to the right column
+        const column = lang === "sv" ? "swedish" : "english";
+
+        const query = `
+      SELECT 
+        faq_category_id,
+        ${column} AS name
+      FROM tbl_faq_categories
+      ORDER BY ${column};
+    `;
+
+        return await db.query(query);
+    } catch (error) {
+        console.error("Failed to get all FAQ categories:", error);
         throw error;
     }
 };

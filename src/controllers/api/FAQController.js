@@ -1,5 +1,5 @@
 import configs from '../../config/config.js';
-import { addFAQModel, deleteFAQModel, getAllFAQsModel, getSingleFAQModel, updateFAQModel } from '../../models/FAQ.js';
+import { addFAQModel, deleteFAQModel, getAllFAQCategoriesModel, getAllFAQsModel, getSingleFAQModel, updateFAQModel } from '../../models/FAQ.js';
 import { translateFAQ } from '../../utils/misc.util.js';
 import { asyncHandler, handleError, handleSuccess } from '../../utils/responseHandler.js';
 
@@ -80,6 +80,6 @@ export const deleteFAQ = asyncHandler(async (req, res) => {
 
 export const getAllFAQCategories = asyncHandler(async (req, res) => {
     const lang = req?.user?.language || "en";
-    const data = configs.faq_categories.map(category => category[lang]);
+    const data = await getAllFAQCategoriesModel(lang);
     return handleSuccess(res, 200, lang, "FAQ_CATEGORIES_FETCHED_SUCCESSFULLY", data);
 });
