@@ -15,7 +15,7 @@ import { updateLegalDocumentsSchema } from '../validations/legal.validation.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { updateAdminCommissionRatesSchema } from '../validations/commission.validation.js.js';
 import { deleteNotifications, deleteSingleNotification, getNotifications } from '../controllers/api/notificationController.js';
-import { addWalletAmountSchema, getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
+import { addWalletAmountSchema, getPaymentHistorySchema, getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
 import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
 import { get_treatments } from '../controllers/api/faceScanController.js';
 import { updateRatingStatusSchema } from '../validations/appointment.validation.js';
@@ -97,7 +97,7 @@ router.get('/commission-rates', authenticateAdmin, dashboardControllers.getAdmin
 
 router.put('/commission-rates', authenticateAdmin, validate(updateAdminCommissionRatesSchema, "body"), dashboardControllers.updateAdminCommissionRates);
 
-router.get('/payments/get-payment-history', authenticateAdmin, dashboardControllers.getPaymentHistory);
+router.get('/payments/get-payment-history', authenticateAdmin, validate(getPaymentHistorySchema, "query"), dashboardControllers.getPaymentHistory);
 
 router.get('/payments/get-earnings', authenticateAdmin, dashboardControllers.getEarnings);
 

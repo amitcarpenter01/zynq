@@ -3,10 +3,11 @@ import { handleError } from "../utils/responseHandler.js";
 
 
 const validate = (schema, type) => (req, res, next) => {
-    const { error } = schema.validate(req[type]);
+    const { error, value } = schema.validate(req[type], { convert: true });
     if (error) {
         return handleError(res, 400, "en", populateMessage(error));
     }
+    req[type] = value;
     next();
 };
 

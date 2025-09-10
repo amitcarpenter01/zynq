@@ -16,8 +16,8 @@ export const initiatePaymentSchema = Joi.object({
   doctor_id: stringValidation.optional(),
   address_id: stringValidation.optional(),
   payment_gateway: gatewayTypeValidation,
-  redirect_url : stringValidation.optional(),
-  cancel_url : stringValidation.optional(),
+  redirect_url: stringValidation.optional(),
+  cancel_url: stringValidation.optional(),
   currency: currencyValidation,
   metadata: Joi.object({
     type: Joi.string().valid('APPOINTMENT', 'TREATMENT', 'CART').required(),
@@ -48,3 +48,8 @@ export const addWalletAmountSchema = Joi.object({
   user_type: stringValidation.valid("DOCTOR", "CLINIC", "SOLO-DOCTOR"),
   amount: numberValidation
 })
+
+export const getPaymentHistorySchema = Joi.object({
+  page: numberValidation.optional().min(1).default(1),
+  limit: numberValidation.optional().min(1).default(10)
+}).optional()
