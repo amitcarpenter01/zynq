@@ -155,13 +155,14 @@ export const getSinglePurchasedProducts = asyncHandler(async (req, res) => {
 
 export const getPaymentHistory = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
+    const { page, limit } = req.query;
 
     const [
         purchases,
         appointments
     ] = await Promise.all([
-        getAdminPurchasedProductModel({ page: 1, limit: 10 }),
-        getAdminBookedAppointmentsModel({ page: 1, limit: 10 })
+        getAdminPurchasedProductModel({ page, limit }),
+        getAdminBookedAppointmentsModel({ page, limit })
     ])
 
     const data = {
