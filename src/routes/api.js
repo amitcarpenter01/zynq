@@ -209,7 +209,7 @@ router.post('/mark-appointment-paid', authenticateUser, appointmentController.ma
 
 router.post('/send-face-result', authenticateUser, validate(sendFaceResultToEmailSchema, "body"), faceScanControllers.sendFaceResultToEmail);
 
-router.post('/get-all-faqs', authenticateUser, validate(getAllFAQSchema, "body"), getAllFAQs);
+router.post('/get-all-faqs', optionalAuthenticateUser, validate(getAllFAQSchema, "body"), getAllFAQs);
 
 router.get('/faq-categories', getAllFAQCategories);
 

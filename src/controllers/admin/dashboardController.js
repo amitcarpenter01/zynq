@@ -1,4 +1,4 @@
-import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel, getAdminCommissionRatesModel, updateAdminCommissionRatesModel, getSingleAdminPurchasedProductModel, getSingleAdminCartProductModel, get_admin_earning, addWalletAmountModel, updateRatingStatusModel } from '../../models/admin.js';
+import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel, getAdminCommissionRatesModel, updateAdminCommissionRatesModel, getSingleAdminPurchasedProductModel, getSingleAdminCartProductModel, get_admin_earning, addWalletAmountModel, updateRatingStatusModel, updateOrderModel } from '../../models/admin.js';
 import { get_product_images_by_product_ids } from '../../models/api.js';
 import { getClinicDoctorWallets } from '../../models/payment.js';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
