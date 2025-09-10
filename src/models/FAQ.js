@@ -1,45 +1,50 @@
 import db from "../config/db.js";
 
 export const getAllFAQsModel = async (filters = {}) => {
-    try {
-        const { search, category } = filters;
-        let query = `
-        SELECT f.*, fc.english AS category, fc.swedish, fc.faq_category_id
-        FROM tbl_faqs f
-        LEFT JOIN tbl_faq_categories fc ON f.category = fc.faq_category_id
-        `;
-        const params = [];
+  try {
+    const { search, category } = filters;
+    let query = `
+      SELECT 
+        f.*,
+        fc.english AS category,
+        fc.swedish,
+        fc.faq_category_id
+      FROM tbl_faqs f
+      LEFT JOIN tbl_faq_categories fc 
+        ON f.category = fc.faq_category_id
+    `;
 
-        const whereClauses = [];
+    const params = [];
+    const whereClauses = [];
 
-        // Free text search on 4 columns
-        if (search) {
-            whereClauses.push(
-                '(ques_en LIKE ? OR ans_en LIKE ? OR ques_sv LIKE ? OR ans_sv LIKE ?)'
-            );
-            const likeSearch = `%${search}%`;
-            params.push(likeSearch, likeSearch, likeSearch, likeSearch);
-        }
-
-        // Hard match on category
-        if (category) {
-            const normalizedCategory = normalizedCategory(category)
-            whereClauses.push('category = ?');
-            params.push(normalizedCategory);
-        }
-
-        // Combine WHERE clauses
-        if (whereClauses.length > 0) {
-            query += ' WHERE ' + whereClauses.join(' AND ');
-        }
-
-        query += ' ORDER BY created_at DESC'; // optional, latest first
-
-        return await db.query(query, params);
-    } catch (error) {
-        console.error("Failed to get all FAQs:", error);
-        throw error;
+    // 🔍 Free text search on 4 columns
+    if (search) {
+      whereClauses.push(
+        '(f.ques_en LIKE ? OR f.ans_en LIKE ? OR f.ques_sv LIKE ? OR f.ans_sv LIKE ?)'
+      );
+      const likeSearch = `%${search}%`;
+      params.push(likeSearch, likeSearch, likeSearch, likeSearch);
     }
+
+    // 🎯 Filter by multiple category IDs
+    if (Array.isArray(category) && category.length > 0) {
+      const placeholders = category.map(() => '?').join(', ');
+      whereClauses.push(`f.category IN (${placeholders})`);
+      params.push(...category);
+    }
+
+    // 🧩 Combine WHERE clauses
+    if (whereClauses.length > 0) {
+      query += ' WHERE ' + whereClauses.join(' AND ');
+    }
+
+    query += ' ORDER BY f.created_at DESC';
+
+    return await db.query(query, params);
+  } catch (error) {
+    console.error('Failed to get all FAQs:', error);
+    throw error;
+  }
 };
 
 
