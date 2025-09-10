@@ -758,6 +758,7 @@ export const getAdminBookedAppointmentsModel = async () => {
           d.name AS doctor_name,
           zu.email AS doctor_email,
           c.clinic_name,
+          r.role,
           u.full_name AS user_name,
           u.mobile_number AS user_mobile,
           
@@ -790,6 +791,8 @@ export const getAdminBookedAppointmentsModel = async () => {
         LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
         LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
         LEFT JOIN tbl_users u ON u.user_id = a.user_id
+        LEFT JOIN tbl_zqnq_users zu2 ON zu2.id = d.zynq_user_id
+        LEFT JOIN tbl_roles r ON zu2.role_id = r.id
         WHERE a.save_type = 'booked' AND a.total_price > 0 And a.payment_status != 'unpaid'
         ORDER BY a.created_at DESC;
     `;
@@ -846,10 +849,15 @@ export const getAdminPurchasedProductModel = async () => {
                 u.full_name AS user_name,
                 u.email AS user_email,
                 u.mobile_number,
-                a.address
+                a.address,
+                r.role
             FROM tbl_product_purchase pp
             LEFT JOIN tbl_users u ON pp.user_id = u.user_id
             LEFT JOIN tbl_address a ON pp.address_id = a.address_id
+            LEFT JOIN tbl_carts c ON pp.cart_id = c.cart_id
+            LEFT JOIN tbl_clinics cl ON c.clinic_id = cl.clinic_id
+            LEFT JOIN tbl_zqnq_users zu ON cl.zynq_user_id = zu.id
+            LEFT JOIN tbl_roles r ON zu.role_id = r.id
             ORDER BY pp.created_at DESC
         `);
 
@@ -952,6 +960,7 @@ export const getAdminPurchasedProductModel = async () => {
                 commission_percentage: commission_percentage.toFixed(2), // ✅ Added
                 address: row.address,
                 shipment_status: row.shipment_status,
+                role : row.role,
                 clinic,
                 user,
                 products: enrichedProducts,
