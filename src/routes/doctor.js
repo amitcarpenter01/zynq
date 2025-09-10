@@ -9,6 +9,8 @@ import * as appointmentControllers from "../controllers/doctor/appointmentContro
 import { validate } from '../middleware/validation.middleware.js';
 import { getSinglePatientRecordSchema, rescheduleAppointmentSchema } from '../validations/appointment.validation.js';
 import { getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
+import { getAllFAQSchema } from '../validations/faq.validation.js';
+import { getAllFAQs } from '../controllers/api/FAQController.js';
 
 
 router.get("/get_profile", authenticate(['DOCTOR']), doctorController.getDoctorProfile);
@@ -124,5 +126,7 @@ router.get('/payments/get-purchased-products', authenticate(['CLINIC', 'SOLO_DOC
 router.get('/payments/get-purchased-products/:purchase_id', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(getSinglePurchasedProductSchema, "params"), doctorController.getSingleClinicPurchasedProducts);
 
 router.get('/earnings', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), doctorController.getEarnings);
+
+router.post('/get-all-faqs', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(getAllFAQSchema, "body"), getAllFAQs);
 
 export default router;
