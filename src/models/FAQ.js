@@ -19,8 +19,9 @@ export const getAllFAQsModel = async (filters = {}) => {
 
         // Hard match on category
         if (category) {
+            const normalizedCategory = normalizedCategory(category)
             whereClauses.push('category = ?');
-            params.push(category);
+            params.push(normalizedCategory);
         }
 
         // Combine WHERE clauses

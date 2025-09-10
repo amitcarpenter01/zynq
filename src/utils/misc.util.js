@@ -1,3 +1,4 @@
+import configs from "../config/config.js";
 import db from "../config/db.js";
 import { isEmpty } from "./user_helper.js";
 import { translate } from "@vitalets/google-translate-api";
@@ -143,4 +144,15 @@ export async function translateFAQ(question, answer) {
         console.error("Translation failed:", err);
         return { ques_en: question, ans_en: answer, ques_sv: null, ans_sv: null };
     }
+}
+
+export function normalizeCategory(inputCategory) {
+    if (!inputCategory) return null;
+
+    const match = configs.faq_categories.find(
+        cat => cat.en === inputCategory || cat.sv === inputCategory
+    );
+
+    // Always return English (since DB stores English)
+    return match ? match.en : null;
 }
