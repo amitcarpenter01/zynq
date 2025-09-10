@@ -863,6 +863,7 @@ export const getAdminPurchasedProductModel = async ({ page, limit } = {}) => {
                 pp.purchase_id,
                 pp.cart_id,
                 pp.product_details, 
+                pp.wallet_paid,
                 pp.total_price,
                 pp.admin_earnings,
                 pp.clinic_earnings,
@@ -911,9 +912,9 @@ export const getAdminPurchasedProductModel = async ({ page, limit } = {}) => {
 
         const productRows = allProductIds.size
             ? await db.query(
-                  `SELECT * FROM tbl_products WHERE product_id IN (?)`,
-                  [[...allProductIds]]
-              )
+                `SELECT * FROM tbl_products WHERE product_id IN (?)`,
+                [[...allProductIds]]
+            )
             : [];
         const productInfoMap = productRows.reduce((map, p) => {
             map[p.product_id] = p;
@@ -923,10 +924,10 @@ export const getAdminPurchasedProductModel = async ({ page, limit } = {}) => {
         const allClinicIds = [...new Set(productRows.map(p => p.clinic_id).filter(Boolean))];
         const clinicRows = allClinicIds.length
             ? await db.query(
-                  `SELECT clinic_id, clinic_name, address, clinic_logo 
+                `SELECT clinic_id, clinic_name, address, clinic_logo 
                    FROM tbl_clinics WHERE clinic_id IN (?)`,
-                  [allClinicIds]
-              )
+                [allClinicIds]
+            )
             : [];
         const clinicMap = clinicRows.reduce((map, c) => {
             map[c.clinic_id] = c;
@@ -983,7 +984,8 @@ export const getAdminPurchasedProductModel = async ({ page, limit } = {}) => {
                 purchase_id: row.purchase_id,
                 purchase_type: "PRODUCT",
                 cart_id: row.cart_id,
-                doctor_id : row.doctor_id,
+                doctor_id: row.doctor_id,
+                wallet_paid: row.wallet_paid,
                 purchase_date: row.purchase_date,
                 shipped_date: row.shipped_date || null,
                 delivered_date: row.delivered_date || null,
