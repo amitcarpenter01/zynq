@@ -2,8 +2,8 @@ import Joi from "joi";
 import {
   stringValidation,
   booleanValidation,
+  idArrayValidation
 } from "../utils/joi.util.js";
-import configs from "../config/config.js";
 
 export const getSingleFAQSchema = Joi.object({
   faq_id: stringValidation,
@@ -25,7 +25,7 @@ export const addEditFAQSchema = Joi.object({
 
 export const getAllFAQSchema = Joi.object({
   filters: Joi.object({
-    category: stringValidation.optional(),
+    category: idArrayValidation.optional(),
     search: stringValidation.optional(),
   }).optional(),
 })
