@@ -362,7 +362,7 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
     const [
         allCertificates, allEducation, allExperience,
         allSkinTypes, allTreatments, allSkinCondition,
-        allSurgery, allAstheticDevices
+        allSurgery, allAstheticDevices, allRatings
     ] = await Promise.all([
         clinicModels.getDoctorCertificationsBulk([doctor_id]),
         clinicModels.getDoctorEducationBulk([doctor_id]),
@@ -371,7 +371,8 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         clinicModels.getDoctorTreatmentsBulk([doctor_id]),
         clinicModels.getDoctorSkinConditionBulk([doctor_id]),
         clinicModels.getDoctorSurgeryBulk([doctor_id]),
-        clinicModels.getDoctorAstheticDevicesBulk([doctor_id])
+        clinicModels.getDoctorAstheticDevicesBulk([doctor_id]),
+        clinicModels.getDoctorRatings([doctor_id])
     ]);
 
     const chat = await getChatBetweenUsers(user_id, doctor.zynq_user_id);
@@ -386,6 +387,7 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
     const processedDoctor = {
         ...doctor,
         chatId: chat?.[0]?.id || null,
+        ratings : allRatings || [],
         treatments: formatBenefitsOnLang(allTreatments[doctor_id],'en') || [],
         skin_types: allSkinTypes[doctor_id] || [],
         allSkinCondition: allSkinCondition[doctor_id] || [],
