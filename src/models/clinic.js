@@ -1689,6 +1689,17 @@ export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
     return grouped;
 };
 
+export const getDoctorRatings = async (doctorId) => {
+  try {
+    const query = `SELECT * FROM tbl_appointment_ratings WHERE doctor_id = ? ORDER BY created_at DESC`;
+    const results = await db.query(query, [doctorId]);
+    return results;
+  } catch (error) {
+    console.error("Database Error:", error.message);
+    throw new Error("Failed to fetch doctor ratings.");
+  }
+}
+
 export const getDoctorAvailabilityBulk = async (doctorIds) => {
     try {
         const placeholders = doctorIds.map(() => '?').join(',');
