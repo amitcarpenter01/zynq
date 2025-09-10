@@ -1290,6 +1290,31 @@ export const addWalletAmountModel = async (user_id, user_type, amount) => {
     }
 };
 
+export const updateOrderModel = async (order_type, order_id) => {
+    try {
+        if (order_type === "APPOINTMENT") {
+            await db.query(
+                `UPDATE tbl_appointments 
+                SET wallet_paid = 1
+                WHERE appointment_id = ?`,
+                [order_id]
+            )
+        }
+        if (order_type === "PURCHASE") {
+            await db.query(
+                `UPDATE tbl_product_purchase
+                SET wallet_paid = 1
+                WHERE purchase_id = ?
+                `, [order_id]
+            )
+        }
+
+    } catch (error) {
+        console.error(" error:", error);
+        throw error;
+    }
+}
+
 export const updateRatingStatusModel = async (appointment_rating_id, approval_status) => {
     try {
         await db.query(
