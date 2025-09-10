@@ -876,6 +876,7 @@ export const getAdminPurchasedProductModel = async ({ page, limit } = {}) => {
                 u.mobile_number,
                 a.address,
                 r.role,
+                d.doctor_id,
                 COUNT(*) OVER() AS total_count
             FROM tbl_product_purchase pp
             LEFT JOIN tbl_users u ON pp.user_id = u.user_id
@@ -883,6 +884,7 @@ export const getAdminPurchasedProductModel = async ({ page, limit } = {}) => {
             LEFT JOIN tbl_carts c ON pp.cart_id = c.cart_id
             LEFT JOIN tbl_clinics cl ON c.clinic_id = cl.clinic_id
             LEFT JOIN tbl_zqnq_users zu ON cl.zynq_user_id = zu.id
+            LEFT JOIN tbl_doctors d ON d.zynq_user_id = zu.id
             LEFT JOIN tbl_roles r ON zu.role_id = r.id
             ORDER BY pp.created_at DESC
         `;
@@ -981,6 +983,7 @@ export const getAdminPurchasedProductModel = async ({ page, limit } = {}) => {
                 purchase_id: row.purchase_id,
                 purchase_type: "PRODUCT",
                 cart_id: row.cart_id,
+                doctor_id : row.doctor_id,
                 purchase_date: row.purchase_date,
                 shipped_date: row.shipped_date || null,
                 delivered_date: row.delivered_date || null,
