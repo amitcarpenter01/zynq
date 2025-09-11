@@ -1268,6 +1268,7 @@ export const getTreatmentsOfProductsBulk = async (productIds) => {
 
 export const addWalletAmountModel = async (user_id, user_type, amount) => {
     try {
+        let wallet_id = null;
         // Check if wallet exists
         const [wallet] = await db.query(
             `SELECT wallet_id, amount 
@@ -1283,6 +1284,17 @@ export const addWalletAmountModel = async (user_id, user_type, amount) => {
                 VALUES (?, ?, ?)`,
                 [user_id, user_type, amount]
             );
+
+            const [newWallet] = await db.query(
+                `SELECT wallet_id, amount 
+                FROM zynq_users_wallets 
+                WHERE user_id = ? AND user_type = ? 
+                LIMIT 1`,
+                [user_id, user_type]
+            );
+
+            wallet_id = newWallet.wallet_id;
+
         } else {
             const newAmount = parseFloat(wallet.amount) + parseFloat(amount);
             await db.query(
@@ -1291,13 +1303,29 @@ export const addWalletAmountModel = async (user_id, user_type, amount) => {
                 WHERE wallet_id = ?`,
                 [newAmount, wallet.wallet_id]
             );
+            wallet_id = wallet.wallet_id;
         }
+
+        return wallet_id;
 
     } catch (error) {
         console.error("addWalletAmountModel error:", error);
         throw error;
     }
 };
+
+export const updateWalletHistoryModel = async (wallet_id, amount) => {
+    try {
+        await db.query(
+            `INSERT INTO zynq_user_wallet_history (wallet_id, amount) 
+            VALUES (?, ?)`,
+            [wallet_id, amount]
+        );
+    } catch (error) {
+        console.error("updateWalletHistoryModel error:", error);
+        throw error;
+    }
+}
 
 export const updateOrderModel = async (order_type, order_id) => {
     try {
