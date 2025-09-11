@@ -265,7 +265,7 @@ export const addWalletAmount = asyncHandler(async (req, res) => {
     const wallet_id = await addWalletAmountModel(user_id, user_type, amount);
 
     handleSuccess(res, 200, language, "WALLET_AMOUNT_ADDED",);
-    await updateWalletHistoryModel(wallet_id, amount)
+    await updateWalletHistoryModel(wallet_id, amount, order_type, order_id);
     await updateOrderModel(order_type, order_id);
 })
 

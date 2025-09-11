@@ -1339,12 +1339,12 @@ export const addWalletAmountModel = async (user_id, user_type, amount) => {
     }
 };
 
-export const updateWalletHistoryModel = async (wallet_id, amount) => {
+export const updateWalletHistoryModel = async (wallet_id, amount, order_type, order_id) => {
     try {
         await db.query(
-            `INSERT INTO zynq_user_wallet_history (wallet_id, amount) 
-            VALUES (?, ?)`,
-            [wallet_id, amount]
+            `INSERT INTO zynq_user_wallet_history (wallet_id, amount, order_type, order_id) 
+            VALUES (?, ?, ?, ?)`,
+            [wallet_id, amount, order_type, order_id]
         );
     } catch (error) {
         console.error("updateWalletHistoryModel error:", error);
