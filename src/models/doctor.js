@@ -1074,6 +1074,30 @@ export const getDashboardData = async (userData) => {
     }
 };
 
+export const getWalletHistoryModel = async (userData) => {
+    try {
+        const { user_id, role: user_type } = extractUserData(userData);
+
+        const query = `
+            SELECT 
+                h.*
+            FROM zynq_users_wallets AS w
+            LEFT JOIN zynq_user_wallet_history AS h
+                ON w.wallet_id = h.wallet_id
+            WHERE w.user_id = ? 
+              AND w.user_type = ?
+            ORDER BY h.created_at DESC
+        `;
+
+        return await db.query(query, [user_id, user_type]);
+
+    } catch (error) {
+        console.error("Database Error (getWalletHistoryModel):", error.message);
+        throw new Error("Failed to fetch wallet history.");
+    }
+};
+
+
 const APP_URL = process.env.APP_URL
 
 export const getClinicPurchasedProductModel = async (clinic_id) => {
