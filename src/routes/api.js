@@ -22,7 +22,7 @@ import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 
 //==================================== Import Validations ==============================
 import { rescheduleAppointmentSchema, rateAppointmentSchema } from '../validations/appointment.validation.js';
-import { getSingleDoctorSchema, getAllDoctorsSchema, requestCallbackSchema } from '../validations/doctor.validation.js';
+import { getSingleDoctorSchema, getAllDoctorsSchema, requestCallbackSchema, getSingleDoctorRatingsSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema, getSingleClinicSchema } from '../validations/clinic.validation.js';
 import { getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema, getTreatmentsSchema, sendFaceResultToEmailSchema } from '../validations/treatment.validation.js';
 import { deleteNotifications, deleteSingleNotification, getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
@@ -84,7 +84,9 @@ router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_f
 // router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors);
 router.post("/get-all-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_all_doctors_in_app_side);
 router.post("/get-recommended-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
+router.get("/doctor/get/ratings/:doctor_id", authenticateUser, validate(getSingleDoctorRatingsSchema, "params"), doctorControllers.getSingleDoctorRatings);
 router.get("/doctor/get/:clinic_id/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
+
 // //==================================== Product ==============================
 router.post("/get-all-products", optionalAuthenticateUser, validate(getAllProductsSchema, "body"), productControllers.getAllProducts);
 router.get("/product/:product_id", optionalAuthenticateUser, validate(getSingleProductSchema, "params"), productControllers.getSingleProduct);
