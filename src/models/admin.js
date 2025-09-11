@@ -1386,7 +1386,7 @@ export const updateRatingStatusModel = async (appointment_rating_id, approval_st
             [approval_status, appointment_rating_id]
         );
         return await db.query(
-            `SELECT user_id, appointment_id
+            `SELECT user_id, appointment_id, doctor_id
             FROM tbl_appointment_ratings 
             WHERE appointment_rating_id = ?`,
             [appointment_rating_id]

@@ -101,6 +101,10 @@ export const NOTIFICATION_MESSAGES = {
         title: 'Appointment Rating Rejected',
         getBody: () => `Your rating has been rejected.`
     },
+    doctor_review : {
+        title: 'New Review',
+        getBody: () => `You have a new review.`
+    },
     default: {
         title: (name) => `${name} Notification`,
         getBody: () => `You have a new notification.`
