@@ -62,13 +62,15 @@ export const addEditFAQ = asyncHandler(async (req, res) => {
     const { faq_id } = req.body;
     const data = await prepareFAQData(req.body);
 
+    const success_message = faq_id ? "FAQ_UPDATED_SUCCESSFULLY" : "FAQ_ADDED_SUCCESSFULLY";
+
     if (!faq_id) {
         await addFAQModel(data);
     } else {
         await updateFAQModel(faq_id, data);
     }
 
-    return handleSuccess(res, 200, language, "FAQ_UPDATED_SUCCESSFULLY");
+    return handleSuccess(res, 200, language, success_message);
 });
 
 

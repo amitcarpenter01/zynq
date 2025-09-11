@@ -383,12 +383,12 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
             clinic_image_id: img.clinic_image_id,
             url: formatImagePath(img.image_url, 'clinic/files'),
         }));
-   
+
     const processedDoctor = {
         ...doctor,
         chatId: chat?.[0]?.id || null,
-        ratings : allRatings || [],
-        treatments: formatBenefitsOnLang(allTreatments[doctor_id],'en') || [],
+        ratings: allRatings || [],
+        treatments: formatBenefitsOnLang(allTreatments[doctor_id], 'en') || [],
         skin_types: allSkinTypes[doctor_id] || [],
         allSkinCondition: allSkinCondition[doctor_id] || [],
         allSurgery: allSurgery[doctor_id] || [],

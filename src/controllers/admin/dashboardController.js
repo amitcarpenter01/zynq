@@ -272,9 +272,10 @@ export const updateRatingStatus = asyncHandler(async (req, res) => {
     const [{ user_id, appointment_id }] = await updateRatingStatusModel(appointment_rating_id, approval_status);
 
     const message_type = approval_status === "APPROVED" ? "appointment_rating_approved" : "appointment_rating_rejected";
+    const success_message = approval_status === "APPROVED" ? "RATING_APPROVED_SUCCESSFULLY" : "RATING_REJECTED_SUCCESSFULLY";
     const userData = req.user;
 
-    handleSuccess(res, 200, language, "RATING_STATUS_UPDATED", user_id);
+    handleSuccess(res, 200, language, success_message, user_id);
 
     await sendNotification({
         userData: userData,

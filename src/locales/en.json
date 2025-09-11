@@ -258,5 +258,8 @@
   "FAQ_FETCHED_SUCCESSFULLY": "FAQ Fetched Successfully",
   "FAQ_UPDATED_SUCCESSFULLY": "FAQ Updated Successfully",
   "FAQ_DELETED_SUCCESSFULLY": "FAQ Deleted Successfully",
-  "FAQ_CATEGORIES_FETCHED_SUCCESSFULLY" : "FAQ Categories Fetched Successfully"
+  "FAQ_CATEGORIES_FETCHED_SUCCESSFULLY": "FAQ Categories Fetched Successfully",
+  "FAQ_ADDED_SUCCESSFULLY": "FAQ Added Successfully",
+  "RATING_APPROVED_SUCCESSFULLY": "Rating Approved Successfully",
+  "RATING_REJECTED_SUCCESSFULLY": "Rating Rejected Successfully"
 }
