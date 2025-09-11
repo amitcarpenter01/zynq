@@ -1692,10 +1692,11 @@ export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
 export const getDoctorRatings = async (doctorId) => {
   try {
     const query = `
-    SELECT * 
-    FROM tbl_appointment_ratings 
-    WHERE doctor_id = ? AND approval_status = 'APPROVED'
-    ORDER BY created_at DESC`;
+    SELECT ar.*, u.full_name
+    FROM tbl_appointment_ratings ar
+    LEFT JOIN tbl_users u ON ar.user_id = u.user_id
+    WHERE ar.doctor_id = ? AND ar.approval_status = 'APPROVED'
+    ORDER BY ar.created_at DESC`;
     const results = await db.query(query, [doctorId]);
     return results;
   } catch (error) {
