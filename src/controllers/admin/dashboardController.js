@@ -263,29 +263,46 @@ export const addWalletAmount = asyncHandler(async (req, res) => {
     const { user_id, user_type, amount, order_type, order_id } = req.body;
 
     const wallet_id = await addWalletAmountModel(user_id, user_type, amount);
-    
+
     handleSuccess(res, 200, language, "WALLET_AMOUNT_ADDED",);
-    await updateWalletHistoryModel(wallet_id, amount)
+    await updateWalletHistoryModel(wallet_id, amount, order_type, order_id);
     await updateOrderModel(order_type, order_id);
 })
 
 export const updateRatingStatus = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
     const { appointment_rating_id, approval_status } = req.body;
-    const [{ user_id, appointment_id }] = await updateRatingStatusModel(appointment_rating_id, approval_status);
+
+    const [{ user_id, appointment_id, doctor_id }] = await updateRatingStatusModel(appointment_rating_id, approval_status);
 
     const message_type = approval_status === "APPROVED" ? "appointment_rating_approved" : "appointment_rating_rejected";
     const success_message = approval_status === "APPROVED" ? "RATING_APPROVED_SUCCESSFULLY" : "RATING_REJECTED_SUCCESSFULLY";
     const userData = req.user;
 
-    handleSuccess(res, 200, language, success_message, user_id);
+    const notifications = [
+        sendNotification({
+            userData,
+            type: "REVIEW",
+            type_id: doctor_id,
+            notification_type: NOTIFICATION_MESSAGES[message_type],
+            receiver_id: user_id,
+            receiver_type: "USER"
+        })
+    ];
 
-    await sendNotification({
-        userData: userData,
-        type: "APPOINTMENT",
-        type_id: appointment_id,
-        notification_type: NOTIFICATION_MESSAGES[message_type],
-        receiver_id: user_id,
-        receiver_type: "USER"
-    })
-})
+    if (approval_status === "APPROVED") {
+        notifications.push(
+            sendNotification({
+                userData,
+                type: "REVIEW",
+                type_id: user_id,
+                notification_type: NOTIFICATION_MESSAGES.doctor_review,
+                receiver_id: doctor_id,
+                receiver_type: "DOCTOR"
+            })
+        );
+    }
+
+    handleSuccess(res, 200, language, success_message,);
+    await Promise.all(notifications);
+});
