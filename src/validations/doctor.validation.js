@@ -12,6 +12,10 @@ export const getSingleDoctorSchema = joi.object({
   clinic_id: stringValidation
 });
 
+export const getSingleDoctorRatingsSchema = joi.object({
+  doctor_id: stringValidation,
+});
+
 export const getAllDoctorsSchema = joi.object({
   filters: joi.object({
     treatment_ids: idArrayValidation.optional(),

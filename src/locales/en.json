@@ -261,5 +261,6 @@
   "FAQ_CATEGORIES_FETCHED_SUCCESSFULLY": "FAQ Categories Fetched Successfully",
   "FAQ_ADDED_SUCCESSFULLY": "FAQ Added Successfully",
   "RATING_APPROVED_SUCCESSFULLY": "Rating Approved Successfully",
-  "RATING_REJECTED_SUCCESSFULLY": "Rating Rejected Successfully"
+  "RATING_REJECTED_SUCCESSFULLY": "Rating Rejected Successfully",
+  "DOCTOR_RATINGS_FETCHED_SUCCESSFULLY" : "Expert Ratings Fetched Successfully"
 }

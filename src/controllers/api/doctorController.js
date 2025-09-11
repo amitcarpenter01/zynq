@@ -417,6 +417,15 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, 'en', "DOCTOR_FETCHED_SUCCESSFULLY", processedDoctor);
 });
 
+export const getSingleDoctorRatings = asyncHandler(async (req, res) => {
+    const { doctor_id } = req.params;
+    const lang = req?.user?.language || "en";
+
+    const allRatings = await clinicModels.getDoctorRatings(doctor_id)
+
+    return handleSuccess(res, 200, lang, "DOCTOR_RATINGS_FETCHED_SUCCESSFULLY", allRatings);
+});
+
 
 export const search_home_entities = asyncHandler(async (req, res) => {
     const { language = 'en' } = req.user || {};
