@@ -128,6 +128,6 @@ router.post('/faq', authenticateAdmin, validate(addEditFAQSchema, 'body'), addEd
 router.post('/faq/get-all-faqs', authenticateAdmin, validate(getAllFAQSchema, "body"), getAllFAQs);
 router.get('/faq/:faq_id', authenticateAdmin, validate(getSingleFAQSchema, 'params'), getSingleFAQ);
 router.delete('/faq/:faq_id', authenticateAdmin, validate(getSingleFAQSchema, 'params'), deleteFAQ);
-router.get('/faq-categories', getAllFAQCategories);
+router.get('/faq-categories', authenticateAdmin, getAllFAQCategories);
 
 export default router;
