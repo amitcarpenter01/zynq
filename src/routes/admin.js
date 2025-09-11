@@ -57,6 +57,7 @@ router.get('/get-dcotors-managment', doctorControllers.get_doctors_management);
 
 //==================================== Product Managment ==============================
 router.get('/get-products-managment', productControllers.get_products_managment);
+router.get('/get-products-managment/:product_id', productControllers.get_single_products_managment);
 router.post('/delete-products-managment', productControllers.delete_products_managment);
 
 
@@ -71,6 +72,7 @@ router.get('/call-logs', authenticateAdmin, authControllers.get_all_call_logs);
 //==================================== Appointments ==============================
 
 router.get('/getAllappointments', authenticateAdmin, authControllers.get_all_appointments);
+router.get('/getAllappointments/:appointment_id', authenticateAdmin, authControllers.get_single_all_appointments);
 
 //==============================Enrollememt ===============================
 

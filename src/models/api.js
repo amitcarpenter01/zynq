@@ -1073,6 +1073,61 @@ export const get_all_appointments = async () => {
     }
 };
 
+export const get_single_appointments = async (appointment_id) => {
+    try {
+        const result = await db.query(`
+            SELECT
+                a.appointment_id,
+                a.start_time,
+                a.end_time,
+                a.type,
+                a.status,
+ 
+                u.user_id AS user_id,
+                u.full_name AS user_name,
+                u.mobile_number AS user_mobile,
+                u.email AS email,
+                u.age AS age,
+                u.gender AS gender,
+                u.profile_image AS user_profile_image,
+ 
+                d.doctor_id AS doctor_id,
+                d.name AS doctor_name,
+                d.age AS age,
+                d.address,
+                d.biography,
+                d.profile_image AS doctor_image,
+                d.experience_years,
+                IFNULL(ar.rating, 0) AS rating,
+                d.phone,
+                d.fee_per_session,
+ 
+                c.clinic_id AS clinic_id,
+                c.clinic_name,
+                c.email AS clinic_email,
+                c.mobile_number AS clinic_mobile,
+                c.address,
+
+                fcr.face_scan_result_id,
+                fcr.pdf
+ 
+            FROM tbl_appointments a
+            LEFT JOIN tbl_users u ON a.user_id = u.user_id
+            LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+            LEFT JOIN tbl_clinics c ON a.clinic_id = c.clinic_id
+            LEFT JOIN tbl_face_scan_results fcr ON fcr.face_scan_result_id = a.report_id
+            LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id
+            WHERE a.payment_status != 'unpaid' AND a.appointment_id = ?
+            ORDER BY a.created_at DESC
+        ` , [appointment_id]);
+
+        return Array.isArray(result) ? result : result;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch appointments");
+    }
+};
+
 
 export const fetchZynqUserByUserId = async (user_id) => {
     try {
