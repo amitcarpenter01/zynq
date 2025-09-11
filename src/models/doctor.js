@@ -3,6 +3,7 @@ import { get_web_user_by_id } from "./web_user.js";
 import { extractUserData } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
 import { get_product_images_by_product_ids } from "./api.js";
+import { getBookedAppointmentsModelForIds, getPurchasedProductModelForIds } from "./admin.js";
 
 
 export const get_doctor_by_zynquser_id = async (zynqUserId) => {
@@ -1075,27 +1076,75 @@ export const getDashboardData = async (userData) => {
 };
 
 export const getWalletHistoryModel = async (userData) => {
-    try {
-        const { user_id, role: user_type } = extractUserData(userData);
+  try {
+    const { user_id, role: user_type } = extractUserData(userData);
 
-        const query = `
-            SELECT 
-                h.*
-            FROM zynq_users_wallets AS w
-            LEFT JOIN zynq_user_wallet_history AS h
-                ON w.wallet_id = h.wallet_id
-            WHERE w.user_id = ? 
-              AND w.user_type = ?
-            ORDER BY h.created_at DESC
-        `;
+    // 1️⃣ Get raw wallet history
+    const query = `
+        SELECT h.*
+        FROM zynq_users_wallets AS w
+        LEFT JOIN zynq_user_wallet_history AS h
+            ON w.wallet_id = h.wallet_id
+        WHERE w.user_id = ?
+          AND w.user_type = ?
+        ORDER BY h.created_at DESC
+    `;
+    const history = await db.query(query, [user_id, user_type]);
+    if (!history.length) return [];
 
-        return await db.query(query, [user_id, user_type]);
+    // 2️⃣ Collect ids by type
+    const appointmentIds = [];
+    const purchaseIds = [];
 
-    } catch (error) {
-        console.error("Database Error (getWalletHistoryModel):", error.message);
-        throw new Error("Failed to fetch wallet history.");
-    }
+    history.forEach((item) => {
+      if (item.order_type === "APPOINTMENT" && item.order_id) {
+        appointmentIds.push(item.order_id);
+      } else if (item.order_type === "PURCHASE" && item.order_id) {
+        purchaseIds.push(item.order_id);
+      }
+    });
+
+    // 3️⃣ Fetch details only if we have ids
+    const [appointments, purchases] = await Promise.all([
+      appointmentIds.length
+        ? getBookedAppointmentsModelForIds({ appointmentIds })
+        : [],
+      purchaseIds.length
+        ? getPurchasedProductModelForIds({ purchaseIds })
+        : [],
+    ]);
+
+    // 4️⃣ Map for fast lookup
+    const appointmentMap = appointments.reduce((acc, appt) => {
+      acc[appt.appointment_id] = appt;
+      return acc;
+    }, {});
+    const purchaseMap = purchases.reduce((acc, pur) => {
+      acc[pur.purchase_id] = pur;
+      return acc;
+    }, {});
+
+    // 5️⃣ Enrich history
+    const enrichedHistory = history.map((item) => {
+      let details = null;
+      if (item.order_type === "APPOINTMENT") {
+        details = appointmentMap[item.order_id] || null;
+      } else if (item.order_type === "PURCHASE") {
+        details = purchaseMap[item.order_id] || null;
+      }
+      return {
+        ...item,
+        details, // unified key for either appointment or purchase
+      };
+    });
+
+    return enrichedHistory;
+  } catch (error) {
+    console.error("Database Error (getWalletHistoryModel):", error.message);
+    throw new Error("Failed to fetch wallet history.");
+  }
 };
+
 
 
 const APP_URL = process.env.APP_URL

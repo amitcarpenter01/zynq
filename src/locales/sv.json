@@ -254,6 +254,7 @@
   "FAQ_ADDED_SUCCESSFULLY": "FAQ tillagd",
   "RATING_APPROVED_SUCCESSFULLY": "Betyg godkännt",
   "RATING_REJECTED_SUCCESSFULLY": "Betyg avvisad",
-  "DOCTOR_RATINGS_FETCHED_SUCCESSFULLY" : "Experts betyg hittades",
-  "WALLET_HISTORY_FETCHED" : "Wallet historia hittades"
+  "DOCTOR_RATINGS_FETCHED_SUCCESSFULLY": "Experts betyg hittades",
+  "WALLET_HISTORY_FETCHED": "Wallet historia hittades",
+  "WALLET_AMOUNT_ALREADY_ADDED": "Belopp tillagd redan"
 }

@@ -1,4 +1,4 @@
-import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel, getAdminCommissionRatesModel, updateAdminCommissionRatesModel, getSingleAdminPurchasedProductModel, getSingleAdminCartProductModel, get_admin_earning, addWalletAmountModel, updateRatingStatusModel, updateOrderModel, updateWalletHistoryModel } from '../../models/admin.js';
+import { get_clinics, get_doctors, get_users, get_latest_clinic, getAdminBookedAppointmentsModel, getAdminReviewsModel, getAdminPurchasedProductModel, getAdminCartProductModel, getAdminCommissionRatesModel, updateAdminCommissionRatesModel, getSingleAdminPurchasedProductModel, getSingleAdminCartProductModel, get_admin_earning, addWalletAmountModel, updateRatingStatusModel, updateOrderModel, updateWalletHistoryModel, checkExistingWalletHistoryModel } from '../../models/admin.js';
 import { get_product_images_by_product_ids } from '../../models/api.js';
 import { getClinicDoctorWallets } from '../../models/payment.js';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
@@ -261,7 +261,11 @@ export const updateAdminCommissionRates = asyncHandler(async (req, res) => {
 export const addWalletAmount = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
     const { user_id, user_type, amount, order_type, order_id } = req.body;
+    const [checkExistingWalletHistory] = await checkExistingWalletHistoryModel(order_type, order_id);
 
+    if (checkExistingWalletHistory) {
+        return handleError(res, 400, language, "WALLET_AMOUNT_ALREADY_ADDED");
+    }
     const wallet_id = await addWalletAmountModel(user_id, user_type, amount);
 
     handleSuccess(res, 200, language, "WALLET_AMOUNT_ADDED",);
