@@ -1102,6 +1102,12 @@ export const getDashboard = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language, 'DASHBOARD_DATA', dashboardData);
 })
 
+export const getWalletHistory = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'sv';
+    const walletHistory = await doctorModels.getWalletHistoryModel(req.user);
+    return handleSuccess(res, 200, language, 'WALLET_HISTORY_FETCHED', walletHistory);
+})
+
 export const getClinicPurchasedProducts = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
     const clinic_id = req.user.clinicData.clinic_id
