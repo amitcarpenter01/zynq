@@ -1397,3 +1397,258 @@ export const updateRatingStatusModel = async (appointment_rating_id, approval_st
         throw error;
     }
 }
+
+export const getPurchasedProductModelForIds = async ({
+  page,
+  limit,
+  purchaseIds = [],
+} = {}) => {
+  try {
+    // 1️⃣ If ids provided but empty => return []
+    if (Array.isArray(purchaseIds) && purchaseIds.length === 0) return [];
+
+    // 2️⃣ Base query
+    let purchaseQuery = `
+        SELECT 
+            pp.purchase_id,
+            pp.cart_id,
+            pp.product_details, 
+            pp.wallet_paid,
+            pp.total_price,
+            pp.admin_earnings,
+            pp.clinic_earnings,
+            pp.created_at AS purchase_date,
+            pp.shipped_date,
+            pp.delivered_date,
+            pp.shipment_status,
+            u.user_id,
+            u.full_name AS user_name,
+            u.email AS user_email,
+            u.mobile_number,
+            a.address,
+            r.role,
+            d.doctor_id,
+            COUNT(*) OVER() AS total_count
+        FROM tbl_product_purchase pp
+        LEFT JOIN tbl_users u ON pp.user_id = u.user_id
+        LEFT JOIN tbl_address a ON pp.address_id = a.address_id
+        LEFT JOIN tbl_carts c ON pp.cart_id = c.cart_id
+        LEFT JOIN tbl_clinics cl ON c.clinic_id = cl.clinic_id
+        LEFT JOIN tbl_zqnq_users zu ON cl.zynq_user_id = zu.id
+        LEFT JOIN tbl_doctors d ON d.zynq_user_id = zu.id
+        LEFT JOIN tbl_roles r ON zu.role_id = r.id
+    `;
+
+    // 3️⃣ Apply filter by IDs if provided
+    const whereClauses = [];
+    if (purchaseIds?.length) {
+      whereClauses.push(`pp.purchase_id IN (?)`);
+    }
+    if (whereClauses.length) {
+      purchaseQuery += ` WHERE ${whereClauses.join(" AND ")}`;
+    }
+
+    purchaseQuery += ` ORDER BY pp.created_at DESC`;
+
+    // 4️⃣ Pagination only if ids not passed
+    if (!purchaseIds?.length && page && limit) {
+      const offset = (page - 1) * limit;
+      purchaseQuery += ` LIMIT ${limit} OFFSET ${offset}`;
+    }
+
+    const purchaseRows = await db.query(purchaseQuery, purchaseIds?.length ? [purchaseIds] : []);
+
+    if (!purchaseRows.length) return [];
+
+    // === enrichment (same as your original code) ===
+    const allProductIds = new Set();
+    const parsedPurchases = purchaseRows.map(row => {
+      const products = Array.isArray(row.product_details)
+        ? row.product_details
+        : JSON.parse(row.product_details || "[]");
+      products.forEach(p => allProductIds.add(p.product_id));
+      return { ...row, products };
+    });
+
+    const productRows = allProductIds.size
+      ? await db.query(`SELECT * FROM tbl_products WHERE product_id IN (?)`, [[...allProductIds]])
+      : [];
+
+    const productInfoMap = productRows.reduce((map, p) => {
+      map[p.product_id] = p;
+      return map;
+    }, {});
+
+    const allClinicIds = [...new Set(productRows.map(p => p.clinic_id).filter(Boolean))];
+    const clinicRows = allClinicIds.length
+      ? await db.query(
+          `SELECT clinic_id, clinic_name, address, clinic_logo FROM tbl_clinics WHERE clinic_id IN (?)`,
+          [allClinicIds]
+        )
+      : [];
+    const clinicMap = clinicRows.reduce((map, c) => {
+      map[c.clinic_id] = c;
+      return map;
+    }, {});
+
+    const imageRows = allProductIds.size
+      ? await get_product_images_by_product_ids([...allProductIds])
+      : [];
+    const imagesMap = imageRows.reduce((map, row) => {
+      if (!map[row.product_id]) map[row.product_id] = [];
+      map[row.product_id].push(
+        row.image.startsWith("http") ? row.image : `${APP_URL}clinic/product_image/${row.image}`
+      );
+      return map;
+    }, {});
+
+    const treatmentsRows = allProductIds.size
+      ? await getTreatmentsOfProductsBulk([...allProductIds])
+      : [];
+    const treatmentsMap = treatmentsRows.reduce((map, t) => {
+      if (!map[t.product_id]) map[t.product_id] = [];
+      map[t.product_id].push(t);
+      return map;
+    }, {});
+
+    return parsedPurchases.map(row => {
+      const user = {
+        user_id: row.user_id,
+        name: row.user_name || null,
+        email: row.user_email || null,
+        mobile_number: row.mobile_number || null,
+      };
+
+      const enrichedProducts = row.products.map(p => {
+        const prodInfo = productInfoMap[p.product_id] || {};
+        return {
+          ...p,
+          ...prodInfo,
+          treatments: treatmentsMap[p.product_id] || [],
+          product_images: imagesMap[p.product_id] || [],
+        };
+      });
+
+      const clinic_id = enrichedProducts[0]?.clinic_id || null;
+      const clinic = clinicMap[clinic_id] || null;
+
+      const commission_percentage =
+        row.total_price > 0 ? (row.admin_earnings / row.total_price) * 100 : 0;
+
+      return {
+        purchase_id: row.purchase_id,
+        purchase_type: "PRODUCT",
+        cart_id: row.cart_id,
+        doctor_id: row.doctor_id,
+        wallet_paid: row.wallet_paid,
+        purchase_date: row.purchase_date,
+        shipped_date: row.shipped_date || null,
+        delivered_date: row.delivered_date || null,
+        total_price: row.total_price,
+        admin_earnings: row.admin_earnings,
+        clinic_earnings: row.clinic_earnings,
+        commission_percentage: commission_percentage.toFixed(2),
+        address: row.address,
+        shipment_status: row.shipment_status,
+        role: row.role,
+        clinic,
+        user,
+        products: enrichedProducts,
+        total_count: row.total_count,
+      };
+    });
+  } catch (error) {
+    console.error("Failed to fetch purchased product data:", error);
+    throw error;
+  }
+};
+
+export const getBookedAppointmentsModelForIds = async ({
+  page,
+  limit,
+  appointmentIds = [],
+} = {}) => {
+  try {
+    // 1️⃣ Early exit for empty ids
+    if (Array.isArray(appointmentIds) && appointmentIds.length === 0) return [];
+
+    let query = `
+        SELECT
+            a.*,
+            d.name AS doctor_name,
+            zu.email AS doctor_email,
+            c.clinic_name,
+            r.role,
+            u.full_name AS user_name,
+            u.mobile_number AS user_mobile,
+            CASE 
+                WHEN a.total_price > 0 
+                    THEN ROUND((a.admin_earnings / a.total_price) * 100, 2) 
+                ELSE 0 
+            END AS commission_percentage,
+            COALESCE(
+                (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'treatment_id', at.treatment_id,
+                            'treatment_name', t.name,
+                            'treatment_price', at.price
+                        )
+                    )
+                    FROM tbl_appointment_treatments at
+                    LEFT JOIN tbl_treatments t ON t.treatment_id = at.treatment_id
+                    WHERE at.appointment_id = a.appointment_id
+                      AND at.treatment_id IS NOT NULL
+                ),
+                JSON_ARRAY()
+            ) AS treatments,
+            COUNT(*) OVER() AS total_count
+        FROM tbl_appointments a
+        LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+        LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
+        LEFT JOIN tbl_users u ON u.user_id = a.user_id
+        LEFT JOIN tbl_zqnq_users zu2 ON zu2.id = d.zynq_user_id
+        LEFT JOIN tbl_roles r ON zu2.role_id = r.id
+        WHERE a.save_type = 'booked' 
+          AND a.total_price > 0 
+          AND a.payment_status != 'unpaid'
+    `;
+
+    // 2️⃣ Filter by ids if provided
+    if (appointmentIds?.length) {
+      query += ` AND a.appointment_id IN (?)`;
+    }
+
+    query += ` ORDER BY a.created_at DESC`;
+
+    // 3️⃣ Pagination only if ids not passed
+    if (!appointmentIds?.length && page && limit) {
+      const offset = (page - 1) * limit;
+      query += ` LIMIT ${limit} OFFSET ${offset}`;
+    }
+
+    const rows = await db.query(query, appointmentIds?.length ? [appointmentIds] : []);
+
+    if (!rows.length) return [];
+
+    return rows.map(r => ({ ...r, total_count: r.total_count }));
+  } catch (error) {
+    console.error("Failed to fetch booked appointments:", error);
+    throw error;
+  }
+};
+
+export const checkExistingWalletHistoryModel = async (order_type, order_id) => {
+    try {
+        return await db.query(
+            `SELECT * 
+            FROM zynq_user_wallet_history 
+            WHERE order_type = ? AND order_id = ?`,
+            [order_type, order_id]
+        );
+    } catch (error) {
+        console.error("checkExistingWalletHistoryModel error:", error);
+        throw error;
+    }
+}
