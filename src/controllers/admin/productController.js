@@ -36,7 +36,7 @@ export const get_single_products_managment = async (req, res) => {
         const products = await adminModels.get_single_product_management(product_id);
 
         if (!products || products.length === 0) {
-            return handleSuccess(res, 200, 'en', "No products found", { products: [] });
+            return handleSuccess(res, 200, 'en', "No products found", {});
         }
 
         const fullProductData = await Promise.all(
@@ -52,7 +52,7 @@ export const get_single_products_managment = async (req, res) => {
             })
         );
 
-        return handleSuccess(res, 200, 'en', "Fetch product management successfully", { Products: fullProductData });
+        return handleSuccess(res, 200, 'en', "Fetch product management successfully", fullProductData[0] );
     } catch (error) {
         console.error("internal E", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);

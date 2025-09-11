@@ -377,7 +377,7 @@ export const get_single_all_appointments = async (req, res) => {
         const appointments = await apiModels.get_single_appointments(appointment_id);
 
         if (!Array.isArray(appointments) || appointments.length === 0) {
-            return handleSuccess(res, 200, 'en', "No appointments found", { appointments: [] });
+            return handleSuccess(res, 200, 'en', "No appointments found", {});
         }
 
         const formatted = appointments.map(row => ({
@@ -426,8 +426,8 @@ export const get_single_all_appointments = async (req, res) => {
                 pdf: row.pdf ? process.env.APP_URL + row.pdf : null
             }
         }));
-
-        return handleSuccess(res, 200, 'en', "Appointments fetched successfully", formatted);
+        const data = formatted[0] || {};
+        return handleSuccess(res, 200, 'en', "Appointments fetched successfully", data);
     } catch (error) {
         console.error("❌ Error fetching appointments:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR " + error.message);
