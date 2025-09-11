@@ -847,16 +847,58 @@ export const getSoloDoctorByZynqUserId = async (zynq_user_id) => {
 export const getDoctorByDoctorID = async (doctor_id, clinic_id) => {
     try {
         const query = `
-            SELECT dcm.*, d.*, zu.email, cl.latitude, cl.longitude, c.clinic_name, c.clinic_logo
+            SELECT 
+                d.doctor_id, 
+                d.name, 
+                d.specialization, 
+                d.fee_per_session, 
+                d.phone, 
+                d.profile_image, 
+                IFNULL(ROUND(AVG(ar.rating), 2), 0) AS avg_rating, 
+                d.age, 
+                d.address, 
+                d.gender, 
+                d.experience_years, 
+                d.biography, 
+                d.profile_completion_percentage, 
+                zu.email, 
+                cl.latitude, 
+                cl.longitude, 
+                c.clinic_name, 
+                c.clinic_logo, 
+                c.clinic_id
             FROM tbl_doctor_clinic_map dcm
-            JOIN tbl_doctors d ON dcm.doctor_id = d.doctor_id
-            JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
-            JOIN tbl_clinic_locations cl ON cl.clinic_id = dcm.clinic_id
-            JOIN tbl_clinics c ON c.clinic_id = dcm.clinic_id
-            WHERE d.doctor_id = ? AND dcm.clinic_id = ? ORDER BY dcm.created_at DESC`;
+            LEFT JOIN tbl_doctors d ON dcm.doctor_id = d.doctor_id
+            LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+            LEFT JOIN tbl_clinic_locations cl ON cl.clinic_id = dcm.clinic_id
+            LEFT JOIN tbl_clinics c ON c.clinic_id = dcm.clinic_id
+            LEFT JOIN tbl_appointment_ratings ar 
+                ON d.doctor_id = ar.doctor_id 
+               AND dcm.clinic_id = ar.clinic_id 
+               AND ar.approval_status = 'APPROVED'
+            WHERE d.doctor_id = ? 
+              AND dcm.clinic_id = ? 
+            GROUP BY 
+                d.doctor_id, 
+                d.name, 
+                d.specialization, 
+                d.fee_per_session, 
+                d.phone, 
+                d.profile_image, 
+                d.age, 
+                d.address, 
+                d.gender, 
+                d.experience_years, 
+                d.biography, 
+                d.profile_completion_percentage, 
+                zu.email, 
+                cl.latitude, 
+                cl.longitude, 
+                c.clinic_name, 
+                c.clinic_logo, 
+                c.clinic_id`;
 
         const result = await db.query(query, [doctor_id, clinic_id]);
-
         return result;
     }
     catch (error) {
