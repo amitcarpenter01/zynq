@@ -1692,13 +1692,16 @@ export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
 export const getDoctorRatings = async (doctorId) => {
   try {
     const query = `
-    SELECT ar.*, u.full_name
+    SELECT ar.*, u.full_name, u.profile_image
     FROM tbl_appointment_ratings ar
     LEFT JOIN tbl_users u ON ar.user_id = u.user_id
     WHERE ar.doctor_id = ? AND ar.approval_status = 'APPROVED'
     ORDER BY ar.created_at DESC`;
     const results = await db.query(query, [doctorId]);
-    return results;
+    return results.map(row => ({
+      ...row,
+      profile_image: formatImagePath(row.profile_image, ''),
+    }));
   } catch (error) {
     console.error("Database Error:", error.message);
     throw new Error("Failed to fetch doctor ratings.");
