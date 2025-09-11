@@ -1033,125 +1033,150 @@ export const getAdminCartProductModel = async () => {
 };
 
 export const getSingleAdminPurchasedProductModel = async (purchase_id) => {
-    try {
-        const query = `
-      SELECT 
-        pp.purchase_id,
-        pp.cart_id,
-        pp.product_details, 
-        pp.total_price,
-        pp.created_at AS purchase_date,
-        pp.shipment_status,
-        u.user_id,
-        u.full_name AS user_name,
-        u.email AS user_email,
-        u.mobile_number,
-        a.address
+  try {
+    const baseQuery = `
+      SELECT
+          pp.purchase_id,
+          pp.cart_id,
+          pp.product_details,
+          pp.wallet_paid,
+          pp.total_price,
+          pp.admin_earnings,
+          pp.clinic_earnings,
+          pp.created_at AS purchase_date,
+          pp.shipped_date,
+          pp.delivered_date,
+          pp.shipment_status,
+          u.user_id,
+          u.full_name AS user_name,
+          u.email AS user_email,
+          u.mobile_number,
+          a.address,
+          r.role,
+          d.doctor_id
       FROM tbl_product_purchase pp
-      JOIN tbl_users u ON pp.user_id = u.user_id
-      LEFT JOIN tbl_address a ON pp.address_id = a.address_id
+      LEFT JOIN tbl_users u       ON pp.user_id = u.user_id
+      LEFT JOIN tbl_address a     ON pp.address_id = a.address_id
+      LEFT JOIN tbl_carts c       ON pp.cart_id = c.cart_id
+      LEFT JOIN tbl_clinics cl    ON c.clinic_id = cl.clinic_id
+      LEFT JOIN tbl_zqnq_users zu ON cl.zynq_user_id = zu.id
+      LEFT JOIN tbl_doctors d     ON d.zynq_user_id = zu.id
+      LEFT JOIN tbl_roles r       ON zu.role_id = r.id
       WHERE pp.purchase_id = ?
-      ORDER BY pp.created_at DESC
+      LIMIT 1
     `;
-        const purchaseRows = await db.query(query, [purchase_id]);
 
-        // 1️⃣ Collect all product IDs from all purchases (products array inside product_details)
-        let allProductIds = [];
-        for (const row of purchaseRows) {
-            const products = Array.isArray(row.product_details) ? row.product_details : [];
-            allProductIds.push(...products.map(p => p.product_id));
-        }
-        allProductIds = [...new Set(allProductIds)]; // unique product IDs
+    const [row] = await db.query(baseQuery, [purchase_id]);
+    if (!row) return null;
 
-        // 2️⃣ Fetch product info including stock, clinic_id, price, product_name
-        let productInfoMap = {};
-        if (allProductIds.length) {
-            const productRows = await db.query(
-                `SELECT product_id, stock, clinic_id FROM tbl_products WHERE product_id IN (?)`,
-                [allProductIds]
-            );
-            productInfoMap = productRows.reduce((map, p) => {
-                map[p.product_id] = p;
-                return map;
-            }, {});
-        }
-
-        // 3️⃣ Collect unique clinic IDs from products to fetch clinic info
-        const allClinicIds = [...new Set(Object.values(productInfoMap).map(p => p.clinic_id))];
-
-        let clinicMap = {};
-        if (allClinicIds.length) {
-            const clinicRows = await db.query(
-                `SELECT clinic_id, clinic_name, address, clinic_logo FROM tbl_clinics WHERE clinic_id IN (?)`,
-                [allClinicIds]
-            );
-            clinicMap = clinicRows.reduce((map, c) => {
-                map[c.clinic_id] = c;
-                return map;
-            }, {});
-        }
-
-        // 4️⃣ Fetch product images for all unique products
-        let imagesMap = {};
-        if (allProductIds.length) {
-            const imageRows = await get_product_images_by_product_ids(allProductIds);
-            imagesMap = imageRows.reduce((map, row) => {
-                if (!map[row.product_id]) map[row.product_id] = [];
-                map[row.product_id].push(
-                    row.image.startsWith('http') ? row.image : `${APP_URL}clinic/product_image/${row.image}`
-                );
-                return map;
-            }, {});
-        }
-
-        // 5️⃣ Build purchases with enriched products (including images) and clinic info
-        const purchases = {};
-        for (const row of purchaseRows) {
-            const purchaseId = row.purchase_id;
-            const user = {
-                user_id: row.user_id,
-                name: row.user_name || null,
-                email: row.user_email || null,
-                mobile_number: row.mobile_number || null,
-            };
-
-            const products = Array.isArray(row.product_details) ? row.product_details : [];
-
-            const enrichedProducts = products.map(p => {
-                const prodInfo = productInfoMap[p.product_id] || {};
-                return {
-                    ...p,                                // keeps snapshot price, product_name, etc.
-                    stock: prodInfo.stock ?? 0,          // live stock added
-                    clinic_id: prodInfo.clinic_id ?? null,
-                    // remove overwriting price and product_name here
-                    product_images: imagesMap[p.product_id] || [],
-                };
-            });
-
-
-            // Clinic from first product's clinic_id (if exists)
-            const clinic_id = enrichedProducts.length ? enrichedProducts[0].clinic_id : null;
-            const clinic = clinicMap[clinic_id] || null;
-
-            purchases[purchaseId] = {
-                purchase_id: purchaseId,
-                purchase_type: "PRODUCT",
-                cart_id: row.cart_id,
-                purchase_date: row.purchase_date,
-                total_price: row.total_price,
-                address: row.address,
-                shipment_status: row.shipment_status,
-                clinic,
-                user,
-                products: enrichedProducts,
-            };
-        }
-
-        return Object.values(purchases);
-    } catch (error) {
-        console.error("Failed to fetch admin purchased product data with user, clinic, and images:", error);
-        throw error;
+    // 2️⃣ Parse product_details and collect product IDs
+    let products = [];
+    try {
+      products = Array.isArray(row.product_details)
+        ? row.product_details
+        : JSON.parse(row.product_details || "[]");
+    } catch {
+      products = [];
     }
+    const productIds = [...new Set(products.map(p => p.product_id))];
+
+    // 3️⃣ Fetch products, clinics, images, treatments
+    const productRows = productIds.length
+      ? await db.query(`SELECT * FROM tbl_products WHERE product_id IN (?)`, [productIds])
+      : [];
+
+    const productInfoMap = productRows.reduce((acc, p) => {
+      acc[p.product_id] = p;
+      return acc;
+    }, {});
+
+    const clinicIds = [...new Set(productRows.map(p => p.clinic_id).filter(Boolean))];
+    const clinicRows = clinicIds.length
+      ? await db.query(
+          `SELECT clinic_id, clinic_name, address, clinic_logo 
+           FROM tbl_clinics WHERE clinic_id IN (?)`,
+          [clinicIds]
+        )
+      : [];
+    const clinicMap = clinicRows.reduce((acc, c) => {
+      acc[c.clinic_id] = c;
+      return acc;
+    }, {});
+
+    const imageRows = productIds.length
+      ? await get_product_images_by_product_ids(productIds)
+      : [];
+    const imagesMap = imageRows.reduce((acc, img) => {
+      if (!acc[img.product_id]) acc[img.product_id] = [];
+      acc[img.product_id].push(
+        img.image.startsWith("http")
+          ? img.image
+          : `${APP_URL}clinic/product_image/${img.image}`
+      );
+      return acc;
+    }, {});
+
+    const treatmentRows = productIds.length
+      ? await getTreatmentsOfProductsBulk(productIds)
+      : [];
+    const treatmentsMap = treatmentRows.reduce((acc, t) => {
+      if (!acc[t.product_id]) acc[t.product_id] = [];
+      acc[t.product_id].push(t);
+      return acc;
+    }, {});
+
+    // 4️⃣ Enrich products
+    const enrichedProducts = products.map(p => {
+      const info = productInfoMap[p.product_id] || {};
+      return {
+        ...p, // snapshot info (price, name, etc.)
+        ...info,
+        treatments: treatmentsMap[p.product_id] || [],
+        product_images: imagesMap[p.product_id] || [],
+      };
+    });
+
+    // 5️⃣ Clinic info (from first product)
+    const clinic_id = enrichedProducts[0]?.clinic_id || null;
+    const clinic = clinicMap[clinic_id] || null;
+
+    // 6️⃣ Commission %
+    const commission_percentage =
+      row.total_price > 0
+        ? ((row.admin_earnings || 0) / row.total_price) * 100
+        : 0;
+
+    // 7️⃣ Build final response
+    return {
+      purchase_id: row.purchase_id,
+      purchase_type: "PRODUCT",
+      cart_id: row.cart_id,
+      doctor_id: row.doctor_id,
+      wallet_paid: row.wallet_paid,
+      purchase_date: row.purchase_date,
+      shipped_date: row.shipped_date || null,
+      delivered_date: row.delivered_date || null,
+      total_price: row.total_price,
+      admin_earnings: row.admin_earnings,
+      clinic_earnings: row.clinic_earnings,
+      commission_percentage: commission_percentage.toFixed(2),
+      address: row.address,
+      shipment_status: row.shipment_status,
+      role: row.role,
+      clinic,
+      user: {
+        user_id: row.user_id,
+        name: row.user_name || null,
+        email: row.user_email || null,
+        mobile_number: row.mobile_number || null,
+      },
+      products: enrichedProducts,
+      total_count: 1,
+    };
+  } catch (err) {
+    console.error("Failed to fetch single admin purchased product:", err);
+    throw err;
+  }
 };
 
 export const getSingleAdminCartProductModel = async (purchase_id) => {
