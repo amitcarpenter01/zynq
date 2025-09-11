@@ -130,4 +130,6 @@ router.get('/earnings', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), docto
 router.post('/get-all-faqs', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(getAllFAQSchema, "body"), getAllFAQs);
 router.get('/faq-categories', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getAllFAQCategories);
 
+router.get('/wallet-history', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), doctorController.getWalletHistory);
+
 export default router;
