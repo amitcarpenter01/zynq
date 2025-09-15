@@ -39,7 +39,6 @@ export const getProfile = async (req, res) => {
         const treatments = await clinicModels.getClinicTreatments(clinic.clinic_id);
         clinic.treatments = treatments;
 
-        console.log('treatments', treatments);
         const operationHours = await clinicModels.getClinicOperationHours(clinic.clinic_id);
         clinic.operation_hours = operationHours;
 
@@ -251,10 +250,8 @@ export const onboardClinic = async (req, res) => {
 
 
         const uploadedFiles = req.files;
-        console.log(uploadedFiles, "uploadedFiles");
         const clinic_logo = uploadedFiles.find(file => file.fieldname === 'logo')?.filename;
 
-        console.log(clinic_logo, "clinic_logo");
         const [clinic_data] = await clinicModels.get_clinic_by_zynq_user_id(zynq_user_id);
 
         const clinicData = buildClinicData({
@@ -326,7 +323,6 @@ export const onboardClinic = async (req, res) => {
                 longitude: longitude || clinicLocation.longitude
             }
 
-            console.log(update_data, "update_data");
 
             await clinicModels.updateClinicLocation(update_data, clinic_id);
         } else {
@@ -339,7 +335,6 @@ export const onboardClinic = async (req, res) => {
                 latitude: latitude,
                 longitude: longitude
             }
-            console.log(insert_data, "insert_data");
             await clinicModels.insertClinicLocation(insert_data);
         }
 
@@ -381,7 +376,6 @@ export const onboardClinic = async (req, res) => {
 
         if (clinic_timing) {
             const clinicTimingData = await clinicModels.getClinicOperationHours(clinic_id);
-            console.log("clinic_timing", typeof clinic_timing);
             if (clinicTimingData) {
                 if (!clinic_timing) {
                     console.log("No clinic timing data provided");
@@ -498,8 +492,6 @@ export const updateClinic = async (req, res) => {
 
 
         const zynq_user_id = req.user.id;
-
-        console.log('zynq_user_id', zynq_user_id)
 
         const [clinic] = await clinicModels.get_clinic_by_zynq_user_id(zynq_user_id);
         if (!clinic) {

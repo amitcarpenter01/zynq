@@ -181,7 +181,6 @@ export const sendDoctorInvitation = async (req, res) => {
             const [existingUser] = await webModels.get_web_user_by_email(email);
             const [get_location] = await clinicModels.get_clinic_location_by_clinic_id(req.user.clinicData.clinic_id);
 
-            console.log(get_location, "get_location");
             let doctor, doctor_id, password, newWebUser;
 
             if (existingUser) {

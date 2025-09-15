@@ -1010,7 +1010,6 @@ export const get_doctor_by_zynq_user_id = async (zynq_user_id) => {
 
 export const get_doctor_clinic_map_by_both = async (doctor_id, clinic_id) => {
     try {
-        console.log(doctor_id, clinic_id, "doctor_id, clinic_id");
         const result = await db.query('SELECT * FROM tbl_doctor_clinic_map WHERE doctor_id = ? AND clinic_id = ?', [doctor_id, clinic_id]);
         return result;
     }
@@ -1812,7 +1811,6 @@ export const getClinicImages = async (clinic_id) => {
 
 export const deleteClinicImageById = async (clinic_image_id, clinic_id) => {
     try {
-        console.log('clinic_image_id', clinic_image_id, 'clinic_id', clinic_id);
         // 1. Get image_url first
         const rows = await db.query(
             `SELECT image_url FROM tbl_clinic_images WHERE clinic_image_id = ? AND clinic_id = ?`,

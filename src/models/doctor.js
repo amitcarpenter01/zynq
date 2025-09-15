@@ -377,8 +377,6 @@ export const get_doctor_profile = async (doctorId) => {
         const surgery = await get_doctor_surgeries(doctorId);
         const aestheticDevices = await get_doctor_aesthetic_devices(doctorId)
 
-        console.log("aestheticModel", aestheticDevices);
-
         return {
             ...mainUser,
             ...doctor,

@@ -303,8 +303,6 @@ export const create_call_log_user = async (req, res) => {
         } = req.body;
 
         const { id: sender_user_id, role_name } = req.user;
-        console.log('req.user', req.user);
-
 
         if (role_name !== 'USER') {
             return handleError(res, 403, 'en', "Only users can access this endpoint");
