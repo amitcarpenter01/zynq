@@ -7,7 +7,6 @@ export const get_doctors_management = async (req, res) => {
     try {
         const doctors = await adminModels.get_doctors_management();
 
-     console.log('doctors', doctors)
         if (!doctors || doctors.length === 0) {
             return handleSuccess(res, 200, 'en', "No doctors found", { doctors: [] });
         }

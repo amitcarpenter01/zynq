@@ -124,6 +124,36 @@ export const formatBenefitsOnLang = (rows = [], lang = 'en') => {
     });
 };
 
+export const formatBenefitsUnified = (rows = [], lang = 'en') => {
+  return rows.map(row => {
+    if (row.source === 'old' && row.benefits) {
+      try {
+        const parsed = typeof row.benefits === 'string'
+          ? JSON.parse(row.benefits)
+          : row.benefits;
+        return {
+          ...row,
+          benefits: Object.values(parsed).map(b => b?.[lang] || '')
+        };
+      } catch {
+        return { ...row, benefits: [] };
+      }
+    }
+    if (row.source === 'new') {
+      const raw = lang === 'sv' ? row.benefits_sv : row.benefits_en;
+      return {
+        ...row,
+        benefits: raw
+          ? raw.split(/•|\./).map(s => s.trim()).filter(Boolean)
+          : []
+      };
+    }
+    return { ...row, benefits: [] };
+  });
+};
+
+
+
 export async function translateFAQ(question, answer) {
     try {
         return { ques_en: question, ans_en: answer, ques_sv: null, ans_sv: null };

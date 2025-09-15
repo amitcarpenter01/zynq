@@ -462,7 +462,6 @@ export const cancelAppointment = async (req, res) => {
 
         const appointmentDetails = await adminModels.getAppointmentsById(appointment_id);
         const appointment = appointmentDetails[0]
-        console.log("appointment.user_id", appointment.user_id)
         if (!appointment) return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
 
 

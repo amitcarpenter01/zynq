@@ -419,7 +419,6 @@ export const getMyTreatmentPlans = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'draft','unpaid');
-        console.log('appointments', appointments);
 
         const now = dayjs.utc();
 
@@ -449,7 +448,6 @@ export const getMyTreatmentPlans = async (req, res) => {
                 now.isBefore(endUTC);
 
             const treatments = await appointmentModel.getAppointmentTreatments(app.appointment_id);
-            console.log('treatments>>>>>>>>>>', treatments);
 
             return {
                 ...app,
@@ -459,7 +457,6 @@ export const getMyTreatmentPlans = async (req, res) => {
                 treatments
             };
         }));
-        console.log('result', result);
 
         return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
     } catch (error) {
@@ -512,16 +509,13 @@ export const cancelAppointment = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
 
         const user_id = req.user.user_id;
-        console.log("user_id", user_id)
 
 
         const appointmentDetails = await appointmentModel.getAppointmentsById(user_id, appointment_id);
         const appointment = appointmentDetails[0]
-        console.log("appointment.user_id", appointment.user_id)
         if (!appointment) return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
         if (appointment.user_id !== user_id) return handleError(res, 404, "en", "NOT_ALLOWED");
         if (appointment.is_paid) {
-            console.log("here>>>>>")
             return handleError(res, 404, "en", "NOT_ALLOWED");
         }
 

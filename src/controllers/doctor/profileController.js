@@ -41,13 +41,11 @@ export const addPersonalInformation = async (req, res) => {
         if (req.file) {
             filename = req.file.filename
         }
-        console.log("req.user", req.user)
         const zynqUserId = req.user.id
 
-        console.log("value", value)
 
         const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography);
-        console.log("result", result)
+        
         if (result.affectedRows) {
             await update_onboarding_status(1, zynqUserId)
             return handleSuccess(res, 201, language, "DOCTOR_PERSONAL_DETAILS_ADDED", result.affectedRows);
@@ -99,11 +97,11 @@ export const addEducationAndExperienceInformation = async (req, res) => {
                         if (existingCert.length > 0) {
                             // Certification already exists, update its file path
                             await doctorModels.update_certification_upload_path(doctorId, certification_type_id, newUploadPath);
-                            console.log(`Updated certification for doctor ${doctorId}, type ${certification_type_id} with new file ${newUploadPath}`);
+
                         } else {
                             // Certification does not exist, add it
                             await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath); // Add other metadata if available from req.body
-                            console.log(`Added new certification for doctor ${doctorId}, type ${certification_type_id} with file ${newUploadPath}`);
+                    
                         }
                     }
                 } else {
@@ -282,7 +280,6 @@ export const getDoctorProfile = async (req, res) => {
         if (profileData && profileData.profile_image && !profileData.profile_image.startsWith("http")) {
             profileData.profile_image = `${APP_URL}doctor/profile_images/${profileData.profile_image}`;
         }
-        console.log("profileData.certifications", profileData.certifications)
 
         if (profileData.certifications && Array.isArray(profileData.certifications)) {
             profileData.certifications.forEach(certification => {
@@ -314,7 +311,6 @@ export const editPersonalInformation = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        console.log("value", value)
 
 
         const zynqUserId = req.user.id;
@@ -417,7 +413,6 @@ export const editEducation = async (req, res) => {
 
 export const deleteEducation = async (req, res) => {
     try {
-        console.log("req.params>>", req.params)
         const schema = Joi.object({
             education_id: Joi.string().required(),
         });
@@ -425,7 +420,6 @@ export const deleteEducation = async (req, res) => {
         const { error, value } = schema.validate(req.params);
         if (error) return joiErrorHandle(res, error);
 
-        console.log("req.params>>", req.params);
 
         let language = req?.user?.language || 'en';
 
@@ -605,7 +599,6 @@ export const addCertifications = async (req, res) => {
                 const certification_type_id = certType[0].certification_type_id;
 
                 for (const file of files[key]) {
-                    console.log("file>>>>>>>", file)
                     await doctorModels.add_certification(doctorId, certification_type_id, file.filename)
                 }
             }
@@ -799,11 +792,11 @@ export const editEducationAndExperienceInformation = async (req, res) => {
                         if (existingCert.length > 0) {
                             // Certification already exists, update its file path
                             await doctorModels.update_certification_upload_path(doctorId, certification_type_id, newUploadPath);
-                            console.log(`Updated certification for doctor ${doctorId}, type ${certification_type_id} with new file ${newUploadPath}`);
+                        
                         } else {
                             // Certification does not exist, add it
                             await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath); // Add other metadata if available from req.body
-                            console.log(`Added new certification for doctor ${doctorId}, type ${certification_type_id} with file ${newUploadPath}`);
+                           
                         }
                     }
                 } else {

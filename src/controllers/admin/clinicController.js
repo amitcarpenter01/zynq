@@ -173,7 +173,6 @@ export const add_clinic_managment = async (req, res) => {
 
 export const get_clinic_managment = async (req, res) => {
     try {
-        console.log('fgjgkgj');
 
         const clinics = await adminModels.get_clinic_managment();
 

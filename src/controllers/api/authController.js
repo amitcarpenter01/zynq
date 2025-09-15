@@ -240,7 +240,6 @@ export const login_with_otp = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
 
         const { mobile_number, otp, language, fcm_token } = value;
-        console.log('value>>>>>>>>>>>>>.', value);
 
         const [user] = await apiModels.get_user_by_mobile_number(mobile_number);
         if (!user) {
@@ -370,15 +369,11 @@ export const updateProfile = async (req, res) => {
             }
         }
 
-
-        console.log(user_data, "user_data");
-
         await apiModels.update_user(user_data, user.user_id);
 
         return handleSuccess(res, 200, language, "PROFILE_UPDATED");
 
     } catch (error) {
-        console.log(error.message);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
@@ -393,8 +388,6 @@ export const deleteAccount = async (req, res) => {
 
         return handleSuccess(res, 200, language, "ACOUNT_DELETED");
     } catch (error) {
-        console.log(error.message);
-
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
@@ -602,15 +595,11 @@ export const create_call_log_user = async (req, res) => {
 
     const { userData } = req.user;
 
-    console.log('req.user', req.user)
-
     if (!call_id || !status || !receiver_doctor_id || !started_at) {
         return handleError(res, 400, 'en', "Missing required fields");
     }
 
     const sender_user_id = req.user?.user_id || req.user?.id;
-
-    console.log('sender_user_id', sender_user_id)
 
     await webModels.createOrUpdateCallLog({
         call_id,

@@ -165,8 +165,6 @@ export const stripeWebhookHandler = asyncHandler(async (req, res) => {
 
     const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
 
-    console.log(event)
-
     // await updatePaymentStatusModel(session_id, "PAID");
     return handleSuccess(res, 200, "en", "PAYMENT_STATUS_UPDATED_SUCCESSFULLY");
 });

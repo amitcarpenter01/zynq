@@ -33,8 +33,6 @@ export const addPersonalInformation = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-
-        console.log("req.user", req.user)
         const zynqUserId = req.user.id
 
         const doctorData = {
@@ -123,7 +121,6 @@ export const addContactInformation = async (req, res) => {
 
         if (error) return joiErrorHandle(res, error);
 
-        console.log("req.user", req.user)
         const zynqUserId = req.user.id
         const clinic_id = req.user.clinicData.clinic_id;
 
@@ -200,11 +197,10 @@ export const addEducationAndExperienceInformation = async (req, res) => {
                         if (existingCert.length > 0) {
                             // Certification already exists, update its file path
                             await doctorModels.update_certification_upload_path(doctorId, certification_type_id, newUploadPath);
-                            console.log(`Updated certification for doctor ${doctorId}, type ${certification_type_id} with new file ${newUploadPath}`);
-                        } else {
+            
                             // Certification does not exist, add it
                             await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath); // Add other metadata if available from req.body
-                            console.log(`Added new certification for doctor ${doctorId}, type ${certification_type_id} with file ${newUploadPath}`);
+                
                         }
                     }
                 } else {
@@ -428,7 +424,6 @@ export const getDoctorProfile = async (req, res) => {
         if (profileData && profileData.profile_image && !profileData.profile_image.startsWith("http")) {
             profileData.profile_image = `${APP_URL}doctor/profile_images/${profileData.profile_image}`;
         }
-        console.log("profileData.certifications", profileData.certifications)
 
         if (profileData.certifications && Array.isArray(profileData.certifications)) {
             profileData.certifications.forEach(certification => {
@@ -495,9 +490,6 @@ export const getDoctorProfile = async (req, res) => {
                     : `${APP_URL}clinic/files/${img.image_url}`,
             }));
 
-
-        // Get profile for clinic ends
-        console.log(clinic);
         return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, clinic, completionPercentage });
     } catch (error) {
         console.error(error);
@@ -509,7 +501,6 @@ export const createDoctorAvailability = async (req, res) => {
     try {
         const doctor_id = req.user.doctorData.doctor_id;
         const { days, fee_per_session } = req.body;
-        console.log('req.body', req.body);
 
         await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
         await Promise.all(
@@ -531,7 +522,6 @@ export const createDoctorAvailability = async (req, res) => {
             })
         );
         const zynqUserId = req.user.id
-        console.log('zynqUserId', zynqUserId);
 
 
         await update_onboarding_status(5, zynqUserId);
@@ -633,7 +623,6 @@ export const getDoctorProfileByStatus = async (req, res) => {
         } else if (status == 2) {
             const clinicData = await dbOperations.getSelectedColumn('address, website_url, mobile_number', 'tbl_clinics', `WHERE zynq_user_id = '${zynqUserId}' `);
             const [clinicLocation] = await clinicModels.getClinicLocation(clinicId);
-            console.log("clinicLocation", clinicLocation);
             clinic = clinicLocation;
             clinic['address'] = clinicData[0].address;
             clinic['website_url'] = clinicData[0].website_url;
@@ -646,7 +635,6 @@ export const getDoctorProfileByStatus = async (req, res) => {
             const certifications = await doctorModels.get_doctor_certifications(doctorId);
             const education = await doctorModels.get_doctor_education(doctorId);
             const experience = await doctorModels.get_doctor_experience(doctorId);
-            console.log("profileData.certifications", certifications)
 
             if (certifications && Array.isArray(certifications)) {
                 certifications.forEach(certification => {
@@ -664,7 +652,6 @@ export const getDoctorProfileByStatus = async (req, res) => {
             profileData.on_boarding_status = zynqUser[0].on_boarding_status;
 
         } else if (status == 4) {
-            console.log("clinicId", clinicId);
            // const treatments = await clinicModels.getClinicTreatments(clinicId);
             //console.log("treatments", treatments);
             const treatments = await doctorModels.get_doctor_treatments(doctorId);
