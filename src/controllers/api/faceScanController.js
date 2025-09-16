@@ -233,8 +233,5 @@ export const sendReportToChat = asyncHandler(async (req, res) => {
 
     fs.copyFileSync(originalPath, chatFilePath);
 
-    console.log("Message ID:", messageId);
-    console.log("Chat ID:", chat_id);
-
-    return handleSuccess(res, 200, "en", "REPORT_SENT_TO_CHAT_SUCCESSFULLY", null);
+    return handleSuccess(res, 200, "en", "REPORT_SENT_TO_CHAT_SUCCESSFULLY",);
 })
