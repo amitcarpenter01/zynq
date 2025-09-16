@@ -228,8 +228,8 @@ export const sendReportToChat = asyncHandler(async (req, res) => {
 
     await uploadMessageFiles(chat_id, messageId, fileInfo);
 
-    const originalPath = path.join(__dirname, '../uploads/', faceScanResult.pdf);
-    const chatFilePath = path.join(__dirname, '../uploads/chat_files/', faceScanResult.pdf);
+    const originalPath = path.join(__dirname, '/uploads/', faceScanResult.pdf);
+    const chatFilePath = path.join(__dirname, '/uploads/chat_files/', faceScanResult.pdf);
 
     fs.copyFileSync(originalPath, chatFilePath);
 
