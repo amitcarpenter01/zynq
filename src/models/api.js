@@ -1632,9 +1632,8 @@ export const getSingleCartByClinicId = async (clinic_id, user_id) => {
 
 // -------------------------------------Updated Code Okay ------------------------------------------------//
 
-export const getDoctorsByFirstNameSearchOnly = async ({ search = '', offset = 0 }) => {
+export const getDoctorsByFirstNameSearchOnly = async ({ search = '', limit, offset }) => {
     try {
-        const limit = 30;
         const params = [];
 
         const selectFields = [
@@ -1666,25 +1665,21 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', offset = 0 
 
         if (search && search.trim()) {
             const s = `%${search.toLowerCase()}%`;
-
-            // doctor / clinic fields
             params.push(s, s, s, s, s);
-
             query += `
                 AND (
-                     LOWER(d.name) LIKE ?
-                  OR LOWER(d.specialization) LIKE ?
-                  OR LOWER(d.phone) LIKE ?
-                  OR LOWER(c.clinic_name) LIKE ?
-                  OR LOWER(c.address) LIKE ?
-                  /* ----- Treatments (without concern mapping) ----- */
-                  OR EXISTS (
+                    LOWER(d.name) LIKE ?
+                    OR LOWER(d.specialization) LIKE ?
+                    OR LOWER(d.phone) LIKE ?
+                    OR LOWER(c.clinic_name) LIKE ?
+                    OR LOWER(c.address) LIKE ?
+                    OR EXISTS (
                         SELECT 1
                         FROM tbl_doctor_treatments dt
                         JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
                         WHERE dt.doctor_id = d.doctor_id
-                          AND (
-                               LOWER(t.name) LIKE ?
+                        AND (
+                            LOWER(t.name) LIKE ?
                             OR LOWER(t.swedish) LIKE ?
                             OR LOWER(t.application) LIKE ?
                             OR LOWER(t.type) LIKE ?
@@ -1695,66 +1690,60 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', offset = 0 
                             OR LOWER(t.benefits_sv) LIKE ?
                             OR LOWER(t.description_en) LIKE ?
                             OR LOWER(t.description_sv) LIKE ?
-                          )
-                  )
-                  /* ----- Aesthetic Devices ----- */
-                  OR EXISTS (
+                        )
+                    )
+                    OR EXISTS (
                         SELECT 1
                         FROM tbl_doctor_aesthetic_devices dad
                         JOIN tbl_aesthetic_devices ad ON dad.aesthetic_devices_id = ad.aesthetic_device_id
                         WHERE dad.doctor_id = d.doctor_id
-                          AND (
-                                LOWER(ad.device) LIKE ?
-                             OR LOWER(ad.category) LIKE ?
-                             OR LOWER(ad.manufacturer) LIKE ?
-                             OR LOWER(ad.swedish_distributor) LIKE ?
-                             OR LOWER(ad.main_application) LIKE ?
-                          )
-                  )
-                  /* ----- Surgeries ----- */
-                  OR EXISTS (
+                        AND (
+                            LOWER(ad.device) LIKE ?
+                            OR LOWER(ad.category) LIKE ?
+                            OR LOWER(ad.manufacturer) LIKE ?
+                            OR LOWER(ad.swedish_distributor) LIKE ?
+                            OR LOWER(ad.main_application) LIKE ?
+                        )
+                    )
+                    OR EXISTS (
                         SELECT 1
                         FROM tbl_doctor_surgery ds
                         JOIN tbl_surgery srg ON ds.surgery_id = srg.surgery_id
                         WHERE ds.doctor_id = d.doctor_id
-                          AND (
-                                LOWER(srg.type) LIKE ?
-                             OR LOWER(srg.swedish) LIKE ?
-                             OR LOWER(srg.english) LIKE ?
-                             OR LOWER(srg.area) LIKE ?
-                             OR LOWER(srg.technique) LIKE ?
-                          )
-                  )
-                  /* ----- Skin Types ----- */
-                  OR EXISTS (
+                        AND (
+                            LOWER(srg.type) LIKE ?
+                            OR LOWER(srg.swedish) LIKE ?
+                            OR LOWER(srg.english) LIKE ?
+                            OR LOWER(srg.area) LIKE ?
+                            OR LOWER(srg.technique) LIKE ?
+                        )
+                    )
+                    OR EXISTS (
                         SELECT 1
                         FROM tbl_doctor_skin_types dst
                         JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id
                         WHERE dst.doctor_id = d.doctor_id
-                          AND (
-                                LOWER(st.name) LIKE ?
-                             OR LOWER(st.swedish) LIKE ?
-                             OR LOWER(st.english) LIKE ?
-                             OR LOWER(st.description) LIKE ?
-                          )
-                  )
-                  /* ----- Skin Conditions ----- */
-                  OR EXISTS (
+                        AND (
+                            LOWER(st.name) LIKE ?
+                            OR LOWER(st.swedish) LIKE ?
+                            OR LOWER(st.english) LIKE ?
+                            OR LOWER(st.description) LIKE ?
+                        )
+                    )
+                    OR EXISTS (
                         SELECT 1
                         FROM tbl_doctor_skin_condition dsc
                         JOIN tbl_skin_conditions sc ON dsc.skin_condition_id = sc.skin_condition_id
                         WHERE dsc.doctor_id = d.doctor_id
-                          AND (
-                                LOWER(sc.name) LIKE ?
-                             OR LOWER(sc.swedish) LIKE ?
-                             OR LOWER(sc.english) LIKE ?
-                             OR LOWER(sc.description) LIKE ?
-                          )
-                  )
+                        AND (
+                            LOWER(sc.name) LIKE ?
+                            OR LOWER(sc.swedish) LIKE ?
+                            OR LOWER(sc.english) LIKE ?
+                            OR LOWER(sc.description) LIKE ?
+                        )
+                    )
                 )
             `;
-
-            // push placeholders for subqueries
             params.push(
                 ...Array(11).fill(s), // treatments
                 ...Array(5).fill(s),  // devices
@@ -1767,9 +1756,15 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', offset = 0 
         query += `
             GROUP BY d.doctor_id, dm.clinic_id
             ORDER BY avg_rating DESC
-            LIMIT ? OFFSET ?
         `;
-        params.push(limit, Number(offset) || 0);
+        if (limit) {
+            query += ` LIMIT ?`;
+            params.push(Number(limit));
+            if (offset) {
+                query += ` OFFSET ?`;
+                params.push(Number(offset));
+            }
+        }
 
         return await db.query(query, params);
     } catch (error) {
@@ -1778,11 +1773,9 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', offset = 0 
     }
 };
 
-export const getClinicsByNameSearchOnly = async ({ search = '', offset = 0 }) => {
+export const getClinicsByNameSearchOnly = async ({ search = '', limit, offset }) => {
     try {
-        const limit = 30;
         const params = [];
-
         const selectFields = [
             'c.clinic_id',
             'c.clinic_name',
@@ -1806,26 +1799,21 @@ export const getClinicsByNameSearchOnly = async ({ search = '', offset = 0 }) =>
 
         if (search && search.trim()) {
             const s = `%${search.toLowerCase()}%`;
-
-            // clinic + doctor simple fields (5)
             params.push(s, s, s, s, s);
-
             query += `
                 AND (
-                     LOWER(c.clinic_name) LIKE ?
-                  OR LOWER(c.address) LIKE ?
-                  OR LOWER(d.name) LIKE ?
-                  OR LOWER(d.specialization) LIKE ?
-                  OR LOWER(d.phone) LIKE ?
-
-                  /* ----- Treatments (without concern mapping) ----- */
-                  OR EXISTS (
+                    LOWER(c.clinic_name) LIKE ?
+                    OR LOWER(c.address) LIKE ?
+                    OR LOWER(d.name) LIKE ?
+                    OR LOWER(d.specialization) LIKE ?
+                    OR LOWER(d.phone) LIKE ?
+                    OR EXISTS (
                         SELECT 1
                         FROM tbl_doctor_treatments dt
                         JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
                         WHERE dt.doctor_id = d.doctor_id
-                          AND (
-                               LOWER(t.name) LIKE ?
+                        AND (
+                            LOWER(t.name) LIKE ?
                             OR LOWER(t.swedish) LIKE ?
                             OR LOWER(t.application) LIKE ?
                             OR LOWER(t.type) LIKE ?
@@ -1836,103 +1824,97 @@ export const getClinicsByNameSearchOnly = async ({ search = '', offset = 0 }) =>
                             OR LOWER(t.benefits_sv) LIKE ?
                             OR LOWER(t.description_en) LIKE ?
                             OR LOWER(t.description_sv) LIKE ?
-                          )
-                  )
-
-                  /* ----- Aesthetic Devices ----- */
-                  OR EXISTS (
+                        )
+                    )
+                    OR EXISTS (
                         SELECT 1
                         FROM tbl_doctor_aesthetic_devices dad
                         JOIN tbl_aesthetic_devices ad ON dad.aesthetic_devices_id = ad.aesthetic_device_id
                         WHERE dad.doctor_id = d.doctor_id
-                          AND (
-                                LOWER(ad.device) LIKE ?
-                             OR LOWER(ad.category) LIKE ?
-                             OR LOWER(ad.manufacturer) LIKE ?
-                             OR LOWER(ad.swedish_distributor) LIKE ?
-                             OR LOWER(ad.main_application) LIKE ?
-                          )
-                  )
-
-                  /* ----- Surgeries ----- */
-                  OR EXISTS (
+                        AND (
+                            LOWER(ad.device) LIKE ?
+                            OR LOWER(ad.category) LIKE ?
+                            OR LOWER(ad.manufacturer) LIKE ?
+                            OR LOWER(ad.swedish_distributor) LIKE ?
+                            OR LOWER(ad.main_application) LIKE ?
+                        )
+                    )
+                    OR EXISTS (
                         SELECT 1
                         FROM tbl_doctor_surgery ds
                         JOIN tbl_surgery srg ON ds.surgery_id = srg.surgery_id
                         WHERE ds.doctor_id = d.doctor_id
-                          AND (
-                                LOWER(srg.type) LIKE ?
-                             OR LOWER(srg.swedish) LIKE ?
-                             OR LOWER(srg.english) LIKE ?
-                             OR LOWER(srg.area) LIKE ?
-                             OR LOWER(srg.technique) LIKE ?
-                          )
-                  )
-
-                  /* ----- Skin Types ----- */
-                  OR EXISTS (
+                        AND (
+                            LOWER(srg.type) LIKE ?
+                            OR LOWER(srg.swedish) LIKE ?
+                            OR LOWER(srg.english) LIKE ?
+                            OR LOWER(srg.area) LIKE ?
+                            OR LOWER(srg.technique) LIKE ?
+                        )
+                    )
+                    OR EXISTS (
                         SELECT 1
                         FROM tbl_doctor_skin_types dst
                         JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id
                         WHERE dst.doctor_id = d.doctor_id
-                          AND (
-                                LOWER(st.name) LIKE ?
-                             OR LOWER(st.swedish) LIKE ?
-                             OR LOWER(st.english) LIKE ?
-                             OR LOWER(st.description) LIKE ?
-                          )
-                  )
-
-                  /* ----- Skin Conditions ----- */
-                  OR EXISTS (
+                        AND (
+                            LOWER(st.name) LIKE ?
+                            OR LOWER(st.swedish) LIKE ?
+                            OR LOWER(st.english) LIKE ?
+                            OR LOWER(st.description) LIKE ?
+                        )
+                    )
+                    OR EXISTS (
                         SELECT 1
                         FROM tbl_doctor_skin_condition dsc
                         JOIN tbl_skin_conditions sc ON dsc.skin_condition_id = sc.skin_condition_id
                         WHERE dsc.doctor_id = d.doctor_id
-                          AND (
-                                LOWER(sc.name) LIKE ?
-                             OR LOWER(sc.swedish) LIKE ?
-                             OR LOWER(sc.english) LIKE ?
-                             OR LOWER(sc.description) LIKE ?
-                          )
-                  )
-
-                  /* ----- Products ----- */
-                  OR EXISTS (
+                        AND (
+                            LOWER(sc.name) LIKE ?
+                            OR LOWER(sc.swedish) LIKE ?
+                            OR LOWER(sc.english) LIKE ?
+                            OR LOWER(sc.description) LIKE ?
+                        )
+                    )
+                    OR EXISTS (
                         SELECT 1
                         FROM tbl_products p
                         WHERE p.clinic_id = c.clinic_id
-                          AND p.is_deleted = 0
-                          AND (
-                               LOWER(p.name) LIKE ?
+                        AND p.is_deleted = 0
+                        AND (
+                            LOWER(p.name) LIKE ?
                             OR LOWER(p.short_description) LIKE ?
                             OR LOWER(p.full_description) LIKE ?
                             OR LOWER(p.feature_text) LIKE ?
                             OR LOWER(p.benefit_text) LIKE ?
                             OR LOWER(p.how_to_use) LIKE ?
                             OR LOWER(p.ingredients) LIKE ?
-                          )
-                  )
+                        )
+                    )
                 )
             `;
-
-            // push placeholders for subqueries
             params.push(
-                ...Array(11).fill(s), // treatments
-                ...Array(5).fill(s),  // devices
-                ...Array(5).fill(s),  // surgeries
-                ...Array(4).fill(s),  // skin types
-                ...Array(4).fill(s),  // skin conditions
-                ...Array(7).fill(s)   // products
+                ...Array(11).fill(s),
+                ...Array(5).fill(s),
+                ...Array(5).fill(s),
+                ...Array(4).fill(s),
+                ...Array(4).fill(s),
+                ...Array(7).fill(s)
             );
         }
 
         query += `
             GROUP BY c.clinic_id
             ORDER BY avg_rating DESC
-            LIMIT ? OFFSET ?
         `;
-        params.push(limit, Number(offset) || 0);
+        if (limit) {
+            query += ` LIMIT ?`;
+            params.push(Number(limit));
+            if (offset) {
+                query += ` OFFSET ?`;
+                params.push(Number(offset));
+            }
+        }
 
         return await db.query(query, params);
     } catch (error) {
@@ -1941,54 +1923,50 @@ export const getClinicsByNameSearchOnly = async ({ search = '', offset = 0 }) =>
     }
 };
 
-export const getProductsByNameSearchOnly = async ({ search = '', offset = 0 }) => {
+export const getProductsByNameSearchOnly = async ({ search = '', limit, offset }) => {
     try {
-        const limit = 30;
         const params = [];
-
         let query = `
-      SELECT 
-        p.*
-      FROM tbl_products AS p
-      WHERE p.is_deleted = 0
-    `;
+            SELECT p.*
+            FROM tbl_products AS p
+            WHERE p.is_deleted = 0
+        `;
 
         if (search && search.trim()) {
             const s = `%${search.toLowerCase()}%`;
-
             query += `
-        AND (
-             LOWER(p.name) LIKE ?
-          OR LOWER(p.short_description) LIKE ?
-          OR LOWER(p.full_description) LIKE ?
-          OR LOWER(p.feature_text) LIKE ?
-          OR LOWER(p.benefit_text) LIKE ?
-          OR LOWER(p.how_to_use) LIKE ?
-          OR LOWER(p.ingredients) LIKE ?
-          OR EXISTS (
-                SELECT 1
-                FROM tbl_product_treatments pt
-                JOIN tbl_treatments t ON pt.treatment_id = t.treatment_id
-                WHERE pt.product_id = p.product_id
-                  AND (
-                        LOWER(t.name) LIKE ?
-                     OR LOWER(t.swedish) LIKE ?
-                  )
-          )
-        )
-      `;
-
-            // own columns (7) + treatments (2)
+                AND (
+                    LOWER(p.name) LIKE ?
+                    OR LOWER(p.short_description) LIKE ?
+                    OR LOWER(p.full_description) LIKE ?
+                    OR LOWER(p.feature_text) LIKE ?
+                    OR LOWER(p.benefit_text) LIKE ?
+                    OR LOWER(p.how_to_use) LIKE ?
+                    OR LOWER(p.ingredients) LIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM tbl_product_treatments pt
+                        JOIN tbl_treatments t ON pt.treatment_id = t.treatment_id
+                        WHERE pt.product_id = p.product_id
+                        AND (LOWER(t.name) LIKE ? OR LOWER(t.swedish) LIKE ?)
+                    )
+                )
+            `;
             params.push(...Array(7).fill(s), s, s);
         }
 
         query += `
-      GROUP BY p.product_id
-      ORDER BY p.created_at DESC
-      LIMIT ? OFFSET ?
-    `;
-
-        params.push(limit, Number(offset) || 0);
+            GROUP BY p.product_id
+            ORDER BY p.created_at DESC
+        `;
+        if (limit) {
+            query += ` LIMIT ?`;
+            params.push(Number(limit));
+            if (offset) {
+                query += ` OFFSET ?`;
+                params.push(Number(offset));
+            }
+        }
 
         return await db.query(query, params);
     } catch (error) {
@@ -1997,48 +1975,42 @@ export const getProductsByNameSearchOnly = async ({ search = '', offset = 0 }) =
     }
 };
 
-export const getTreatmentsBySearchOnly = async ({
-    search = '',
-    language = 'en',
-    limit = 30,
-    offset = 0,
-}) => {
+export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', limit, offset }) => {
     try {
         const safeSearch = search?.trim().toLowerCase();
         const params = [];
-        let query = `
-      SELECT *
-      FROM tbl_treatments
-      WHERE 1=1
-    `;
+        let query = `SELECT * FROM tbl_treatments WHERE 1=1`;
 
         if (safeSearch) {
             query += `
-        AND (
-             LOWER(name) LIKE ?
-          OR LOWER(swedish) LIKE ?
-          OR LOWER(application) LIKE ?
-          OR LOWER(type) LIKE ?
-          OR LOWER(technology) LIKE ?
-          OR LOWER(classification_type) LIKE ?
-          OR LOWER(benefits) LIKE ?
-          OR LOWER(benefits_en) LIKE ?
-          OR LOWER(benefits_sv) LIKE ?
-          OR LOWER(description_en) LIKE ?
-          OR LOWER(description_sv) LIKE ?
-        )
-      `;
+                AND (
+                    LOWER(name) LIKE ?
+                    OR LOWER(swedish) LIKE ?
+                    OR LOWER(application) LIKE ?
+                    OR LOWER(type) LIKE ?
+                    OR LOWER(technology) LIKE ?
+                    OR LOWER(classification_type) LIKE ?
+                    OR LOWER(benefits) LIKE ?
+                    OR LOWER(benefits_en) LIKE ?
+                    OR LOWER(benefits_sv) LIKE ?
+                    OR LOWER(description_en) LIKE ?
+                    OR LOWER(description_sv) LIKE ?
+                )
+            `;
             params.push(...Array(11).fill(`%${safeSearch}%`));
         }
 
-        query += `
-      ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
-    `;
-        params.push(limit, Number(offset) || 0);
+        query += ` ORDER BY created_at DESC`;
+        if (limit) {
+            query += ` LIMIT ?`;
+            params.push(Number(limit));
+            if (offset) {
+                query += ` OFFSET ?`;
+                params.push(Number(offset));
+            }
+        }
 
         const results = await db.query(query, params);
-
         return formatBenefitsUnified(results, language);
     } catch (error) {
         console.error('Database Error in getTreatmentsBySearchOnly:', error.message);
