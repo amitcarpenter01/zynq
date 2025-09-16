@@ -207,19 +207,21 @@ export const sendReportToChat = asyncHandler(async (req, res) => {
 
     const { chat_id, report_id } = req.body;
 
-    const sender_user_id = "963e87b1-780f-11f0-9891-0e8e5d906eef" || req.user.user_id;
+    const sender_user_id = "963e87b1-780f-11f0-9891-0e8e5d906eef" || req?.user?.user_id;
 
-    const [faceScanResult] = await apiModels.get_face_scan_result_by_id(sender_user_id, report_id);
+    const [[faceScanResult], saveMessageResult] = await Promise.all(
+        [
+            apiModels.get_face_scan_result_by_id(sender_user_id, report_id),
+            saveMessage(chat_id, sender_user_id, "", "text")
+        ])
 
     if (isEmpty(faceScanResult)) return handleError(res, 404, "en", "FACE_SCAN_RESULT_NOT_FOUND");
 
-    const pdf = faceScanResult.pdf ? faceScanResult.pdf : null;
+    const pdf = faceScanResult?.pdf ? faceScanResult?.pdf : null;
 
     if (!pdf) return handleError(res, 404, "en", "PDF_NOT_FOUND");
 
-    const result = await saveMessage(chat_id, sender_user_id, "", "text");
-
-    const messageId = result.insertId;
+    const messageId = saveMessageResult.insertId;
 
     const fileInfo = [{
         path: pdf,
