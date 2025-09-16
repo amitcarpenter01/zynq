@@ -207,7 +207,7 @@ export const sendReportToChat = asyncHandler(async (req, res) => {
 
     const { chat_id, report_id } = req.body;
 
-    const sender_user_id = "963e87b1-780f-11f0-9891-0e8e5d906eef" || req?.user?.user_id;
+    const { language = "en", user_id: sender_user_id } = req.user;
 
     const [[faceScanResult], saveMessageResult] = await Promise.all(
         [
@@ -215,12 +215,9 @@ export const sendReportToChat = asyncHandler(async (req, res) => {
             saveMessage(chat_id, sender_user_id, "", "text")
         ])
 
-    if (isEmpty(faceScanResult)) return handleError(res, 404, "en", "FACE_SCAN_RESULT_NOT_FOUND");
+    if (!faceScanResult?.pdf) return handleError(res, 404, language, "PDF_NOT_FOUND");
 
-    const pdf = faceScanResult?.pdf ? faceScanResult?.pdf : null;
-
-    if (!pdf) return handleError(res, 404, "en", "PDF_NOT_FOUND");
-
+    const pdf = faceScanResult.pdf;
     const messageId = saveMessageResult.insertId;
 
     const fileInfo = [{
@@ -235,5 +232,5 @@ export const sendReportToChat = asyncHandler(async (req, res) => {
 
     fs.copyFileSync(originalPath, chatFilePath);
 
-    return handleSuccess(res, 200, "en", "REPORT_SENT_TO_CHAT_SUCCESSFULLY",);
+    return handleSuccess(res, 200, language, "REPORT_SENT_TO_CHAT_SUCCESSFULLY",);
 })
