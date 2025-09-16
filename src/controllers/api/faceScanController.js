@@ -8,6 +8,7 @@ import { isEmpty } from "../../utils/user_helper.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { getUserSkinTypes, getUserTreatments } from "../../models/clinic.js";
 import { faceScanPDFTemplate } from "../../utils/templates.js";
+import { saveMessage, uploadMessageFiles } from "../../models/chat.js";
 
 dotenv.config();
 
@@ -199,3 +200,38 @@ export const sendFaceResultToEmail = async (req, res) => {
         return handleError(res, 500, "en", 'INTERNAL_SERVER_ERROR');
     }
 };
+
+export const sendReportToChat = asyncHandler(async (req, res) => {
+
+    const { chat_id, report_id } = req.body;
+
+    const sender_user_id = "963e87b1-780f-11f0-9891-0e8e5d906eef" || req.user.user_id;
+
+    const [faceScanResult] = await apiModels.get_face_scan_result_by_id(sender_user_id, report_id);
+
+    if (isEmpty(faceScanResult)) return handleError(res, 404, "en", "FACE_SCAN_RESULT_NOT_FOUND");
+
+    const pdf = faceScanResult.pdf ? faceScanResult.pdf : null;
+
+    if (!pdf) return handleError(res, 404, "en", "PDF_NOT_FOUND");
+
+    const result = await saveMessage(chat_id, sender_user_id, "", "text");
+
+    const messageId = result.insertId;
+
+    const fileInfo = [{
+        path: pdf,
+        type: 'application/pdf'
+    }];
+
+    await uploadMessageFiles(chat_id, messageId, fileInfo);
+
+    const originalPath = path.join(__dirname, '../uploads/', faceScanResult.pdf);
+    const chatFilePath = path.join(__dirname, '../uploads/chat_files/', faceScanResult.pdf);
+
+    fs.copyFileSync(originalPath, chatFilePath);
+    console.log("Message ID:", messageId);
+    console.log("Chat ID:", chat_id);
+
+    return handleSuccess(res, 200, "en", "REPORT_SENT_TO_CHAT_SUCCESSFULLY", null);
+})

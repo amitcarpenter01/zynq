@@ -26,3 +26,8 @@ export const updateRatingStatusSchema = joi.object({
   appointment_rating_id: stringValidation,
   approval_status: stringValidation.valid('APPROVED', 'REJECTED')
 })
+
+export const sendReportToChatSchema = joi.object({
+  chat_id: stringValidation,
+  report_id: stringValidation
+})

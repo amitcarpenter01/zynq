@@ -264,5 +264,6 @@
   "RATING_REJECTED_SUCCESSFULLY": "Rating Rejected Successfully",
   "DOCTOR_RATINGS_FETCHED_SUCCESSFULLY": "Expert Ratings Fetched Successfully",
   "WALLET_HISTORY_FETCHED": "Wallet History Fetched Successfully",
-  "WALLET_AMOUNT_ALREADY_ADDED": "Wallet Amount Added Already"
+  "WALLET_AMOUNT_ALREADY_ADDED": "Wallet Amount Added Already",
+  "REPORT_SENT_TO_CHAT_SUCCESSFULLY": "Report sent to chat successfully"
 }

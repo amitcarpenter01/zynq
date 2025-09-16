@@ -256,5 +256,6 @@
   "RATING_REJECTED_SUCCESSFULLY": "Betyg avvisad",
   "DOCTOR_RATINGS_FETCHED_SUCCESSFULLY": "Experts betyg hittades",
   "WALLET_HISTORY_FETCHED": "Wallet historia hittades",
-  "WALLET_AMOUNT_ALREADY_ADDED": "Belopp tillagd redan"
+  "WALLET_AMOUNT_ALREADY_ADDED": "Belopp tillagd redan",
+  "REPORT_SENT_TO_CHAT_SUCCESSFULLY": "Rapport skickades till chatt"
 }
