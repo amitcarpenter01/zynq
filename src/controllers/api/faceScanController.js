@@ -9,6 +9,7 @@ import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../
 import { getUserSkinTypes, getUserTreatments } from "../../models/clinic.js";
 import { faceScanPDFTemplate } from "../../utils/templates.js";
 import { saveMessage, uploadMessageFiles } from "../../models/chat.js";
+import { __dirname } from "../../../app.js";
 
 dotenv.config();
 
@@ -230,6 +231,7 @@ export const sendReportToChat = asyncHandler(async (req, res) => {
     const chatFilePath = path.join(__dirname, '../uploads/chat_files/', faceScanResult.pdf);
 
     fs.copyFileSync(originalPath, chatFilePath);
+    
     console.log("Message ID:", messageId);
     console.log("Chat ID:", chat_id);
 
