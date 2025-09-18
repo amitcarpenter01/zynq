@@ -535,7 +535,7 @@ export const enroll_user = async (req, res) => {
             full_name,
             udid
         }
-        const image_logo = 'https://51.21.123.99:4000/zynq_logo.png'
+        const image_logo = 'https://getzynq.io:4000/zynq_logo.png'
 
         await apiModels.enroll_user_data(user_data);
 

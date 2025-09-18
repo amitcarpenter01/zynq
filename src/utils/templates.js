@@ -64,8 +64,8 @@ export const orderConfirmationTemplate = ({
   customerName,
   products,
   totalAmount,
-  logoUrl = "https://51.21.123.99:4000/white_logo.png",
-  bannerImageUrl = "https://51.21.123.99:4000/product_main.png",
+  logoUrl = "https://getzynq.io:4000/white_logo.png",
+  bannerImageUrl = "https://getzynq.io:4000/product_main.png",
   clinicAddress,
   clinicName
 }) => {
@@ -236,8 +236,8 @@ export const orderConfirmationTemplateClinic = ({
   clinicName,
   products,
   totalAmount,
-  logoUrl = "https://51.21.123.99:4000/white_logo.png",
-  bannerImageUrl = "https://51.21.123.99:4000/product_main.png",
+  logoUrl = "https://getzynq.io:4000/white_logo.png",
+  bannerImageUrl = "https://getzynq.io:4000/product_main.png",
   customerState,
   customerCity,
   customerzipCode,
@@ -408,7 +408,7 @@ export const orderConfirmationTemplateClinic = ({
 };
 
 export const faceScanPDFTemplate = ({
-  logoUrl = "https://51.21.123.99:4000/logo1.png",
+  logoUrl = "https://getzynq.io:4000/logo1.png",
   pdf,
   userName = ""
 }) => {
@@ -442,7 +442,7 @@ export const faceScanPDFTemplate = ({
           <!-- Hero Image -->
           <tr>
             <td align="center" style="padding:0;">
-              <img src="https://51.21.123.99:4000/girl_img.png" alt="Skin Analysis Illustration" width="600" style="width:100%; max-width:600px; height:auto; display:block;">
+              <img src="https://getzynq.io:4000/girl_img.png" alt="Skin Analysis Illustration" width="600" style="width:100%; max-width:600px; height:auto; display:block;">
             </td>
           </tr>
 
@@ -469,7 +469,7 @@ export const faceScanPDFTemplate = ({
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
                 <tr>
                   <td width="50" valign="top" style="text-align:center;">
-                    <img src="https://51.21.123.99:4000/Simplification.png" alt="Skin Score Icon" width="40" style="display:block; margin:0 auto;">
+                    <img src="https://getzynq.io:4000/Simplification.png" alt="Skin Score Icon" width="40" style="display:block; margin:0 auto;">
                   </td>
                   <td valign="top" style="padding-left:10px;">
                     <h4 style="font-size:16px; margin:0; color:#111111;">Your Skin Score & Key Indicators</h4>
@@ -484,7 +484,7 @@ export const faceScanPDFTemplate = ({
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
                 <tr>
                   <td width="50" valign="top" style="text-align:center;">
-                    <img src="https://51.21.123.99:4000/Simplification_2.png" alt="Detailed Analysis Icon" width="40" style="display:block; margin:0 auto;">
+                    <img src="https://getzynq.io:4000/Simplification_2.png" alt="Detailed Analysis Icon" width="40" style="display:block; margin:0 auto;">
                   </td>
                   <td valign="top" style="padding-left:10px;">
                     <h4 style="font-size:16px; margin:0; color:#111111;">Detailed Analysis Of Concerns</h4>
@@ -499,7 +499,7 @@ export const faceScanPDFTemplate = ({
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td width="50" valign="top" style="text-align:center;">
-                    <img src="https://51.21.123.99:4000/Simplification_3.png" alt="Next Steps Icon" width="40" style="display:block; margin:0 auto;">
+                    <img src="https://getzynq.io:4000/Simplification_3.png" alt="Next Steps Icon" width="40" style="display:block; margin:0 auto;">
                   </td>
                   <td valign="top" style="padding-left:10px;">
                     <h4 style="font-size:16px; margin:0; color:#111111;">Next Steps To Improve Your Skin Health</h4>

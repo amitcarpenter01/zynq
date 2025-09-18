@@ -125,54 +125,82 @@ export const formatBenefitsOnLang = (rows = [], lang = 'en') => {
 };
 
 export const formatBenefitsUnified = (rows = [], lang = 'en') => {
-  return rows.map(row => {
-    if (row.source === 'old' && row.benefits) {
-      try {
-        const parsed = typeof row.benefits === 'string'
-          ? JSON.parse(row.benefits)
-          : row.benefits;
-        return {
-          ...row,
-          benefits: Object.values(parsed).map(b => b?.[lang] || '')
-        };
-      } catch {
+    return rows.map(row => {
+        if (row.source === 'old' && row.benefits) {
+            try {
+                const parsed = typeof row.benefits === 'string'
+                    ? JSON.parse(row.benefits)
+                    : row.benefits;
+                return {
+                    ...row,
+                    benefits: Object.values(parsed).map(b => b?.[lang] || '')
+                };
+            } catch {
+                return { ...row, benefits: [] };
+            }
+        }
+        if (row.source === 'new') {
+            const raw = lang === 'sv' ? row.benefits_sv : row.benefits_en;
+            return {
+                ...row,
+                benefits: raw
+                    ? raw.split(/•|\./).map(s => s.trim()).filter(Boolean)
+                    : []
+            };
+        }
         return { ...row, benefits: [] };
-      }
-    }
-    if (row.source === 'new') {
-      const raw = lang === 'sv' ? row.benefits_sv : row.benefits_en;
-      return {
-        ...row,
-        benefits: raw
-          ? raw.split(/•|\./).map(s => s.trim()).filter(Boolean)
-          : []
-      };
-    }
-    return { ...row, benefits: [] };
-  });
+    });
 };
 
+import OpenAI from "openai";
+
+const openai = process.env.OPENAI_API_KEY
+    ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    : null;
 
 
 export async function translateFAQ(question, answer) {
+    const fallback = {
+        ques_en: question,
+        ans_en: answer,
+        ques_sv: null,
+        ans_sv: null,
+    };
+
+    if (!openai) return fallback;
+
+    const prompt = `
+                Translate the following FAQ into both English and Swedish. 
+                The input FAQ can be in both english or swedish, 
+                You dont have to generate answers, simply translate.
+
+                Return a valid JSON object with:
+                {
+                "ques_en": "...",
+                "ans_en": "...",
+                "ques_sv": "...",
+                "ans_sv": "..."
+                }
+                Question: "${question}"
+                Answer: "${answer}"
+                `;
+
     try {
-        return { ques_en: question, ans_en: answer, ques_sv: null, ans_sv: null };
-        const merged = `${question} -> ${answer}`;
 
-        const translateResult = await translate(merged, { to: "en" });
-        const translateTo = translateResult.raw.src === "en" ? "sv" : "en";
+        const res = await openai.chat.completions.create(
+            {
+                model: "gpt-4o-mini",
+                messages: [{ role: "user", content: prompt }],
+                response_format: { type: "json_object" },
+            }
+        );
 
-        const translated = await translate(merged, { to: translateTo });
+        const content = res?.choices?.[0]?.message?.content;
 
-        const [q_tr, a_tr] = translated.text.split(" -> ");
-
-        const [ques_en, ans_en] = translateTo === "en" ? [q_tr, a_tr] : [question, answer];
-        const [ques_sv, ans_sv] = translateTo === "sv" ? [q_tr, a_tr] : [question, answer];
-
-        return { ques_en, ans_en, ques_sv, ans_sv };
+        return content ? JSON.parse(content) : fallback;
     } catch (err) {
-        console.error("Translation failed:", err);
-        return { ques_en: question, ans_en: answer, ques_sv: null, ans_sv: null };
+        console.error("OpenAI translation failed:", err);
+        return fallback;
     }
 }
 
