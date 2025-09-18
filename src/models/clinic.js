@@ -1938,8 +1938,6 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
                     "website_url",
                     "clinic_description",
                     "clinic_logo",
-                    "form_stage",
-                    "fee_range",
                 ];
 
                 totalFieldsCount += basicFields.length;
