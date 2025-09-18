@@ -387,6 +387,12 @@ export const processPaymentMetadata = ({ payment_gateway, metadata }) => {
   }
 }
 
+const payment_types = ["card", "alipay", "bancontact", "blik", "eps", "giropay", "ideal",
+  "klarna", "link", "multibanco", "p24", "paypal", "sepa_debit", "sofort", "us_bank_account",
+  "revolut_pay", "mobilepay", "amazon_pay", "twint", "kr_card", "naver_pay", "kakao_pay", "payco",
+  "samsung_pay", "billie",
+]
+
 export const createPaymentSession = async ({ payment_gateway, metadata, redirect_url, cancel_url }) => {
   try {
     switch (payment_gateway) {
@@ -400,11 +406,11 @@ export const createPaymentSession = async ({ payment_gateway, metadata, redirect
           quantity: line.quantity,
         }));
 
-        const success_url = `https://51.21.123.99/payment-success/?session_id={CHECKOUT_SESSION_ID}&redirect_url=${redirect_url}`;
-        const redirect_cancel_url = `https://51.21.123.99/payment-cancel/?redirect_url=${cancel_url}`;
+        const success_url = `https://getzynq.io/payment-success/?session_id={CHECKOUT_SESSION_ID}&redirect_url=${redirect_url}`;
+        const redirect_cancel_url = `https://getzynq.io/payment-cancel/?redirect_url=${cancel_url}`;
 
         return await stripe.checkout.sessions.create({
-          payment_method_types: ["klarna"],
+          payment_method_types : ["klarna"],
           mode: "payment",
           line_items,
           success_url,
@@ -491,8 +497,8 @@ export const createPaymentSessionForAppointment = async ({ payment_gateway, meta
           payment_method_types: ["klarna"],
           mode: "payment",
           line_items,
-          success_url: `https://51.21.123.99/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
-          cancel_url: `https://51.21.123.99/payment-cancel/?&redirect_url=${metadata.cancel_url}`,
+          success_url: `https://getzynq.io/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
+          cancel_url: `https://getzynq.io/payment-cancel/?&redirect_url=${metadata.cancel_url}`,
           metadata: {
           },
         });

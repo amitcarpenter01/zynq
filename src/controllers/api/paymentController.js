@@ -211,7 +211,7 @@ export const stripeSuccessHandler = asyncHandler(async (req, res) => {
         totalAmount: metadata.total_price,
         products: pro,
         logoUrl: process.env.LOGO_URL, // Optional - defaults to logo_2.png
-        bannerImageUrl: "https://51.21.123.99:4000/product_main.png",
+        bannerImageUrl: "https://getzynq.io:4000/product_main.png",
         customerAddress: metadata.address_data?.address || "Not provided",
         customerState: metadata.address_data?.state || "Not provided",
         customerCity: metadata.address_data?.city || "Not provided",
