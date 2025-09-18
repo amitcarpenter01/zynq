@@ -162,13 +162,15 @@ export const get_all_doctors_in_app_side = asyncHandler(async (req, res) => {
         aesthetic_device_ids = [],
         skin_type_ids = [],
         surgery_ids = [],
-        min_rating = null
+        min_rating = null,
+        search = ''
     } = filters;
 
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
     const doctors = await userModels.getAllDoctors({
+        search,
         treatment_ids,
         skin_condition_ids,
         aesthetic_device_ids,
