@@ -304,7 +304,7 @@ export const updateProfile = async (req, res) => {
         const updateProfileSchema = Joi.object({
             full_name: Joi.string().optional().allow("", null),
             gender: Joi.string().valid("Male", "Female", "Other").optional().allow("", null),
-            age: Joi.number().optional().allow("", null),
+            age: Joi.string().optional().allow("", null),
             is_push_notification_on: Joi.boolean().optional().allow("", null),
             is_location_on: Joi.boolean().optional().allow("", null),
             fcm_token: Joi.string().optional().allow("", null),
