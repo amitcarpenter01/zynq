@@ -803,5 +803,5 @@ export const uploadChatFiles = asyncHandler(async (req, res) => {
 export const deleteMyAccount = asyncHandler(async (req, res) => {
     const { user_id, language } = req.user;
     await apiModels.delete_my_account(user_id)
-    return handleSuccess(res, 200, language, "ACOUNT_DELETED");
+    return handleSuccess(res, 200, language, "ACCOUNT_DELETED");
 });
