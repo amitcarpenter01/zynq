@@ -260,5 +260,7 @@
   "REPORT_SENT_TO_CHAT_SUCCESSFULLY": "Rapport skickades till chatt",
   "FAQ_CATEGORY_DELETED_SUCCESSFULLY": "FAQ kategori raderades",
   "FAQ_CATEGORY_ADDED_SUCCESSFULLY": "FAQ kategori tillagd",
-  "FAQ_CATEGORY_UPDATED_SUCCESSFULLY": "FAQ kategori uppdaterades"
+  "FAQ_CATEGORY_UPDATED_SUCCESSFULLY": "FAQ kategori uppdaterades",
+  "FAQ_CATEGORY_NOT_FOUND": "FAQ kategori hittades inte",
+  "ACCOUNT_DELETED": "Konto raderades"
 }

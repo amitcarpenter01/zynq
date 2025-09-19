@@ -268,5 +268,7 @@
   "REPORT_SENT_TO_CHAT_SUCCESSFULLY": "Report sent to chat successfully",
   "FAQ_CATEGORY_DELETED_SUCCESSFULLY": "FAQ Category Deleted Successfully",
   "FAQ_CATEGORY_ADDED_SUCCESSFULLY": "FAQ Category Added Successfully",
-  "FAQ_CATEGORY_UPDATED_SUCCESSFULLY": "FAQ Category Updated Successfully"
+  "FAQ_CATEGORY_UPDATED_SUCCESSFULLY": "FAQ Category Updated Successfully",
+  "FAQ_CATEGORY_NOT_FOUND": "FAQ Category Not Found",
+  "ACCOUNT_DELETED": "Account Deleted Successfully"
 }
