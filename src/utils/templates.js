@@ -199,7 +199,7 @@ export const orderConfirmationTemplate = ({
   </table>
  
                     <div style="padding-top: 50px; text-align: left;">
-<h4 style="margin-bottom: 10px;font-family: 'Poppins', sans-serif;">Cheers,</h4>
+<h4 style="margin-bottom: 10px;font-family: 'Poppins', sans-serif;">Best regards,</h4>
 <p style="margin-top: 0px;font-family: 'Poppins', sans-serif;">ZYNQ  Team</p>
 </div>
  
@@ -377,7 +377,7 @@ export const orderConfirmationTemplateClinic = ({
   </table>
  
                     <div style="padding-top: 50px; text-align: left;">
-<h4 style="margin-bottom: 10px;font-family: 'Poppins', sans-serif;">Cheers,</h4>
+<h4 style="margin-bottom: 10px;font-family: 'Poppins', sans-serif;">Best regards,</h4>
 <p style="margin-top: 0px;font-family: 'Poppins', sans-serif;">ZYNQ  Team</p>
 </div>
  
@@ -516,7 +516,7 @@ export const faceScanPDFTemplate = ({
           <tr>
             <td style="padding:30px 20px; text-align:center; background-color:#ffffff;">
               <div style="padding-top: 0px; text-align: left;">
-                <h4 style="margin-bottom: 10px;">Cheers,</h4>
+                <h4 style="margin-bottom: 10px;">Best regards,</h4>
                 <p style="margin-top: 0px;">ZYNQ Team</p>
               </div>
             </td>
