@@ -217,4 +217,6 @@ router.get('/faq-categories', optionalAuthenticateUser, getAllFAQCategories);
 
 router.post('/send-report-to-chat', authenticateUser,  validate(sendReportToChatSchema, "body"), faceScanControllers.sendReportToChat);
 
+router.delete('/delete-my-account', authenticateUser, authControllers.deleteMyAccount);
+
 export default router;

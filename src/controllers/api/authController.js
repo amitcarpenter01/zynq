@@ -799,3 +799,9 @@ export const uploadChatFiles = asyncHandler(async (req, res) => {
 
     return handleSuccess(res, 200, 'en', "FILE_UPLOADED", fileInfo);
 });
+
+export const deleteMyAccount = asyncHandler(async (req, res) => {
+    const { user_id, language } = req.user;
+    await apiModels.delete_my_account(user_id)
+    return handleSuccess(res, 200, language, "ACOUNT_DELETED");
+});

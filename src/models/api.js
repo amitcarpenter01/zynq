@@ -2479,3 +2479,19 @@ export const get_user_by_email = async (email, user_id) => {
         throw new Error("Failed to fetch user data.");
     }
 };
+
+export const delete_my_account = async (user_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_users SET
+             is_deleted = 1,
+             email = NULL,
+             mobile_number = NULL
+            WHERE user_id = ?`,
+            [user_id]
+        );
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to delete user.");
+    }
+};
