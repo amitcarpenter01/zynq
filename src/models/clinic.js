@@ -1930,7 +1930,6 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
                 // 1. Basic Fields
                 const basicFields = [
                     "clinic_name",
-                    "zynq_user_id",
                     "org_number",
                     "email",
                     "mobile_number",
