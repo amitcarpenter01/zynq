@@ -14,7 +14,7 @@ export const get_user_by_user_id = async (user_id) => {
 
 export const get_user_by_mobile_number = async (mobile_number) => {
     try {
-        return await db.query(`SELECT * FROM tbl_users WHERE mobile_number = ?`, [mobile_number]);
+        return await db.query(`SELECT * FROM tbl_users WHERE mobile_number = ? AND is_deleted = 0`, [mobile_number]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch user data.");
@@ -2485,8 +2485,7 @@ export const delete_my_account = async (user_id) => {
         return await db.query(
             `UPDATE tbl_users SET
              is_deleted = 1,
-             email = NULL,
-             mobile_number = NULL
+             email = NULL
             WHERE user_id = ?`,
             [user_id]
         );
