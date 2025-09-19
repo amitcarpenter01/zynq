@@ -172,6 +172,7 @@ export const sendFaceResultToEmail = async (req, res) => {
         let { face_scan_result_id } = req.body;
 
         const email = req?.user?.email;
+        const language = req?.user?.language || 'en';
 
         if (!email) {
             return handleError(res, 400, "en", "EMAIL_NOT_FOUND");
@@ -193,7 +194,7 @@ export const sendFaceResultToEmail = async (req, res) => {
             }
         ];
 
-        handleSuccess(res, 200, "en", "REPORT_SENT_SUCCESSFULLY", pdf);
+        handleSuccess(res, 200, language, "REPORT_SENT_SUCCESSFULLY", pdf);
 
         await sendEmail({ to: email, subject, html: body, attachments });
     }
