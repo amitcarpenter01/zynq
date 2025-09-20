@@ -13,7 +13,7 @@ import * as supportControllers from "../controllers/admin/supportController.js";
 import { getLegalDocuments, updateLegalDocuments } from '../controllers/api/legalController.js';
 import { updateLegalDocumentsSchema } from '../validations/legal.validation.js';
 import { validate } from '../middleware/validation.middleware.js';
-import { updateAdminCommissionRatesSchema } from '../validations/commission.validation.js.js';
+import { updateAdminCommissionRatesSchema } from '../validations/commission.validation.js';
 import { deleteNotifications, deleteSingleNotification, getNotifications } from '../controllers/api/notificationController.js';
 import { addWalletAmountSchema, getPaymentHistorySchema, getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
 import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
