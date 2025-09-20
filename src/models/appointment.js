@@ -922,3 +922,16 @@ export const updateAppointmentAsPaid = async (appointment_id, status) => {
   `;
     return await db.query(query, [status, appointment_id]);
 };
+
+
+export const insertContactUs = async (contactData) => {
+    const { email, first_name, last_name, phone_number, message } = contactData;
+    
+    const query = `
+        INSERT INTO tbl_contact_us 
+        (email, first_name, last_name, phone_number, message, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+    `;
+    
+    return await db.query(query, [email, first_name, last_name, phone_number, message]);
+};

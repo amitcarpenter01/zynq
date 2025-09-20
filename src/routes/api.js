@@ -21,7 +21,7 @@ import * as appointmentController from "../controllers/api/appointmentController
 import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 
 //==================================== Import Validations ==============================
-import { rescheduleAppointmentSchema, rateAppointmentSchema, sendReportToChatSchema } from '../validations/appointment.validation.js';
+import { rescheduleAppointmentSchema, rateAppointmentSchema, sendReportToChatSchema, contactUsSchema } from '../validations/appointment.validation.js';
 import { getSingleDoctorSchema, getAllDoctorsSchema, requestCallbackSchema, getSingleDoctorRatingsSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema, getSingleClinicSchema } from '../validations/clinic.validation.js';
 import { getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema, getTreatmentsSchema, sendFaceResultToEmailSchema } from '../validations/treatment.validation.js';
@@ -218,5 +218,9 @@ router.get('/faq-categories', optionalAuthenticateUser, getAllFAQCategories);
 router.post('/send-report-to-chat', authenticateUser,  validate(sendReportToChatSchema, "body"), faceScanControllers.sendReportToChat);
 
 router.delete('/delete-my-account', authenticateUser, authControllers.deleteMyAccount);
+
+//=======================================CONTACT US===============================================
+
+router.post('/contact-us', optionalAuthenticateUser, validate(contactUsSchema, "body"), authControllers.submitContactUs);
 
 export default router;
