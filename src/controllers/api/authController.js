@@ -811,7 +811,5 @@ export const submitContactUs = asyncHandler(async (req, res) => {
     const { language = "en" } = req.user || {};
     const contactData = req.body;
     await insertContactUs(contactData);
-    return handleSuccess(res, 201, language, "CONTACT_MESSAGE_SENT_SUCCESSFULLY");
-
-
+    return handleSuccess(res, 201, language, "CONTACT_RECORDS_SAVED_SUCCESSFULLY");
 });
