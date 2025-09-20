@@ -29,6 +29,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js';
 import pkg from 'rrule';
+import { insertContactUs } from "../../models/appointment.js";
 const { RRule } = pkg;
 dayjs.extend(utc);
 dayjs.extend(isSameOrBefore);
@@ -804,4 +805,13 @@ export const deleteMyAccount = asyncHandler(async (req, res) => {
     const { user_id, language } = req.user;
     await apiModels.delete_my_account(user_id)
     return handleSuccess(res, 200, language, "ACCOUNT_DELETED");
+});
+
+export const submitContactUs = asyncHandler(async (req, res) => {
+    const { language = "en" } = req.user || {};
+    const contactData = req.body;
+    await insertContactUs(contactData);
+    return handleSuccess(res, 201, language, "CONTACT_MESSAGE_SENT_SUCCESSFULLY");
+
+
 });
