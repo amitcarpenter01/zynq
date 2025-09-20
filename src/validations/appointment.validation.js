@@ -3,6 +3,7 @@ import {
   stringValidation,
   dateValidation,
   numberValidation,
+  emailValidation,
 } from "../utils/joi.util.js";
 
 export const rescheduleAppointmentSchema = joi.object({
@@ -30,4 +31,12 @@ export const updateRatingStatusSchema = joi.object({
 export const sendReportToChatSchema = joi.object({
   chat_id: stringValidation,
   report_id: stringValidation
+})
+
+export const contactUsSchema = joi.object({
+  email: emailValidation,
+  first_name: stringValidation,
+  last_name: stringValidation,
+  phone_number: stringValidation,
+  message: stringValidation,
 })
