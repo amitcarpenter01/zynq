@@ -19,8 +19,9 @@ import { addWalletAmountSchema, getPaymentHistorySchema, getSinglePurchasedProdu
 import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
 import { get_treatments } from '../controllers/api/faceScanController.js';
 import { updateRatingStatusSchema } from '../validations/appointment.validation.js';
-import { addEditFAQSchema, getAllFAQSchema, getSingleFAQSchema } from '../validations/faq.validation.js';
-import { addEditFAQ, deleteFAQ, getAllFAQCategories, getAllFAQs, getSingleFAQ } from '../controllers/api/FAQController.js';
+import { addEditFAQCategorySchema, addEditFAQSchema, deleteFAQCategorySchema, getAllFAQSchema, getSingleFAQCategorySchema, getSingleFAQSchema } from '../validations/faq.validation.js';
+import { addEditFAQ, addEditFAQCategory, deleteFAQ, deleteFAQCategory, getAllFAQCategories, getAllFAQs, getSingleFAQ, getSingleFAQCategory } from '../controllers/api/FAQController.js';
+import { getContactUs } from '../controllers/api/authController.js';
 
 const router = express.Router();
 
@@ -130,6 +131,14 @@ router.post('/faq', authenticateAdmin, validate(addEditFAQSchema, 'body'), addEd
 router.post('/faq/get-all-faqs', authenticateAdmin, validate(getAllFAQSchema, "body"), getAllFAQs);
 router.get('/faq/:faq_id', authenticateAdmin, validate(getSingleFAQSchema, 'params'), getSingleFAQ);
 router.delete('/faq/:faq_id', authenticateAdmin, validate(getSingleFAQSchema, 'params'), deleteFAQ);
+
+//=======================================FAQ Categories======================================
+
 router.get('/faq-categories', authenticateAdmin, getAllFAQCategories);
+router.get('/faq-categories/:faq_category_id', authenticateAdmin, validate(getSingleFAQCategorySchema, 'params'), getSingleFAQCategory);
+router.post('/faq-categories', authenticateAdmin, validate(addEditFAQCategorySchema, 'body'), addEditFAQCategory);
+router.delete('/faq-categories/:faq_category_id', authenticateAdmin, validate(deleteFAQCategorySchema, 'params'), deleteFAQCategory);
+
+router.get('/contact-us', authenticateAdmin, getContactUs);
 
 export default router;

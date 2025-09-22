@@ -263,5 +263,6 @@
   "FAQ_CATEGORY_UPDATED_SUCCESSFULLY": "FAQ kategori uppdaterades",
   "FAQ_CATEGORY_NOT_FOUND": "FAQ kategori hittades inte",
   "ACCOUNT_DELETED": "Konto raderades",
-  "CONTACT_RECORDS_SAVED_SUCCESSFULLY": "Kontakträkningar sparade framgångsrikt"
+  "CONTACT_RECORDS_SAVED_SUCCESSFULLY": "Kontakträkningar sparade framgångsrikt",
+  "CONTACT_RECORDS_FETCHED_SUCCESSFULLY": "Kontakträkningar hittades"
 }

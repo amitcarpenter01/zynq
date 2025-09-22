@@ -925,10 +925,24 @@ export const updateAppointmentAsPaid = async (appointment_id, status) => {
 
 
 export const insertContactUs = async (contactData) => {
-    const { email, first_name, last_name, phone_number, message } = contactData;
+    try {
+        const { email, first_name, last_name, phone_number, message } = contactData;
 
-    return await db.query(`
-        INSERT INTO tbl_contact_us 
-        (email, first_name, last_name, phone_number, message) 
-        VALUES (?, ?, ?, ?, ?)`, [email, first_name, last_name, phone_number, message]);
+        return await db.query(`
+            INSERT INTO tbl_contact_us 
+            (email, first_name, last_name, phone_number, message) 
+            VALUES (?, ?, ?, ?, ?)`, [email, first_name, last_name, phone_number, message]);
+    } catch (error) {
+        console.error("Database Error in inserting contact us data:", error.message);
+        throw error;
+    }
+};
+
+export const getContactUsData = async () => {
+    try {
+        return await db.query(`SELECT * FROM tbl_contact_us ORDER BY created_at DESC`);
+    } catch (error) {
+        console.error("Database Error in getting contact us data:", error.message);
+        throw error;
+    }
 };

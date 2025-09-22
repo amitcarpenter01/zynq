@@ -29,7 +29,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js';
 import pkg from 'rrule';
-import { insertContactUs } from "../../models/appointment.js";
+import { getContactUsData, insertContactUs } from "../../models/appointment.js";
 const { RRule } = pkg;
 dayjs.extend(utc);
 dayjs.extend(isSameOrBefore);
@@ -816,4 +816,10 @@ export const submitContactUs = asyncHandler(async (req, res) => {
     const contactData = req.body;
     await insertContactUs(contactData);
     return handleSuccess(res, 201, language, "CONTACT_RECORDS_SAVED_SUCCESSFULLY");
+});
+
+export const getContactUs = asyncHandler(async (req, res) => {
+    const { language = "en" } = req.user || {};
+    const contactData = await getContactUsData();
+    return handleSuccess(res, 200, language, "CONTACT_RECORDS_FETCHED_SUCCESSFULLY", contactData);
 });
