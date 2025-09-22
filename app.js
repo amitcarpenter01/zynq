@@ -17,7 +17,6 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 dotenv.config()
 const app = express();
-// const server = http.createServer(app);
 const PORT = process.env.PORT;
 const APP_URL = process.env.APP_URL;
 const IS_LIVE = process.env.IS_LIVE === "false" ? false : true;
@@ -28,8 +27,6 @@ app.use('/', express.static(path.join(__dirname, 'src/uploads')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'src/views'));
 
-// initializeSocket(server);
-
 (async () => {
   configureApp(app);
   // send_clinic_email_cron()
@@ -39,37 +36,6 @@ app.set('views', path.join(__dirname, 'src/views'));
 app.get("/", (req, res) => {
   return res.send("Zynq App Working")
 });
-
-
-// if (IS_LIVE) {
-//   console.log("SSL is enabled");
-//   const sslOptions = {
-//     ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
-//     key: fs.readFileSync("/var/www/html/ssl/private.key"),
-//     cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
-//   };
-
-//   https.createServer(sslOptions, app).listen(PORT, () => {
-//     console.log(`Server is working on ${APP_URL}`);
-//   });
-// } else {
-//   server.listen(PORT, () => {
-//     console.log(`Server is working on ${APP_URL}`);
-//   });
-// }
-
-
-
-
-
-
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-
 
 let server;
 if (IS_LIVE) {
@@ -86,10 +52,8 @@ if (IS_LIVE) {
   server = http.createServer(app);
 }
 
-// ✅ Attach socket to the actual server
 initializeSocket(server);
 
-// ✅ Start server
 server.listen(PORT, () => {
   console.log(`Server is working on ${APP_URL}`);
 });
