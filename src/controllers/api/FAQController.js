@@ -1,15 +1,8 @@
-import configs from '../../config/config.js';
-import { addFAQModel, deleteFAQModel, getAllFAQCategoriesModel, getAllFAQsModel, getSingleFAQModel, updateFAQModel } from '../../models/FAQ.js';
+import { addFAQCategoryModel, addFAQModel, deleteFAQCategoryModel, deleteFAQModel, getAllFAQCategoriesModel, getAllFAQsModel, getSingleFAQCategoryModel, getSingleFAQModel, updateFAQCategoryModel, updateFAQModel } from '../../models/FAQ.js';
 import { translateFAQ } from '../../utils/misc.util.js';
 import { asyncHandler, handleError, handleSuccess } from '../../utils/responseHandler.js';
 
 import { isEmpty } from "../../utils/user_helper.js";
-
-// import OpenAI from "openai";
-
-// const openai = new OpenAI({
-//   apiKey: process.env.OPENAI_API_KEY,
-// });
 
 export const getAllFAQs = asyncHandler(async (req, res) => {
     const { filters } = req.body;
@@ -46,6 +39,7 @@ const prepareFAQData = async (data) => {
     }
 
     const translated = await translateFAQ(question, answer);
+    
     if (!translated.ans_sv) console.warn("Translation failed for:", question);
 
     return {
@@ -84,4 +78,34 @@ export const getAllFAQCategories = asyncHandler(async (req, res) => {
     const lang = req?.user?.language || "en";
     const data = await getAllFAQCategoriesModel(lang);
     return handleSuccess(res, 200, lang, "FAQ_CATEGORIES_FETCHED_SUCCESSFULLY", data);
+});
+
+export const getSingleFAQCategory = asyncHandler(async (req, res) => {
+    const { faq_category_id } = req.params;
+    const [data] = await getSingleFAQCategoryModel(faq_category_id);
+    if (isEmpty(data)) return handleError(res, 404, 'en', "FAQ_CATEGORY_NOT_FOUND");
+    return handleSuccess(res, 200, 'en', "FAQ_CATEGORIES_FETCHED_SUCCESSFULLY", data);
+});
+
+export const deleteFAQCategory = asyncHandler(async (req, res) => {
+    const { faq_category_id } = req.params;
+    await deleteFAQCategoryModel(faq_category_id);
+    return handleSuccess(res, 200, 'en', "FAQ_CATEGORY_DELETED_SUCCESSFULLY");
+});
+
+export const addEditFAQCategory = asyncHandler(async (req, res) => {
+    const { faq_category_id, } = req.body;
+    const { language = "en" } = req.user;
+
+    const data = req.body;
+
+    const success_message = faq_category_id ? "FAQ_CATEGORY_UPDATED_SUCCESSFULLY" : "FAQ_CATEGORY_ADDED_SUCCESSFULLY";
+    
+    if (!faq_category_id) {
+        await addFAQCategoryModel(data);
+    } else {
+        await updateFAQCategoryModel(faq_category_id, data);
+    }
+
+    return handleSuccess(res, 200, language, success_message);
 });

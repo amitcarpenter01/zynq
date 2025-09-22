@@ -1457,61 +1457,91 @@ export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
 
 export const getLegalDocumentsForUsers = async () => {
     try {
-        const rows = await db.query(`SELECT type, text FROM tbl_legal_documents`);
+        const rows = await db.query(
+            `SELECT type, text FROM tbl_legal_documents`
+        );
 
         const payload = {
             TERMS_CONDITIONS: null,
             PRIVACY_POLICY: null,
+            TERMS_CONDITIONS_SV: null,
+            PRIVACY_POLICY_SV: null,
         };
 
-        for (const doc of rows) {
-            if (doc.type === 'TERMS_CONDITIONS') {
-                payload.TERMS_CONDITIONS = doc.text;
-            } else if (doc.type === 'PRIVACY_POLICY') {
-                payload.PRIVACY_POLICY = doc.text;
+        for (const { type, text } of rows) {
+            switch (type) {
+                case "TERMS_CONDITIONS":
+                    payload.TERMS_CONDITIONS = text;
+                    break;
+
+                case "PRIVACY_POLICY":
+                    payload.PRIVACY_POLICY = text;
+                    break;
+
+                case "TERMS_CONDITIONS_SV":
+                    payload.TERMS_CONDITIONS_SV = text;
+                    break;
+
+                case "PRIVACY_POLICY_SV":
+                    payload.PRIVACY_POLICY_SV = text;
+                    break;
+
+                default:
+                    // Optional: log if an unknown type appears
+                    console.warn(`Unknown legal doc type: ${type}`);
+                    break;
             }
         }
 
         return payload;
     } catch (error) {
-        console.error("❌ Database Error in getLegalDocumentsForUsers:", error.message);
+        console.error("❌ Database Error in getLegalDocumentsForUsers:", error);
         throw new Error("Failed to fetch legal documents");
     }
 };
 
-
-export const updateLegalDocumentsService = async ({ TERMS_CONDITIONS, PRIVACY_POLICY }) => {
+export const updateLegalDocumentsService = async ({
+    TERMS_CONDITIONS,
+    PRIVACY_POLICY,
+    TERMS_CONDITIONS_SV,
+    PRIVACY_POLICY_SV,
+}) => {
     try {
-        const queries = [];
+        const cases = [];
         const values = [];
+        const types = [];
 
-        if (TERMS_CONDITIONS !== undefined) {
-            queries.push(`WHEN 'TERMS_CONDITIONS' THEN ?`);
-            values.push(TERMS_CONDITIONS);
-        }
+        const addCase = (field, dbType) => {
+            if (field !== undefined) {
+                cases.push(`WHEN ? THEN ?`);
+                values.push(dbType, field);
+                types.push(dbType);
+            }
+        };
 
-        if (PRIVACY_POLICY !== undefined) {
-            queries.push(`WHEN 'PRIVACY_POLICY' THEN ?`);
-            values.push(PRIVACY_POLICY);
-        }
+        addCase(TERMS_CONDITIONS, "TERMS_CONDITIONS");
+        addCase(PRIVACY_POLICY, "PRIVACY_POLICY");
+        addCase(TERMS_CONDITIONS_SV, "TERMS_CONDITIONS_SV");
+        addCase(PRIVACY_POLICY_SV, "PRIVACY_POLICY_SV");
 
-        if (queries.length === 0) return { affectedRows: 0 }; // Nothing to update
+        if (cases.length === 0) return { affectedRows: 0 }; // nothing to update
 
-        const query = `
-            UPDATE tbl_legal_documents
-            SET text = CASE type
-                ${queries.join('\n')}
-            END
-            WHERE type IN (${queries.map((_, idx) =>
-            idx === 0 && TERMS_CONDITIONS !== undefined ? `'TERMS_CONDITIONS'` :
-                `'PRIVACY_POLICY'`
-        ).join(', ')})
-        `;
+        const placeholders = types.map(() => "?").join(", ");
+        const sql = `
+      UPDATE tbl_legal_documents
+      SET text = CASE type
+        ${cases.join("\n")}
+      END
+      WHERE type IN (${placeholders})
+    `;
 
-        const result = await db.query(query, values);
+        // Order of params: for each WHEN => [type, value], then WHERE types
+        const params = [...values, ...types];
+
+        const result = await db.query(sql, params);
         return result;
-    } catch (error) {
-        console.error("❌ Database Error in updateLegalDocumentsService:", error.message);
+    } catch (err) {
+        console.error("❌ Database Error in updateLegalDocumentsService:", err);
         throw new Error("Failed to update legal documents");
     }
 };

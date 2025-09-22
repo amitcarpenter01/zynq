@@ -29,3 +29,17 @@ export const getAllFAQSchema = Joi.object({
     search: stringValidation.optional(),
   }).optional(),
 })
+
+export const getSingleFAQCategorySchema = Joi.object({
+  faq_category_id: stringValidation,
+})
+
+export const deleteFAQCategorySchema = Joi.object({
+  faq_category_id: stringValidation,
+})
+
+export const addEditFAQCategorySchema = Joi.object({
+  faq_category_id: stringValidation.optional(),
+  english: stringValidation,
+  swedish: stringValidation
+});

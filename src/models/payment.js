@@ -342,6 +342,7 @@ export const updateShipmentStatusModel = async (purchase_id, shipment_status, us
     throw error;
   }
 };
+
 export const processKlarnaMetadata = (metadata) => {
   let order_lines = [];
 
@@ -369,6 +370,7 @@ export const processKlarnaMetadata = (metadata) => {
     order_amount_minor, // for Stripe/Klarna (minor units)
   };
 };
+
 export const processPaymentMetadata = ({ payment_gateway, metadata }) => {
   try {
     switch (payment_gateway) {

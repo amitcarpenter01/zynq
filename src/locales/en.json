@@ -271,5 +271,6 @@
   "FAQ_CATEGORY_UPDATED_SUCCESSFULLY": "FAQ Category Updated Successfully",
   "FAQ_CATEGORY_NOT_FOUND": "FAQ Category Not Found",
   "ACCOUNT_DELETED": "Account Deleted Successfully",
-  "CONTACT_RECORDS_SAVED_SUCCESSFULLY": "Contact records saved successfully"
+  "CONTACT_RECORDS_SAVED_SUCCESSFULLY": "Contact records saved successfully",
+  "CONTACT_RECORDS_FETCHED_SUCCESSFULLY": "Contact records fetched successfully"
 }

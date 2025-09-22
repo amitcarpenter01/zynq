@@ -20,7 +20,8 @@ const app = express();
 // const server = http.createServer(app);
 const PORT = process.env.PORT;
 const APP_URL = process.env.APP_URL;
-const IS_LIVE = true;
+const IS_LIVE = process.env.IS_LIVE === "false" ? false : true;
+
 app.use(cors());
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use('/', express.static(path.join(__dirname, 'src/uploads')));
