@@ -808,19 +808,22 @@ export const getAppointmentsForNotification = async (windowStart, windowEnd) => 
             a.user_id,
             a.doctor_id,
             a.start_time,
-            an.appointment_notification_id,
-            an.notification_sent,
             u.full_name AS user_name,
-            d.name AS doctor_name
+            u.fcm_token AS user_fcm_token,
+            u.is_push_notification_on AS user_push_notification,
+            d.name AS doctor_name,
+            zu.fcm_token AS doctor_fcm_token,
+            a.reminder_24h_sent,
+            a.reminder_1h_sent
         FROM tbl_appointments a
-        LEFT JOIN tbl_appointments_notifications an ON a.appointment_id = an.appointment_id
         LEFT JOIN tbl_users u ON a.user_id = u.user_id
         LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
-        WHERE (an.notification_sent = 0 OR an.notification_sent IS NULL)
+        LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+        WHERE a.status IN ('Scheduled', 'Rescheduled')
         AND a.start_time BETWEEN ? AND ?
+        AND (a.reminder_24h_sent = 0 OR a.reminder_1h_sent = 0)
     `, [windowStart, windowEnd]);
 };
-
 
 export const updateAppointment = async (data) => {
     const {

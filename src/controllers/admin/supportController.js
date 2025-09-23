@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import * as adminModels from "../../models/admin.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -65,11 +66,38 @@ export const admin_response_to_support_ticket = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
         const { support_ticket_id, response } = value;
-        const [ticket] = await adminModels.get_support_ticket_by_id(support_ticket_id);
-        if (!ticket) {
-            return handleError(res, 404, "en", "SUPPORT_TICKET_NOT_FOUND");
-        }
-        await adminModels.update_support_ticket(support_ticket_id, { response });
+        const [ticket] = await adminModels.get_support_ticket_by_id_v2(support_ticket_id);
+
+        if (!ticket) return handleError(res, 404, "en", "SUPPORT_TICKET_NOT_FOUND");
+
+        const receiver_type = ticket?.user_id
+            ? "USER"
+            : ticket?.role === "SOLO_DOCTOR"
+                ? "SOLO_DOCTOR"
+                : ticket?.doctor_id
+                    ? "DOCTOR"
+                    : ticket?.clinic_id
+                        ? "CLINIC"
+                        : null;
+
+        const receiver_id = ticket?.user_id
+            || (ticket?.role === "SOLO_DOCTOR" && ticket.doctor_id)
+            || ticket?.doctor_id
+            || ticket?.clinic_id
+            || null;
+
+        await Promise.all([
+            sendNotification({
+                userData: req.user,
+                type: "TICKET",
+                type_id: support_ticket_id,
+                notification_type: NOTIFICATION_MESSAGES.support_ticket_response,
+                receiver_id: receiver_id,
+                receiver_type: receiver_type,
+            }),
+            adminModels.update_support_ticket(support_ticket_id, { response })
+        ])
+
         return handleSuccess(res, 200, "en", "RESPONSE_SENT_SUCCESSFULLY");
     } catch (error) {
         console.error("Error in admin_response_to_support_ticket:", error);
