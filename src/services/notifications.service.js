@@ -617,7 +617,6 @@ export const sendAppointmentNotifications = async () => {
             }
         });
 
-        // send all notifications concurrently and mark reminders as sent
         await Promise.all([
             ...notificationPromises,
             bulkMarkAppointmentReminders(appointments24h, appointments1h)
