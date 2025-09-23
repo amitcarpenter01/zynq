@@ -101,9 +101,13 @@ export const NOTIFICATION_MESSAGES = {
         title: 'Appointment Rating Rejected',
         getBody: () => `Your rating has been rejected.`
     },
-    doctor_review : {
+    doctor_review: {
         title: 'New Review',
         getBody: () => `You have a new review.`
+    },
+    support_ticket_response: {
+        title: 'Support Ticket Response',
+        getBody: () => `You have a new support ticket response.`
     },
     default: {
         title: (name) => `${name} Notification`,
@@ -258,7 +262,9 @@ export const sendNotification = async ({
     notification_type,
     receiver_type,
     receiver_id,
-    system = false
+    system = false,
+    receiver_fcm_token = null,
+    receiver_push_enabled = null
 }) => {
     try {
         validateSchema(sendNotificationSchema, {
@@ -268,9 +274,10 @@ export const sendNotification = async ({
             notification_type,
             receiver_type,
             receiver_id,
-            system
+            system,
         });
         const senderMeta = system ? userData : extractUserData(userData);
+
         const {
             user_id: sender_id,
             role: sender_type,
@@ -279,20 +286,12 @@ export const sendNotification = async ({
         const full_name = isEmpty(senderMeta?.full_name) ? 'Someone' : senderMeta?.full_name;
 
         const { title, body } = getNotificationContent(notification_type, full_name);
-        const isPushEnabled = await isPushNotificationEnabled(receiver_id, receiver_type);
-        const { token } = await getUserDataByReceiverIdAndRole(receiver_id, receiver_type)
-        await insertUserNotification({
-            sender_id,
-            sender_type,
-            receiver_id,
-            receiver_type,
-            type,
-            type_id,
-            title,
-            body
-        });
 
-        console.log("Notification recorded in DB")
+        const isPushEnabled = receiver_type === 'USER'
+            ? (receiver_push_enabled ?? await isPushNotificationEnabled(receiver_id, receiver_type))
+            : true;
+
+        const token = receiver_fcm_token || (await getUserDataByReceiverIdAndRole(receiver_id, receiver_type)).token;
 
         const payload = buildNotificationPayload({
             type,
@@ -306,11 +305,22 @@ export const sendNotification = async ({
             body
         });
 
-        if (token && isPushEnabled) {
-            await pushToFCM(payload);
-            console.log("Notification sent via FCM")
-        }
+        const dbPromise = insertUserNotification({
+            sender_id,
+            sender_type,
+            receiver_id,
+            receiver_type,
+            type,
+            type_id,
+            title,
+            body
+        }).then(() => console.log("✅ Notification recorded in DB"));
 
+        const fcmPromise = (token && isPushEnabled)
+            ? pushToFCM(payload).then(() => console.log("✅ Notification sent via FCM"))
+            : Promise.resolve();
+
+        await Promise.all([dbPromise, fcmPromise]);
 
     } catch (error) {
         console.error('Error in sendNotification:', error);
@@ -499,106 +509,121 @@ export const deleteNotificationsModel = async (userData) => {
 // ============================================================================
 
 export const getUpcomingAppointmentWindow = (minutesFromNow = 30) => {
-    const now = dayjs();
-    const windowStart = now.startOf('minute').format('YYYY-MM-DD HH:mm:ss');
-    const windowEnd = now.add(minutesFromNow, 'minute').endOf('minute').format('YYYY-MM-DD HH:mm:ss');
-
-    return { windowStart, windowEnd };
+    const now = dayjs().utc();
+    return {
+        windowStart: now.startOf('minute').format('YYYY-MM-DD HH:mm:ss'),
+        windowEnd: now.add(minutesFromNow, 'minute').endOf('minute').format('YYYY-MM-DD HH:mm:ss')
+    };
 };
 
-export const sendAppointmentPairNotification = async (appointment) => {
-    const {
-        appointment_id,
-        user_id,
-        doctor_id,
-        user_name,
-        doctor_name
-    } = appointment;
+export const sendAppointmentPairNotification = (appointment) => {
+    const { appointment_id, user_id, doctor_id, user_name, user_fcm_token, user_push_notification_on, doctor_name, doctor_fcm_token } = appointment;
 
-    // Doctor → User
-    await sendNotification({
-        userData: {
-            user_id: doctor_id,
-            role: 'DOCTOR',
-            full_name: doctor_name || 'Doctor',
-            token: null
-        },
-        type: 'APPOINTMENT',
-        type_id: appointment_id,
-        notification_type: NOTIFICATION_MESSAGES.upcoming_appointment,
-        receiver_type: 'USER',
-        receiver_id: user_id,
-        system: true
-    });
+    return [
+        sendNotification({
+            userData: { user_id: doctor_id, role: 'DOCTOR', full_name: doctor_name || 'Doctor', },
+            type: 'APPOINTMENT',
+            type_id: appointment_id,
+            notification_type: NOTIFICATION_MESSAGES.upcoming_appointment,
+            receiver_type: 'USER',
+            receiver_id: user_id,
+            system: true,
+            receiver_fcm_token: user_fcm_token,
+            receiver_push_enabled: user_push_notification_on
 
-    // User → Doctor
-    await sendNotification({
-        userData: {
-            user_id: user_id,
-            role: 'USER',
-            full_name: user_name || 'Someone',
-            token: null
-        },
-        type: 'APPOINTMENT',
-        type_id: appointment_id,
-        notification_type: NOTIFICATION_MESSAGES.upcoming_appointment,
-        receiver_type: 'DOCTOR',
-        receiver_id: doctor_id,
-        system: true
-    });
+        }),
+        sendNotification({
+            userData: { user_id, role: 'USER', full_name: user_name || 'Someone', },
+            type: 'APPOINTMENT',
+            type_id: appointment_id,
+            notification_type: NOTIFICATION_MESSAGES.upcoming_appointment,
+            receiver_type: 'DOCTOR',
+            receiver_id: doctor_id,
+            system: true,
+            receiver_fcm_token: doctor_fcm_token
+        })
+    ];
 };
 
-export const markAppointmentNotificationSent = async (appointment_id) => {
-    try {
-        const existing = await db.query(
-            `SELECT appointment_notification_id 
-             FROM tbl_appointments_notifications 
-             WHERE appointment_id = ?`,
-            [appointment_id]
-        );
+export const bulkMarkAppointmentReminders = async (appointments24h, appointments1h) => {
+    if (!appointments24h.length && !appointments1h.length) return;
 
-        if (existing.length) {
-            await db.query(
-                `UPDATE tbl_appointments_notifications 
-                 SET notification_sent = 1 
-                 WHERE appointment_id = ?`,
-                [appointment_id]
-            );
-        } else {
-            await db.query(
-                `INSERT INTO tbl_appointments_notifications 
-                 (appointment_id, notification_sent) 
-                 VALUES (?, 1)`,
-                [appointment_id]
-            );
-        }
-    } catch (error) {
-        console.error('❌ Error in markAppointmentNotificationSent:', error);
-        throw new Error('Failed to mark appointment notification status.');
+    const sets = [];
+
+    if (appointments24h.length) {
+        sets.push(`
+            reminder_24h_sent = CASE appointment_id
+                ${appointments24h.map(id => `WHEN '${id}' THEN 1`).join(' ')}
+                ELSE reminder_24h_sent
+            END
+        `);
     }
+
+    if (appointments1h.length) {
+        sets.push(`
+            reminder_1h_sent = CASE appointment_id
+                ${appointments1h.map(id => `WHEN '${id}' THEN 1`).join(' ')}
+                ELSE reminder_1h_sent
+            END
+        `);
+    }
+
+    const allIds = [...appointments24h, ...appointments1h];
+
+    const sql = `
+        UPDATE tbl_appointments
+        SET ${sets.join(', ')}
+        WHERE appointment_id IN (${allIds.map(id => `'${id}'`).join(',')});
+    `;
+
+    await db.query(sql);
 };
 
 export const sendAppointmentNotifications = async () => {
     try {
-        const { windowStart, windowEnd } = getUpcomingAppointmentWindow(30);
+        const MINUTES_24H = 24 * 60;
+        const MINUTES_1H = 60;
+        const DB_BUFFER = 15;
+        const SEND_WINDOW = 10;
+
+        const { windowStart, windowEnd } = getUpcomingAppointmentWindow(MINUTES_24H + DB_BUFFER);
         const appointments = await getAppointmentsForNotification(windowStart, windowEnd);
 
-        if (!appointments.length) {
-            console.log('No appointments found for notification.');
-            return;
-        }
+        if (!appointments.length) return console.log('No appointments found for notification.');
 
-        for (const appointment of appointments) {
-            try {
-                await sendAppointmentPairNotification(appointment);
-                await markAppointmentNotificationSent(appointment.appointment_id);
-            } catch (err) {
-                console.error(`Failed to notify for appointment ${appointment.appointment_id}:`, err.message);
+        const now = dayjs().utc();
+        const appointments24h = [];
+        const appointments1h = [];
+        const notificationPromises = [];
+
+        appointments.forEach((appt) => {
+            const startTime = dayjs(appt.start_time);
+            const diffMinutes = startTime.diff(now, 'minutes');
+
+            const is24hReminder = !appt.reminder_24h_sent &&
+                diffMinutes >= MINUTES_24H - SEND_WINDOW &&
+                diffMinutes <= MINUTES_24H + SEND_WINDOW;
+
+            const is1hReminder = !appt.reminder_1h_sent &&
+                diffMinutes >= MINUTES_1H - SEND_WINDOW &&
+                diffMinutes <= MINUTES_1H + SEND_WINDOW;
+
+            if (is24hReminder) {
+                appointments24h.push(appt.appointment_id);
+                notificationPromises.push(sendAppointmentPairNotification(appt));
+            } else if (is1hReminder) {
+                appointments1h.push(appt.appointment_id);
+                notificationPromises.push(sendAppointmentPairNotification(appt));
             }
-        }
+        });
 
-        console.log('Appointment notification cron completed.');
+        await Promise.all([
+            ...notificationPromises,
+            bulkMarkAppointmentReminders(appointments24h, appointments1h)
+        ]);
+
+        console.log('✅ Appointment notifications processed successfully.');
     } catch (error) {
-        console.error('Cron job failed :', error.message);
+        console.error('❌ Cron job failed:', error.message);
     }
 };

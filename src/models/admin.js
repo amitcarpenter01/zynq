@@ -751,6 +751,40 @@ export const get_support_ticket_by_id = async (support_ticket_id) => {
     }
 }
 
+export const get_support_ticket_by_id_v2 = async (support_ticket_id) => {
+  try {
+    return await db.query(`
+      SELECT 
+        st.*,
+        r.role,
+        COALESCE(st.doctor_id, d_from_clinic.doctor_id) AS doctor_id,
+        c.clinic_id
+      FROM tbl_support_tickets st
+
+      LEFT JOIN tbl_clinics c 
+        ON st.clinic_id = c.clinic_id
+      LEFT JOIN tbl_zqnq_users zu_clinic 
+        ON c.zynq_user_id = zu_clinic.id
+      LEFT JOIN tbl_doctors d_from_clinic 
+        ON zu_clinic.id = d_from_clinic.zynq_user_id
+
+      LEFT JOIN tbl_roles r 
+        ON r.id = COALESCE(zu_clinic.role_id, (
+            SELECT zu2.role_id
+            FROM tbl_doctors d2
+            JOIN tbl_zqnq_users zu2 ON d2.zynq_user_id = zu2.id
+            WHERE d2.doctor_id = st.doctor_id
+        ))
+
+      WHERE st.support_ticket_id = ?
+    `, [support_ticket_id]);
+  } catch (error) {
+    console.error("Database Error:", error.message);
+    throw new Error("Failed to get support ticket by id.");
+  }
+};
+
+
 export const update_support_ticket = async (support_ticket_id, updateData) => {
     try {
         return await db.query('UPDATE `tbl_support_tickets` SET `admin_response`= ?, `responded_at`= ? WHERE support_ticket_id = ?', [updateData.response, new Date(), support_ticket_id]);

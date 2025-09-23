@@ -36,35 +36,35 @@ router.post('/update-profile', authenticateAdmin, upload.single('file'), authCon
 router.post('/change-password', authenticateAdmin, authControllers.changePassword);
 
 //==================================== Dashboard ==============================
-router.get('/get-dashboard', dashboardControllers.get_dashboard);
+router.get('/get-dashboard', authenticateAdmin, dashboardControllers.get_dashboard);
 
 //==================================== User Managment ==============================
-router.get('/get-users-managment', userControllers.get_users_managment);
-router.post('/update-user-status', userControllers.update_user_status);
+router.get('/get-users-managment', authenticateAdmin, userControllers.get_users_managment);
+router.post('/update-user-status', authenticateAdmin, userControllers.update_user_status);
 
 //==================================== Clinic Managment ==============================
-router.post('/import-clinics-from-CSV', upload.single("file"), clinicControllers.import_clinics_from_CSV);
-router.post('/add-clinic-managment', clinicControllers.add_clinic_managment);
-router.get('/get-clinic-managment', clinicControllers.get_clinic_managment);
-router.post('/delete-clinic-management', clinicControllers.delete_clinic_management);
-router.post('/send-invitation', clinicControllers.send_invitation);
-router.get('/subscribed/:is_subscribed', clinicControllers.subscribed);
-router.get('/unsubscribed/:is_unsubscribed', clinicControllers.unsubscribed);
-router.post('/send-invitation', clinicControllers.send_invitation);
+router.post('/import-clinics-from-CSV', authenticateAdmin, upload.single("file"), clinicControllers.import_clinics_from_CSV);
+router.post('/add-clinic-managment', authenticateAdmin, clinicControllers.add_clinic_managment);
+router.get('/get-clinic-managment', authenticateAdmin, clinicControllers.get_clinic_managment);
+router.post('/delete-clinic-management', authenticateAdmin, clinicControllers.delete_clinic_management);
+router.post('/send-invitation', authenticateAdmin, clinicControllers.send_invitation);
+router.get('/subscribed/:is_subscribed', authenticateAdmin, clinicControllers.subscribed);
+router.get('/unsubscribed/:is_unsubscribed', authenticateAdmin, clinicControllers.unsubscribed);
+router.post('/send-invitation', authenticateAdmin, clinicControllers.send_invitation);
 
 //==================================== Doctor Managment ==============================
-router.get('/get-dcotors-managment', doctorControllers.get_doctors_management);
 
+router.get('/get-dcotors-managment', authenticateAdmin, doctorControllers.get_doctors_management);
 
 //==================================== Product Managment ==============================
-router.get('/get-products-managment', productControllers.get_products_managment);
-router.get('/get-products-managment/:product_id', productControllers.get_single_products_managment);
-router.post('/delete-products-managment', productControllers.delete_products_managment);
+router.get('/get-products-managment', authenticateAdmin, productControllers.get_products_managment);
+router.get('/get-products-managment/:product_id', authenticateAdmin, productControllers.get_single_products_managment);
+router.post('/delete-products-managment', authenticateAdmin, productControllers.delete_products_managment);
 
 
 //==================================== Support Managment ==============================
-router.get('/get-all-support-tickets', supportControllers.get_all_support_tickets);
-router.post('/admin-response-to-support-ticket', supportControllers.admin_response_to_support_ticket);
+router.get('/get-all-support-tickets', authenticateAdmin, supportControllers.get_all_support_tickets);
+router.post('/admin-response-to-support-ticket', authenticateAdmin, supportControllers.admin_response_to_support_ticket);
 
 //==================================== Call Logs Managment ==============================
 

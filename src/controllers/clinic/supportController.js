@@ -13,6 +13,7 @@ import * as webModels from "../../models/web_user.js";
 import { sendEmail } from "../../services/send_email.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { generateAccessToken, generatePassword, generateVerificationLink, generateSupportTicketId } from "../../utils/user_helper.js";
+import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -72,7 +73,7 @@ export const get_support_tickets_by_doctor_id_to_clinic = async (req, res) => {
         const supportTickets = await clinicModels.get_support_tickets_by_doctor_id_to_clinic(clinic_id);
         let finalData = [];
         for (let ticket of supportTickets) {
-          const [doctor] = await adminModels.get_doctor_by_id(ticket.doctor_id);
+            const [doctor] = await adminModels.get_doctor_by_id(ticket.doctor_id);
             finalData.push({
                 ...ticket,
                 doctor: doctor,
@@ -84,28 +85,36 @@ export const get_support_tickets_by_doctor_id_to_clinic = async (req, res) => {
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 }
- 
+
 export const send_response_to_doctor = async (req, res) => {
     try {
         const schema = Joi.object({
-            support_ticket_id :Joi.string().required(),
+            support_ticket_id: Joi.string().required(),
             response: Joi.string().required(),
         });
- 
+
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
-        const { response,support_ticket_id  } = value;
- 
-        const [ticket] = await clinicModels.get_issue_by_id(support_ticket_id );
+        const { response, support_ticket_id } = value;
+
+        const [ticket] = await clinicModels.get_issue_by_id(support_ticket_id);
         if (!ticket) return handleError(res, 404, "en", "SUPPORT_TICKET_NOT_FOUND");
- 
- 
-        await clinicModels.send_ticket_response(response,support_ticket_id );
+
+        await sendNotification({
+            userData: req.user,
+            type : "TICKET",
+            type_id : support_ticket_id,
+            notification_type : NOTIFICATION_MESSAGES.support_ticket_response,
+            receiver_id : ticket.doctor_id,
+            receiver_type : "DOCTOR"
+        })
+
+        await clinicModels.send_ticket_response(response, support_ticket_id);
+        
         return handleSuccess(res, 201, "en", "RESPONSE_SENT_SUCCESSFULLY");
     } catch (error) {
         console.error("Error in send_response_to_doctor:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 }
- 
- 
+
