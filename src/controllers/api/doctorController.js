@@ -370,7 +370,7 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         clinicModels.getDoctorEducationBulk([doctor_id]),
         clinicModels.getDoctorExperienceBulk([doctor_id]),
         clinicModels.getDoctorSkinTypesBulk([doctor_id]),
-        clinicModels.getDoctorTreatmentsBulkV2([doctor_id], "sv"),
+        clinicModels.getDoctorTreatmentsBulkV2([doctor_id], language),
         clinicModels.getDoctorSkinConditionBulk([doctor_id]),
         clinicModels.getDoctorSurgeryBulk([doctor_id]),
         clinicModels.getDoctorAstheticDevicesBulk([doctor_id]),
