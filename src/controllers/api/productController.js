@@ -173,6 +173,7 @@ export const getAllProducts = async (req, res) => {
 
         for (const product of products) {
             product.product_images = imagesMap[product.product_id] || [];
+            product.cover_image = product.cover_image ? `${APP_URL}clinic/product_image/${product.cover_image}` : null;
         }
 
         return handleSuccess(res, 200, language, "PRODUCTS_FETCHED_SUCCESSFULLY", products);
@@ -208,6 +209,7 @@ export const getSingleProduct = async (req, res) => {
 
         for (const product of products) {
             product.product_images = imagesMap[product.product_id] || [];
+            product.cover_image = product.cover_image ? `${APP_URL}clinic/product_image/${product.cover_image}` : null;
         }
 
         return handleSuccess(res, 200, language, "PRODUCT_FETCHED_SUCCESSFULLY", products[0]);
