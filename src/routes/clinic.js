@@ -37,7 +37,8 @@ const getFieldsFn = async (req) => {
 };
 
 const getProductFields = () => [
-    { name: 'product_image', maxCount: 10 }
+    { name: 'product_image', maxCount: 10 },
+    { name : 'cover_image', maxCount: 1 }
 ];
 
 const uploadProductImage = uploadDynamicClinicFiles(getProductFields);

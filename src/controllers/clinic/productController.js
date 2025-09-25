@@ -58,8 +58,10 @@ export const addProduct = async (req, res) => {
             treatment_ids_array = treatment_ids.split(',')
         }
 
+        const cover_image = req?.files?.find(file => file.fieldname === 'cover_image')?.filename || null;
         let product_id = uuidv4();
         const productData = {
+            cover_image,
             product_id: product_id,
             clinic_id: clinic.clinic_id,
             ...value
@@ -79,11 +81,13 @@ export const addProduct = async (req, res) => {
 
         if (req.files.length > 0) {
             await Promise.all(req.files.map(async (file) => {
-                let data = {
-                    product_id: product_id,
-                    image: file.filename,
+                if (file.fieldname === 'product_image') {
+                    let data = {
+                        product_id: product_id,
+                        image: file.filename,
+                    }
+                    await clinicModels.insertProductImage(data);
                 }
-                await clinicModels.insertProductImage(data);
             }));
         }
 
@@ -141,6 +145,7 @@ export const getProductById = async (req, res) => {
         }
 
         const productImages = await clinicModels.get_product_images(product.product_id);
+        product.cover_image = product.cover_image ? APP_URL + 'clinic/product_image/' + product.cover_image : null;
         product.product_images = productImages.map((image) => {
             if (image.image && !image.image.startsWith('http')) {
                 image.image = APP_URL + 'clinic/product_image/' + image.image;
@@ -189,20 +194,28 @@ export const updateProduct = async (req, res) => {
         }
 
         const [product] = await clinicModels.get_product_by_id(value.product_id);
+
         if (!product) {
             return handleError(res, 404, "en", "PRODUCT_NOT_FOUND");
         }
 
-
         if (req.files.length > 0) {
             await Promise.all(req.files.map(async (file) => {
-                await clinicModels.insertProductImage({
-                    product_id: product.product_id,
-                    image: file.filename,
-                });
+                if (file.fieldname === 'product_image') {
+                    await clinicModels.insertProductImage({
+                        product_id: product.product_id,
+                        image: file.filename,
+                    });
+                }
             }));
         }
 
+        const cover_image = req.files.find(file => file.fieldname === 'cover_image')?.filename || product.cover_image
+        const data = {
+            ...value,
+            cover_image
+
+        }
         await clinicModels.updateProduct(value, product.product_id);
         await clinicModels.updateProductTreatments(treatment_ids_array, product.product_id);
 
