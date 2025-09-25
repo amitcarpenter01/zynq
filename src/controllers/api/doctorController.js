@@ -352,7 +352,7 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
 
 export const getSingleDoctor = asyncHandler(async (req, res) => {
     const { doctor_id, clinic_id } = req.params;
-    const { user_id } = req.user;
+    const { user_id, language = 'en' } = req.user;
 
     const doctorResult = await doctorModels.getDoctorByDoctorID(doctor_id, clinic_id);
     let doctor = doctorResult?.[0];
@@ -370,7 +370,7 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         clinicModels.getDoctorEducationBulk([doctor_id]),
         clinicModels.getDoctorExperienceBulk([doctor_id]),
         clinicModels.getDoctorSkinTypesBulk([doctor_id]),
-        clinicModels.getDoctorTreatmentsBulk([doctor_id]),
+        clinicModels.getDoctorTreatmentsBulkV2([doctor_id], "sv"),
         clinicModels.getDoctorSkinConditionBulk([doctor_id]),
         clinicModels.getDoctorSurgeryBulk([doctor_id]),
         clinicModels.getDoctorAstheticDevicesBulk([doctor_id]),
@@ -431,15 +431,21 @@ export const getSingleDoctorRatings = asyncHandler(async (req, res) => {
 
 export const search_home_entities = asyncHandler(async (req, res) => {
     const { language = 'en' } = req.user || {};
-    let { filters = {}, page = 1 } = req.body || {};
-    
-    const offset = (page - 1) * 30;
-    const limit = 30;
+    let { filters = {}, page, limit } = req.body || {};
+
+    // Determine pagination
+    let offset = null;
+    if (page && limit) {
+        limit = Number(limit);
+        offset = (Number(page) - 1) * limit;
+    } else {
+        limit = null;  // no limit if not provided
+        offset = null;
+    }
 
     const search = filters.search?.trim() || "";
 
     try {
-        // Fetch all entities concurrently
         const [doctors, clinics, products, treatments] = await Promise.all([
             userModels.getDoctorsByFirstNameSearchOnly({ search, offset, limit }),
             userModels.getClinicsByNameSearchOnly({ search, offset, limit }),
@@ -447,38 +453,35 @@ export const search_home_entities = asyncHandler(async (req, res) => {
             userModels.getTreatmentsBySearchOnly({ search, language, offset, limit })
         ]);
 
-        // Enrich doctors with full profile image paths
         const enrichedDoctors = doctors.map(doctor => ({
             ...doctor,
             profile_image: formatImagePath(doctor.profile_image, 'doctor/profile_images')
         }));
 
-        // Enrich clinics with full logo paths
         const enrichedClinics = clinics.map(clinic => ({
             ...clinic,
             clinic_logo: formatImagePath(clinic.clinic_logo, 'clinic/logo')
         }));
 
-        // Enrich products with all images
         let enrichedProducts = [];
-        if (products && products.length > 0) {
+        if (products?.length) {
             const productIds = products.map(p => p.product_id);
             const imageRows = await userModels.get_product_images_by_product_ids(productIds);
 
-            // Map images to their respective product
             const imagesMap = {};
             for (const row of imageRows) {
                 if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
                 imagesMap[row.product_id].push(
-                    row.image.startsWith('http') ? row.image : `${APP_URL}clinic/product_image/${row.image}`
+                    row.image.startsWith('http')
+                        ? row.image
+                        : `${APP_URL}clinic/product_image/${row.image}`
                 );
             }
 
-            // Attach images to products
             enrichedProducts = products.map(product => ({
                 ...product,
                 product_images: imagesMap[product.product_id] || [],
-                image: formatImagePath(product.image, 'clinic/product_image') // main image
+                image: formatImagePath(product.image, 'clinic/product_image')
             }));
         }
 

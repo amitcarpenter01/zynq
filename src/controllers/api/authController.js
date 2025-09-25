@@ -823,3 +823,15 @@ export const getContactUs = asyncHandler(async (req, res) => {
     const contactData = await getContactUsData();
     return handleSuccess(res, 200, language, "CONTACT_RECORDS_FETCHED_SUCCESSFULLY", contactData);
 });
+
+export const guestLogin = asyncHandler(async (req, res) => {
+    const { device_id, data, language } = req.body;
+    await apiModels.guestLoginModel({ device_id, data });
+    return handleSuccess(res, 200, language, "GUEST_LOGIN_SUCCESSFULLY",);
+});
+
+export const getGuestFaceScan = asyncHandler(async (req, res) => {
+    const { device_id, language } = req.body;
+    const data = await apiModels.getGuestFaceScan(device_id);
+    return handleSuccess(res, 200, language, "FACE_SCAN_FETCHED", data);
+});

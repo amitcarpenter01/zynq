@@ -40,3 +40,14 @@ export const contactUsSchema = joi.object({
   phone_number: stringValidation,
   message: stringValidation,
 })
+
+export const guestLoginSchema = joi.object({
+  device_id: stringValidation,
+  data: stringValidation,
+  language: stringValidation
+})
+
+export const getGuestFaceScanSchema = joi.object({
+  device_id: stringValidation,
+  language: stringValidation.valid("en", "sv")
+})
