@@ -84,7 +84,7 @@ router.get('/get-all-enrollments', authenticateAdmin, authControllers.get_all_en
 
 router.get('/wallets', authenticateAdmin, dashboardControllers.get_wallets);
 
-router.get('/legal', getLegalDocuments);
+router.get('/legal', authenticateAdmin, getLegalDocuments);
 
 router.put('/legal', authenticateAdmin, validate(updateLegalDocumentsSchema, "body"), updateLegalDocuments);
 

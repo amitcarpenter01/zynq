@@ -1058,8 +1058,8 @@ export const getSingleClinicForUser = async (
 
         const selectFields = [
             'c.*',
-            'MIN(d.fee_per_session) AS doctor_lower_price_range',
-            'MAX(d.fee_per_session) AS doctor_higher_price_range',
+            'MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range',
+            'MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range',
             'ROUND(AVG(ar.rating), 2) AS avg_rating'
         ].filter(Boolean).join(', ');
 
@@ -1455,45 +1455,28 @@ export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
 };
 
 
-export const getLegalDocumentsForUsers = async () => {
+export const getLegalDocumentsForUsers = async (role, language) => {
     try {
         const rows = await db.query(
             `SELECT type, text FROM tbl_legal_documents`
         );
 
-        const payload = {
-            TERMS_CONDITIONS: null,
-            PRIVACY_POLICY: null,
-            TERMS_CONDITIONS_SV: null,
-            PRIVACY_POLICY_SV: null,
-        };
+        const docs = Object.fromEntries(rows.map(({ type, text }) => [type, text]));
 
-        for (const { type, text } of rows) {
-            switch (type) {
-                case "TERMS_CONDITIONS":
-                    payload.TERMS_CONDITIONS = text;
-                    break;
-
-                case "PRIVACY_POLICY":
-                    payload.PRIVACY_POLICY = text;
-                    break;
-
-                case "TERMS_CONDITIONS_SV":
-                    payload.TERMS_CONDITIONS_SV = text;
-                    break;
-
-                case "PRIVACY_POLICY_SV":
-                    payload.PRIVACY_POLICY_SV = text;
-                    break;
-
-                default:
-                    // Optional: log if an unknown type appears
-                    console.warn(`Unknown legal doc type: ${type}`);
-                    break;
-            }
+        if (role === "ADMIN") {
+            return {
+                TERMS_CONDITIONS: docs.TERMS_CONDITIONS ?? null,
+                PRIVACY_POLICY: docs.PRIVACY_POLICY ?? null,
+                TERMS_CONDITIONS_SV: docs.TERMS_CONDITIONS_SV ?? null,
+                PRIVACY_POLICY_SV: docs.PRIVACY_POLICY_SV ?? null,
+            };
         }
 
-        return payload;
+        const isSwedish = language === "sv";
+        return {
+            TERMS_CONDITIONS: docs[isSwedish ? "TERMS_CONDITIONS_SV" : "TERMS_CONDITIONS"] ?? null,
+            PRIVACY_POLICY: docs[isSwedish ? "PRIVACY_POLICY_SV" : "PRIVACY_POLICY"] ?? null,
+        };
     } catch (error) {
         console.error("❌ Database Error in getLegalDocumentsForUsers:", error);
         throw new Error("Failed to fetch legal documents");
@@ -1919,10 +1902,12 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', limit, offs
             GROUP BY d.doctor_id, dm.clinic_id
             ORDER BY avg_rating DESC
         `;
-        if (limit) {
+
+        if (limit != null) {   // apply only if not null/undefined
             query += ` LIMIT ?`;
             params.push(Number(limit));
-            if (offset) {
+
+            if (offset != null) {
                 query += ` OFFSET ?`;
                 params.push(Number(offset));
             }
@@ -2069,14 +2054,17 @@ export const getClinicsByNameSearchOnly = async ({ search = '', limit, offset })
             GROUP BY c.clinic_id
             ORDER BY avg_rating DESC
         `;
-        if (limit) {
+
+        if (limit != null) {   // apply only if not null/undefined
             query += ` LIMIT ?`;
             params.push(Number(limit));
-            if (offset) {
+
+            if (offset != null) {
                 query += ` OFFSET ?`;
                 params.push(Number(offset));
             }
         }
+
 
         return await db.query(query, params);
     } catch (error) {
@@ -2121,10 +2109,11 @@ export const getProductsByNameSearchOnly = async ({ search = '', limit, offset }
             GROUP BY p.product_id
             ORDER BY p.created_at DESC
         `;
-        if (limit) {
+        if (limit != null) {   // apply only if not null/undefined
             query += ` LIMIT ?`;
             params.push(Number(limit));
-            if (offset) {
+
+            if (offset != null) {
                 query += ` OFFSET ?`;
                 params.push(Number(offset));
             }
@@ -2163,10 +2152,12 @@ export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', 
         }
 
         query += ` ORDER BY created_at DESC`;
-        if (limit) {
+
+        if (limit != null) {   // apply only if not null/undefined
             query += ` LIMIT ?`;
             params.push(Number(limit));
-            if (offset) {
+
+            if (offset != null) {
                 query += ` OFFSET ?`;
                 params.push(Number(offset));
             }
@@ -2524,3 +2515,28 @@ export const delete_my_account = async (user_id) => {
         throw new Error("Failed to delete user.");
     }
 };
+
+export const guestLoginModel = async (data) => {
+    try {
+        await db.query(
+            `INSERT IGNORE INTO tbl_guests (device_id, data) VALUES (?, ?)`,
+            [data.device_id, data.data || null]
+        );
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to save guest.");
+    }
+};
+
+export const getGuestFaceScan = async (device_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_guests WHERE device_id = ?`,
+            [device_id]
+        );
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get guest.");
+    }
+};
+

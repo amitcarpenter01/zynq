@@ -272,5 +272,7 @@
   "FAQ_CATEGORY_NOT_FOUND": "FAQ Category Not Found",
   "ACCOUNT_DELETED": "Account Deleted Successfully",
   "CONTACT_RECORDS_SAVED_SUCCESSFULLY": "Contact records saved successfully",
-  "CONTACT_RECORDS_FETCHED_SUCCESSFULLY": "Contact records fetched successfully"
+  "CONTACT_RECORDS_FETCHED_SUCCESSFULLY": "Contact records fetched successfully",
+  "GUEST_LOGIN_SUCCESSFULLY": "Guest Logged in Successfully",
+  "FACE_SCAN_FETCHED": "Face Scan Report Fetched Successfully"
 }

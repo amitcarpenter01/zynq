@@ -1648,6 +1648,34 @@ export const getDoctorTreatmentsBulk = async (doctorIds) => {
     }
 };
 
+export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en') => {
+    try {
+        const placeholders = doctorIds.map(() => '?').join(',');
+
+        const query = `SELECT dt.*, t.* 
+            FROM tbl_doctor_treatments dt 
+            LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id  
+            WHERE dt.doctor_id IN (${placeholders}) 
+            ORDER BY dt.created_at DESC`;
+        const results = await db.query(query, doctorIds);
+
+        const grouped = {};
+        results.forEach(row => {
+            if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+
+            // Set treatment name based on lang
+            const treatmentRow = { ...row };
+            treatmentRow.name = lang === 'sv' ? row.swedish : row.name;
+
+            grouped[row.doctor_id].push(treatmentRow);
+        });
+
+        return grouped;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch doctor education.");
+    }
+};
 
 export const getDoctorSkinConditionBulk = async (doctorIds) => {
     const placeholders = doctorIds.map(() => '?').join(',');

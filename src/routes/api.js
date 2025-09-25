@@ -21,7 +21,7 @@ import * as appointmentController from "../controllers/api/appointmentController
 import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 
 //==================================== Import Validations ==============================
-import { rescheduleAppointmentSchema, rateAppointmentSchema, sendReportToChatSchema, contactUsSchema } from '../validations/appointment.validation.js';
+import { rescheduleAppointmentSchema, rateAppointmentSchema, sendReportToChatSchema, contactUsSchema, guestLoginSchema, getGuestFaceScanSchema } from '../validations/appointment.validation.js';
 import { getSingleDoctorSchema, getAllDoctorsSchema, requestCallbackSchema, getSingleDoctorRatingsSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema, getSingleClinicSchema } from '../validations/clinic.validation.js';
 import { getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema, getTreatmentsSchema, sendFaceResultToEmailSchema } from '../validations/treatment.validation.js';
@@ -155,7 +155,7 @@ router.patch('/toggle-language', authenticateUser, toggleLanguage);
 
 // -------------------------------------Terms & Conditions------------------------------------------------//
 
-router.get('/legal', getLegalDocuments);
+router.get('/legal', optionalAuthenticateUser, getLegalDocuments);
 
 // -------------------------------------Chat Files------------------------------------------------//
 
@@ -215,12 +215,15 @@ router.post('/get-all-faqs', optionalAuthenticateUser, validate(getAllFAQSchema,
 
 router.get('/faq-categories', optionalAuthenticateUser, getAllFAQCategories);
 
-router.post('/send-report-to-chat', authenticateUser,  validate(sendReportToChatSchema, "body"), faceScanControllers.sendReportToChat);
+router.post('/send-report-to-chat', authenticateUser, validate(sendReportToChatSchema, "body"), faceScanControllers.sendReportToChat);
 
 router.delete('/delete-my-account', authenticateUser, authControllers.deleteMyAccount);
 
 //=======================================CONTACT US===============================================
 
 router.post('/contact-us', optionalAuthenticateUser, validate(contactUsSchema, "body"), authControllers.submitContactUs);
+
+router.post('/guest/login', validate(guestLoginSchema, "body"), authControllers.guestLogin);
+router.post('/guest/get-face-scan', validate(getGuestFaceScanSchema, "body"), authControllers.getGuestFaceScan);
 
 export default router;
