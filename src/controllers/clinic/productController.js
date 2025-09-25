@@ -216,7 +216,7 @@ export const updateProduct = async (req, res) => {
             cover_image
 
         }
-        await clinicModels.updateProduct(value, product.product_id);
+        await clinicModels.updateProduct(data, product.product_id);
         await clinicModels.updateProductTreatments(treatment_ids_array, product.product_id);
 
         return handleSuccess(res, 200, "en", "PRODUCT_UPDATED_SUCCESSFULLY");
