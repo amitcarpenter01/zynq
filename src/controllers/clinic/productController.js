@@ -113,6 +113,7 @@ export const getAllProducts = async (req, res) => {
         }
 
         products = await Promise.all(products.map(async (product) => {
+            product.cover_image = product.cover_image ? APP_URL + 'clinic/cover_image/' + product.cover_image : null;
             const productImages = await clinicModels.get_product_images(product.product_id);
             product.product_images = productImages.map((image) => {
                 if (image.image && !image.image.startsWith('http')) {
@@ -145,7 +146,7 @@ export const getProductById = async (req, res) => {
         }
 
         const productImages = await clinicModels.get_product_images(product.product_id);
-        product.cover_image = product.cover_image ? APP_URL + 'clinic/product_image/' + product.cover_image : null;
+        product.cover_image = product.cover_image ? APP_URL + 'clinic/cover_image/' + product.cover_image : null;
         product.product_images = productImages.map((image) => {
             if (image.image && !image.image.startsWith('http')) {
                 image.image = APP_URL + 'clinic/product_image/' + image.image;
