@@ -366,13 +366,13 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         allSkinTypes, allTreatments, allSkinCondition,
         allSurgery, allAstheticDevices, allRatings
     ] = await Promise.all([
-        clinicModels.getDoctorCertificationsBulk([doctor_id]),
+        clinicModels.getDoctorCertificationsBulkV2([doctor_id], language),
         clinicModels.getDoctorEducationBulk([doctor_id]),
         clinicModels.getDoctorExperienceBulk([doctor_id]),
-        clinicModels.getDoctorSkinTypesBulk([doctor_id]),
+        clinicModels.getDoctorSkinTypesBulkV2([doctor_id], language),
         clinicModels.getDoctorTreatmentsBulkV2([doctor_id], language),
-        clinicModels.getDoctorSkinConditionBulk([doctor_id]),
-        clinicModels.getDoctorSurgeryBulk([doctor_id]),
+        clinicModels.getDoctorSkinConditionBulkV2([doctor_id], language),
+        clinicModels.getDoctorSurgeryBulkV2([doctor_id], language),
         clinicModels.getDoctorAstheticDevicesBulk([doctor_id]),
         clinicModels.getDoctorRatings([doctor_id])
     ]);

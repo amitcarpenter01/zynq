@@ -1564,6 +1564,42 @@ export const getDoctorCertificationsBulk = async (doctorIds) => {
     }
 };
 
+export const getDoctorCertificationsBulkV2 = async (doctorIds, lang = "en") => {
+    try {
+        if (!doctorIds?.length) return {};
+
+        const placeholders = doctorIds.map(() => "?").join(",");
+
+        const query = `
+            SELECT c.*, ct.* 
+            FROM tbl_doctor_certification c
+            LEFT JOIN tbl_certification_type ct 
+                ON c.certification_type_id = ct.certification_type_id 
+            WHERE c.doctor_id IN (${placeholders})
+            ORDER BY c.created_at DESC
+        `;
+
+        const results = await db.query(query, doctorIds);
+
+        const grouped = {};
+        results.forEach(row => {
+            if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+
+            const certRow = { ...row };
+
+            // ✅ Normalize language field
+            certRow.name = lang === "sv" ? row.swedish : row.name;
+
+            grouped[row.doctor_id].push(certRow);
+        });
+
+        return grouped;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch doctor certifications.");
+    }
+};
+
 export const getDoctorEducationBulk = async (doctorIds) => {
     try {
         const placeholders = doctorIds.map(() => '?').join(',');
@@ -1623,6 +1659,43 @@ export const getDoctorSkinTypesBulk = async (doctorIds) => {
     catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch doctor education.");
+    }
+};
+
+export const getDoctorSkinTypesBulkV2 = async (doctorIds, lang = "en") => {
+    try {
+        if (!doctorIds?.length) return {};
+
+        const placeholders = doctorIds.map(() => "?").join(",");
+
+        const query = `
+            SELECT dst.*, st.* 
+            FROM tbl_doctor_skin_types dst 
+            LEFT JOIN tbl_skin_types st 
+                ON dst.skin_type_id = st.skin_type_id 
+            WHERE st.English IS NOT NULL 
+              AND dst.doctor_id IN (${placeholders})
+            ORDER BY dst.created_at DESC
+        `;
+
+        const results = await db.query(query, doctorIds);
+
+        const grouped = {};
+        results.forEach(row => {
+            if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+
+            const skinTypeRow = { ...row };
+
+            // ✅ Normalize to `name` based on lang
+            skinTypeRow.name = lang === "sv" ? row.Swedish : row.English;
+
+            grouped[row.doctor_id].push(skinTypeRow);
+        });
+
+        return grouped;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch doctor skin types.");
     }
 };
 
@@ -1690,6 +1763,42 @@ export const getDoctorSkinConditionBulk = async (doctorIds) => {
     return grouped;
 };
 
+export const getDoctorSkinConditionBulkV2 = async (doctorIds, lang = "en") => {
+    try {
+        if (!doctorIds?.length) return {};
+
+        const placeholders = doctorIds.map(() => "?").join(",");
+
+        const query = `
+            SELECT dsc.*, sc.* 
+            FROM tbl_doctor_skin_condition dsc
+            INNER JOIN tbl_skin_conditions sc 
+                ON dsc.skin_condition_id = sc.skin_condition_id
+            WHERE dsc.doctor_id IN (${placeholders})
+        `;
+
+        const results = await db.query(query, doctorIds);
+
+        const grouped = {};
+        results.forEach(row => {
+            if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+
+            const conditionRow = { ...row };
+
+            // ✅ Set condition name dynamically
+            conditionRow.name = lang === "sv" ? row.swedish : row.english;
+
+            grouped[row.doctor_id].push(conditionRow);
+        });
+
+        return grouped;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch doctor skin conditions.");
+    }
+};
+
+
 export const getDoctorSurgeryBulk = async (doctorIds) => {
     const placeholders = doctorIds.map(() => '?').join(',');
     const query = `SELECT s.*,ds.* FROM tbl_surgery s INNER JOIN tbl_doctor_surgery ds ON s.surgery_id  = ds.surgery_id WHERE ds.doctor_id IN (${placeholders})`;
@@ -1701,6 +1810,40 @@ export const getDoctorSurgeryBulk = async (doctorIds) => {
         grouped[row.doctor_id].push(row);
     });
     return grouped;
+};
+
+export const getDoctorSurgeryBulkV2 = async (doctorIds, lang = "en") => {
+    try {
+        if (!doctorIds?.length) return {};
+
+        const placeholders = doctorIds.map(() => "?").join(",");
+
+        const query = `
+            SELECT ds.*, s.* 
+            FROM tbl_doctor_surgery ds
+            INNER JOIN tbl_surgery s ON ds.surgery_id = s.surgery_id
+            WHERE ds.doctor_id IN (${placeholders})
+        `;
+
+        const results = await db.query(query, doctorIds);
+
+        const grouped = {};
+        results.forEach(row => {
+            if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+
+            const surgeryRow = { ...row };
+
+            // ✅ Set surgery name dynamically
+            surgeryRow.name = lang === "sv" ? row.swedish : row.english;
+
+            grouped[row.doctor_id].push(surgeryRow);
+        });
+
+        return grouped;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch doctor surgeries.");
+    }
 };
 
 export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
