@@ -1,6 +1,6 @@
 import Joi from "joi";
 import * as adminModels from "../../models/admin.js"
-import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 
 export const get_users_managment = async (req, res) => {
     try {
@@ -16,7 +16,7 @@ export const get_users_managment = async (req, res) => {
                 face_scans: faceScanResults.filter(scan =>
                     scan.user_id == user.user_id).map(scan => ({
                         ...scan,
-                        face: scan.face && !scan.face.startsWith("http") ? `${process.env.APP_URL}${scan.face}`:scan.face,
+                        face: scan.face && !scan.face.startsWith("http") ? `${process.env.APP_URL}${scan.face}` : scan.face,
                         pdf: scan.pdf ? `${process.env.APP_URL}${scan.pdf}` : scan.pdf
                     }))
 
@@ -64,3 +64,17 @@ export const update_user_status = async (req, res) => {
     }
 };
 
+export const updateUserApprovalStatus = asyncHandler(async (req, res) => {
+    const { approval_status, user_id } = req.body;
+    const { language = "en" } = req.user;
+
+    const statusMessages = {
+        APPROVED: "USER_APPROVED_SUCCESSFULLY",
+        REJECTED: "USER_REJECTED_SUCCESSFULLY",
+        PENDING: "USER_PENDING_SUCCESSFULLY",
+    };
+
+    await adminModels.updateUserApprovalStatus(user_id, approval_status);
+
+    return handleSuccess(res, 200, language, statusMessages[approval_status],);
+});

@@ -34,8 +34,19 @@ export const authenticateUser = async (req, res, next) => {
         if (!user) {
             return handleError(res, 404, 'en', "USER_NOT_FOUND")
         }
+
+        const statusErrors = {
+            REJECTED: "USER_REJECTED",
+            PENDING: "USER_PENDING",
+        };
+
+        const currentStatus = user?.approval_status;
+
+        if (statusErrors[currentStatus]) return handleError(res, 401, "en", statusErrors[currentStatus]);
+        
         req.user = user;
         req.user.role = "USER";
+        
         next();
     } catch (error) {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR")

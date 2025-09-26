@@ -12,3 +12,8 @@ export const updateLegalDocumentsSchema = joi.object({
   TERMS_CONDITIONS_SV: stringValidation.optional(),
   PRIVACY_POLICY_SV: stringValidation.optional(),
 }).or('TERMS_CONDITIONS', 'PRIVACY_POLICY', 'TERMS_CONDITIONS_SV', 'PRIVACY_POLICY_SV');
+
+export const updateUserApprovalStatusSchema = joi.object({
+  user_id: stringValidation,
+  approval_status: stringValidation.valid("PENDING", "APPROVED", "REJECTED")
+})

@@ -266,5 +266,10 @@
   "CONTACT_RECORDS_SAVED_SUCCESSFULLY": "Kontakträkningar sparade framgångsrikt",
   "CONTACT_RECORDS_FETCHED_SUCCESSFULLY": "Kontakträkningar hittades",
   "GUEST_LOGIN_SUCCESSFULLY": "Gast inloggning lyckades",
-  "FACE_SCAN_FETCHED" : "Kontrollresultat hittades"
+  "FACE_SCAN_FETCHED": "Kontrollresultat hittades",
+  "USER_APPROVED_SUCCESSFULLY": "Användare godkännt",
+  "USER_REJECTED_SUCCESSFULLY": "Användare avvisad",
+  "USER_PENDING_SUCCESSFULLY": "Användarstatus uppdaterad",
+  "USER_REJECTED" : "Din profil har avvisats",
+  "USER_PENDING": "Din profil har inte godkänts"
 }

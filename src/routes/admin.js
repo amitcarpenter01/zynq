@@ -11,7 +11,7 @@ import * as doctorControllers from "../controllers/admin/doctorController.js";
 import * as productControllers from "../controllers/admin/productController.js";
 import * as supportControllers from "../controllers/admin/supportController.js";
 import { getLegalDocuments, updateLegalDocuments } from '../controllers/api/legalController.js';
-import { updateLegalDocumentsSchema } from '../validations/legal.validation.js';
+import { updateLegalDocumentsSchema, updateUserApprovalStatusSchema } from '../validations/legal.validation.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { updateAdminCommissionRatesSchema } from '../validations/commission.validation.js';
 import { deleteNotifications, deleteSingleNotification, getNotifications } from '../controllers/api/notificationController.js';
@@ -140,5 +140,7 @@ router.post('/faq-categories', authenticateAdmin, validate(addEditFAQCategorySch
 router.delete('/faq-categories/:faq_category_id', authenticateAdmin, validate(deleteFAQCategorySchema, 'params'), deleteFAQCategory);
 
 router.get('/contact-us', authenticateAdmin, getContactUs);
+
+router.patch('/user/approval-status', authenticateAdmin, validate(updateUserApprovalStatusSchema, 'body'), userControllers.updateUserApprovalStatus);
 
 export default router;
