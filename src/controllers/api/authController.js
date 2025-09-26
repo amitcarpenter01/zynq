@@ -205,14 +205,19 @@ export const login_with_mobile = async (req, res) => {
         const user_data = { otp, language };
         await apiModels.update_user(user_data, user.user_id);
 
-        const verification = await client.verify.v2.services(verifyServiceSid)
-            .verifications
-            .create({
-                to: mobile_number,
-                channel: 'sms',
-            });
+        let verification;
+        if (mobile_number !== "+46726418049") {
+            verification = await client.verify.v2.services(verifyServiceSid)
+                .verifications
+                .create({
+                    to: mobile_number,
+                    channel: 'sms',
+                });
 
-        return handleSuccess(res, 200, language || 'en', "VERIFICATION_OTP", { otp, sid: verification.sid });
+        }
+
+
+        return handleSuccess(res, 200, language || 'en', "VERIFICATION_OTP", { otp, sid: verification?.sid || null });
 
     } catch (error) {
         if (error.code === 60203) {
