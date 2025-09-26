@@ -1,6 +1,7 @@
 import Joi from "joi";
 import * as adminModels from "../../models/admin.js"
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 
 export const get_users_managment = async (req, res) => {
     try {
@@ -74,7 +75,25 @@ export const updateUserApprovalStatus = asyncHandler(async (req, res) => {
         PENDING: "USER_PENDING_SUCCESSFULLY",
     };
 
-    await adminModels.updateUserApprovalStatus(user_id, approval_status);
+    const notificationUpdates = {
+        APPROVED: "user_approved",
+        REJECTED: "user_rejected",
+        PENDING: "user_pending",
+    };
+
+    await Promise.all([
+        adminModels.updateUserApprovalStatus(user_id, approval_status),
+        sendNotification({
+            userData: req.user,
+            type: "USER",
+            type_id: user_id,
+            notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
+            receiver_id: user_id,
+            receiver_type: "USER"
+        })
+    ])
+
+
 
     return handleSuccess(res, 200, language, statusMessages[approval_status],);
 });

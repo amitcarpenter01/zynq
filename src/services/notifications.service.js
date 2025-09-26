@@ -109,6 +109,18 @@ export const NOTIFICATION_MESSAGES = {
         title: 'Support Ticket Response',
         getBody: () => `You have a new support ticket response.`
     },
+    user_pending : {
+        title : 'Profile Status',
+        getBody : () => `Your profile is pending for approval by administrator.`
+    },
+    user_rejected : {
+        title : 'Profile Status',
+        getBody : () => `Your profile has been rejected by administrator.`
+    },
+    user_approved : {
+        title : 'Profile Status',
+        getBody : () => `Your profile has been approved by administrator.`
+    },
     default: {
         title: (name) => `${name} Notification`,
         getBody: () => `You have a new notification.`
