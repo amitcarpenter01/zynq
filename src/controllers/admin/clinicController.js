@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 import { sendEmail } from '../../services/send_email.js';
 import moment from 'moment/moment.js';
 import { calculateAndUpdateBulkClinicProfileCompletion } from '../../models/clinic.js';
+import db from '../../config/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,34 +57,67 @@ const __dirname = path.dirname(__filename);
 
 export const import_clinics_from_CSV = async (req, res) => {
     const filePath = req.file?.path;
-
-    if (!filePath) return handleError(res, 400, 'en', "CSV_REQUIRED");
+    if (!filePath) return handleError(res, 400, "en", "CSV_REQUIRED");
 
     try {
         const workbook = xlsx.readFile(filePath);
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-
         const clinicData = xlsx.utils.sheet_to_json(sheet);
 
-        const clinics = clinicData.map(row => ({
-            clinic_name: row.clinic_name || '',
-            org_number: row.org_number || '',
-            email: row.email || '',
-            mobile_number: row.mobile_number || '',
-            address: row.address || '',
-            token: generateToken()
-        }));
-
-        for (const clinic of clinics) {
-            await insert_clinic(clinic);
+        if (!clinicData.length) {
+            fs.unlinkSync(filePath);
+            return handleError(res, 400, "en", "CSV_EMPTY");
         }
 
+        const existingRows = await db.query(
+            `SELECT email, mobile_number FROM tbl_clinics`
+        );
+
+        const existingList = Array.isArray(existingRows) ? existingRows : [];
+
+        const existingKeys = new Set(
+            existingList.map(
+                r => (r.email || "") + "|" + (r.mobile_number || "")
+            )
+        );
+
+        const values = [];
+        const seenCSV = new Set(); // dedup within CSV
+
+        for (const row of clinicData) {
+            if (!row.clinic_name || !row.email) continue; // skip invalid
+
+            const key = (row.email || "") + "|" + (row.mobile_number || "");
+
+            if (existingKeys.has(key) || seenCSV.has(key)) continue; // skip duplicates
+
+            seenCSV.add(key);
+
+            values.push([
+                row.clinic_name || "",
+                row.org_number || "",
+                row.email || "",
+                row.mobile_number || "",
+                row.address || "",
+                generateToken(),
+                false
+            ]);
+        }
+
+        if (!values.length) {
+            fs.unlinkSync(filePath);
+            return handleError(res, 400, "en", "NO_NEW_RECORDS");
+        }
+
+        await adminModels.insertClinics(values);
+
         fs.unlinkSync(filePath);
-        return handleSuccess(res, 200, 'en', "CLINIC_IMPORT");
+        return handleSuccess(res, 200, "en", "CLINIC_IMPORT");
     } catch (error) {
         console.error("Import failed:", error);
-        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // cleanup even on error
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
 
@@ -351,4 +385,3 @@ export const unsubscribed = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
-

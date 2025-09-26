@@ -1698,3 +1698,18 @@ export const updateUserApprovalStatus = async (user_id, approval_status) => {
         throw error;
     }
 }
+
+export const insertClinics = async (clinics) => {
+    if (!clinics.length) return;
+
+    const placeholders = clinics.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(",");
+
+    return db.query(
+        `
+        INSERT INTO tbl_clinics
+        (clinic_name, org_number, email, mobile_number, address, onboarding_token, is_invited)
+        VALUES ${placeholders}
+        `,
+        clinics.flat()
+    );
+};
