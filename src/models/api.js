@@ -2506,7 +2506,8 @@ export const delete_my_account = async (user_id) => {
         return await db.query(
             `UPDATE tbl_users SET
              is_deleted = 1,
-             email = NULL
+             email = NULL,
+             mobile_number = NULL
             WHERE user_id = ?`,
             [user_id]
         );
