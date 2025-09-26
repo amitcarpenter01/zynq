@@ -42,8 +42,11 @@ export const authenticateUser = async (req, res, next) => {
 
         const currentStatus = user?.approval_status;
         const language = user?.language || req?.headers['language'] || "en";
-        if (statusErrors[currentStatus]) return handleError(res, 401, language, statusErrors[currentStatus]);
-        
+
+        const bypassRoute = ["/profile"]
+
+        if (!bypassRoute.includes(req.path) && statusErrors[currentStatus]) return handleError(res, 401, language, statusErrors[currentStatus]);
+
         req.user = user;
         req.user.role = "USER";
 
