@@ -41,12 +41,12 @@ export const authenticateUser = async (req, res, next) => {
         };
 
         const currentStatus = user?.approval_status;
-
-        if (statusErrors[currentStatus]) return handleError(res, 401, "en", statusErrors[currentStatus]);
+        const language = user?.language || req?.headers['language'] || "en";
+        if (statusErrors[currentStatus]) return handleError(res, 401, language, statusErrors[currentStatus]);
         
         req.user = user;
         req.user.role = "USER";
-        
+
         next();
     } catch (error) {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR")
