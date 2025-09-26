@@ -12,6 +12,7 @@ export const get_products_managment = async (req, res) => {
 
         const fullProductData = await Promise.all(
             products.map(async (product) => {
+                product.cover_image = product.cover_image ? process.env.APP_URL + 'clinic/cover_image/' + product.cover_image : null;
                 product.total_revenue = 0;
                 const findProductImages = await adminModels.get_product_images_by_product_id(product.product_id, process.env.APP_URL + 'clinic/product_image/')
                 const treatments = await adminModels.getTreatmentsOfProducts(product.product_id)
@@ -41,6 +42,7 @@ export const get_single_products_managment = async (req, res) => {
 
         const fullProductData = await Promise.all(
             products.map(async (product) => {
+                product.cover_image = product.cover_image ? process.env.APP_URL + 'clinic/cover_image/' + product.cover_image : null;
                 product.total_revenue = 0;
                 const findProductImages = await adminModels.get_product_images_by_product_id(product.product_id, process.env.APP_URL + 'clinic/product_image/')
                 const treatments = await adminModels.getTreatmentsOfProducts(product.product_id)

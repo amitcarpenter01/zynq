@@ -274,5 +274,8 @@
   "CONTACT_RECORDS_SAVED_SUCCESSFULLY": "Contact records saved successfully",
   "CONTACT_RECORDS_FETCHED_SUCCESSFULLY": "Contact records fetched successfully",
   "GUEST_LOGIN_SUCCESSFULLY": "Guest Logged in Successfully",
-  "FACE_SCAN_FETCHED": "Face Scan Report Fetched Successfully"
+  "FACE_SCAN_FETCHED": "Face Scan Report Fetched Successfully",
+  "USER_APPROVED_SUCCESSFULLY": "User Approved Successfully",
+  "USER_REJECTED_SUCCESSFULLY": "User Rejected Successfully",
+  "USER_PENDING_SUCCESSFULLY": "User status updated Successfully"
 }
