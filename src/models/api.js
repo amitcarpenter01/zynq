@@ -1413,26 +1413,38 @@ export const getAllTreatmentsV2 = async (filters, lang) => {
         `;
 
         const queryParams = [];
+        const whereConditions = [];
 
         // Add search filter if provided
         if (filters?.search) {
             const safeSearch = filters.search.toLowerCase();
-            query += `
-                WHERE LOWER(t.name) LIKE ?
-                    OR LOWER(t.swedish) LIKE ?
-                    OR LOWER(t.application) LIKE ?
-                    OR LOWER(t.type) LIKE ?
-                    OR LOWER(t.technology) LIKE ?
-                    OR LOWER(t.classification_type) LIKE ?
-                    OR LOWER(t.benefits) LIKE ?
-                    OR LOWER(t.benefits_en) LIKE ?
-                    OR LOWER(t.benefits_sv) LIKE ?
-                    OR LOWER(t.description_en) LIKE ?
-                    OR LOWER(t.description_sv) LIKE ?
-            `;
+            whereConditions.push(`(
+                LOWER(t.name) LIKE ? OR
+                LOWER(t.swedish) LIKE ? OR
+                LOWER(t.application) LIKE ? OR
+                LOWER(t.type) LIKE ? OR
+                LOWER(t.technology) LIKE ? OR
+                LOWER(t.classification_type) LIKE ? OR
+                LOWER(t.benefits) LIKE ? OR
+                LOWER(t.benefits_en) LIKE ? OR
+                LOWER(t.benefits_sv) LIKE ? OR
+                LOWER(t.description_en) LIKE ? OR
+                LOWER(t.description_sv) LIKE ?
+            )`);
 
-            // Push the same search term for all 11 placeholders
             queryParams.push(...Array(11).fill(`%${safeSearch}%`));
+        }
+
+        // Add treatment_ids filter if provided
+        if (filters?.treatment_ids?.length) {
+            const placeholders = filters.treatment_ids.map(() => '?').join(',');
+            whereConditions.push(`t.treatment_id IN (${placeholders})`);
+            queryParams.push(...filters.treatment_ids);
+        }
+
+        // Combine WHERE conditions if any
+        if (whereConditions.length) {
+            query += ' WHERE ' + whereConditions.join(' AND ');
         }
 
         query += `
