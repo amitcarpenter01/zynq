@@ -24,3 +24,9 @@ export const getTreatmentsSchema = joi.object({
 export const sendFaceResultToEmailSchema = joi.object({
   face_scan_result_id: stringValidation.optional().allow("", null),
 })
+
+export const getTreatmentFiltersSchema = joi.object({
+  filters: joi.object({
+    search: stringValidation.optional(),
+  }).optional()
+}).optional()

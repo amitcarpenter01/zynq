@@ -1398,6 +1398,58 @@ export const getAllTreatments = async (lang) => {
     }
 };
 
+export const getAllTreatmentsV2 = async (filters, lang) => {
+    try {
+        let query = `
+            SELECT
+                t.*,
+                ANY_VALUE(c.name) AS concern_name,
+                IFNULL(MIN(dt.price), 0) AS min_price,
+                IFNULL(MAX(dt.price), 0) AS max_price
+            FROM tbl_treatments t
+            LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
+            LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+            LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+        `;
+
+        const queryParams = [];
+
+        // Add search filter if provided
+        if (filters?.search) {
+            const safeSearch = filters.search.toLowerCase();
+            query += `
+                WHERE LOWER(t.name) LIKE ?
+                    OR LOWER(t.swedish) LIKE ?
+                    OR LOWER(t.application) LIKE ?
+                    OR LOWER(t.type) LIKE ?
+                    OR LOWER(t.technology) LIKE ?
+                    OR LOWER(t.classification_type) LIKE ?
+                    OR LOWER(t.benefits) LIKE ?
+                    OR LOWER(t.benefits_en) LIKE ?
+                    OR LOWER(t.benefits_sv) LIKE ?
+                    OR LOWER(t.description_en) LIKE ?
+                    OR LOWER(t.description_sv) LIKE ?
+            `;
+
+            // Push the same search term for all 11 placeholders
+            queryParams.push(...Array(11).fill(`%${safeSearch}%`));
+        }
+
+        query += `
+            GROUP BY t.treatment_id
+        `;
+
+        const results = await db.query(query, queryParams);
+
+        // Format benefits based on language
+        return formatBenefitsUnified(results, lang);
+
+    } catch (error) {
+        console.error("Database Error in getAllTreatmentsV2:", error.message);
+        throw new Error("Failed to fetch treatments.");
+    }
+};
+
 export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
     try {
         let query = `
