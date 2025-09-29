@@ -958,7 +958,6 @@ export const getAppointmentsByUserIdAndDoctorId = async (user_id, doctor_id, sta
 };
 
 export const getDraftAppointmentsModel = async (user_id, doctor_id) => {
-    console.log(user_id, doctor_id)
     return await db.query(`
     SELECT at.treatment_id, at.appointment_id
     FROM tbl_appointments a
