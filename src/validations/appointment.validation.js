@@ -51,3 +51,7 @@ export const getGuestFaceScanSchema = joi.object({
   device_id: stringValidation,
   language: stringValidation.valid("en", "sv")
 })
+
+export const getDraftAppointmentsSchema = joi.object({
+  doctor_id : stringValidation
+})

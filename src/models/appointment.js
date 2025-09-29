@@ -956,3 +956,14 @@ export const getAppointmentsByUserIdAndDoctorId = async (user_id, doctor_id, sta
     `, [user_id, doctor_id, status]);
     return results;
 };
+
+export const getDraftAppointmentsModel = async (user_id, doctor_id) => {
+    console.log(user_id, doctor_id)
+    return await db.query(`
+    SELECT at.* 
+    FROM tbl_appointments a
+    LEFT JOIN tbl_appointment_treatments at 
+    ON a.appointment_id = at.appointment_id
+    WHERE a.user_id = ? AND  a.doctor_id = ? AND a.save_type = 'draft'
+  `, [user_id, doctor_id]);
+}

@@ -21,7 +21,7 @@ import * as appointmentController from "../controllers/api/appointmentController
 import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 
 //==================================== Import Validations ==============================
-import { rescheduleAppointmentSchema, rateAppointmentSchema, sendReportToChatSchema, contactUsSchema, guestLoginSchema, getGuestFaceScanSchema } from '../validations/appointment.validation.js';
+import { rescheduleAppointmentSchema, rateAppointmentSchema, sendReportToChatSchema, contactUsSchema, guestLoginSchema, getGuestFaceScanSchema, getDraftAppointmentsSchema } from '../validations/appointment.validation.js';
 import { getSingleDoctorSchema, getAllDoctorsSchema, requestCallbackSchema, getSingleDoctorRatingsSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema, getSingleClinicSchema } from '../validations/clinic.validation.js';
 import { getTipsByConcernsSchema, getTreatmentFiltersSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema, getTreatmentsSchema, sendFaceResultToEmailSchema } from '../validations/treatment.validation.js';
@@ -225,5 +225,7 @@ router.post('/contact-us', optionalAuthenticateUser, validate(contactUsSchema, "
 
 router.post('/guest/login', validate(guestLoginSchema, "body"), authControllers.guestLogin);
 router.post('/guest/get-face-scan', validate(getGuestFaceScanSchema, "body"), authControllers.getGuestFaceScan);
+
+router.get('/draft/:doctor_id', authenticateUser, validate(getDraftAppointmentsSchema, "params"), appointmentController.getDraftAppointments);
 
 export default router;
