@@ -98,7 +98,7 @@ export const getMyAppointmentsUser = async (req, res) => {
     try {
         await appointmentModel.updateMissedAppointmentStatusModel();
         const userId = req.user.user_id;
-        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'booked','unpaid');
+        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'booked', 'unpaid');
 
         const now = dayjs.utc();
 
@@ -418,7 +418,7 @@ export const saveOrBookAppointment = async (req, res) => {
 export const getMyTreatmentPlans = async (req, res) => {
     try {
         const userId = req.user.user_id;
-        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'draft','unpaid');
+        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'draft', 'unpaid');
 
         const now = dayjs.utc();
 
@@ -612,11 +612,11 @@ export const saveAppointmentAsDraft = async (req, res) => {
             is_paid
         };
 
-        const appointmentResponse = await appointmentModel.getAppointmentsByUserIdAndDoctorId(user_id,doctor_id,save_type)
+        const appointmentResponse = await appointmentModel.getAppointmentsByUserIdAndDoctorId(user_id, doctor_id, save_type)
 
 
-        if (inputId || appointmentResponse.length > 0 ) {
-            if(appointmentResponse.length>0){
+        if (inputId || appointmentResponse.length > 0) {
+            if (appointmentResponse.length > 0) {
                 appointment_id = appointmentResponse[0].appointment_id
             }
             await appointmentModel.updateAppointment(appointmentData);
@@ -763,8 +763,8 @@ export const bookDirectAppointment = async (req, res) => {
                         //     }
                         // }),
                         appointment_id: appointment_id,
-                        redirect_url:redirect_url,
-                        cancel_url:cancel_url
+                        redirect_url: redirect_url,
+                        cancel_url: cancel_url
                     }
                 });
             return handleSuccess(res, 200, "en", "SESSION_CREATED_SUCCESSFULLY", session);
@@ -773,7 +773,7 @@ export const bookDirectAppointment = async (req, res) => {
             let chat_id = 0;
             let user_id = req.user.user_id
             const appointmentDetails = await getAppointmentDetails(user_id, appointment_id)
-           
+
             const doctor = await getDocterByDocterId(doctor_id);
             let chatId = await getChatBetweenUsers(user_id, doctor[0].zynq_user_id);
 
@@ -919,3 +919,10 @@ export const markAppointmentAsPaid = async (req, res) => {
         return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
     }
 };
+
+export const getDraftAppointments = asyncHandler(async (req, res) => {
+    const { doctor_id } = req.params;
+    const { user_id, language = "en" } = req.user;
+    const draftData = await appointmentModel.getDraftAppointmentsModel(user_id, doctor_id);
+    return handleSuccess(res, 200, language, "DRAFT_APPOINTMENTS_FETCHED_SUCCESSFULLY", draftData);
+})
