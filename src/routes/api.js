@@ -24,7 +24,7 @@ import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 import { rescheduleAppointmentSchema, rateAppointmentSchema, sendReportToChatSchema, contactUsSchema, guestLoginSchema, getGuestFaceScanSchema } from '../validations/appointment.validation.js';
 import { getSingleDoctorSchema, getAllDoctorsSchema, requestCallbackSchema, getSingleDoctorRatingsSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema, getSingleClinicSchema } from '../validations/clinic.validation.js';
-import { getTipsByConcernsSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema, getTreatmentsSchema, sendFaceResultToEmailSchema } from '../validations/treatment.validation.js';
+import { getTipsByConcernsSchema, getTreatmentFiltersSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema, getTreatmentsSchema, sendFaceResultToEmailSchema } from '../validations/treatment.validation.js';
 import { deleteNotifications, deleteSingleNotification, getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
 import { sendAppointmentNotifications } from '../services/notifications.service.js';
 import { toggleLanguage } from '../controllers/web_users/authController.js';
@@ -148,7 +148,7 @@ router.delete('/notifications', authenticateUser, deleteNotifications);
 
 router.post('/get_treatments_by_concern_id', faceScanControllers.get_treatments_by_concern_id);
 router.post('/get_treatments_by_concerns', validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
-router.get('/get_treatments', optionalAuthenticateUser, faceScanControllers.get_treatments);
+router.post('/get_treatments', optionalAuthenticateUser, validate(getTreatmentFiltersSchema, "body"), faceScanControllers.get_treatments);
 router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
 router.post('/get_tips_by_concerns', validate(getTipsByConcernsSchema, "body"), faceScanControllers.get_tips_by_concerns);
 router.patch('/toggle-language', authenticateUser, toggleLanguage);

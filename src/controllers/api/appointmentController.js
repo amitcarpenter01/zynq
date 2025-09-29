@@ -587,7 +587,7 @@ export const saveAppointmentAsDraft = async (req, res) => {
         const appointmentType = hasTreatments ? 'Clinic Visit' : 'Video Call';
         const save_type = 'draft'
 
-        const appointment_id = inputId || uuidv4();
+        let appointment_id = inputId || uuidv4();
         const total_price = treatments.reduce((sum, t) => sum + t.price, 0);
         if (isEmpty(report_id)) {
             report_id = await getLatestFaceScanReportIDByUserID(req.user.user_id);
@@ -612,8 +612,13 @@ export const saveAppointmentAsDraft = async (req, res) => {
             is_paid
         };
 
+        const appointmentResponse = await appointmentModel.getAppointmentsByUserIdAndDoctorId(user_id,doctor_id,save_type)
 
-        if (inputId) {
+
+        if (inputId || appointmentResponse.length > 0 ) {
+            if(appointmentResponse.length>0){
+                appointment_id = appointmentResponse[0].appointment_id
+            }
             await appointmentModel.updateAppointment(appointmentData);
             if (hasTreatments) {
                 await appointmentModel.deleteAppointmentTreatments(appointment_id);
