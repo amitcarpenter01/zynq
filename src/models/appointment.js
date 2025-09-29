@@ -949,3 +949,10 @@ export const getContactUsData = async () => {
         throw error;
     }
 };
+
+export const getAppointmentsByUserIdAndDoctorId = async (user_id, doctor_id, status) => {
+    const results = await db.query(` 
+        SELECT * FROM tbl_appointments WHERE user_id = ? AND  doctor_id = ?  AND save_type = ? 
+    `, [user_id, doctor_id, status]);
+    return results;
+};
