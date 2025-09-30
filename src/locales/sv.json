@@ -272,5 +272,6 @@
   "USER_PENDING_SUCCESSFULLY": "Användarstatus uppdaterad",
   "USER_REJECTED" : "Din profil har avvisats",
   "USER_PENDING": "Din profil har inte godkänts",
-  "DRAFT_APPOINTMENTS_FETCHED_SUCCESSFULLY" : "Utkast ha meddelanden hittades"
+  "DRAFT_APPOINTMENTS_FETCHED_SUCCESSFULLY" : "Utkast ha meddelanden hittades",
+  "USER_DELETED" : "Kontot har tagits bort"
 }
