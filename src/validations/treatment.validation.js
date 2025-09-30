@@ -1,5 +1,6 @@
 import joi from "joi";
 import {
+  booleanValidation,
   emailValidation,
   idArrayValidation,
   stringValidation,
@@ -29,5 +30,6 @@ export const getTreatmentFiltersSchema = joi.object({
   filters: joi.object({
     search: stringValidation.optional(),
     treatment_ids: idArrayValidation.optional(),
+    recommended: booleanValidation.optional()
   }).optional()
 }).optional()

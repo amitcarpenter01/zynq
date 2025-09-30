@@ -1,5 +1,5 @@
 import db from "../config/db.js";
-import { formatBenefitsUnified } from "../utils/misc.util.js";
+import { formatBenefitsUnified, getTreatmentIDsByUserID } from "../utils/misc.util.js";
 
 //======================================= Auth =========================================
 
@@ -1436,7 +1436,7 @@ export const getAllTreatments = async (lang) => {
     }
 };
 
-export const getAllTreatmentsV2 = async (filters = {}, lang = 'en') => {
+export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = null) => {
     try {
         let query = `
             SELECT
@@ -1451,6 +1451,17 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en') => {
 
         const queryParams = [];
         const whereConditions = [];
+
+        // ---------- Recommended Filter ----------
+        if (filters.recommended === true && user_id) {
+            const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
+            if (!fallbackTreatmentIds?.length) {
+                return []; // no recommended treatments, return empty
+            }
+            const placeholders = fallbackTreatmentIds.map(() => '?').join(',');
+            whereConditions.push(`t.treatment_id IN (${placeholders})`);
+            queryParams.push(...fallbackTreatmentIds);
+        }
 
         // ---------- Search Filter ----------
         if (filters.search?.trim()) {
@@ -1487,7 +1498,7 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en') => {
             queryParams.push(...Array(11).fill(s), ...Array(6).fill(s));
         }
 
-        // ---------- Treatment IDs Filter ----------
+        // ---------- Treatment IDs Filter (explicit) ----------
         if (Array.isArray(filters.treatment_ids) && filters.treatment_ids.length) {
             const placeholders = filters.treatment_ids.map(() => '?').join(',');
             whereConditions.push(`t.treatment_id IN (${placeholders})`);

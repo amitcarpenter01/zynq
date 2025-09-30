@@ -124,9 +124,9 @@ export const get_treatments_by_concerns = asyncHandler(async (req, res) => {
 })
 
 export const get_treatments = asyncHandler(async (req, res) => {
-    const language = req?.user?.language || 'en';
+    const { user_id, language = "en" } = req?.user;
     const { filters } = req.body;
-    const treatments = await apiModels.getAllTreatmentsV2(filters, language);
+    const treatments = await apiModels.getAllTreatmentsV2(filters, language, user_id);
     return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
 })
 
