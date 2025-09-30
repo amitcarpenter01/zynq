@@ -202,7 +202,6 @@ export const getAllDoctors = async ({
         if (joins.length) query += ' ' + joins.join(' ');
 
         query += ` WHERE d.profile_completion_percentage >= 0`;
-
         if (filters.length) query += ` AND ${filters.join(' AND ')}`;
 
         // ---------- Search clause ----------
@@ -214,8 +213,9 @@ export const getAllDoctors = async ({
                     OR EXISTS (
                         SELECT 1
                         FROM tbl_doctor_treatments sdt
-                        JOIN tbl_treatments t
-                          ON sdt.treatment_id = t.treatment_id
+                        JOIN tbl_treatments t ON sdt.treatment_id = t.treatment_id
+                        LEFT JOIN tbl_treatment_concerns tc ON t.treatment_id = tc.treatment_id
+                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
                         WHERE sdt.doctor_id = d.doctor_id
                           AND (
                               LOWER(t.name) LIKE ?
@@ -229,12 +229,18 @@ export const getAllDoctors = async ({
                               OR LOWER(t.benefits_sv) LIKE ?
                               OR LOWER(t.description_en) LIKE ?
                               OR LOWER(t.description_sv) LIKE ?
+                              OR LOWER(tc.indications_sv) LIKE ?
+                              OR LOWER(tc.indications_en) LIKE ?
+                              OR LOWER(tc.likewise_terms) LIKE ?
+                              OR LOWER(cns.name) LIKE ?
+                              OR LOWER(cns.swedish) LIKE ?
+                              OR LOWER(cns.tips) LIKE ?
                           )
                     )
                 )
             `;
-            // doctor.name + 11 treatment fields
-            params.push(s, ...Array(11).fill(s));
+            // doctor.name (1) + 11 treatment fields + 6 concern fields
+            params.push(s, ...Array(11).fill(s), ...Array(6).fill(s));
         }
 
         if (needsRating) query += ` GROUP BY d.doctor_id`;
@@ -262,7 +268,6 @@ export const getAllDoctors = async ({
     }
 };
 
-
 export const getAllRecommendedDoctors = async ({
     treatment_ids = [],
     skin_condition_ids = [],
@@ -281,8 +286,8 @@ export const getAllRecommendedDoctors = async ({
 }) => {
     try {
         const params = [];
-
         const needsDistance = userLatitude != null && userLongitude != null;
+
         const distanceSelect = needsDistance
             ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance`
             : null;
@@ -301,10 +306,7 @@ export const getAllRecommendedDoctors = async ({
             distanceSelect
         ].filter(Boolean).join(', ');
 
-        if (needsDistance) {
-            // order is (longitude, latitude)
-            params.push(userLongitude, userLatitude);
-        }
+        if (needsDistance) params.push(userLongitude, userLatitude);
 
         let query = `
             SELECT ${selectFields}
@@ -319,13 +321,13 @@ export const getAllRecommendedDoctors = async ({
             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
         `;
 
-        // ---------------- Joins + filters by ids ----------------
+        // ---------- Joins & Filters ----------
         const joins = [];
         const filters = [];
 
-        const addJoinAndFilter = (ids, joinTable, alias, field) => {
-            if (Array.isArray(ids) && ids.length > 0) {
-                joins.push(`LEFT JOIN ${joinTable} ${alias} ON d.doctor_id = ${alias}.doctor_id`);
+        const addJoinAndFilter = (ids, table, alias, field) => {
+            if (Array.isArray(ids) && ids.length) {
+                joins.push(`LEFT JOIN ${table} ${alias} ON d.doctor_id = ${alias}.doctor_id`);
                 filters.push(`${alias}.${field} IN (${ids.map(() => '?').join(', ')})`);
                 params.push(...ids);
             }
@@ -339,12 +341,12 @@ export const getAllRecommendedDoctors = async ({
 
         if (joins.length) query += ' ' + joins.join(' ');
 
-        // ---------------- Base WHERE ----------------
         query += ` WHERE d.profile_completion_percentage >= 0`;
 
-        // ---------------- Search block (doctor name + treatments) ----------------
+        // ---------- Search ----------
         const trimmedSearch = (search || '').trim().toLowerCase();
         if (trimmedSearch) {
+            const likeVal = `%${trimmedSearch}%`;
             filters.push(`
                 (
                     LOWER(d.name) LIKE ?
@@ -369,12 +371,10 @@ export const getAllRecommendedDoctors = async ({
                     )
                 )
             `);
-            // doctor.name + 11 treatment fields
-            const likeVal = `%${trimmedSearch}%`;
             params.push(likeVal, ...Array(11).fill(likeVal));
         }
 
-        // ---------------- Price filter ----------------
+        // ---------- Price ----------
         if (typeof price.min === 'number') {
             filters.push('d.fee_per_session >= ?');
             params.push(price.min);
@@ -384,7 +384,7 @@ export const getAllRecommendedDoctors = async ({
             params.push(price.max);
         }
 
-        // ---------------- Distance filter ----------------
+        // ---------- Distance ----------
         if (needsDistance) {
             if (typeof distance.min === 'number') {
                 filters.push(`ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) >= ?`);
@@ -398,17 +398,17 @@ export const getAllRecommendedDoctors = async ({
 
         if (filters.length) query += ` AND ${filters.join(' AND ')}`;
 
-        // ---------------- Grouping ----------------
+        // ---------- Grouping ----------
         query += ` GROUP BY d.doctor_id, dm.clinic_id`;
 
-        // ---------------- Rating filter ----------------
+        // ---------- Rating ----------
         if (min_rating !== null) {
-            const ceiling = Math.min(min_rating + 1, 5.01); // allow 5 if min_rating is 4
+            const ceiling = Math.min(min_rating + 1, 5.01);
             query += ` HAVING CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) <= ?`;
             params.push(min_rating, ceiling);
         }
 
-        // ---------------- Sorting ----------------
+        // ---------- Sorting ----------
         if (sort.by === 'rating') {
             query += ` ORDER BY avg_rating IS NULL, CAST(avg_rating AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
         } else if (sort.by === 'nearest' && needsDistance) {
@@ -419,7 +419,7 @@ export const getAllRecommendedDoctors = async ({
             query += ` ORDER BY d.created_at DESC`;
         }
 
-        // ---------------- Pagination ----------------
+        // ---------- Pagination ----------
         query += ` LIMIT ? OFFSET ?`;
         params.push(Number(limit), Number(offset));
 
@@ -553,13 +553,13 @@ export const get_all_products_for_user = async ({
 
         const params = [user_id];
 
-        // keep your treatment_ids filter exactly as before
+        // Filter by treatments
         if (treatment_ids.length > 0) {
             query += ` AND pt.treatment_id IN (${treatment_ids.map(() => '?').join(', ')})`;
             params.push(...treatment_ids);
         }
 
-        // only this part changed → richer search
+        // --- Search block: product + treatments + concerns ---
         const trimmedSearch = (search || '').trim().toLowerCase();
         if (trimmedSearch) {
             const like = `%${trimmedSearch}%`;
@@ -582,13 +582,28 @@ export const get_all_products_for_user = async ({
                               OR LOWER(st.swedish) LIKE ?
                           )
                     )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM tbl_product_treatments spt
+                        LEFT JOIN tbl_treatment_concerns tc ON spt.treatment_id = tc.treatment_id
+                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
+                        WHERE spt.product_id = p.product_id
+                          AND (
+                              LOWER(tc.indications_sv) LIKE ?
+                              OR LOWER(tc.indications_en) LIKE ?
+                              OR LOWER(tc.likewise_terms) LIKE ?
+                              OR LOWER(cns.name) LIKE ?
+                              OR LOWER(cns.swedish) LIKE ?
+                              OR LOWER(cns.tips) LIKE ?
+                          )
+                    )
                 )
             `;
-            // push for 7 product fields + 2 treatment fields
-            params.push(...Array(7).fill(like), like, like);
+            // push for 7 product fields + 2 treatment fields + 6 concern fields
+            params.push(...Array(7).fill(like), like, like, ...Array(6).fill(like));
         }
 
-        // unchanged price filters
+        // Price filters
         if (typeof price?.min === 'number') {
             query += ` AND p.price >= ?`;
             params.push(price.min);
@@ -598,7 +613,7 @@ export const get_all_products_for_user = async ({
             params.push(price.max);
         }
 
-        // unchanged sorting/pagination
+        // Sorting
         let orderBy = 'ORDER BY';
         if (sort.by === 'price') {
             orderBy += ` p.price ${sort.order}`;
@@ -740,7 +755,7 @@ export const getAllClinicsForUser = async ({
         ].filter(Boolean).join(', ');
 
         if (needsDistance) {
-            params.push(userLongitude, userLatitude); // order: lon, lat
+            params.push(userLongitude, userLatitude);
         }
 
         let query = `
@@ -775,7 +790,7 @@ export const getAllClinicsForUser = async ({
 
         query += ` WHERE c.profile_completion_percentage >= 50`;
 
-        // --- Search block: clinic name + treatments ---
+        // --- Search block: clinic name + treatments + concerns ---
         const trimmedSearch = (search || '').trim().toLowerCase();
         if (trimmedSearch) {
             const like = `%${trimmedSearch}%`;
@@ -803,11 +818,25 @@ export const getAllClinicsForUser = async ({
                               OR LOWER(t.description_sv) LIKE ?
                           )
                     )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM tbl_clinic_treatments ct
+                        LEFT JOIN tbl_treatment_concerns tc ON ct.treatment_id = tc.treatment_id
+                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
+                        WHERE ct.clinic_id = c.clinic_id
+                        AND (
+                            LOWER(tc.indications_sv) LIKE ?
+                            OR LOWER(tc.indications_en) LIKE ?
+                            OR LOWER(tc.likewise_terms) LIKE ?
+                            OR LOWER(cns.name) LIKE ?
+                            OR LOWER(cns.swedish) LIKE ?
+                            OR LOWER(cns.tips) LIKE ?
+                        )
+                    )
                 )
             `);
 
-            // clinic_name + address (2) + treatments (11)
-            params.push(like, like, ...Array(11).fill(like));
+            params.push(like, like, ...Array(11).fill(like), ...Array(6).fill(like));
         }
 
         if (filters.length > 0) {
@@ -856,8 +885,6 @@ export const getAllClinicsForUser = async ({
             query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
         } else if (sort.by === 'price') {
             query += ` ORDER BY doctor_lower_price_range ${sort.order.toUpperCase()}`;
-        } else if (sort.by === 'nearest') {
-            query += ` ORDER BY distance ${sort.order.toUpperCase()}`;
         } else {
             query += ` ORDER BY c.created_at DESC`;
         }
@@ -913,12 +940,10 @@ export const getNearbyClinicsForUser = async ({
             needsDistance
                 ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance`
                 : null
-        ]
-            .filter(Boolean)
-            .join(', ');
+        ].filter(Boolean).join(', ');
 
         if (needsDistance) {
-            params.push(userLongitude, userLatitude); // Order: lon, lat
+            params.push(userLongitude, userLatitude);
         }
 
         let query = `
@@ -953,7 +978,7 @@ export const getNearbyClinicsForUser = async ({
 
         query += ` WHERE c.profile_completion_percentage >= 50`;
 
-        // --- Search block: clinic name + treatments ---
+        // --- Search block: clinic name + treatments + concerns ---
         const trimmedSearch = (search || '').trim().toLowerCase();
         if (trimmedSearch) {
             const like = `%${trimmedSearch}%`;
@@ -981,11 +1006,26 @@ export const getNearbyClinicsForUser = async ({
                               OR LOWER(t.description_sv) LIKE ?
                           )
                     )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM tbl_clinic_treatments ct
+                        LEFT JOIN tbl_treatment_concerns tc ON ct.treatment_id = tc.treatment_id
+                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
+                        WHERE ct.clinic_id = c.clinic_id
+                        AND (
+                            LOWER(tc.indications_sv) LIKE ?
+                            OR LOWER(tc.indications_en) LIKE ?
+                            OR LOWER(tc.likewise_terms) LIKE ?
+                            OR LOWER(cns.name) LIKE ?
+                            OR LOWER(cns.swedish) LIKE ?
+                            OR LOWER(cns.tips) LIKE ?
+                        )
+                    )
                 )
             `);
 
-            // clinic_name + address (2) + treatments (11)
-            params.push(like, like, ...Array(11).fill(like));
+            // clinic_name + address (2) + treatments (11) + concerns (6)
+            params.push(like, like, ...Array(11).fill(like), ...Array(6).fill(like));
         }
 
         if (filters.length > 0) {
@@ -994,8 +1034,8 @@ export const getNearbyClinicsForUser = async ({
 
         query += ` GROUP BY c.clinic_id`;
 
-        // HAVING Conditions
         const havingConditions = [];
+
         if (min_rating !== null) {
             const ratingCeiling = Math.min(min_rating + 1, 5.01);
             havingConditions.push(`CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) <= ?`);
@@ -1028,7 +1068,6 @@ export const getNearbyClinicsForUser = async ({
             query += ` HAVING ${havingConditions.join(' AND ')}`;
         }
 
-        // ORDER BY
         if (applyDistanceSort) {
             query += ` ORDER BY distance ${sort.order.toUpperCase()}`;
         } else if (sort.by === 'rating') {
@@ -1039,7 +1078,6 @@ export const getNearbyClinicsForUser = async ({
             query += ` ORDER BY c.created_at DESC`;
         }
 
-        // Pagination
         query += ` LIMIT ? OFFSET ?`;
         params.push(Number(limit), Number(offset));
 
@@ -1903,6 +1941,21 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', limit, offs
                     )
                     OR EXISTS (
                         SELECT 1
+                        FROM tbl_doctor_treatments dt
+                        LEFT JOIN tbl_treatment_concerns tc ON dt.treatment_id = tc.treatment_id
+                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
+                        WHERE dt.doctor_id = d.doctor_id
+                        AND (
+                            LOWER(tc.indications_sv) LIKE ?
+                            OR LOWER(tc.indications_en) LIKE ?
+                            OR LOWER(tc.likewise_terms) LIKE ?
+                            OR LOWER(cns.name) LIKE ?
+                            OR LOWER(cns.swedish) LIKE ?
+                            OR LOWER(cns.tips) LIKE ?
+                        )
+                    )
+                    OR EXISTS (
+                        SELECT 1
                         FROM tbl_doctor_aesthetic_devices dad
                         JOIN tbl_aesthetic_devices ad ON dad.aesthetic_devices_id = ad.aesthetic_device_id
                         WHERE dad.doctor_id = d.doctor_id
@@ -1953,8 +2006,10 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', limit, offs
                     )
                 )
             `;
+
             params.push(
                 ...Array(11).fill(s), // treatments
+                ...Array(6).fill(s),  // treatment concerns + tbl_concerns
                 ...Array(5).fill(s),  // devices
                 ...Array(5).fill(s),  // surgeries
                 ...Array(4).fill(s),  // skin types
@@ -1967,7 +2022,7 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', limit, offs
             ORDER BY avg_rating DESC
         `;
 
-        if (limit != null) {   // apply only if not null/undefined
+        if (limit != null) {
             query += ` LIMIT ?`;
             params.push(Number(limit));
 
@@ -2039,6 +2094,21 @@ export const getClinicsByNameSearchOnly = async ({ search = '', limit, offset })
                     )
                     OR EXISTS (
                         SELECT 1
+                        FROM tbl_doctor_treatments dt
+                        LEFT JOIN tbl_treatment_concerns tc ON dt.treatment_id = tc.treatment_id
+                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
+                        WHERE dt.doctor_id = d.doctor_id
+                        AND (
+                            LOWER(tc.indications_sv) LIKE ?
+                            OR LOWER(tc.indications_en) LIKE ?
+                            OR LOWER(tc.likewise_terms) LIKE ?
+                            OR LOWER(cns.name) LIKE ?
+                            OR LOWER(cns.swedish) LIKE ?
+                            OR LOWER(cns.tips) LIKE ?
+                        )
+                    )
+                    OR EXISTS (
+                        SELECT 1
                         FROM tbl_doctor_aesthetic_devices dad
                         JOIN tbl_aesthetic_devices ad ON dad.aesthetic_devices_id = ad.aesthetic_device_id
                         WHERE dad.doctor_id = d.doctor_id
@@ -2104,13 +2174,15 @@ export const getClinicsByNameSearchOnly = async ({ search = '', limit, offset })
                     )
                 )
             `;
+
             params.push(
-                ...Array(11).fill(s),
-                ...Array(5).fill(s),
-                ...Array(5).fill(s),
-                ...Array(4).fill(s),
-                ...Array(4).fill(s),
-                ...Array(7).fill(s)
+                ...Array(11).fill(s), // treatments
+                ...Array(6).fill(s),  // treatment concerns + tbl_concerns
+                ...Array(5).fill(s),  // devices
+                ...Array(5).fill(s),  // surgeries
+                ...Array(4).fill(s),  // skin types
+                ...Array(4).fill(s),  // skin conditions
+                ...Array(7).fill(s)   // products
             );
         }
 
@@ -2119,7 +2191,7 @@ export const getClinicsByNameSearchOnly = async ({ search = '', limit, offset })
             ORDER BY avg_rating DESC
         `;
 
-        if (limit != null) {   // apply only if not null/undefined
+        if (limit != null) {
             query += ` LIMIT ?`;
             params.push(Number(limit));
 
@@ -2128,7 +2200,6 @@ export const getClinicsByNameSearchOnly = async ({ search = '', limit, offset })
                 params.push(Number(offset));
             }
         }
-
 
         return await db.query(query, params);
     } catch (error) {
@@ -2164,16 +2235,36 @@ export const getProductsByNameSearchOnly = async ({ search = '', limit, offset }
                         WHERE pt.product_id = p.product_id
                         AND (LOWER(t.name) LIKE ? OR LOWER(t.swedish) LIKE ?)
                     )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM tbl_product_treatments pt
+                        LEFT JOIN tbl_treatment_concerns tc ON pt.treatment_id = tc.treatment_id
+                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
+                        WHERE pt.product_id = p.product_id
+                        AND (
+                            LOWER(tc.indications_sv) LIKE ?
+                            OR LOWER(tc.indications_en) LIKE ?
+                            OR LOWER(tc.likewise_terms) LIKE ?
+                            OR LOWER(cns.name) LIKE ?
+                            OR LOWER(cns.swedish) LIKE ?
+                            OR LOWER(cns.tips) LIKE ?
+                        )
+                    )
                 )
             `;
-            params.push(...Array(7).fill(s), s, s);
+            params.push(
+                ...Array(7).fill(s),  // product fields
+                s, s,                  // product treatment name/swedish
+                ...Array(6).fill(s)    // treatment concerns + concerns
+            );
         }
 
         query += `
             GROUP BY p.product_id
             ORDER BY p.created_at DESC
         `;
-        if (limit != null) {   // apply only if not null/undefined
+
+        if (limit != null) {
             query += ` LIMIT ?`;
             params.push(Number(limit));
 
@@ -2197,6 +2288,7 @@ export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', 
         let query = `SELECT * FROM tbl_treatments WHERE 1=1`;
 
         if (safeSearch) {
+            const s = `%${safeSearch}%`;
             query += `
                 AND (
                     LOWER(name) LIKE ?
@@ -2210,14 +2302,31 @@ export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', 
                     OR LOWER(benefits_sv) LIKE ?
                     OR LOWER(description_en) LIKE ?
                     OR LOWER(description_sv) LIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM tbl_treatment_concerns tc
+                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
+                        WHERE tc.treatment_id = tbl_treatments.treatment_id
+                        AND (
+                            LOWER(tc.indications_sv) LIKE ?
+                            OR LOWER(tc.indications_en) LIKE ?
+                            OR LOWER(tc.likewise_terms) LIKE ?
+                            OR LOWER(cns.name) LIKE ?
+                            OR LOWER(cns.swedish) LIKE ?
+                            OR LOWER(cns.tips) LIKE ?
+                        )
+                    )
                 )
             `;
-            params.push(...Array(11).fill(`%${safeSearch}%`));
+            params.push(
+                ...Array(11).fill(s),  // existing treatment columns
+                ...Array(6).fill(s)    // treatment concerns + concerns
+            );
         }
 
         query += ` ORDER BY created_at DESC`;
 
-        if (limit != null) {   // apply only if not null/undefined
+        if (limit != null) {
             query += ` LIMIT ?`;
             params.push(Number(limit));
 
