@@ -1438,9 +1438,13 @@ export const getAllTreatments = async (lang) => {
 
 export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = null) => {
     try {
+        // pick the right column for name
+        const nameColumn = lang === 'sv' ? 't.swedish' : 't.name';
+
         let query = `
             SELECT
                 t.*,
+                ${nameColumn} AS name,
                 IFNULL(MIN(dt.price), 0) AS min_price,
                 IFNULL(MAX(dt.price), 0) AS max_price
             FROM tbl_treatments t
@@ -1456,7 +1460,7 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         if (filters.recommended === true && user_id) {
             const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
             if (!fallbackTreatmentIds?.length) {
-                return []; // no recommended treatments, return empty
+                return []; // no recommended treatments
             }
             const placeholders = fallbackTreatmentIds.map(() => '?').join(',');
             whereConditions.push(`t.treatment_id IN (${placeholders})`);
@@ -1498,7 +1502,7 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
             queryParams.push(...Array(11).fill(s), ...Array(6).fill(s));
         }
 
-        // ---------- Treatment IDs Filter (explicit) ----------
+        // ---------- Treatment IDs Filter ----------
         if (Array.isArray(filters.treatment_ids) && filters.treatment_ids.length) {
             const placeholders = filters.treatment_ids.map(() => '?').join(',');
             whereConditions.push(`t.treatment_id IN (${placeholders})`);
