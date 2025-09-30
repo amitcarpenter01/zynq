@@ -35,6 +35,9 @@ export const authenticateUser = async (req, res, next) => {
             return handleError(res, 404, 'en', "USER_NOT_FOUND")
         }
 
+        const isDeleted = user?.is_deleted === 1 ? true : false;
+
+
         const statusErrors = {
             REJECTED: "USER_REJECTED",
             PENDING: "USER_PENDING",
@@ -42,6 +45,10 @@ export const authenticateUser = async (req, res, next) => {
 
         const currentStatus = user?.approval_status;
         const language = user?.language || req?.headers['language'] || "en";
+
+        if (isDeleted) {
+            return handleError(res, 404, language, "USER_DELETED")
+        }
 
         const bypassRoutes = ["/profile", "/delete-account", "/delete-my-account"];
 
