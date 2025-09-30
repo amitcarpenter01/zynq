@@ -1436,7 +1436,7 @@ export const getAllTreatments = async (lang) => {
     }
 };
 
-export const getAllTreatmentsV2 = async (filters, lang) => {
+export const getAllTreatmentsV2 = async (filters = {}, lang = 'en') => {
     try {
         let query = `
             SELECT
@@ -1453,9 +1453,9 @@ export const getAllTreatmentsV2 = async (filters, lang) => {
         const queryParams = [];
         const whereConditions = [];
 
-        // Add search filter if provided
-        if (filters?.search) {
-            const safeSearch = filters.search.toLowerCase();
+        // ---------- Search Filter ----------
+        if (filters.search?.trim()) {
+            const safeSearch = `%${filters.search.toLowerCase()}%`;
             whereConditions.push(`(
                 LOWER(t.name) LIKE ? OR
                 LOWER(t.swedish) LIKE ? OR
@@ -1469,29 +1469,28 @@ export const getAllTreatmentsV2 = async (filters, lang) => {
                 LOWER(t.description_en) LIKE ? OR
                 LOWER(t.description_sv) LIKE ?
             )`);
-
-            queryParams.push(...Array(11).fill(`%${safeSearch}%`));
+            queryParams.push(...Array(11).fill(safeSearch));
         }
 
-        // Add treatment_ids filter if provided
-        if (filters?.treatment_ids?.length) {
+        // ---------- Treatment IDs Filter ----------
+        if (Array.isArray(filters.treatment_ids) && filters.treatment_ids.length) {
             const placeholders = filters.treatment_ids.map(() => '?').join(',');
             whereConditions.push(`t.treatment_id IN (${placeholders})`);
             queryParams.push(...filters.treatment_ids);
         }
 
-        // Combine WHERE conditions if any
+        // Combine WHERE conditions
         if (whereConditions.length) {
             query += ' WHERE ' + whereConditions.join(' AND ');
         }
 
-        query += `
-            GROUP BY t.treatment_id
-        `;
+        // ---------- Grouping ----------
+        query += ` GROUP BY t.treatment_id`;
 
+        // ---------- Execute Query ----------
         const results = await db.query(query, queryParams);
 
-        // Format benefits based on language
+        // ---------- Format Benefits ----------
         return formatBenefitsUnified(results, lang);
 
     } catch (error) {
