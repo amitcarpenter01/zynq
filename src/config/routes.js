@@ -15,7 +15,7 @@ import solo_doctor_routes from "../routes/solo_doctor.js";
 //==================================== configureApp ==============================
 
 const configureApp = (app) => {
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
   app.use(cors());
@@ -25,7 +25,7 @@ const configureApp = (app) => {
   app.use("/webuser", web_user_routes);
   app.use("/doctor", doctor_routes);
   app.use("/solo_doctor", solo_doctor_routes);
-  
+
 };
 
 export default configureApp;
