@@ -1441,7 +1441,6 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en') => {
         let query = `
             SELECT
                 t.*,
-                ANY_VALUE(c.name) AS concern_name,
                 IFNULL(MIN(dt.price), 0) AS min_price,
                 IFNULL(MAX(dt.price), 0) AS max_price
             FROM tbl_treatments t
@@ -1455,21 +1454,37 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en') => {
 
         // ---------- Search Filter ----------
         if (filters.search?.trim()) {
-            const safeSearch = `%${filters.search.toLowerCase()}%`;
-            whereConditions.push(`(
-                LOWER(t.name) LIKE ? OR
-                LOWER(t.swedish) LIKE ? OR
-                LOWER(t.application) LIKE ? OR
-                LOWER(t.type) LIKE ? OR
-                LOWER(t.technology) LIKE ? OR
-                LOWER(t.classification_type) LIKE ? OR
-                LOWER(t.benefits) LIKE ? OR
-                LOWER(t.benefits_en) LIKE ? OR
-                LOWER(t.benefits_sv) LIKE ? OR
-                LOWER(t.description_en) LIKE ? OR
-                LOWER(t.description_sv) LIKE ?
-            )`);
-            queryParams.push(...Array(11).fill(safeSearch));
+            const s = `%${filters.search.toLowerCase()}%`;
+            whereConditions.push(`
+                (
+                    LOWER(t.name) LIKE ?
+                    OR LOWER(t.swedish) LIKE ?
+                    OR LOWER(t.application) LIKE ?
+                    OR LOWER(t.type) LIKE ?
+                    OR LOWER(t.technology) LIKE ?
+                    OR LOWER(t.classification_type) LIKE ?
+                    OR LOWER(t.benefits) LIKE ?
+                    OR LOWER(t.benefits_en) LIKE ?
+                    OR LOWER(t.benefits_sv) LIKE ?
+                    OR LOWER(t.description_en) LIKE ?
+                    OR LOWER(t.description_sv) LIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM tbl_treatment_concerns tc2
+                        LEFT JOIN tbl_concerns c2 ON tc2.concern_id = c2.concern_id
+                        WHERE tc2.treatment_id = t.treatment_id
+                          AND (
+                              LOWER(tc2.indications_en) LIKE ?
+                              OR LOWER(tc2.indications_sv) LIKE ?
+                              OR LOWER(tc2.likewise_terms) LIKE ?
+                              OR LOWER(c2.name) LIKE ?
+                              OR LOWER(c2.swedish) LIKE ?
+                              OR LOWER(c2.tips) LIKE ?
+                          )
+                    )
+                )
+            `);
+            queryParams.push(...Array(11).fill(s), ...Array(6).fill(s));
         }
 
         // ---------- Treatment IDs Filter ----------
@@ -1479,7 +1494,7 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en') => {
             queryParams.push(...filters.treatment_ids);
         }
 
-        // Combine WHERE conditions
+        // ---------- Combine WHERE conditions ----------
         if (whereConditions.length) {
             query += ' WHERE ' + whereConditions.join(' AND ');
         }
