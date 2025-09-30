@@ -133,21 +133,26 @@ export const formatBenefitsUnified = (rows = [], lang = 'en') => {
                     : row.benefits;
                 return {
                     ...row,
-                    benefits: Object.values(parsed).map(b => b?.[lang] || '')
+                    benefits: Object.values(parsed).map(b => b?.[lang] || '').filter(Boolean)
                 };
             } catch {
                 return { ...row, benefits: [] };
             }
         }
+
         if (row.source === 'new') {
             const raw = lang === 'sv' ? row.benefits_sv : row.benefits_en;
-            return {
-                ...row,
-                benefits: raw
-                    ? raw.split(/•|\./).map(s => s.trim()).filter(Boolean)
-                    : []
-            };
+            if (!raw) return { ...row, benefits: [] };
+
+            // Split on bullets, semicolons, or commas, then clean up
+            const benefits = raw
+                .split(/•|;|,/)
+                .map(s => s.replace(/^\s*[,\.•]+/, '').trim()) // remove leading punctuation
+                .filter(Boolean); // remove empty strings
+
+            return { ...row, benefits };
         }
+
         return { ...row, benefits: [] };
     });
 };
