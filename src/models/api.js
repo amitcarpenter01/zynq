@@ -117,17 +117,16 @@ export const update_face_scan_data = async (face_data, face_scan_result_id) => {
     try {
         return await db.query(
             `UPDATE tbl_face_scan_results 
-             SET 
-             aiAnalysisResult = ?,
-             pdf = ?
-            WHERE face_scan_result_id = ?`,
-            [face_data.aiAnalysisResult, face_data.pdf, face_scan_result_id]
+             SET ?
+             WHERE face_scan_result_id = ?`,
+            [face_data, face_scan_result_id]
         );
     } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to add face scan data.");
+        throw new Error("Failed to update face scan data.");
     }
 };
+
 
 export const get_face_scan_history = async (user_id) => {
     try {
