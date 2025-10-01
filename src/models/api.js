@@ -116,8 +116,12 @@ export const add_face_scan_data = async (face_data) => {
 export const update_face_scan_data = async (face_data, face_scan_result_id) => {
     try {
         return await db.query(
-            `UPDATE tbl_face_scan_results SET ? WHERE face_scan_result_id = ?`,
-            [face_data, face_scan_result_id]
+            `UPDATE tbl_face_scan_results 
+             SET 
+             face = ?,
+             pdf = ?
+            WHERE face_scan_result_id = ?`,
+            [face_data.face, face_data.pdf, face_scan_result_id]
         );
     } catch (error) {
         console.error("Database Error:", error.message);
