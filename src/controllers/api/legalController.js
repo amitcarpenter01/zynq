@@ -19,10 +19,13 @@ export const updateLegalDocuments = asyncHandler(async (req, res) => {
 });
 
 export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
+    const currentTime = new Date().toISOString();
+    console.log(`[${currentTime}] Received request to openAI endpoint`);
+
     try {
         const { payload } = req.body;
-        console.log("payload type", typeof payload);
-        console.log("payload", payload);
+        console.log(`[${currentTime}] Payload type: ${typeof payload}`);
+        console.log(`[${currentTime}] Payload: ${JSON.stringify(payload)}`);
 
 
         const openaiKey = process.env.OPENAI_API_KEY;
@@ -48,10 +51,14 @@ export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
             {
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${openaiKey}`,
+                    "Authorization": `bearer ${openaiKey}`,
                 },
             }
         );
+
+        console.log(`[${currentTime}] Received response from OpenAI endpoint`);
+        console.log(`[${currentTime}] Response status: ${openAIResponse.status}`);
+        console.log(`[${currentTime}] Response data: ${JSON.stringify(openAIResponse.data)}`);
 
         return handleSuccess(res, openAIResponse.status, "en", "OPENAI_RESPONSE", openAIResponse.data);
 
@@ -59,6 +66,7 @@ export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
         // Axios-specific error handling
         if (error.response) {
             // OpenAI returned an error response
+            console.log(`[${currentTime}] OpenAI returned an error response`);
             return handleError(
                 res,
                 error.response.status,
@@ -68,9 +76,11 @@ export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
             );
         } else if (error.request) {
             // Request was made but no response received
+            console.log(`[${currentTime}] Request was made but no response received`);
             return handleError(res, 502, "en", "OPENAI_NO_RESPONSE", { error: "No response from OpenAI" });
         } else {
             // Other errors
+            console.log(`[${currentTime}] Other errors`);
             return handleError(res, 500, "en", "OPENAI_PROXY_ERROR", { error: error.message });
         }
     }
