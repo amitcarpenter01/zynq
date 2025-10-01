@@ -113,6 +113,18 @@ export const add_face_scan_data = async (face_data) => {
     }
 };
 
+export const update_face_scan_data = async (face_data, face_scan_result_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_face_scan_results SET ? WHERE face_scan_result_id = ?`,
+            [face_data, face_scan_result_id]
+        );
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to add face scan data.");
+    }
+};
+
 export const get_face_scan_history = async (user_id) => {
     try {
         return await db.query(
@@ -122,6 +134,30 @@ export const get_face_scan_history = async (user_id) => {
         throw new Error("Failed to face scan historydata");
     }
 };
+
+export const get_face_scan_history_v2 = async (user_id, face_scan_id = null) => {
+    try {
+        let query = `
+            SELECT * 
+            FROM tbl_face_scan_results 
+            WHERE user_id = ?
+        `;
+        const params = [user_id];
+
+        if (face_scan_id) {
+            query += ` AND face_scan_result_id = ?`;
+            params.push(face_scan_id);
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        return await db.query(query, params);
+    } catch (error) {
+        console.error("DB Error in get_face_scan_history_v2:", error);
+        throw new Error("Failed to fetch face scan history data");
+    }
+};
+
 
 export const get_face_scan_result_by_id = async (user_id, face_scan_result_id) => {
     try {

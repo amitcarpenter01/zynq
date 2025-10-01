@@ -24,6 +24,7 @@ export const add_face_scan_result = async (req, res) => {
         const language = user.language || 'en';
 
         const schema = Joi.object({
+            face_scan_id: Joi.string().optional().allow("", null),
             skin_type: Joi.string().optional().allow("", null),
             skin_concerns: Joi.string().optional().allow("", null),
             details: Joi.any().optional().allow("", null),
@@ -34,7 +35,7 @@ export const add_face_scan_result = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const { skin_type, skin_concerns, details, scoreInfo, aiAnalysisResult } = value;
+        const { skin_type, skin_concerns, details, scoreInfo, aiAnalysisResult, face_scan_id } = value;
 
         // const face = req.file?.location || '';
 
@@ -48,19 +49,32 @@ export const add_face_scan_result = async (req, res) => {
         }
         const face_scan_result_id = uuidv4(); // Generate UUID
 
-        const new_face_scan_data = {
-            user_id: user.user_id,
-            face_scan_result_id: face_scan_result_id,
-            skin_type,
-            skin_concerns,
-            details,
-            face,
-            pdf,
-            scoreInfo,
-            aiAnalysisResult
-        };
+        let face_scan_data = {}
 
-        const id = await apiModels.add_face_scan_data(new_face_scan_data);
+        if (!isEmpty(face_scan_id)) {
+            face_scan_data = {
+                face,
+                pdf,
+            }
+
+            await apiModels.update_face_scan_data(face_scan_data, face_scan_id);
+        } else {
+            face_scan_data = {
+                user_id: user.user_id,
+                face_scan_result_id: face_scan_result_id,
+                skin_type,
+                skin_concerns,
+                details,
+                face,
+                pdf,
+                scoreInfo,
+                aiAnalysisResult
+            };
+
+            await apiModels.add_face_scan_data(face_scan_data);
+        }
+
+
         return handleSuccess(res, 200, language, "SCAN_DATA_ADDED", { id: face_scan_result_id });
 
     } catch (error) {
@@ -71,7 +85,8 @@ export const add_face_scan_result = async (req, res) => {
 
 export const get_face_scan_history = async (req, res) => {
     try {
-        let scan_hostory = await apiModels.get_face_scan_history(req.user?.user_id);
+        const face_scan_id = req?.params?.face_scan_id;
+        let scan_hostory = await apiModels.get_face_scan_history_v2(req.user?.user_id, face_scan_id);
         if (!scan_hostory) return handleError(res, 404, 'en', "SCAN_HISTORY_NOT_FOUND");
         scan_hostory.forEach(item => {
             if (item.face && !item.face.startsWith("http")) item.face = `${APP_URL}${item.face}`;
