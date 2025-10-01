@@ -48,9 +48,8 @@ router.post('/add-clinic-managment', authenticateAdmin, clinicControllers.add_cl
 router.get('/get-clinic-managment', authenticateAdmin, clinicControllers.get_clinic_managment);
 router.post('/delete-clinic-management', authenticateAdmin, clinicControllers.delete_clinic_management);
 router.post('/send-invitation', authenticateAdmin, clinicControllers.send_invitation);
-router.get('/subscribed/:is_subscribed', authenticateAdmin, clinicControllers.subscribed);
-router.get('/unsubscribed/:is_unsubscribed', authenticateAdmin, clinicControllers.unsubscribed);
-router.post('/send-invitation', authenticateAdmin, clinicControllers.send_invitation);
+router.get('/subscribed/:is_subscribed', clinicControllers.subscribed);
+router.get('/unsubscribed/:is_unsubscribed', clinicControllers.unsubscribed);
 
 //==================================== Doctor Managment ==============================
 
