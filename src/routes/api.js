@@ -77,6 +77,7 @@ router.post("/add-face-scan-result", authenticateUser, upload.fields([
   { name: 'pdf', maxCount: 1 }
 ]), faceScanControllers.add_face_scan_result);
 router.get("/get-face-scan-history/:face_scan_id", authenticateUser, faceScanControllers.get_face_scan_history);
+router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_face_scan_history);
 
 
 
