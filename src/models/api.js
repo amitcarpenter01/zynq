@@ -247,40 +247,56 @@ export const getAllDoctors = async ({
         if (search && search.trim()) {
             const s = `%${search.toLowerCase()}%`;
             query += `
-                AND (
-                    LOWER(d.name) LIKE ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_treatments sdt
-                        JOIN tbl_treatments t ON sdt.treatment_id = t.treatment_id
-                        LEFT JOIN tbl_treatment_concerns tc ON t.treatment_id = tc.treatment_id
-                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
-                        WHERE sdt.doctor_id = d.doctor_id
-                          AND (
-                              LOWER(t.name) LIKE ?
-                              OR LOWER(t.swedish) LIKE ?
-                              OR LOWER(t.application) LIKE ?
-                              OR LOWER(t.type) LIKE ?
-                              OR LOWER(t.technology) LIKE ?
-                              OR LOWER(t.classification_type) LIKE ?
-                              OR LOWER(t.benefits) LIKE ?
-                              OR LOWER(t.benefits_en) LIKE ?
-                              OR LOWER(t.benefits_sv) LIKE ?
-                              OR LOWER(t.description_en) LIKE ?
-                              OR LOWER(t.description_sv) LIKE ?
-                              OR LOWER(tc.indications_sv) LIKE ?
-                              OR LOWER(tc.indications_en) LIKE ?
-                              OR LOWER(tc.likewise_terms) LIKE ?
-                              OR LOWER(cns.name) LIKE ?
-                              OR LOWER(cns.swedish) LIKE ?
-                              OR LOWER(cns.tips) LIKE ?
-                          )
-                    )
-                )
-            `;
-            // doctor.name (1) + 11 treatment fields + 6 concern fields
-            params.push(s, ...Array(11).fill(s), ...Array(6).fill(s));
+        AND (
+            LOWER(d.name) LIKE ?
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_doctor_treatments sdt
+                JOIN tbl_treatments t ON sdt.treatment_id = t.treatment_id
+                LEFT JOIN tbl_treatment_concerns tc ON t.treatment_id = tc.treatment_id
+                LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
+                WHERE sdt.doctor_id = d.doctor_id
+                  AND (
+                      LOWER(t.name) LIKE ?
+                      OR LOWER(t.swedish) LIKE ?
+                      OR LOWER(t.application) LIKE ?
+                      OR LOWER(t.type) LIKE ?
+                      OR LOWER(t.technology) LIKE ?
+                      OR LOWER(t.classification_type) LIKE ?
+                      OR LOWER(t.benefits) LIKE ?
+                      OR LOWER(t.benefits_en) LIKE ?
+                      OR LOWER(t.benefits_sv) LIKE ?
+                      OR LOWER(t.description_en) LIKE ?
+                      OR LOWER(t.description_sv) LIKE ?
+                      OR LOWER(tc.indications_sv) LIKE ?
+                      OR LOWER(tc.indications_en) LIKE ?
+                      OR LOWER(tc.likewise_terms) LIKE ?
+                      OR LOWER(cns.name) LIKE ?
+                      OR LOWER(cns.swedish) LIKE ?
+                      OR LOWER(cns.tips) LIKE ?
+                  )
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_skin_types st
+                JOIN tbl_skin_treatment_map stm ON st.skin_type_id = stm.skin_type_id
+                JOIN tbl_treatments t2 ON stm.treatment_id = t2.treatment_id
+                JOIN tbl_doctor_treatments sdt2 ON t2.treatment_id = sdt2.treatment_id AND sdt2.doctor_id = d.doctor_id
+                WHERE 
+                    LOWER(st.name) LIKE ?
+                    OR LOWER(st.swedish) LIKE ?
+                    OR LOWER(st.syn_en) LIKE ?
+                    OR LOWER(st.syn_sv) LIKE ?
+                    OR LOWER(st.areas) LIKE ?
+                    OR LOWER(st.description) LIKE ?
+                    OR LOWER(st.desc_sv) LIKE ?
+            )
+        )
+    `;
+            // push params: 1 for doctor.name + 11 treatment fields + 6 concern fields + 7 skin type fields
+            params.push(s, ...Array(11).fill(s), ...Array(6).fill(s), ...Array(7).fill(s));
         }
+
 
         if (needsRating) query += ` GROUP BY d.doctor_id`;
 
@@ -386,31 +402,52 @@ export const getAllRecommendedDoctors = async ({
         const trimmedSearch = (search || '').trim().toLowerCase();
         if (trimmedSearch) {
             const likeVal = `%${trimmedSearch}%`;
+
             filters.push(`
-                (
-                    LOWER(d.name) LIKE ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_treatments sdt
-                        JOIN tbl_treatments t ON sdt.treatment_id = t.treatment_id
-                        WHERE sdt.doctor_id = d.doctor_id
-                          AND (
-                              LOWER(t.name) LIKE ?
-                              OR LOWER(t.swedish) LIKE ?
-                              OR LOWER(t.application) LIKE ?
-                              OR LOWER(t.type) LIKE ?
-                              OR LOWER(t.technology) LIKE ?
-                              OR LOWER(t.classification_type) LIKE ?
-                              OR LOWER(t.benefits) LIKE ?
-                              OR LOWER(t.benefits_en) LIKE ?
-                              OR LOWER(t.benefits_sv) LIKE ?
-                              OR LOWER(t.description_en) LIKE ?
-                              OR LOWER(t.description_sv) LIKE ?
-                          )
-                    )
-                )
-            `);
-            params.push(likeVal, ...Array(11).fill(likeVal));
+        (
+            LOWER(d.name) LIKE ?
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_doctor_treatments sdt
+                JOIN tbl_treatments t ON sdt.treatment_id = t.treatment_id
+                WHERE sdt.doctor_id = d.doctor_id
+                  AND (
+                      LOWER(t.name) LIKE ?
+                      OR LOWER(t.swedish) LIKE ?
+                      OR LOWER(t.application) LIKE ?
+                      OR LOWER(t.type) LIKE ?
+                      OR LOWER(t.technology) LIKE ?
+                      OR LOWER(t.classification_type) LIKE ?
+                      OR LOWER(t.benefits) LIKE ?
+                      OR LOWER(t.benefits_en) LIKE ?
+                      OR LOWER(t.benefits_sv) LIKE ?
+                      OR LOWER(t.description_en) LIKE ?
+                      OR LOWER(t.description_sv) LIKE ?
+                  )
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_skin_types st
+                JOIN tbl_skin_treatment_map stm ON st.skin_type_id = stm.skin_type_id
+                JOIN tbl_treatments t2 ON stm.treatment_id = t2.treatment_id
+                JOIN tbl_doctor_treatments sdt2 ON t2.treatment_id = sdt2.treatment_id AND sdt2.doctor_id = d.doctor_id
+                WHERE 
+                    LOWER(st.name) LIKE ?
+                    OR LOWER(st.swedish) LIKE ?
+                    OR LOWER(st.syn_en) LIKE ?
+                    OR LOWER(st.syn_sv) LIKE ?
+                    OR LOWER(st.areas) LIKE ?
+                    OR LOWER(st.description) LIKE ?
+                    OR LOWER(st.desc_sv) LIKE ?
+            )
+        )
+    `);
+
+            params.push(
+                likeVal,                       // doctor name
+                ...Array(11).fill(likeVal),    // treatments
+                ...Array(7).fill(likeVal)      // skin types
+            );
         }
 
         // ---------- Price ----------
@@ -598,49 +635,67 @@ export const get_all_products_for_user = async ({
             params.push(...treatment_ids);
         }
 
-        // --- Search block: product + treatments + concerns ---
+        // --- Search block: product + treatments + concerns + skin types ---
         const trimmedSearch = (search || '').trim().toLowerCase();
         if (trimmedSearch) {
             const like = `%${trimmedSearch}%`;
             query += `
-                AND (
-                    LOWER(p.name) LIKE ?
-                    OR LOWER(p.short_description) LIKE ?
-                    OR LOWER(p.full_description) LIKE ?
-                    OR LOWER(p.feature_text) LIKE ?
-                    OR LOWER(p.benefit_text) LIKE ?
-                    OR LOWER(p.how_to_use) LIKE ?
-                    OR LOWER(p.ingredients) LIKE ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_product_treatments spt
-                        JOIN tbl_treatments st ON spt.treatment_id = st.treatment_id
-                        WHERE spt.product_id = p.product_id
-                          AND (
-                              LOWER(st.name) LIKE ?
-                              OR LOWER(st.swedish) LIKE ?
-                          )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_product_treatments spt
-                        LEFT JOIN tbl_treatment_concerns tc ON spt.treatment_id = tc.treatment_id
-                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
-                        WHERE spt.product_id = p.product_id
-                          AND (
-                              LOWER(tc.indications_sv) LIKE ?
-                              OR LOWER(tc.indications_en) LIKE ?
-                              OR LOWER(tc.likewise_terms) LIKE ?
-                              OR LOWER(cns.name) LIKE ?
-                              OR LOWER(cns.swedish) LIKE ?
-                              OR LOWER(cns.tips) LIKE ?
-                          )
-                    )
-                )
-            `;
-            // push for 7 product fields + 2 treatment fields + 6 concern fields
-            params.push(...Array(7).fill(like), like, like, ...Array(6).fill(like));
+        AND (
+            LOWER(p.name) LIKE ?
+            OR LOWER(p.short_description) LIKE ?
+            OR LOWER(p.full_description) LIKE ?
+            OR LOWER(p.feature_text) LIKE ?
+            OR LOWER(p.benefit_text) LIKE ?
+            OR LOWER(p.how_to_use) LIKE ?
+            OR LOWER(p.ingredients) LIKE ?
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_product_treatments spt
+                JOIN tbl_treatments st ON spt.treatment_id = st.treatment_id
+                WHERE spt.product_id = p.product_id
+                  AND (
+                      LOWER(st.name) LIKE ?
+                      OR LOWER(st.swedish) LIKE ?
+                  )
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_product_treatments spt
+                LEFT JOIN tbl_treatment_concerns tc ON spt.treatment_id = tc.treatment_id
+                LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
+                WHERE spt.product_id = p.product_id
+                  AND (
+                      LOWER(tc.indications_sv) LIKE ?
+                      OR LOWER(tc.indications_en) LIKE ?
+                      OR LOWER(tc.likewise_terms) LIKE ?
+                      OR LOWER(cns.name) LIKE ?
+                      OR LOWER(cns.swedish) LIKE ?
+                      OR LOWER(cns.tips) LIKE ?
+                  )
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_skin_types st
+                JOIN tbl_skin_treatment_map stm ON st.skin_type_id = stm.skin_type_id
+                JOIN tbl_product_treatments spt2 ON stm.treatment_id = spt2.treatment_id
+                WHERE spt2.product_id = p.product_id
+                  AND (
+                      LOWER(st.name) LIKE ?
+                      OR LOWER(st.swedish) LIKE ?
+                      OR LOWER(st.syn_en) LIKE ?
+                      OR LOWER(st.syn_sv) LIKE ?
+                      OR LOWER(st.areas) LIKE ?
+                      OR LOWER(st.description) LIKE ?
+                      OR LOWER(st.desc_sv) LIKE ?
+                  )
+            )
+        )
+    `;
+
+            // params: 7 product fields + 2 treatment fields + 6 concern fields + 7 skin type fields
+            params.push(...Array(7).fill(like), like, like, ...Array(6).fill(like), ...Array(7).fill(like));
         }
+
 
         // Price filters
         if (typeof price?.min === 'number') {
@@ -829,53 +884,70 @@ export const getAllClinicsForUser = async ({
 
         query += ` WHERE c.profile_completion_percentage >= 50`;
 
-        // --- Search block: clinic name + treatments + concerns ---
+        // --- Search block: clinic name + treatments + concerns + skin types ---
         const trimmedSearch = (search || '').trim().toLowerCase();
         if (trimmedSearch) {
             const like = `%${trimmedSearch}%`;
 
             filters.push(`
-                (
-                    LOWER(c.clinic_name) LIKE ?
-                    OR LOWER(c.address) LIKE ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_clinic_treatments ct
-                        JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
-                        WHERE ct.clinic_id = c.clinic_id
-                          AND (
-                              LOWER(t.name) LIKE ?
-                              OR LOWER(t.swedish) LIKE ?
-                              OR LOWER(t.application) LIKE ?
-                              OR LOWER(t.type) LIKE ?
-                              OR LOWER(t.technology) LIKE ?
-                              OR LOWER(t.classification_type) LIKE ?
-                              OR LOWER(t.benefits) LIKE ?
-                              OR LOWER(t.benefits_en) LIKE ?
-                              OR LOWER(t.benefits_sv) LIKE ?
-                              OR LOWER(t.description_en) LIKE ?
-                              OR LOWER(t.description_sv) LIKE ?
-                          )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_clinic_treatments ct
-                        LEFT JOIN tbl_treatment_concerns tc ON ct.treatment_id = tc.treatment_id
-                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
-                        WHERE ct.clinic_id = c.clinic_id
-                        AND (
-                            LOWER(tc.indications_sv) LIKE ?
-                            OR LOWER(tc.indications_en) LIKE ?
-                            OR LOWER(tc.likewise_terms) LIKE ?
-                            OR LOWER(cns.name) LIKE ?
-                            OR LOWER(cns.swedish) LIKE ?
-                            OR LOWER(cns.tips) LIKE ?
-                        )
-                    )
-                )
-            `);
+        (
+            LOWER(c.clinic_name) LIKE ?
+            OR LOWER(c.address) LIKE ?
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_clinic_treatments ct
+                JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
+                WHERE ct.clinic_id = c.clinic_id
+                  AND (
+                      LOWER(t.name) LIKE ?
+                      OR LOWER(t.swedish) LIKE ?
+                      OR LOWER(t.application) LIKE ?
+                      OR LOWER(t.type) LIKE ?
+                      OR LOWER(t.technology) LIKE ?
+                      OR LOWER(t.classification_type) LIKE ?
+                      OR LOWER(t.benefits) LIKE ?
+                      OR LOWER(t.benefits_en) LIKE ?
+                      OR LOWER(t.benefits_sv) LIKE ?
+                      OR LOWER(t.description_en) LIKE ?
+                      OR LOWER(t.description_sv) LIKE ?
+                  )
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_clinic_treatments ct
+                LEFT JOIN tbl_treatment_concerns tc ON ct.treatment_id = tc.treatment_id
+                LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
+                WHERE ct.clinic_id = c.clinic_id
+                  AND (
+                      LOWER(tc.indications_sv) LIKE ?
+                      OR LOWER(tc.indications_en) LIKE ?
+                      OR LOWER(tc.likewise_terms) LIKE ?
+                      OR LOWER(cns.name) LIKE ?
+                      OR LOWER(cns.swedish) LIKE ?
+                      OR LOWER(cns.tips) LIKE ?
+                  )
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_skin_types st
+                JOIN tbl_skin_treatment_map stm ON st.skin_type_id = stm.skin_type_id
+                JOIN tbl_clinic_treatments ct2 ON stm.treatment_id = ct2.treatment_id
+                WHERE ct2.clinic_id = c.clinic_id
+                  AND (
+                      LOWER(st.name) LIKE ?
+                      OR LOWER(st.swedish) LIKE ?
+                      OR LOWER(st.syn_en) LIKE ?
+                      OR LOWER(st.syn_sv) LIKE ?
+                      OR LOWER(st.areas) LIKE ?
+                      OR LOWER(st.description) LIKE ?
+                      OR LOWER(st.desc_sv) LIKE ?
+                  )
+            )
+        )
+    `);
 
-            params.push(like, like, ...Array(11).fill(like), ...Array(6).fill(like));
+            // params: clinic_name + address (2) + 11 treatment fields + 6 concern fields + 7 skin type fields
+            params.push(like, like, ...Array(11).fill(like), ...Array(6).fill(like), ...Array(7).fill(like));
         }
 
         if (filters.length > 0) {
@@ -1017,55 +1089,72 @@ export const getNearbyClinicsForUser = async ({
 
         query += ` WHERE c.profile_completion_percentage >= 50`;
 
-        // --- Search block: clinic name + treatments + concerns ---
+        // --- Search block: clinic name + treatments + concerns + skin types ---
         const trimmedSearch = (search || '').trim().toLowerCase();
         if (trimmedSearch) {
             const like = `%${trimmedSearch}%`;
 
             filters.push(`
-                (
-                    LOWER(c.clinic_name) LIKE ?
-                    OR LOWER(c.address) LIKE ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_clinic_treatments ct
-                        JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
-                        WHERE ct.clinic_id = c.clinic_id
-                          AND (
-                              LOWER(t.name) LIKE ?
-                              OR LOWER(t.swedish) LIKE ?
-                              OR LOWER(t.application) LIKE ?
-                              OR LOWER(t.type) LIKE ?
-                              OR LOWER(t.technology) LIKE ?
-                              OR LOWER(t.classification_type) LIKE ?
-                              OR LOWER(t.benefits) LIKE ?
-                              OR LOWER(t.benefits_en) LIKE ?
-                              OR LOWER(t.benefits_sv) LIKE ?
-                              OR LOWER(t.description_en) LIKE ?
-                              OR LOWER(t.description_sv) LIKE ?
-                          )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_clinic_treatments ct
-                        LEFT JOIN tbl_treatment_concerns tc ON ct.treatment_id = tc.treatment_id
-                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
-                        WHERE ct.clinic_id = c.clinic_id
-                        AND (
-                            LOWER(tc.indications_sv) LIKE ?
-                            OR LOWER(tc.indications_en) LIKE ?
-                            OR LOWER(tc.likewise_terms) LIKE ?
-                            OR LOWER(cns.name) LIKE ?
-                            OR LOWER(cns.swedish) LIKE ?
-                            OR LOWER(cns.tips) LIKE ?
-                        )
-                    )
-                )
-            `);
+        (
+            LOWER(c.clinic_name) LIKE ?
+            OR LOWER(c.address) LIKE ?
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_clinic_treatments ct
+                JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
+                WHERE ct.clinic_id = c.clinic_id
+                  AND (
+                      LOWER(t.name) LIKE ?
+                      OR LOWER(t.swedish) LIKE ?
+                      OR LOWER(t.application) LIKE ?
+                      OR LOWER(t.type) LIKE ?
+                      OR LOWER(t.technology) LIKE ?
+                      OR LOWER(t.classification_type) LIKE ?
+                      OR LOWER(t.benefits) LIKE ?
+                      OR LOWER(t.benefits_en) LIKE ?
+                      OR LOWER(t.benefits_sv) LIKE ?
+                      OR LOWER(t.description_en) LIKE ?
+                      OR LOWER(t.description_sv) LIKE ?
+                  )
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_clinic_treatments ct
+                LEFT JOIN tbl_treatment_concerns tc ON ct.treatment_id = tc.treatment_id
+                LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
+                WHERE ct.clinic_id = c.clinic_id
+                  AND (
+                      LOWER(tc.indications_sv) LIKE ?
+                      OR LOWER(tc.indications_en) LIKE ?
+                      OR LOWER(tc.likewise_terms) LIKE ?
+                      OR LOWER(cns.name) LIKE ?
+                      OR LOWER(cns.swedish) LIKE ?
+                      OR LOWER(cns.tips) LIKE ?
+                  )
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_skin_types st
+                JOIN tbl_skin_treatment_map stm ON st.skin_type_id = stm.skin_type_id
+                JOIN tbl_clinic_treatments ct2 ON stm.treatment_id = ct2.treatment_id
+                WHERE ct2.clinic_id = c.clinic_id
+                  AND (
+                      LOWER(st.name) LIKE ?
+                      OR LOWER(st.swedish) LIKE ?
+                      OR LOWER(st.syn_en) LIKE ?
+                      OR LOWER(st.syn_sv) LIKE ?
+                      OR LOWER(st.areas) LIKE ?
+                      OR LOWER(st.description) LIKE ?
+                      OR LOWER(st.desc_sv) LIKE ?
+                  )
+            )
+        )
+    `);
 
-            // clinic_name + address (2) + treatments (11) + concerns (6)
-            params.push(like, like, ...Array(11).fill(like), ...Array(6).fill(like));
+            // params: clinic_name + address (2) + 11 treatment fields + 6 concern fields + 7 skin type fields
+            params.push(like, like, ...Array(11).fill(like), ...Array(6).fill(like), ...Array(7).fill(like));
         }
+
 
         if (filters.length > 0) {
             query += ` AND ${filters.join(' AND ')}`;
@@ -1510,36 +1599,54 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         if (filters.search?.trim()) {
             const s = `%${filters.search.toLowerCase()}%`;
             whereConditions.push(`
-                (
-                    LOWER(t.name) LIKE ?
-                    OR LOWER(t.swedish) LIKE ?
-                    OR LOWER(t.application) LIKE ?
-                    OR LOWER(t.type) LIKE ?
-                    OR LOWER(t.technology) LIKE ?
-                    OR LOWER(t.classification_type) LIKE ?
-                    OR LOWER(t.benefits) LIKE ?
-                    OR LOWER(t.benefits_en) LIKE ?
-                    OR LOWER(t.benefits_sv) LIKE ?
-                    OR LOWER(t.description_en) LIKE ?
-                    OR LOWER(t.description_sv) LIKE ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_treatment_concerns tc2
-                        LEFT JOIN tbl_concerns c2 ON tc2.concern_id = c2.concern_id
-                        WHERE tc2.treatment_id = t.treatment_id
-                          AND (
-                              LOWER(tc2.indications_en) LIKE ?
-                              OR LOWER(tc2.indications_sv) LIKE ?
-                              OR LOWER(tc2.likewise_terms) LIKE ?
-                              OR LOWER(c2.name) LIKE ?
-                              OR LOWER(c2.swedish) LIKE ?
-                              OR LOWER(c2.tips) LIKE ?
-                          )
-                    )
-                )
-            `);
-            queryParams.push(...Array(11).fill(s), ...Array(6).fill(s));
+        (
+            LOWER(t.name) LIKE ?
+            OR LOWER(t.swedish) LIKE ?
+            OR LOWER(t.application) LIKE ?
+            OR LOWER(t.type) LIKE ?
+            OR LOWER(t.technology) LIKE ?
+            OR LOWER(t.classification_type) LIKE ?
+            OR LOWER(t.benefits) LIKE ?
+            OR LOWER(t.benefits_en) LIKE ?
+            OR LOWER(t.benefits_sv) LIKE ?
+            OR LOWER(t.description_en) LIKE ?
+            OR LOWER(t.description_sv) LIKE ?
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_treatment_concerns tc2
+                LEFT JOIN tbl_concerns c2 ON tc2.concern_id = c2.concern_id
+                WHERE tc2.treatment_id = t.treatment_id
+                  AND (
+                      LOWER(tc2.indications_en) LIKE ?
+                      OR LOWER(tc2.indications_sv) LIKE ?
+                      OR LOWER(tc2.likewise_terms) LIKE ?
+                      OR LOWER(c2.name) LIKE ?
+                      OR LOWER(c2.swedish) LIKE ?
+                      OR LOWER(c2.tips) LIKE ?
+                  )
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM tbl_skin_types st
+                JOIN tbl_skin_treatment_map stm ON st.skin_type_id = stm.skin_type_id
+                WHERE stm.treatment_id = t.treatment_id
+                  AND (
+                      LOWER(st.name) LIKE ?
+                      OR LOWER(st.swedish) LIKE ?
+                      OR LOWER(st.syn_en) LIKE ?
+                      OR LOWER(st.syn_sv) LIKE ?
+                      OR LOWER(st.areas) LIKE ?
+                      OR LOWER(st.description) LIKE ?
+                      OR LOWER(st.desc_sv) LIKE ?
+                  )
+            )
+        )
+    `);
+
+            // params: 11 treatment fields + 6 concern fields + 7 skin type fields
+            queryParams.push(...Array(11).fill(s), ...Array(6).fill(s), ...Array(7).fill(s));
         }
+
 
         // ---------- Treatment IDs Filter ----------
         if (Array.isArray(filters.treatment_ids) && filters.treatment_ids.length) {
