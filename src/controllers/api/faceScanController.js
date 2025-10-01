@@ -53,8 +53,8 @@ export const add_face_scan_result = async (req, res) => {
 
         if (!isEmpty(face_scan_id)) {
             face_scan_data = {
-                face,
                 pdf,
+                aiAnalysisResult
             }
 
             await apiModels.update_face_scan_data(face_scan_data, face_scan_id);
@@ -75,7 +75,11 @@ export const add_face_scan_result = async (req, res) => {
         }
 
 
-        return handleSuccess(res, 200, language, "SCAN_DATA_ADDED", { id: face_scan_result_id });
+        const responseId = face_scan_id && face_scan_id.trim() !== ""
+            ? face_scan_id
+            : face_scan_result_id;
+
+        return handleSuccess(res, 200, language, "SCAN_DATA_ADDED", { id: responseId });
 
     } catch (error) {
         console.error("Internal Error:", error);
