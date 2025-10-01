@@ -5,7 +5,7 @@ import { isEmpty } from "../../utils/user_helper.js";
 import axios from "axios";
 
 export const getLegalDocuments = asyncHandler(async (req, res) => {
-    const {language = "en", role} = req.user;
+    const { language = "en", role } = req.user;
     const legalDocuments = await getLegalDocumentsForUsers(role, language);
     if (isEmpty(legalDocuments)) return handleError(res, 404, "en", "DOCUMENTS_NOT_FOUND");
     return handleSuccess(res, 200, 'en', "DOCUMENTS_FETCHED_SUCCESSFULLY", legalDocuments);
@@ -21,8 +21,12 @@ export const updateLegalDocuments = asyncHandler(async (req, res) => {
 export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
     try {
         const { payload } = req.body;
+        console.log("payload type", typeof payload);
+        console.log("payload", payload);
+
+
         const openaiKey = process.env.OPENAI_API_KEY;
-        
+
         // Ensure payload is JSON
         let parsedPayload;
         if (typeof payload === "string") {
