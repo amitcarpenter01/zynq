@@ -22,3 +22,12 @@ export const updateZynqUserApprovalStatusSchema = joi.object({
   zynq_user_id: stringValidation,
   approval_status: stringValidation.valid("VERIFIED")
 })
+
+export const openAIBackendEndpointSchema = joi.object({
+  payload: joi.alternatives()
+    .try(
+      stringValidation,
+      objectValidation
+    )
+
+});

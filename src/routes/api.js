@@ -28,7 +28,7 @@ import { getTipsByConcernsSchema, getTreatmentFiltersSchema, getTreatmentsByConc
 import { deleteNotifications, deleteSingleNotification, getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
 import { sendAppointmentNotifications } from '../services/notifications.service.js';
 import { toggleLanguage } from '../controllers/web_users/authController.js';
-import { getLegalDocuments } from '../controllers/api/legalController.js';
+import { getLegalDocuments, openAIBackendEndpoint } from '../controllers/api/legalController.js';
 import { uploadMulterChatFiles } from '../services/multer.chat.js';
 import { getAllProductsSchema, getSingleProductSchema } from '../validations/product.validation.js';
 import { getWishlists, toggleWishlistProduct } from '../controllers/api/wishlistController.js';
@@ -43,6 +43,7 @@ import { addEditAddress, deleteAddress, getAddresses, getSingleAddress } from '.
 import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
 import { getAllFAQCategories, getAllFAQs } from '../controllers/api/FAQController.js';
 import { getAllFAQSchema } from '../validations/faq.validation.js';
+import { openAIBackendEndpointSchema } from '../validations/legal.validation.js';
 
 const router = express.Router();
 
@@ -228,5 +229,7 @@ router.post('/guest/login', validate(guestLoginSchema, "body"), authControllers.
 router.post('/guest/get-face-scan', validate(getGuestFaceScanSchema, "body"), authControllers.getGuestFaceScan);
 
 router.get('/draft/:doctor_id', authenticateUser, validate(getDraftAppointmentsSchema, "params"), appointmentController.getDraftAppointments);
+
+router.post('/openai/endpoint', authenticateUser, validate(openAIBackendEndpointSchema, "body"), openAIBackendEndpoint)
 
 export default router;
