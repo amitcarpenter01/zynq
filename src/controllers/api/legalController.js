@@ -23,10 +23,6 @@ export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
         const { payload } = req.body;
         const openaiKey = process.env.OPENAI_API_KEY;
         
-        if (!payload) {
-            return handleError(res, 400, "en", "PAYLOAD_REQUIRED", { error: "Payload is required" });
-        }
-
         // Ensure payload is JSON
         let parsedPayload;
         if (typeof payload === "string") {
@@ -50,7 +46,6 @@ export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${openaiKey}`,
                 },
-                timeout: 30000, // optional, 30s timeout
             }
         );
 
