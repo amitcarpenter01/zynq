@@ -1,41 +1,88 @@
 import configs from "../config/config.js";
 import db from "../config/db.js";
-import { isEmpty } from "./user_helper.js";
-import { translate } from "@vitalets/google-translate-api";
+import OpenAI from "openai";
 
-export const getTreatmentIDsByUserID = async (UserID) => {
-    const result = await db.query(`
-        SELECT aiAnalysisResult
-        FROM tbl_face_scan_results 
-        WHERE user_id = ? 
-        ORDER BY created_at DESC 
-        LIMIT 1
-    `, [UserID]);
+const isEmpty = (value) => {
+    if (value === null || value === undefined) return true;
+    if (typeof value === 'boolean' || typeof value === 'number') return false;
+    if (typeof value === 'string') return value.trim().length === 0;
+    if (Array.isArray(value)) return value.length === 0;
+    if (value instanceof Map || value instanceof Set) return value.size === 0;
+    if (typeof value === 'object') return Object.keys(value).length === 0;
+    return false;
+};
 
-    if (result.length === 0) {
-        return [];
-    }
+export const getTreatmentIDsByUserID = async (userID) => {
+    // 1️⃣ Fetch latest face scan result
+    const result = await db.query(
+        `SELECT aiAnalysisResult, scoreInfo
+         FROM tbl_face_scan_results 
+         WHERE user_id = ? 
+         ORDER BY created_at DESC 
+         LIMIT 1`,
+        [userID]
+    );
+
+    if (result.length === 0) return [];
+
+    // 2️⃣ Parse aiAnalysisResult
     let AIAnalysisResult;
     try {
         AIAnalysisResult = JSON.parse(result[0].aiAnalysisResult);
-    } catch (e) {
-        console.error("Invalid JSON in aiAnalysisResult:", e);
-        return [];
+    } catch {
+        AIAnalysisResult = null;
     }
 
-    if (isEmpty(AIAnalysisResult?.skinIssues)) {
-        return [];
+    // If AIAnalysisResult has skinIssues → prefer those treatment IDs
+    if (!isEmpty(AIAnalysisResult?.skinIssues)) {
+        return [
+            ...new Set(
+                (AIAnalysisResult.skinIssues || [])
+                    .flatMap(issue => issue.recommendedTreatmentsIds || [])
+            )
+        ];
     }
 
-    const treatmentIDs = [
-        ...new Set(
-            (AIAnalysisResult?.skinIssues || [])
-                .flatMap(issue => issue.recommendedTreatmentsIds || [])
-        )
-    ];
+    // 3️⃣ Parse scoreInfo as fallback
+    let scoreInfo;
+    try {
+        scoreInfo = JSON.parse(result[0].scoreInfo);
+    } catch {
+        scoreInfo = null;
+    }
 
+    if (!scoreInfo) return [];
 
-    return treatmentIDs;
+    const { skinConcernMap, mapping } = configs;
+    const concernIDs = [];
+
+    // 4️⃣ Only consider scores > 25
+    for (const key in mapping) {
+        const value = scoreInfo[key];
+        if (typeof value === "number" && value > 25) {
+            const concernName = mapping[key];
+            const concernID = skinConcernMap[concernName];
+            if (concernID) {
+                concernIDs.push(concernID);
+            }
+        }
+    }
+
+    if (concernIDs.length === 0) return [];
+
+    // 5️⃣ Fetch treatments for those concerns
+    const placeholders = concernIDs.map(() => "?").join(",");
+    const treatmentsResult = await db.query(
+        `SELECT DISTINCT treatment_id 
+         FROM tbl_treatment_concerns 
+         WHERE concern_id IN (${placeholders})`,
+        concernIDs
+    );
+
+    if (!treatmentsResult || treatmentsResult.length === 0) return [];
+
+    // 6️⃣ Return treatment IDs
+    return treatmentsResult.map(row => row.treatment_id);
 };
 
 export const getLatestFaceScanReportIDByUserID = async (userID) => {
@@ -157,7 +204,7 @@ export const formatBenefitsUnified = (rows = [], lang = 'en') => {
     });
 };
 
-import OpenAI from "openai";
+
 
 const openai = process.env.OPENAI_API_KEY
     ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
