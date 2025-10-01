@@ -2,6 +2,7 @@ import Joi from "joi";
 import * as adminModels from "../../models/admin.js"
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
+import { isEmpty } from "../../utils/user_helper.js";
 
 export const get_users_managment = async (req, res) => {
     try {
@@ -93,7 +94,38 @@ export const updateUserApprovalStatus = asyncHandler(async (req, res) => {
         })
     ])
 
+    return handleSuccess(res, 200, language, statusMessages[approval_status],);
+});
 
+export const updateZynqUserApprovalStatus = asyncHandler(async (req, res) => {
+    const { approval_status, zynq_user_id } = req.body;
+    const { language = "en" } = req.user;
+
+    const statusMessages = {
+        VERIFIED: "USER_VERIFIED_SUCCESSFULLY",
+    };
+
+    const notificationUpdates = {
+        VERIFIED: "user_verified",
+    };
+
+    const userData = await adminModels.getZynqUserData(zynq_user_id);
+
+    if (isEmpty(userData)) {
+        return handleError(res, 400, language, "USER_NOT_FOUND");
+    }
+
+    await Promise.all([
+        adminModels.updateZynqUserApprovalStatus(userData, approval_status),
+        sendNotification({
+            userData: req.user,
+            type: "USER",
+            type_id: zynq_user_id,
+            notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
+            receiver_id: userData.user_id,
+            receiver_type: userData.role
+        })
+    ])
 
     return handleSuccess(res, 200, language, statusMessages[approval_status],);
 });

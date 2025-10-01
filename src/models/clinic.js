@@ -1411,6 +1411,39 @@ export const getClinicTreatmentsBulk = async (clinicIds) => {
     return grouped;
 };
 
+export const getClinicTreatmentsBulkV2 = async (clinicIds, lang = 'en') => {
+    try {
+        const placeholders = clinicIds.map(() => '?').join(',');
+
+        const query = `
+            SELECT ct.*, t.* 
+            FROM tbl_clinic_treatments ct
+            LEFT JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
+            WHERE ct.clinic_id IN (${placeholders})
+            ORDER BY ct.created_at DESC
+        `;
+
+        const results = await db.query(query, clinicIds);
+
+        const grouped = {};
+        results.forEach(row => {
+            if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
+
+            const treatmentRow = { ...row };
+            // Set treatment name based on language
+            treatmentRow.name = lang === 'sv' ? row.swedish : row.name;
+
+            grouped[row.clinic_id].push(treatmentRow);
+        });
+
+        return grouped;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch clinic treatments.");
+    }
+};
+
+
 export const getClinicOperationHoursBulk = async (clinicIds) => {
     const placeholders = clinicIds.map(() => '?').join(',');
     const query = `SELECT * FROM tbl_clinic_operation_hours WHERE clinic_id IN (${placeholders})`;

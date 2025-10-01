@@ -1715,3 +1715,47 @@ export const insertClinics = async (clinics) => {
         clinics.flat()
     );
 };
+
+export const updateZynqUserApprovalStatus = async (userData, status) => {
+    try {
+        const table = userData.role === 'CLINIC' ? 'tbl_clinics' : 'tbl_doctors';
+        const idField = userData.role === 'CLINIC' ? 'clinic_id' : 'doctor_id';
+
+        await db.query(
+            `UPDATE ${table} SET profile_status = ? WHERE ${idField} = ?`,
+            [status, userData.user_id]
+        );
+    } catch (error) {
+        console.error("updateUserProfileStatus error:", error);
+        throw new Error("Failed to update profile status");
+    }
+};
+
+
+export const getZynqUserData = async (zynq_user_id) => {
+    try {
+        const query = `
+            SELECT 
+                zu.id AS zynq_user_id,
+                r.role,
+                CASE 
+                    WHEN r.role IN ('DOCTOR', 'SOLO_DOCTOR') THEN d.doctor_id
+                    WHEN r.role = 'CLINIC' THEN c.clinic_id
+                    ELSE NULL
+                END AS user_id,
+                zu.*,
+                r.*
+            FROM tbl_zqnq_users zu
+            LEFT JOIN tbl_roles r ON zu.role_id = r.id
+            LEFT JOIN tbl_doctors d ON (r.role IN ('DOCTOR','SOLO_DOCTOR') AND d.zynq_user_id = zu.id)
+            LEFT JOIN tbl_clinics c ON (r.role = 'CLINIC' AND c.zynq_user_id = zu.id)
+            WHERE zu.id = ?;
+        `;
+
+        const result = await db.query(query, [zynq_user_id]);
+        return result?.[0] || null;
+    } catch (error) {
+        console.error("getZynqUserData error:", error);
+        throw new Error("Failed to fetch Zynq user data");
+    }
+};

@@ -17,3 +17,8 @@ export const updateUserApprovalStatusSchema = joi.object({
   user_id: stringValidation,
   approval_status: stringValidation.valid("PENDING", "APPROVED", "REJECTED")
 })
+
+export const updateZynqUserApprovalStatusSchema = joi.object({
+  zynq_user_id: stringValidation,
+  approval_status: stringValidation.valid("VERIFIED")
+})
