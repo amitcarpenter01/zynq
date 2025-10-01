@@ -23,7 +23,6 @@ export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
         const { payload } = req.body;
         const openaiKey = process.env.OPENAI_API_KEY;
         
-        console.log("OpenAI API Key:", openaiKey);
         if (!payload) {
             return handleError(res, 400, "en", "PAYLOAD_REQUIRED", { error: "Payload is required" });
         }
