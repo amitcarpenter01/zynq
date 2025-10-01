@@ -281,5 +281,6 @@
   "USER_REJECTED": "Your profile has been rejected",
   "USER_PENDING": "Your profile is pending for approval",
   "DRAFT_APPOINTMENTS_FETCHED_SUCCESSFULLY": "Draft Appointments Fetched Successfully",
-  "USER_DELETED" : "Account has been deleted"
+  "USER_DELETED" : "Account has been deleted",
+  "USER_VERIFIED_SUCCESSFULLY" : "User Verified Successfully"
 }
