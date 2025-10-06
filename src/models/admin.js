@@ -182,8 +182,8 @@ export const findClinicEmail = async (email) => {
 export const addClinic = async (data) => {
     try {
         return await db.query(
-            'INSERT INTO `tbl_clinics`(`zynq_user_id`, `clinic_name`, `org_number`, `email`, `mobile_number`, `address`) VALUES (?, ?, ?, ?, ?, ?)',
-            [data.zynq_user_id, data.clinic_name, data.org_number, data.email, data.mobile_number, data.address]
+            'INSERT INTO `tbl_clinics`(`zynq_user_id`, `clinic_name`, `org_number`, `email`, `mobile_number`, `address`, `profile_status`) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [data.zynq_user_id, data.clinic_name, data.org_number, data.email, data.mobile_number, data.address, "INVITED"]
         );
     } catch (error) {
         console.error("Database Error:", error.message);
