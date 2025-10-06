@@ -75,14 +75,20 @@ export const addPersonalInformation = async (req, res) => {
 
 
         const doctorResult = await dbOperations.getData('tbl_doctors', `where zynq_user_id = '${zynqUserId}' `);
-        console.log(doctorResult)
+
         const getClinicData = await dbOperations.getData('tbl_clinics', `WHERE zynq_user_id = '${zynqUserId}' `);
         if (getClinicData.length == 0) {
             return handleError(res, 401, 'en', "CLINIC_NOT_FOUND");
         } else {
+            if (getClinicData[0].profile_status === "CLAIMED") {
+                clinicData.profile_status = "ONBOARDING";
+            }
             var updatClinic = await dbOperations.updateData('tbl_clinics', clinicData, `WHERE zynq_user_id = '${zynqUserId}' `);
         }
         if (doctorResult.length > 0) {
+            if (doctorResult[0].profile_status === "CLAIMED") {
+                doctorData.profile_status = "ONBOARDING";
+            }
             var update_doctor = await dbOperations.updateData('tbl_doctors', doctorData, `WHERE zynq_user_id = '${zynqUserId}' `);
         } else {
             return handleError(res, 401, 'en', "CLINIC_NOT_FOUND");
@@ -198,10 +204,10 @@ export const addEducationAndExperienceInformation = async (req, res) => {
                         if (existingCert.length > 0) {
                             // Certification already exists, update its file path
                             await doctorModels.update_certification_upload_path(doctorId, certification_type_id, newUploadPath);
-            
+
                             // Certification does not exist, add it
                             await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath); // Add other metadata if available from req.body
-                
+
                         }
                     }
                 } else {
@@ -653,7 +659,7 @@ export const getDoctorProfileByStatus = async (req, res) => {
             profileData.on_boarding_status = zynqUser[0].on_boarding_status;
 
         } else if (status == 4) {
-           // const treatments = await clinicModels.getClinicTreatments(clinicId);
+            // const treatments = await clinicModels.getClinicTreatments(clinicId);
             //console.log("treatments", treatments);
             const treatments = await doctorModels.get_doctor_treatments(doctorId);
             clinic.treatments = treatments;
