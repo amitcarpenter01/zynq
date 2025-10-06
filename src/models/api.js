@@ -2889,3 +2889,13 @@ export const getGuestFaceScan = async (device_id) => {
     }
 };
 
+export const updateDoctorClinicClaimedProfile = async (user_id, role_id) => {
+
+    const doctor_role_ids = ["3677a3e6-3196-11f0-9e07-0e8e5d906eef", "407595e3-3196-11f0-9e07-0e8e5d906eef"]
+
+    const table_name = doctor_role_ids.includes(role_id) ? "tbl_doctors" : "tbl_clinics";
+
+    let query = `UPDATE ${table_name} SET profile_status = ? WHERE zynq_user_id = ?`
+
+    return await db.query(query, ["CLAIMED", user_id]);
+}   

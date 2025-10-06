@@ -22,6 +22,7 @@ const WEB_JWT_SECRET = process.env.WEB_JWT_SECRET;
 const JWT_EXPIRY = process.env.JWT_EXPIRY;
 import dbOperations from '../../models/common.js';
 import { get_doctor_by_zynq_user_id } from "../../models/doctor.js";
+import { updateDoctorClinicClaimedProfile } from "../../models/api.js";
 
 export const login_web_user = async (req, res) => {
     try {
@@ -391,6 +392,8 @@ export const onboardingByRoleId = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
 
         const { id, role_id } = value;
+
+        await updateDoctorClinicClaimedProfile(id, role_id);
 
         const zynqUser = await dbOperations.getData('tbl_zqnq_users', `WHERE id = '${id}' `);
 
