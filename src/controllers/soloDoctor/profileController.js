@@ -75,6 +75,7 @@ export const addPersonalInformation = async (req, res) => {
 
 
         const doctorResult = await dbOperations.getData('tbl_doctors', `where zynq_user_id = '${zynqUserId}' `);
+        console.log(doctorResult)
         const getClinicData = await dbOperations.getData('tbl_clinics', `WHERE zynq_user_id = '${zynqUserId}' `);
         if (getClinicData.length == 0) {
             return handleError(res, 401, 'en', "CLINIC_NOT_FOUND");

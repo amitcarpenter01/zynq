@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken"
 import * as clinicModels from "../../models/clinic.js";
 import * as webModels from "../../models/web_user.js";
 import { sendEmail } from "../../services/send_email.js";
-import { generateAccessToken, generateVerificationLink } from "../../utils/user_helper.js";
+import { generateAccessToken, generateVerificationLink, isEmpty } from "../../utils/user_helper.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import axios from 'axios';
 
@@ -254,7 +254,7 @@ export const onboardClinic = async (req, res) => {
 
         const [clinic_data] = await clinicModels.get_clinic_by_zynq_user_id(zynq_user_id);
 
-        const clinicData = buildClinicData({
+        const clinicData = {
             zynq_user_id: zynq_user_id === "" ? null : zynq_user_id || clinic_data.zynq_user_id,
             clinic_name: clinic_name === "" ? null : clinic_name || clinic_data.clinic_name,
             org_number: org_number === "" ? null : org_number || clinic_data.org_number,
@@ -271,12 +271,20 @@ export const onboardClinic = async (req, res) => {
             ivo_registration_number: ivo_registration_number === "" ? null : ivo_registration_number || clinic_data.ivo_registration_number,
             hsa_id: hsa_id === "" ? null : hsa_id || clinic_data.hsa_id,
             is_onboarded: is_onboarded === "" ? null : is_onboarded || clinic_data.is_onboarded,
-        });
+        }
+
+        let profile_status = "ONBOARDING";
+
+        if (!isEmpty(form_stage)) {
+            clinicData.profile_status = profile_status;
+        }
+
+        const clinicDataV2 = buildClinicData(clinicData);
 
         if (clinic_data) {
-            await clinicModels.updateClinicData(clinicData, clinic_data.clinic_id);
+            await clinicModels.updateClinicData(clinicDataV2, clinic_data.clinic_id);
         } else {
-            await clinicModels.insertClinicData(clinicData);
+            await clinicModels.insertClinicData(clinicDataV2);
         }
 
         const [clinic] = await clinicModels.get_clinic_by_zynq_user_id(zynq_user_id);
