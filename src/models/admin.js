@@ -1718,19 +1718,51 @@ export const insertClinics = async (clinics) => {
 
 export const updateZynqUserApprovalStatus = async (userData, status) => {
     try {
-        const table = userData.role === 'CLINIC' ? 'tbl_clinics' : 'tbl_doctors';
-        const idField = userData.role === 'CLINIC' ? 'clinic_id' : 'doctor_id';
+        const { role, user_id, zynq_user_id } = userData;
 
-        await db.query(
-            `UPDATE ${table} SET profile_status = ? WHERE ${idField} = ?`,
-            [status, userData.user_id]
+        const updates = [];
+
+        if (role === 'CLINIC') {
+            updates.push({
+                table: 'tbl_clinics',
+                idField: 'clinic_id',
+                idValue: user_id,
+            });
+        } else if (role === 'DOCTOR' || role === 'SOLO_DOCTOR') {
+            updates.push({
+                table: 'tbl_doctors',
+                idField: 'doctor_id',
+                idValue: user_id,
+            });
+
+            if (role === 'SOLO_DOCTOR') {
+                updates.push({
+                    table: 'tbl_clinics',
+                    idField: 'zynq_user_id',
+                    idValue: zynq_user_id,
+                });
+            }
+        }
+
+        if (updates.length === 0) {
+            console.warn(`No matching table for role: ${role}`);
+            return;
+        }
+
+        await Promise.all(
+            updates.map(({ table, idField, idValue }) =>
+                db.query(
+                    `UPDATE ${table} SET profile_status = ? WHERE ${idField} = ?`,
+                    [status, idValue]
+                )
+            )
         );
+
     } catch (error) {
-        console.error("updateUserProfileStatus error:", error);
+        console.error("updateZynqUserApprovalStatus error:", error);
         throw new Error("Failed to update profile status");
     }
 };
-
 
 export const getZynqUserData = async (zynq_user_id) => {
     try {
