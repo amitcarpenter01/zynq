@@ -261,6 +261,7 @@ export const get_clinic_managment = async () => {
     try {
         return await db.query(`
             SELECT 
+                c.zynq_user_id,
                 c.clinic_id, 
                 c.clinic_name, 
                 c.org_number, 
