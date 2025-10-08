@@ -2898,4 +2898,30 @@ export const updateDoctorClinicClaimedProfile = async (user_id, role_id) => {
     let query = `UPDATE ${table_name} SET profile_status = ? WHERE zynq_user_id = ?`
 
     return await db.query(query, ["CLAIMED", user_id]);
-}   
+}
+
+export const getInvitedZynqUsers = async () => {
+    try {
+        const [clinics, doctors] = await Promise.all([
+            db.query(`
+                SELECT 'CLINIC' AS role, zu.email, c.clinic_id AS id, c.clinic_name AS name,
+                c.invited_date, c.invitation_email_count
+                FROM tbl_clinics c
+                LEFT JOIN tbl_zqnq_users zu ON c.zynq_user_id = zu.id
+                WHERE c.profile_status = 'INVITED'
+            `),
+            db.query(`
+                SELECT 'DOCTOR' AS role, zu.email, d.doctor_id AS id, d.name,
+                d.invited_date, d.invitation_email_count
+                FROM tbl_doctors d
+                LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+                WHERE d.profile_status = 'INVITED'
+            `)
+        ]);
+
+        return [...clinics, ...doctors];
+    } catch (error) {
+        console.error("Database Error (getInvitedZynqUsers):", error.message);
+        throw new Error("Failed to fetch invited zynq users.");
+    }
+};

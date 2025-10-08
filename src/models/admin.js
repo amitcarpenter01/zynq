@@ -441,7 +441,17 @@ export const updatePasseordByClinicId = async (hashedPassword, password, zynq_us
 
 export const updateClinicCountAndEmailSent = async (clinic_id, email_sent_count, date) => {
     try {
-        return await db.query('UPDATE `tbl_clinics` SET `email_sent_at`= ?,`email_sent_count`= ?, `profile_status`= ?  WHERE clinic_id = ?', [date, email_sent_count, 'INVITED', clinic_id]);
+        const query = `
+            UPDATE tbl_clinics
+            SET 
+                email_sent_at = ?,
+                email_sent_count = ?,
+                profile_status = 'INVITED',
+                invited_date = CURRENT_TIMESTAMP()
+            WHERE clinic_id = ?
+        `;
+        
+        return await db.query(query, [date, email_sent_count, clinic_id]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update clinic count and email sent data.");

@@ -224,7 +224,6 @@ const pushToFCM = async (message) => {
             notification: message.notification,
             data: message.data
         });
-        console.log("response", response)
         return response;
     } catch (error) {
         console.error('FCM Error - pushToFCM:', error);
@@ -637,8 +636,6 @@ export const sendAppointmentNotifications = async () => {
             ...notificationPromises,
             bulkMarkAppointmentReminders(appointments24h, appointments1h)
         ]);
-
-        console.log('✅ Appointment notifications processed successfully.');
     } catch (error) {
         console.error('❌ Cron job failed:', error.message);
     }

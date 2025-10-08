@@ -45,7 +45,7 @@ export const addPersonalInformation = async (req, res) => {
 
 
         const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography);
-        
+
         if (result.affectedRows) {
             await update_onboarding_status(1, zynqUserId)
             return handleSuccess(res, 201, language, "DOCTOR_PERSONAL_DETAILS_ADDED", result.affectedRows);
@@ -101,7 +101,7 @@ export const addEducationAndExperienceInformation = async (req, res) => {
                         } else {
                             // Certification does not exist, add it
                             await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath); // Add other metadata if available from req.body
-                    
+
                         }
                     }
                 } else {
@@ -703,55 +703,73 @@ export const getLinkedClinics = async (req, res) => {
 
 export const calculateProfileCompletionPercentageByDoctorId = async (doctorId) => {
     try {
+
         const profileData = await doctorModels.get_doctor_profile(doctorId);
         if (!profileData) {
-            return 0; // No profile found
+            return 0;
         }
 
         let filledFieldsCount = 0;
         let totalFieldsCount = 0;
 
-        // Personal Details
+        const missingSummary = {}; // Store missing fields by category
+
+        // ---------- PERSONAL DETAILS ----------
         const personalFields = ['name', 'phone', 'age', 'address', 'gender', 'profile_image', 'biography'];
         totalFieldsCount += personalFields.length;
-        personalFields.forEach(field => {
-            if (profileData[field]) filledFieldsCount++;
-        });
 
-        // Education
+        const missingPersonal = personalFields.filter(field => !profileData[field]);
+        filledFieldsCount += personalFields.length - missingPersonal.length;
+        missingSummary.personal = missingPersonal;
+
+        // ---------- EDUCATION ----------
         totalFieldsCount += 1;
-        if (profileData.education && profileData.education.length > 0) filledFieldsCount++;
+        const hasEducation = profileData.education && profileData.education.length > 0;
+        if (hasEducation) filledFieldsCount++;
+        else missingSummary.education = ["education"];
 
-        // Experience
+        // ---------- EXPERIENCE ----------
         totalFieldsCount += 1;
-        if (profileData.experience && profileData.experience.length > 0) filledFieldsCount++;
+        const hasExperience = profileData.experience && profileData.experience.length > 0;
+        if (hasExperience) filledFieldsCount++;
+        else missingSummary.experience = ["experience"];
 
-        // Expertise (Expanded to include surgeries, aestheticDevices, skinConditions)
+        // ---------- EXPERTISE ----------
         const expertiseCategories = [
             'treatments',
-            'skinTypes',
-            'severityLevels',
-            'surgeries',
             'aestheticDevices',
-            'skinConditions'
         ];
+
         totalFieldsCount += expertiseCategories.length;
+
+        const missingExpertise = [];
         expertiseCategories.forEach(category => {
-            if (profileData[category] && profileData[category].length > 0) filledFieldsCount++;
+            const hasData = profileData[category] && profileData[category].length > 0;
+            if (hasData) filledFieldsCount++;
+            else missingExpertise.push(category);
         });
+        missingSummary.expertise = missingExpertise;
 
-        // Fee & Availability
-        totalFieldsCount += 2;
-        if (profileData.consultationFee && profileData.consultationFee.fee_per_session) filledFieldsCount++;
-        if (profileData.availability && profileData.availability.length > 0) filledFieldsCount++;
+        // ---------- AVAILABILITY ----------
+        totalFieldsCount += 1;
 
-        return totalFieldsCount > 0 ? Math.round((filledFieldsCount / totalFieldsCount) * 100) : 0;
+        const hasAvailability = profileData.availability && profileData.availability.length > 0;
+        if (hasAvailability) filledFieldsCount++;
+        else missingSummary.availability = ["availability"];
+
+        // ---------- FINAL CALCULATION ----------
+        const completionPercentage = totalFieldsCount > 0
+            ? Math.round((filledFieldsCount / totalFieldsCount) * 100)
+            : 0;
+
+        return completionPercentage;
 
     } catch (error) {
-        console.error("Error calculating profile completion:", error);
+        console.error("❌ Error calculating profile completion:", error);
         return 0;
     }
 };
+
 
 export const editEducationAndExperienceInformation = async (req, res) => {
     try {
@@ -792,11 +810,11 @@ export const editEducationAndExperienceInformation = async (req, res) => {
                         if (existingCert.length > 0) {
                             // Certification already exists, update its file path
                             await doctorModels.update_certification_upload_path(doctorId, certification_type_id, newUploadPath);
-                        
+
                         } else {
                             // Certification does not exist, add it
                             await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath); // Add other metadata if available from req.body
-                           
+
                         }
                     }
                 } else {

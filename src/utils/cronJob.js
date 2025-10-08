@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { sendEmail } from "../services/send_email.js";
 import { generatePassword } from "./user_helper.js";
 import { sendAppointmentNotifications } from "../services/notifications.service.js";
+import { sendInvitationReminders } from "./misc.util.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,8 +40,6 @@ const send_clinic_email = async (clinic, isFirstEmail) => {
             [hashedPassword, password, clinic.clinic_id]
         );
 
-        console.log(`Email sent to: ${clinic.email}`);
-
         if (isFirstEmail) {
             await db.query(
                 "UPDATE tbl_clinics SET email_sent_at = ?, is_invited = 1 WHERE clinic_id = ?",
@@ -57,12 +56,10 @@ export const send_clinic_email_cron = async () => {
     try {
         cron.schedule("*/10 * * * * *", async () => {
             if (isRunning) {
-                console.log("Previous clinic email cron is still running.");
                 return;
             }
 
             isRunning = true;
-            console.log("Running clinic email cron...");
 
             try {
                 const clinics = await db.query("SELECT * FROM tbl_clinics WHERE is_invited = 0 AND is_active = 0");
@@ -71,7 +68,6 @@ export const send_clinic_email_cron = async () => {
                 for (let clinic of clinics) {
                     if (!clinic.email_sent_at) {
                         // First time email, send it
-                        console.log("First time email");
                         await send_clinic_email(clinic, true);
                         continue;
                     }
@@ -80,21 +76,15 @@ export const send_clinic_email_cron = async () => {
 
                     // Check if date is valid just in case
                     if (!lastSentDate.isValid()) {
-                        console.log("Invalid lastSentDate, skipping...");
                         continue;
                     }
-
-                    console.log('after continuew');
 
                     const daysSinceLastEmail = moment().diff(lastSentDate, "days");
 
                     if (daysSinceLastEmail === 0) {
-                        console.log("Email sent today already.");
                     } else if (daysSinceLastEmail === 7 || daysSinceLastEmail === 14) {
-                        console.log("7th or 14th day reminder");
                         await send_clinic_email(clinic, false);
                     } else {
-                        console.log(`No email condition met for clinic: ${clinic.id} | Days since last: ${daysSinceLastEmail}`);
                     }
                 }
 
@@ -114,3 +104,7 @@ export const send_clinic_email_cron = async () => {
 export const appointmentReminderCron = () => {
     cron.schedule('*/10 * * * *', sendAppointmentNotifications);
 };
+
+export const invitationReminderCron = () => {
+    cron.schedule('0 6 * * *', sendInvitationReminders);
+}

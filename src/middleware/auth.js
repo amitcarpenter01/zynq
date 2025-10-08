@@ -27,7 +27,7 @@ export const authenticateUser = async (req, res, next) => {
         } catch (err) {
             return handleError(res, 401, 'en', "UNAUTH")
         }
-        console.log(decodedToken.mobile_number, "User Connected");
+
 
         let [user] = await apiModels.get_user_by_user_id(decodedToken.user_id)
 
@@ -96,7 +96,6 @@ export const optionalAuthenticateUser = async (req, res, next) => {
             }
 
             req.user = { ...user, role: "USER" };
-            console.log(decodedToken.mobile_number, "User Connected");
         } catch (err) {
             // Invalid/expired token → treat as guest
             req.user = null;

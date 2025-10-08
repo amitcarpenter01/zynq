@@ -1,6 +1,9 @@
 import configs from "../config/config.js";
 import db from "../config/db.js";
 import OpenAI from "openai";
+import { getInvitedZynqUsers } from "../models/api.js";
+import { faceScanPDFTemplate } from "./templates.js";
+import { sendEmail } from "../services/send_email.js";
 
 const isEmpty = (value) => {
     if (value === null || value === undefined) return true;
@@ -95,8 +98,6 @@ export const getLatestFaceScanReportIDByUserID = async (userID) => {
             ORDER BY created_at DESC 
             LIMIT 1
         `, [userID]);
-
-        console.log("result", result);
 
         if (!result?.length) {
             return null;
@@ -265,4 +266,109 @@ export function normalizeCategory(inputCategory) {
 
     // Always return English (since DB stores English)
     return match ? match.en : null;
+}
+
+export async function sendInvitationEmail(user, nextReminderDay) {
+    try {
+        if (!user?.email) {
+            return;
+        }
+
+        const { subject, body } = faceScanPDFTemplate({});
+
+        await sendEmail({
+            to: user.email,
+            subject: "Zynq Invitation Reminder",
+            html: body,
+        });
+
+        // console.log(`📧 Invitation reminder (day ${nextReminderDay}) sent to ${user.email}`);
+    } catch (error) {
+        console.error(`❌ Failed to send invitation email to ${user.email}:`, error.message);
+    }
+}
+
+export async function sendInvitationReminders() {
+    try {
+
+        const users = await getInvitedZynqUsers();
+        if (!users.length) {
+            return;
+        }
+
+        const nowUTC = new Date();
+        const reminderSchedule = [3, 7, 14];
+
+        const toUpdateClinics = [];
+        const toUpdateDoctors = [];
+        const toImportClinics = [];
+        const toImportDoctors = [];
+
+        for (const user of users) {
+            if (!user.invited_date) continue;
+
+            const invitedDate = new Date(user.invited_date);
+            const diffDays = Math.floor((nowUTC - invitedDate) / (1000 * 60 * 60 * 24));
+
+            const nextReminderDay = reminderSchedule[user.invitation_email_count] ?? null;
+
+            if (!nextReminderDay) {
+                // After 14 days → mark imported
+                if (diffDays > 14) {
+                    if (user.role === "CLINIC") toImportClinics.push(user.id);
+                    else toImportDoctors.push(user.id);
+                }
+                continue;
+            }
+
+            // If time for next reminder email
+            if (diffDays >= nextReminderDay) {
+                await sendInvitationEmail(user, nextReminderDay);
+
+                if (user.role === "CLINIC") toUpdateClinics.push(user.id);
+                else toUpdateDoctors.push(user.id);
+
+            }
+        }
+
+        // --- BULK UPDATE: increment invitation_email_count ---
+        const bulkUpdate = async (table, idField, ids) => {
+            if (!ids.length) {
+                return;
+            }
+            const placeholders = ids.map(() => "?").join(",");
+            await db.query(
+                `UPDATE ${table}
+                 SET invitation_email_count = invitation_email_count + 1
+                 WHERE ${idField} IN (${placeholders})`,
+                ids
+            );
+        };
+
+        await Promise.all([
+            bulkUpdate("tbl_clinics", "clinic_id", toUpdateClinics),
+            bulkUpdate("tbl_doctors", "doctor_id", toUpdateDoctors)
+        ]);
+
+        const bulkImport = async (table, idField, ids) => {
+            if (!ids.length) {
+                return;
+            }
+            const placeholders = ids.map(() => "?").join(",");
+            await db.query(
+                `UPDATE ${table}
+                 SET profile_status = 'IMPORTED'
+                 WHERE ${idField} IN (${placeholders})`,
+                ids
+            );
+        };
+
+        await Promise.all([
+            bulkImport("tbl_clinics", "clinic_id", toImportClinics),
+            bulkImport("tbl_doctors", "doctor_id", toImportDoctors)
+        ]);
+
+    } catch (error) {
+        console.error("sendInvitationReminders: error:", error);
+    }
 }
