@@ -2890,15 +2890,39 @@ export const getGuestFaceScan = async (device_id) => {
 };
 
 export const updateDoctorClinicClaimedProfile = async (user_id, role_id) => {
+    try {
+        const DOCTOR_ROLE_ID = "3677a3e6-3196-11f0-9e07-0e8e5d906eef";
+        const SOLO_DOCTOR_ROLE_ID = "407595e3-3196-11f0-9e07-0e8e5d906eef";
 
-    const doctor_role_ids = ["3677a3e6-3196-11f0-9e07-0e8e5d906eef", "407595e3-3196-11f0-9e07-0e8e5d906eef"]
+        const updates = [];
 
-    const table_name = doctor_role_ids.includes(role_id) ? "tbl_doctors" : "tbl_clinics";
+        if (role_id === DOCTOR_ROLE_ID || role_id === SOLO_DOCTOR_ROLE_ID) {
+            updates.push(
+                db.query(
+                    "UPDATE `tbl_doctors` SET `profile_status` = 'CLAIMED' WHERE `zynq_user_id` = ?",
+                    [user_id]
+                )
+            );
+        }
 
-    let query = `UPDATE ${table_name} SET profile_status = ? WHERE zynq_user_id = ?`
+        // Solo doctor also has a linked clinic
+        if (role_id !== DOCTOR_ROLE_ID) {
+            updates.push(
+                db.query(
+                    "UPDATE `tbl_clinics` SET `profile_status` = 'CLAIMED' WHERE `zynq_user_id` = ?",
+                    [user_id]
+                )
+            );
+        }
 
-    return await db.query(query, ["CLAIMED", user_id]);
-}
+        await Promise.all(updates);
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating claimed profile:", error);
+        throw error;
+    }
+};
+
 
 export const getInvitedZynqUsers = async () => {
     try {
