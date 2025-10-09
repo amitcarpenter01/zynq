@@ -2127,8 +2127,6 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
             return [];
         }
 
-        const targetEmail = "datkarr2@mailinator.com";
-
         const results = await Promise.all(
             clinics.map(async (clinic) => {
                 let filledFieldsCount = 0;
@@ -2178,19 +2176,6 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
                         ? Math.round((filledFieldsCount / totalFieldsCount) * 100)
                         : 0;
 
-                // 🪵 Log only for target email
-                if (clinic.email === targetEmail) {
-                    console.log(`\n🏥 Clinic (Target) Email: ${clinic.email}`);
-                    console.log(`Clinic ID: ${clinic.clinic_id}`);
-                    console.log(`✅ Filled: ${filledFieldsCount}/${totalFieldsCount}`);
-                    console.log(`📉 Completion: ${completionPercentage}%`);
-                    if (missingFields.length > 0) {
-                        console.log("❌ Missing Fields:", missingFields.join(", "));
-                    } else {
-                        console.log("🎯 All fields filled!");
-                    }
-                }
-
                 return {
                     clinic_id: clinic.clinic_id,
                     completionPercentage,
@@ -2215,17 +2200,6 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
             `;
 
             await db.query(updateQuery);
-        }
-
-        // Optional summary (log only if target clinic exists)
-        const targetClinic = clinics.find(c => c.email === targetEmail);
-        if (targetClinic) {
-            const result = results.find(r => r.clinic_id === targetClinic.clinic_id);
-            console.log(`\n📋 Summary for ${targetEmail}:`);
-            console.log(`Completion: ${result?.completionPercentage}%`);
-            if (result?.missingFields?.length > 0) {
-                console.log("Missing:", result.missingFields.join(", "));
-            }
         }
 
         return results;
