@@ -364,7 +364,11 @@ export const get_all_certification_types = async () => {
 
 export const get_doctor_profile = async (doctorId) => {
     try {
-        const [doctor] = await db.query(`SELECT * FROM tbl_doctors WHERE doctor_id = ?`, [doctorId]);
+        const [doctor] = await db.query(`
+            SELECT d.*, c.profile_status 
+            FROM tbl_doctors d
+            LEFT JOIN tbl_clinics c ON d.zynq_user_id = c.zynq_user_id 
+            WHERE d.doctor_id = ?`, [doctorId]);
         const [mainUser] = await get_web_user_by_id(doctor.zynq_user_id);
         const education = await get_doctor_education(doctorId);
         const experience = await get_doctor_experience(doctorId);
