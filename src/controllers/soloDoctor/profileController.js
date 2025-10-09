@@ -80,7 +80,8 @@ export const addPersonalInformation = async (req, res) => {
         if (getClinicData.length == 0) {
             return handleError(res, 401, 'en', "CLINIC_NOT_FOUND");
         } else {
-            if (getClinicData[0].profile_status === "CLAIMED") {
+            console.log("getClinicData[0]?.profile_status - ", getClinicData[0]?.profile_status)
+            if (getClinicData[0]?.profile_status === "CLAIMED") {
                 clinicData.profile_status = "ONBOARDING";
             }
             var updatClinic = await dbOperations.updateData('tbl_clinics', clinicData, `WHERE zynq_user_id = '${zynqUserId}' `);
@@ -92,7 +93,6 @@ export const addPersonalInformation = async (req, res) => {
             var update_doctor = await dbOperations.updateData('tbl_doctors', doctorData, `WHERE zynq_user_id = '${zynqUserId}' `);
         } else {
             return handleError(res, 401, 'en', "CLINIC_NOT_FOUND");
-
         }
         if (update_doctor.affectedRows > 0 && updatClinic.affectedRows > 0) {
             await update_onboarding_status(1, zynqUserId)
