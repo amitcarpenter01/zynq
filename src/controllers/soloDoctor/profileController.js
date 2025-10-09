@@ -132,6 +132,7 @@ export const addContactInformation = async (req, res) => {
         const clinic_id = req.user.clinicData.clinic_id;
 
         const clinicData = {
+            website_url: value.website_url,
             street_address: value.street_address,
             city: value.city,
             state: value.state,
