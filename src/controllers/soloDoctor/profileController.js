@@ -189,7 +189,7 @@ export const addEducationAndExperienceInformation = async (req, res) => {
 
         const files = req.files;
         if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
-            for (const key in files) { // 'key' is like 'medical_council', 'deramatology_board', etc.
+            for (const key in files) { // 'key' is like 'medical_council', 'dermatology_board', etc.
                 const certTypeFromDb = await doctorModels.get_certification_type_by_filename(key);
 
                 if (certTypeFromDb.length > 0) {
@@ -202,19 +202,21 @@ export const addEducationAndExperienceInformation = async (req, res) => {
                         const existingCert = await doctorModels.get_doctor_certification_by_type(doctorId, certification_type_id);
 
                         if (existingCert.length > 0) {
-                            // Certification already exists, update its file path
+                            // ✅ Certification already exists → update its file path
                             await doctorModels.update_certification_upload_path(doctorId, certification_type_id, newUploadPath);
-
-                            // Certification does not exist, add it
-                            await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath); // Add other metadata if available from req.body
-
+                        } else {
+                            // ✅ Certification does not exist → add a new one
+                            await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath);
                         }
                     }
                 } else {
-                    console.warn(`Certification type with filename key '${key}' not found in tbl_certification_type. Skipping file processing.`);
+                    console.warn(
+                        `Certification type with filename key '${key}' not found in tbl_certification_type. Skipping file processing.`
+                    );
                 }
             }
         }
+
         // --- END IMPROVED LOGIC ---
 
 
