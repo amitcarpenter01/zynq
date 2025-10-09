@@ -103,7 +103,8 @@ const calculateProfileCompletion = (data) => {
         total + (data[field] ? percentPerField : 0), 0);
 };
 
-const buildClinicData = ({ zynq_user_id, clinic_name, org_number, email, mobile_number, address, fee_range, website_url, clinic_description, clinic_logo, form_stage, ivo_registration_number, hsa_id, is_onboarded }) => {
+const buildClinicData = ({ zynq_user_id, clinic_name, org_number, email, mobile_number, address, fee_range, website_url, clinic_description, clinic_logo, form_stage, ivo_registration_number, hsa_id, is_onboarded, profile_status }) => {
+
     const data = {
         zynq_user_id,
         clinic_name,
@@ -124,7 +125,13 @@ const buildClinicData = ({ zynq_user_id, clinic_name, org_number, email, mobile_
         hsa_id,
         is_onboarded
     };
+
+    if (!isEmpty(form_stage)) {
+        data.profile_status = profile_status
+    }
+
     data.profile_completion_percentage = Math.round(calculateProfileCompletion(data));
+
     return data;
 };
 
