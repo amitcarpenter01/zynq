@@ -882,7 +882,7 @@ export const getAllClinicsForUser = async ({
             query += ' ' + joins.join(' ');
         }
 
-        query += ` WHERE c.profile_completion_percentage >= 50`;
+        query += ` WHERE c.profile_status = 'VERIFIED' AND c.profile_completion_percentage >= 50`;
 
         // --- Search block: clinic name + treatments + concerns + skin types ---
         const trimmedSearch = (search || '').trim().toLowerCase();
@@ -1087,7 +1087,7 @@ export const getNearbyClinicsForUser = async ({
             query += ' ' + joins.join(' ');
         }
 
-        query += ` WHERE c.profile_completion_percentage >= 50`;
+        query += ` WHERE c.profile_status = 'VERIFIED' AND c.profile_completion_percentage >= 50`;
 
         // --- Search block: clinic name + treatments + concerns + skin types ---
         const trimmedSearch = (search || '').trim().toLowerCase();
