@@ -2123,7 +2123,12 @@ export const calculateAndUpdateClinicProfileCompletion = async (clinic) => {
 
 export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => {
     try {
-        if (!clinics || clinics.length === 0) return [];
+        if (!clinics || clinics.length === 0) {
+            console.warn("⚠️ No clinics provided for profile completion calculation.");
+            return [];
+        }
+
+        console.log(`📊 Starting profile completion calculation for ${clinics.length} clinics...`);
 
         const results = await Promise.all(
             clinics.map(async (clinic) => {
@@ -2131,7 +2136,7 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
                 let totalFieldsCount = 0;
                 const missingFields = [];
 
-                // 1. Basic Fields
+                // 1️⃣ Basic Fields
                 const basicFields = [
                     "clinic_name",
                     "org_number",
@@ -2145,22 +2150,16 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
 
                 totalFieldsCount += basicFields.length;
                 basicFields.forEach(field => {
-                    if (clinic[field]) {
-                        filledFieldsCount++;
-                    } else {
-                        missingFields.push(field);
-                    }
+                    if (clinic[field]) filledFieldsCount++;
+                    else missingFields.push(field);
                 });
 
-                // 2. Treatments
+                // 2️⃣ Treatments
                 totalFieldsCount += 1;
-                if (clinic.treatments && clinic.treatments.length > 0) {
-                    filledFieldsCount++;
-                } else {
-                    missingFields.push("treatments");
-                }
+                if (clinic.treatments?.length > 0) filledFieldsCount++;
+                else missingFields.push("treatments");
 
-                // 3. Expertise Categories
+                // 3️⃣ Expertise Categories
                 const expertiseCategories = {
                     skinTypes: "skinTypes",
                     surgeriesLevel: "surgeriesLevel",
@@ -2170,18 +2169,25 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
 
                 totalFieldsCount += Object.keys(expertiseCategories).length;
                 Object.entries(expertiseCategories).forEach(([key, label]) => {
-                    if (clinic[key] && clinic[key].length > 0) {
-                        filledFieldsCount++;
-                    } else {
-                        missingFields.push(label);
-                    }
+                    if (clinic[key]?.length > 0) filledFieldsCount++;
+                    else missingFields.push(label);
                 });
 
-                // Final %
+                // 🧮 Final %
                 const completionPercentage =
                     totalFieldsCount > 0
                         ? Math.round((filledFieldsCount / totalFieldsCount) * 100)
                         : 0;
+
+                // 🪵 Log per clinic
+                console.log(`\n🏥 Clinic ID: ${clinic.clinic_id}`);
+                console.log(`✅ Filled: ${filledFieldsCount}/${totalFieldsCount}`);
+                console.log(`📉 Completion: ${completionPercentage}%`);
+                if (missingFields.length > 0) {
+                    console.log("❌ Missing Fields:", missingFields.join(", "));
+                } else {
+                    console.log("🎯 All fields filled!");
+                }
 
                 return {
                     clinic_id: clinic.clinic_id,
@@ -2196,7 +2202,6 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
             const caseStatements = results
                 .map(r => `WHEN '${r.clinic_id}' THEN ${r.completionPercentage}`)
                 .join(" ");
-
             const clinicIds = results.map(r => `'${r.clinic_id}'`).join(", ");
 
             const updateQuery = `
@@ -2208,11 +2213,25 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
             `;
 
             await db.query(updateQuery);
+
+            console.log(`\n✅ Updated profile completion for ${results.length} clinics.`);
+        }
+
+        // 🔍 Summary Log
+        const incompleteClinics = results.filter(r => r.completionPercentage < 100);
+        console.log(`\n📋 Summary:`);
+        console.log(`- Total clinics processed: ${results.length}`);
+        console.log(`- Clinics with incomplete profiles: ${incompleteClinics.length}`);
+
+        if (incompleteClinics.length > 0) {
+            incompleteClinics.forEach(c =>
+                console.log(`  • ${c.clinic_id} → ${c.completionPercentage}% | Missing: ${c.missingFields.join(", ")}`)
+            );
         }
 
         return results;
     } catch (error) {
-        console.error("Error calculating bulk clinic profile completion:", error);
+        console.error("❌ Error calculating bulk clinic profile completion:", error);
         throw error;
     }
 };
