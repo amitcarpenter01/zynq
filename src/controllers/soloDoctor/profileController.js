@@ -148,10 +148,10 @@ export const addContactInformation = async (req, res) => {
         const getClinicLocations = await dbOperations.getData('tbl_clinic_locations', `WHERE clinic_id = '${clinic_id}' `);
         if (getClinicLocations.length == 0) {
             const insertClinicLocations = await dbOperations.insertData('tbl_clinic_locations', clinicData);
-            const updateClinicAddress = await dbOperations.updateData('tbl_clinics', { address: value.address, mobile_number: value.mobile_number }, `WHERE clinic_id  = '${clinic_id}' `);
+            const updateClinicAddress = await dbOperations.updateData('tbl_clinics', { address: value.address, mobile_number: value.mobile_number, website_url: value.website_url }, `WHERE clinic_id  = '${clinic_id}' `);
         } else {
             const updateClinic = await dbOperations.updateData('tbl_clinic_locations', clinicData, `WHERE clinic_id = '${clinic_id}' `);
-            const updateClinicAddress = await dbOperations.updateData('tbl_clinics', { address: value.address, mobile_number: value.mobile_number }, `WHERE clinic_id  = '${clinic_id}' `);
+            const updateClinicAddress = await dbOperations.updateData('tbl_clinics', { address: value.address, mobile_number: value.mobile_number, website_url: value.website_url }, `WHERE clinic_id  = '${clinic_id}' `);
         }
         const updateDoctor = await dbOperations.updateData('tbl_doctors', doctorData, `WHERE zynq_user_id = '${zynqUserId}' `);
 
