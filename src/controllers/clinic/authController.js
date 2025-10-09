@@ -126,7 +126,7 @@ const buildClinicData = ({ zynq_user_id, clinic_name, org_number, email, mobile_
         is_onboarded
     };
 
-    if (!isEmpty(form_stage)) {
+    if (!isEmpty(profile_status)) {
         data.profile_status = profile_status
     }
 
