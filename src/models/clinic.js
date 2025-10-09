@@ -2124,11 +2124,10 @@ export const calculateAndUpdateClinicProfileCompletion = async (clinic) => {
 export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => {
     try {
         if (!clinics || clinics.length === 0) {
-            console.warn("⚠️ No clinics provided for profile completion calculation.");
             return [];
         }
 
-        console.log(`📊 Starting profile completion calculation for ${clinics.length} clinics...`);
+        const targetEmail = "datkarr2@mailinator.com";
 
         const results = await Promise.all(
             clinics.map(async (clinic) => {
@@ -2179,14 +2178,17 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
                         ? Math.round((filledFieldsCount / totalFieldsCount) * 100)
                         : 0;
 
-                // 🪵 Log per clinic
-                console.log(`\n🏥 Clinic ID: ${clinic.clinic_id}`);
-                console.log(`✅ Filled: ${filledFieldsCount}/${totalFieldsCount}`);
-                console.log(`📉 Completion: ${completionPercentage}%`);
-                if (missingFields.length > 0) {
-                    console.log("❌ Missing Fields:", missingFields.join(", "));
-                } else {
-                    console.log("🎯 All fields filled!");
+                // 🪵 Log only for target email
+                if (clinic.email === targetEmail) {
+                    console.log(`\n🏥 Clinic (Target) Email: ${clinic.email}`);
+                    console.log(`Clinic ID: ${clinic.clinic_id}`);
+                    console.log(`✅ Filled: ${filledFieldsCount}/${totalFieldsCount}`);
+                    console.log(`📉 Completion: ${completionPercentage}%`);
+                    if (missingFields.length > 0) {
+                        console.log("❌ Missing Fields:", missingFields.join(", "));
+                    } else {
+                        console.log("🎯 All fields filled!");
+                    }
                 }
 
                 return {
@@ -2213,20 +2215,17 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
             `;
 
             await db.query(updateQuery);
-
-            console.log(`\n✅ Updated profile completion for ${results.length} clinics.`);
         }
 
-        // 🔍 Summary Log
-        const incompleteClinics = results.filter(r => r.completionPercentage < 100);
-        console.log(`\n📋 Summary:`);
-        console.log(`- Total clinics processed: ${results.length}`);
-        console.log(`- Clinics with incomplete profiles: ${incompleteClinics.length}`);
-
-        if (incompleteClinics.length > 0) {
-            incompleteClinics.forEach(c =>
-                console.log(`  • ${c.clinic_id} → ${c.completionPercentage}% | Missing: ${c.missingFields.join(", ")}`)
-            );
+        // Optional summary (log only if target clinic exists)
+        const targetClinic = clinics.find(c => c.email === targetEmail);
+        if (targetClinic) {
+            const result = results.find(r => r.clinic_id === targetClinic.clinic_id);
+            console.log(`\n📋 Summary for ${targetEmail}:`);
+            console.log(`Completion: ${result?.completionPercentage}%`);
+            if (result?.missingFields?.length > 0) {
+                console.log("Missing:", result.missingFields.join(", "));
+            }
         }
 
         return results;
@@ -2235,5 +2234,6 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
         throw error;
     }
 };
+
 
 
