@@ -230,7 +230,8 @@ router.post('/guest/get-face-scan', validate(getGuestFaceScanSchema, "body"), au
 
 router.get('/draft/:doctor_id', authenticateUser, validate(getDraftAppointmentsSchema, "params"), appointmentController.getDraftAppointments);
 
-router.post('/openai/endpoint', authenticateUser, validate(openAIBackendEndpointSchema, "body"), openAIBackendEndpointV2)
+router.post('/openai/endpoint', authenticateUser, validate(openAIBackendEndpointSchema, "body"), openAIBackendEndpoint)
+router.post('/openai/endpoint/v2', authenticateUser, validate(openAIBackendEndpointSchema, "body"), openAIBackendEndpointV2)
 
 router.post('/gemini/endpoint', geminiBackendEndpoint)
 
