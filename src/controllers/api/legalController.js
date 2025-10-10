@@ -123,7 +123,7 @@ export const openAIBackendEndpointV2 = asyncHandler(async (req, res) => {
             input: parsedPayload.messages
         });
 
-        return handleSuccess(res, 200, "en", "OPENAI_RESPONSE", openAIResponse.output_text);
+        return handleSuccess(res, 200, "en", "OPENAI_RESPONSE", openAIResponse);
 
     } catch (error) {
         if (error.response) {
