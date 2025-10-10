@@ -28,7 +28,7 @@ import { getTipsByConcernsSchema, getTreatmentFiltersSchema, getTreatmentsByConc
 import { deleteNotifications, deleteSingleNotification, getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
 import { sendAppointmentNotifications } from '../services/notifications.service.js';
 import { toggleLanguage } from '../controllers/web_users/authController.js';
-import { getLegalDocuments, openAIBackendEndpoint } from '../controllers/api/legalController.js';
+import { geminiBackendEndpoint, getLegalDocuments, openAIBackendEndpoint } from '../controllers/api/legalController.js';
 import { uploadMulterChatFiles } from '../services/multer.chat.js';
 import { getAllProductsSchema, getSingleProductSchema } from '../validations/product.validation.js';
 import { getWishlists, toggleWishlistProduct } from '../controllers/api/wishlistController.js';
@@ -231,5 +231,7 @@ router.post('/guest/get-face-scan', validate(getGuestFaceScanSchema, "body"), au
 router.get('/draft/:doctor_id', authenticateUser, validate(getDraftAppointmentsSchema, "params"), appointmentController.getDraftAppointments);
 
 router.post('/openai/endpoint', authenticateUser, validate(openAIBackendEndpointSchema, "body"), openAIBackendEndpoint)
+
+router.post('/gemini/endpoint', geminiBackendEndpoint)
 
 export default router;
