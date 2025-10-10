@@ -2,7 +2,7 @@ import configs from "../config/config.js";
 import db from "../config/db.js";
 import OpenAI from "openai";
 import { getInvitedZynqUsers } from "../models/api.js";
-import { faceScanPDFTemplate } from "./templates.js";
+import { zynqReminderEnglishTemplate, zynqReminderSwedishTemplate } from "./templates.js";
 import { sendEmail } from "../services/send_email.js";
 
 const isEmpty = (value) => {
@@ -268,21 +268,20 @@ export function normalizeCategory(inputCategory) {
     return match ? match.en : null;
 }
 
-export async function sendInvitationEmail(user, nextReminderDay) {
+export async function sendInvitationEmail(user) {
     try {
-        if (!user?.email) {
-            return;
-        }
+        if (!user?.email) return;
 
-        const { subject, body } = faceScanPDFTemplate({});
+        const emailTemplate = user?.language === "sv" ? zynqReminderEnglishTemplate : zynqReminderSwedishTemplate
+
+        const { subject, body } = emailTemplate({ recipient_name: user.name, roleKey: user.role });
 
         await sendEmail({
             to: user.email,
-            subject: "Zynq Invitation Reminder",
+            subject: subject,
             html: body,
         });
 
-        // console.log(`📧 Invitation reminder (day ${nextReminderDay}) sent to ${user.email}`);
     } catch (error) {
         console.error(`❌ Failed to send invitation email to ${user.email}:`, error.message);
     }
@@ -323,7 +322,7 @@ export async function sendInvitationReminders() {
 
             // If time for next reminder email
             if (diffDays >= nextReminderDay) {
-                await sendInvitationEmail(user, nextReminderDay);
+                await sendInvitationEmail(user);
 
                 if (user.role === "CLINIC") toUpdateClinics.push(user.id);
                 else toUpdateDoctors.push(user.id);

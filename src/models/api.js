@@ -2929,14 +2929,14 @@ export const getInvitedZynqUsers = async () => {
         const [clinics, doctors] = await Promise.all([
             db.query(`
                 SELECT 'CLINIC' AS role, zu.email, c.clinic_id AS id, c.clinic_name AS name,
-                c.invited_date, c.invitation_email_count
+                c.invited_date, c.invitation_email_count, zu.language
                 FROM tbl_clinics c
                 LEFT JOIN tbl_zqnq_users zu ON c.zynq_user_id = zu.id
                 WHERE c.profile_status = 'INVITED'
             `),
             db.query(`
                 SELECT 'DOCTOR' AS role, zu.email, d.doctor_id AS id, d.name,
-                d.invited_date, d.invitation_email_count
+                d.invited_date, d.invitation_email_count, zu.language
                 FROM tbl_doctors d
                 LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
                 WHERE d.profile_status = 'INVITED'
