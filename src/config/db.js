@@ -1,5 +1,4 @@
-import mysql from "mysql2";
-import util from "util";
+import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -10,34 +9,35 @@ const pool = mysql.createPool({
   port: process.env.DB_PORT,
   database: process.env.DB_DATABASE,
   timezone: "Z",
+  waitForConnections: true,
   connectionLimit: 10,
+  queueLimit: 0,
 });
 
 export async function connectDB() {
-  return new Promise((resolve, reject) => {
-    pool.getConnection((err, connection) => {
-      if (err) {
-        console.error("❌ Database pool connection failed:", err.message);
-        return reject(err);
-      }
-      console.log("✅ MySQL pool connected successfully");
-      connection.release();
-      resolve();
-    });
-  });
+  try {
+    const connection = await pool.getConnection();
+    console.log("✅ MySQL pool connected successfully");
+    connection.release();
+  } catch (err) {
+    console.error("❌ Database pool connection failed:", err.message);
+    throw err;
+  }
 }
 
-export function makeDb() {
-  return {
-    async query(sql, args) {
-      const query = util.promisify(pool.query).bind(pool);
-      return query(sql, args);
-    },
-    close() {
-      return util.promisify(pool.end).call(pool);
-    },
-  };
-}
+export const db = {
+  query: async (sql, params) => {
+    try {
+      const [rows] = await pool.query(sql, params);
+      return rows || []; // ensures it always returns an array
+    } catch (err) {
+      console.error("DB Query Error:", err.message);
+      return []; // return empty array on error if you want to avoid crashes
+    }
+  },
+  getConnection: () => pool.getConnection(),
+  close: () => pool.end(),
+};
 
-export const db = makeDb();
 export default db;
+
