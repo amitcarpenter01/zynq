@@ -24,6 +24,7 @@ export const add_face_scan_result = async (req, res) => {
         const language = user.language || 'en';
 
         const schema = Joi.object({
+            device_id: Joi.string().optional().allow("", null),
             face_scan_id: Joi.string().optional().allow("", null),
             skin_type: Joi.string().optional().allow("", null),
             skin_concerns: Joi.string().optional().allow("", null),
@@ -35,7 +36,7 @@ export const add_face_scan_result = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const { skin_type, skin_concerns, details, scoreInfo, aiAnalysisResult, face_scan_id } = value;
+        const { skin_type, skin_concerns, details, scoreInfo, aiAnalysisResult, face_scan_id, device_id } = value;
 
         // const face = req.file?.location || '';
 
@@ -59,8 +60,10 @@ export const add_face_scan_result = async (req, res) => {
 
             await apiModels.update_face_scan_data(face_scan_data, face_scan_id);
         } else {
+
             face_scan_data = {
-                user_id: user.user_id,
+                device_id,
+                user_id: user?.user_id || null,
                 face_scan_result_id: face_scan_result_id,
                 skin_type,
                 skin_concerns,
