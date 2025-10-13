@@ -10,9 +10,9 @@ import { fileURLToPath } from "url";
 
 import configureApp from "./src/config/routes.js";
 import initializeSocket from "./src/utils/socket.js";
-import { send_clinic_email_cron, appointmentReminderCron, invitationReminderCron } from "./src/utils/cronJob.js";
-import { connectDB } from "./src/config/db.js"; 
- 
+import { send_clinic_email_cron, appointmentReminderCron, invitationReminderCron, deleteGuestDataCron } from "./src/utils/cronJob.js";
+import { connectDB } from "./src/config/db.js";
+
 // --------------------- ENV + PATH CONFIG ---------------------
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
@@ -64,6 +64,7 @@ function startServer() {
   // 🕒 Start all cron jobs once DB + server are ready
   appointmentReminderCron();
   invitationReminderCron();
+  deleteGuestDataCron();
   console.log("📅 Cron jobs initialized successfully");
 }
 
