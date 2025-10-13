@@ -2728,6 +2728,69 @@ export const getProductsByNameSearchOnly = async ({ search = '', limit, offset }
     }
 };
 
+// export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', limit, offset }) => {
+//     try {
+//         const safeSearch = search?.trim().toLowerCase();
+//         const params = [];
+//         let query = `SELECT * FROM tbl_treatments WHERE 1=1`;
+
+//         if (safeSearch) {
+//             const s = `%${safeSearch}%`;
+//             query += `
+//                 AND (
+//                     LOWER(name) LIKE ?
+//                     OR LOWER(swedish) LIKE ?
+//                     OR LOWER(application) LIKE ?
+//                     OR LOWER(type) LIKE ?
+//                     OR LOWER(technology) LIKE ?
+//                     OR LOWER(classification_type) LIKE ?
+//                     OR LOWER(benefits) LIKE ?
+//                     OR LOWER(benefits_en) LIKE ?
+//                     OR LOWER(benefits_sv) LIKE ?
+//                     OR LOWER(description_en) LIKE ?
+//                     OR LOWER(description_sv) LIKE ?
+//                     OR EXISTS (
+//                         SELECT 1
+//                         FROM tbl_treatment_concerns tc
+//                         LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
+//                         WHERE tc.treatment_id = tbl_treatments.treatment_id
+//                         AND (
+//                             LOWER(tc.indications_sv) LIKE ?
+//                             OR LOWER(tc.indications_en) LIKE ?
+//                             OR LOWER(tc.likewise_terms) LIKE ?
+//                             OR LOWER(cns.name) LIKE ?
+//                             OR LOWER(cns.swedish) LIKE ?
+//                             OR LOWER(cns.tips) LIKE ?
+//                         )
+//                     )
+//                 )
+//             `;
+//             params.push(
+//                 ...Array(11).fill(s),  // existing treatment columns
+//                 ...Array(6).fill(s)    // treatment concerns + concerns
+//             );
+//         }
+
+//         query += ` ORDER BY created_at DESC`;
+
+//         if (limit != null) {
+//             query += ` LIMIT ?`;
+//             params.push(Number(limit));
+
+//             if (offset != null) {
+//                 query += ` OFFSET ?`;
+//                 params.push(Number(offset));
+//             }
+//         }
+
+//         const results = await db.query(query, params);
+//         return formatBenefitsUnified(results, language);
+//     } catch (error) {
+//         console.error('Database Error in getTreatmentsBySearchOnly:', error.message);
+//         throw new Error('Failed to fetch treatments.');
+//     }
+// };
+
 export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', limit, offset }) => {
     try {
         const safeSearch = search?.trim().toLowerCase();
@@ -2766,7 +2829,7 @@ export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', 
                 )
             `;
             params.push(
-                ...Array(11).fill(s),  // existing treatment columns
+                ...Array(11).fill(s),  // treatment columns
                 ...Array(6).fill(s)    // treatment concerns + concerns
             );
         }
@@ -2783,13 +2846,22 @@ export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', 
             }
         }
 
-        const results = await db.query(query, params);
+        let results = await db.query(query, params);
+
+        // Remove embeddings dynamically
+        results = results.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
+
         return formatBenefitsUnified(results, language);
     } catch (error) {
         console.error('Database Error in getTreatmentsBySearchOnly:', error.message);
         throw new Error('Failed to fetch treatments.');
     }
 };
+
 
 const APP_URL = process.env.APP_URL;
 

@@ -295,15 +295,34 @@ export const insertClinicDocuments = async (clinic_id, certification_type_id, do
     }
 };
 
+// export const getAllTreatments = async () => {
+//     try {
+//         const treatments = await db.query('SELECT * FROM tbl_treatments ORDER BY created_at DESC');
+//         return treatments;
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch treatments.");
+//     }
+// };
+
 export const getAllTreatments = async () => {
     try {
         const treatments = await db.query('SELECT * FROM tbl_treatments ORDER BY created_at DESC');
-        return treatments;
+
+        // Remove embeddings dynamically
+        const cleanedTreatments = treatments.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
+
+        return cleanedTreatments;
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch treatments.");
     }
 };
+
 
 // export const getClinicTreatments = async (clinic_id) => {
 //     try {
