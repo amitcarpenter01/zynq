@@ -3307,3 +3307,14 @@ export const deleteGuestDataModel = async () => {
         throw new Error("Failed to delete guest data.");
     }
 }
+
+export const updateGuestDeviceFaceScanModel = async (device_id, user_id) => {
+    try {
+        return await db.query(`
+            UPDATE tbl_face_scan_results SET user_id = ? WHERE device_id = ? AND user_id IS NULL
+        `, [user_id, device_id]);
+    } catch (error) {
+        console.error("Database Error (updateGuestDeviceFaceScanModel):", error.message);
+        throw new Error("Failed to update guest device face scan.");
+    }
+}
