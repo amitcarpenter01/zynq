@@ -246,7 +246,7 @@ export const login_with_otp = async (req, res) => {
         const { error, value } = loginOtpSchema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const { mobile_number, otp, language, fcm_token } = value;
+        const { mobile_number, otp, language, fcm_token, device_id } = value;
 
         const [user] = await apiModels.get_user_by_mobile_number(mobile_number);
         if (!user) {
