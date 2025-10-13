@@ -1,7 +1,7 @@
 import configs from "../config/config.js";
 import db from "../config/db.js";
 import OpenAI from "openai";
-import { getInvitedZynqUsers } from "../models/api.js";
+import { deleteGuestDataModel, getInvitedZynqUsers } from "../models/api.js";
 import { zynqReminderEnglishTemplate, zynqReminderSwedishTemplate } from "./templates.js";
 import { sendEmail } from "../services/send_email.js";
 
@@ -370,4 +370,8 @@ export async function sendInvitationReminders() {
     } catch (error) {
         console.error("sendInvitationReminders: error:", error);
     }
+}
+
+export async function deleteGuestData() {
+    await deleteGuestDataModel()
 }

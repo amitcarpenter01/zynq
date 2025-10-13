@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import { sendEmail } from "../services/send_email.js";
 import { generatePassword } from "./user_helper.js";
 import { sendAppointmentNotifications } from "../services/notifications.service.js";
-import { sendInvitationReminders } from "./misc.util.js";
+import { deleteGuestData, sendInvitationReminders } from "./misc.util.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -107,4 +107,8 @@ export const appointmentReminderCron = () => {
 
 export const invitationReminderCron = () => {
     cron.schedule('0 6 * * *', sendInvitationReminders);
+}
+
+export const deleteGuestDataCron = () => {
+    cron.schedule('0 3 * * *', deleteGuestData);
 }

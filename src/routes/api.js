@@ -91,7 +91,7 @@ router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_f
 //==================================== Doctor ==============================
 // router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors);
 router.post("/get-all-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_all_doctors_in_app_side);
-router.post("/get-recommended-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
+router.post("/get-recommended-doctors", optionalAuthenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
 router.get("/doctor/get/ratings/:doctor_id", authenticateUser, validate(getSingleDoctorRatingsSchema, "params"), doctorControllers.getSingleDoctorRatings);
 router.get("/doctor/get/:clinic_id/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
 
@@ -100,7 +100,7 @@ router.post("/get-all-products", optionalAuthenticateUser, validate(getAllProduc
 router.get("/product/:product_id", optionalAuthenticateUser, validate(getSingleProductSchema, "params"), productControllers.getSingleProduct);
 
 // ==================================== Clinic ==============================
-router.post("/get-all-clinics", authenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_all_clinics);
+router.post("/get-all-clinics", optionalAuthenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_all_clinics);
 router.get("/clinic/:clinic_id", authenticateUser, validate(getSingleClinicSchema, "params"), clinicControllers.getSingleClinic);
 router.post("/get-nearby-clinics", authenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_nearby_clinics);
 
@@ -192,7 +192,7 @@ router.get('/payments/cancel', stripeCancelHandler);
 router.post('/payments/test', testPayment)
 // -------------------------------------Generic------------------------------------------------//
 
-router.get('/skin-types', authenticateUser, faceScanControllers.getClinicSkinTypes);
+router.get('/skin-types', optionalAuthenticateUser, faceScanControllers.getClinicSkinTypes);
 router.get('/treatments', optionalAuthenticateUser, faceScanControllers.getTreatments);
 router.post('/get-treatments-by-ids', authenticateUser, validate(getTreatmentsSchema, "body"), faceScanControllers.get_treatments_by_treatments);
 router.post("/get-all-search-results", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.search_home_entities);

@@ -3293,3 +3293,17 @@ export const getInvitedZynqUsers = async () => {
         throw new Error("Failed to fetch invited zynq users.");
     }
 };
+
+export const deleteGuestDataModel = async () => {
+    try {
+        return await db.query(`
+            SELECT * FROM tbl_face_scan_results 
+            WHERE 
+            device_id IS NOT NULL AND 
+            user_id IS NULL AND 
+            created_at < NOW() - INTERVAL 1 DAY`);
+    } catch (error) {
+        console.error("Database Error (deleteGuestDataModel):", error.message);
+        throw new Error("Failed to delete guest data.");
+    }
+}
