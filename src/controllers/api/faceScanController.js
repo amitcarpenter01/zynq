@@ -20,7 +20,7 @@ const image_logo = process.env.LOGO_URL;
 
 export const add_face_scan_result = async (req, res) => {
     try {
-        const user = req.user;
+        const user = req?.user;
         const language = user?.language || 'en';
 
         const schema = Joi.object({
@@ -49,18 +49,19 @@ export const add_face_scan_result = async (req, res) => {
             if (req.files["pdf"]) pdf = req.files["pdf"][0].filename;
         }
         const face_scan_result_id = uuidv4(); // Generate UUID
-
+        console.log("inside")
         let face_scan_data = {}
 
         if (!isEmpty(face_scan_id)) {
             face_scan_data = {
+                user: user?.user_id || null,
                 pdf,
                 aiAnalysisResult
             }
 
             await apiModels.update_face_scan_data(face_scan_data, face_scan_id);
         } else {
-
+            console.log("inside")
             face_scan_data = {
                 device_id,
                 user_id: user?.user_id || null,
@@ -91,6 +92,22 @@ export const add_face_scan_result = async (req, res) => {
 };
 
 export const get_face_scan_history = async (req, res) => {
+    try {
+        const face_scan_id = req?.params?.face_scan_id;
+        let scan_hostory = await apiModels.get_face_scan_history_v2(req.user?.user_id, face_scan_id);
+        if (!scan_hostory) return handleError(res, 404, 'en', "SCAN_HISTORY_NOT_FOUND");
+        scan_hostory.forEach(item => {
+            if (item.face && !item.face.startsWith("http")) item.face = `${APP_URL}${item.face}`;
+            if (item.pdf && !item.pdf.startsWith("http")) item.pdf = `${APP_URL}${item.pdf}`;
+        });
+        return handleSuccess(res, 200, 'en', "SCAN_HISTORY_DATA", scan_hostory);
+    } catch (error) {
+        console.error("internal E", error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const get_face_scan_history_device = async (req, res) => {
     try {
         const device_id = req?.params?.device_id;
         let scan_hostory = await apiModels.get_face_scan_history_device(device_id);
