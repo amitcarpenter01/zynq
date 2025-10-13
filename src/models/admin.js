@@ -1297,30 +1297,79 @@ export const getAppointmentsById = async (appointment_id) => {
 };
 
 
+// export const getTreatmentsOfProducts = async (product_id) => {
+//     try {
+//         const query = `
+//     SELECT t.* FROM tbl_product_treatments pt JOIN tbl_treatments t ON t.treatment_id = pt.treatment_id WHERE pt.product_id = ?;
+//     `;
+//         const results = await db.query(query, [product_id]);
+//         return results;
+//     } catch (error) {
+//         console.error("Failed to fetch purchase products data:", error);
+//         throw error;
+//     }
+// };
+
 export const getTreatmentsOfProducts = async (product_id) => {
     try {
         const query = `
-    SELECT t.* FROM tbl_product_treatments pt JOIN tbl_treatments t ON t.treatment_id = pt.treatment_id WHERE pt.product_id = ?;
-    `;
+            SELECT t.* 
+            FROM tbl_product_treatments pt
+            JOIN tbl_treatments t ON t.treatment_id = pt.treatment_id
+            WHERE pt.product_id = ?;
+        `;
         const results = await db.query(query, [product_id]);
-        return results;
+
+        // Remove embeddings from each treatment dynamically
+        const cleanedResults = results.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
+
+        return cleanedResults;
     } catch (error) {
-        console.error("Failed to fetch purchase products data:", error);
+        console.error("Failed to fetch product treatments:", error);
         throw error;
     }
 };
 
+
+// export const getTreatmentsOfProductsBulk = async (productIds) => {
+//     try {
+//         // Ensure we have an array
+//         if (!Array.isArray(productIds)) {
+//             productIds = [productIds];
+//         }
+
+//         // If no IDs, return empty
+//         if (productIds.length === 0) {
+//             return [];
+//         }
+
+//         const query = `
+//             SELECT pt.product_id, t.*
+//             FROM tbl_product_treatments pt
+//             JOIN tbl_treatments t 
+//                 ON t.treatment_id = pt.treatment_id
+//             WHERE pt.product_id IN (?)
+//         `;
+
+//         const results = await db.query(query, [productIds]);
+//         return results;
+//     } catch (error) {
+//         console.error("Failed to fetch treatments for products:", error);
+//         throw error;
+//     }
+// };
+
 export const getTreatmentsOfProductsBulk = async (productIds) => {
     try {
         // Ensure we have an array
-        if (!Array.isArray(productIds)) {
-            productIds = [productIds];
-        }
+        if (!Array.isArray(productIds)) productIds = [productIds];
 
         // If no IDs, return empty
-        if (productIds.length === 0) {
-            return [];
-        }
+        if (productIds.length === 0) return [];
 
         const query = `
             SELECT pt.product_id, t.*
@@ -1331,7 +1380,15 @@ export const getTreatmentsOfProductsBulk = async (productIds) => {
         `;
 
         const results = await db.query(query, [productIds]);
-        return results;
+
+        // Remove embeddings from each treatment dynamically
+        const cleanedResults = results.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
+
+        return cleanedResults;
     } catch (error) {
         console.error("Failed to fetch treatments for products:", error);
         throw error;

@@ -1472,18 +1472,43 @@ export const getAllConcerns = async (lang = "en") => {
     }
 };
 
+// export const getTreatmentsByConcernId = async (concern_id) => {
+//     try {
+//         return await db.query(`SELECT t.*,c.name as concern_name FROM tbl_treatment_concerns tc INNER JOIN 
+//               tbl_treatments t ON tc.treatment_id = t.treatment_id INNER JOIN tbl_concerns c  ON  c.concern_id  = tc.concern_id
+//               WHERE tc.concern_id = ?;
+//                 `, [concern_id]);
+//     }
+//     catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch clinic.");
+//     }
+// }
+
 export const getTreatmentsByConcernId = async (concern_id) => {
     try {
-        return await db.query(`SELECT t.*,c.name as concern_name FROM tbl_treatment_concerns tc INNER JOIN 
-              tbl_treatments t ON tc.treatment_id = t.treatment_id INNER JOIN tbl_concerns c  ON  c.concern_id  = tc.concern_id
-              WHERE tc.concern_id = ?;
-                `, [concern_id]);
-    }
-    catch (error) {
+        const results = await db.query(`
+            SELECT , c.name AS concern_name
+            FROM tbl_treatment_concerns tc
+            INNER JOIN tbl_treatments t ON tc.treatment_id = t.treatment_id
+            INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+            WHERE tc.concern_id = ?;
+        `, [concern_id]);
+
+        // Remove embeddings dynamically
+        const cleanedResults = results.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
+
+        return cleanedResults;
+    } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch clinic.");
+        throw new Error("Failed to fetch treatments by concern.");
     }
-}
+};
+
 
 export const enroll_user_data = async (user_data) => {
     try {
@@ -1505,10 +1530,41 @@ export const get_all_enrollments = async () => {
     }
 };
 
+// export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
+//     if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
+//         return [];
+//     }
+
+//     try {
+//         const placeholders = concern_ids.map(() => '?').join(', ');
+
+//         const query = `
+//             SELECT
+//                 t.*,
+//                 ANY_VALUE(c.name) AS concern_name,
+//                 IFNULL(MIN(dt.price), 0) AS min_price,
+//                 IFNULL(MAX(dt.price), 0) AS max_price
+//             FROM tbl_treatment_concerns tc
+//             INNER JOIN tbl_treatments t ON tc.treatment_id = t.treatment_id
+//             INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+//             LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+//             WHERE tc.concern_id IN (${placeholders})
+//             GROUP BY t.treatment_id
+//         `;
+
+//         const results = await db.query(query, concern_ids);
+
+//         // Format benefits based on language
+//         return formatBenefitsUnified(results, lang);
+
+//     } catch (error) {
+//         console.error("Database Error in getTreatmentsByConcernIds:", error.message);
+//         throw new Error("Failed to fetch treatments by concern IDs.");
+//     }
+// };
+
 export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
-    if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
-        return [];
-    }
+    if (!Array.isArray(concern_ids) || concern_ids.length === 0) return [];
 
     try {
         const placeholders = concern_ids.map(() => '?').join(', ');
@@ -1527,7 +1583,14 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
             GROUP BY t.treatment_id
         `;
 
-        const results = await db.query(query, concern_ids);
+        let results = await db.query(query, concern_ids);
+
+        // Remove embeddings dynamically
+        results = results.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
 
         // Format benefits based on language
         return formatBenefitsUnified(results, lang);
@@ -1537,6 +1600,33 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
         throw new Error("Failed to fetch treatments by concern IDs.");
     }
 };
+
+
+// export const getAllTreatments = async (lang) => {
+//     try {
+//         const query = `
+//             SELECT
+//                 t.*,
+//                 ANY_VALUE(c.name) AS concern_name,
+//                 IFNULL(MIN(dt.price), 0) AS min_price,
+//                 IFNULL(MAX(dt.price), 0) AS max_price
+//             FROM tbl_treatments t
+//             LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
+//             LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+//             LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+//             GROUP BY t.treatment_id
+//         `;
+
+//         const results = await db.query(query);
+
+//         // Format benefits based on language
+//         return formatBenefitsUnified(results, lang);
+
+//     } catch (error) {
+//         console.error("Database Error in getTreatmentsByConcernIds:", error.message);
+//         throw new Error("Failed to fetch treatments by concern IDs.");
+//     }
+// };
 
 export const getAllTreatments = async (lang) => {
     try {
@@ -1553,16 +1643,135 @@ export const getAllTreatments = async (lang) => {
             GROUP BY t.treatment_id
         `;
 
-        const results = await db.query(query);
+        let results = await db.query(query);
+
+        // Remove embeddings dynamically
+        results = results.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
 
         // Format benefits based on language
         return formatBenefitsUnified(results, lang);
 
     } catch (error) {
-        console.error("Database Error in getTreatmentsByConcernIds:", error.message);
-        throw new Error("Failed to fetch treatments by concern IDs.");
+        console.error("Database Error in getAllTreatments:", error.message);
+        throw new Error("Failed to fetch all treatments.");
     }
 };
+
+
+// export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = null) => {
+//     try {
+//         // pick the right column for name
+//         const nameColumn = lang === 'sv' ? 't.swedish' : 't.name';
+
+//         let query = `
+//             SELECT
+//                 t.*,
+//                 ${nameColumn} AS name,
+//                 IFNULL(MIN(dt.price), 0) AS min_price,
+//                 IFNULL(MAX(dt.price), 0) AS max_price
+//             FROM tbl_treatments t
+//             LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
+//             LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+//             LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+//         `;
+
+//         const queryParams = [];
+//         const whereConditions = [];
+
+//         // ---------- Recommended Filter ----------
+//         if (filters.recommended === true && user_id) {
+//             const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
+//             if (!fallbackTreatmentIds?.length) {
+//                 return []; // no recommended treatments
+//             }
+//             const placeholders = fallbackTreatmentIds.map(() => '?').join(',');
+//             whereConditions.push(`t.treatment_id IN (${placeholders})`);
+//             queryParams.push(...fallbackTreatmentIds);
+//         }
+
+//         // ---------- Search Filter ----------
+//         if (filters.search?.trim()) {
+//             const s = `%${filters.search.toLowerCase()}%`;
+//             whereConditions.push(`
+//         (
+//             LOWER(t.name) LIKE ?
+//             OR LOWER(t.swedish) LIKE ?
+//             OR LOWER(t.application) LIKE ?
+//             OR LOWER(t.type) LIKE ?
+//             OR LOWER(t.technology) LIKE ?
+//             OR LOWER(t.classification_type) LIKE ?
+//             OR LOWER(t.benefits) LIKE ?
+//             OR LOWER(t.benefits_en) LIKE ?
+//             OR LOWER(t.benefits_sv) LIKE ?
+//             OR LOWER(t.description_en) LIKE ?
+//             OR LOWER(t.description_sv) LIKE ?
+//             OR EXISTS (
+//                 SELECT 1
+//                 FROM tbl_treatment_concerns tc2
+//                 LEFT JOIN tbl_concerns c2 ON tc2.concern_id = c2.concern_id
+//                 WHERE tc2.treatment_id = t.treatment_id
+//                   AND (
+//                       LOWER(tc2.indications_en) LIKE ?
+//                       OR LOWER(tc2.indications_sv) LIKE ?
+//                       OR LOWER(tc2.likewise_terms) LIKE ?
+//                       OR LOWER(c2.name) LIKE ?
+//                       OR LOWER(c2.swedish) LIKE ?
+//                       OR LOWER(c2.tips) LIKE ?
+//                   )
+//             )
+//             OR EXISTS (
+//                 SELECT 1
+//                 FROM tbl_skin_types st
+//                 JOIN tbl_skin_treatment_map stm ON st.skin_type_id = stm.skin_type_id
+//                 WHERE stm.treatment_id = t.treatment_id
+//                   AND (
+//                       LOWER(st.name) LIKE ?
+//                       OR LOWER(st.swedish) LIKE ?
+//                       OR LOWER(st.syn_en) LIKE ?
+//                       OR LOWER(st.syn_sv) LIKE ?
+//                       OR LOWER(st.areas) LIKE ?
+//                       OR LOWER(st.description) LIKE ?
+//                       OR LOWER(st.desc_sv) LIKE ?
+//                   )
+//             )
+//         )
+//     `);
+
+//             // params: 11 treatment fields + 6 concern fields + 7 skin type fields
+//             queryParams.push(...Array(11).fill(s), ...Array(6).fill(s), ...Array(7).fill(s));
+//         }
+
+
+//         // ---------- Treatment IDs Filter ----------
+//         if (Array.isArray(filters.treatment_ids) && filters.treatment_ids.length) {
+//             const placeholders = filters.treatment_ids.map(() => '?').join(',');
+//             whereConditions.push(`t.treatment_id IN (${placeholders})`);
+//             queryParams.push(...filters.treatment_ids);
+//         }
+
+//         // ---------- Combine WHERE conditions ----------
+//         if (whereConditions.length) {
+//             query += ' WHERE ' + whereConditions.join(' AND ');
+//         }
+
+//         // ---------- Grouping ----------
+//         query += ` GROUP BY t.treatment_id`;
+
+//         // ---------- Execute Query ----------
+//         const results = await db.query(query, queryParams);
+
+//         // ---------- Format Benefits ----------
+//         return formatBenefitsUnified(results, lang);
+
+//     } catch (error) {
+//         console.error("Database Error in getAllTreatmentsV2:", error.message);
+//         throw new Error("Failed to fetch treatments.");
+//     }
+// };
 
 export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = null) => {
     try {
@@ -1587,9 +1796,7 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         // ---------- Recommended Filter ----------
         if (filters.recommended === true && user_id) {
             const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
-            if (!fallbackTreatmentIds?.length) {
-                return []; // no recommended treatments
-            }
+            if (!fallbackTreatmentIds?.length) return []; // no recommended treatments
             const placeholders = fallbackTreatmentIds.map(() => '?').join(',');
             whereConditions.push(`t.treatment_id IN (${placeholders})`);
             queryParams.push(...fallbackTreatmentIds);
@@ -1599,54 +1806,52 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         if (filters.search?.trim()) {
             const s = `%${filters.search.toLowerCase()}%`;
             whereConditions.push(`
-        (
-            LOWER(t.name) LIKE ?
-            OR LOWER(t.swedish) LIKE ?
-            OR LOWER(t.application) LIKE ?
-            OR LOWER(t.type) LIKE ?
-            OR LOWER(t.technology) LIKE ?
-            OR LOWER(t.classification_type) LIKE ?
-            OR LOWER(t.benefits) LIKE ?
-            OR LOWER(t.benefits_en) LIKE ?
-            OR LOWER(t.benefits_sv) LIKE ?
-            OR LOWER(t.description_en) LIKE ?
-            OR LOWER(t.description_sv) LIKE ?
-            OR EXISTS (
-                SELECT 1
-                FROM tbl_treatment_concerns tc2
-                LEFT JOIN tbl_concerns c2 ON tc2.concern_id = c2.concern_id
-                WHERE tc2.treatment_id = t.treatment_id
-                  AND (
-                      LOWER(tc2.indications_en) LIKE ?
-                      OR LOWER(tc2.indications_sv) LIKE ?
-                      OR LOWER(tc2.likewise_terms) LIKE ?
-                      OR LOWER(c2.name) LIKE ?
-                      OR LOWER(c2.swedish) LIKE ?
-                      OR LOWER(c2.tips) LIKE ?
-                  )
-            )
-            OR EXISTS (
-                SELECT 1
-                FROM tbl_skin_types st
-                JOIN tbl_skin_treatment_map stm ON st.skin_type_id = stm.skin_type_id
-                WHERE stm.treatment_id = t.treatment_id
-                  AND (
-                      LOWER(st.name) LIKE ?
-                      OR LOWER(st.swedish) LIKE ?
-                      OR LOWER(st.syn_en) LIKE ?
-                      OR LOWER(st.syn_sv) LIKE ?
-                      OR LOWER(st.areas) LIKE ?
-                      OR LOWER(st.description) LIKE ?
-                      OR LOWER(st.desc_sv) LIKE ?
-                  )
-            )
-        )
-    `);
+                (
+                    LOWER(t.name) LIKE ?
+                    OR LOWER(t.swedish) LIKE ?
+                    OR LOWER(t.application) LIKE ?
+                    OR LOWER(t.type) LIKE ?
+                    OR LOWER(t.technology) LIKE ?
+                    OR LOWER(t.classification_type) LIKE ?
+                    OR LOWER(t.benefits) LIKE ?
+                    OR LOWER(t.benefits_en) LIKE ?
+                    OR LOWER(t.benefits_sv) LIKE ?
+                    OR LOWER(t.description_en) LIKE ?
+                    OR LOWER(t.description_sv) LIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM tbl_treatment_concerns tc2
+                        LEFT JOIN tbl_concerns c2 ON tc2.concern_id = c2.concern_id
+                        WHERE tc2.treatment_id = t.treatment_id
+                          AND (
+                              LOWER(tc2.indications_en) LIKE ?
+                              OR LOWER(tc2.indications_sv) LIKE ?
+                              OR LOWER(tc2.likewise_terms) LIKE ?
+                              OR LOWER(c2.name) LIKE ?
+                              OR LOWER(c2.swedish) LIKE ?
+                              OR LOWER(c2.tips) LIKE ?
+                          )
+                    )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM tbl_skin_types st
+                        JOIN tbl_skin_treatment_map stm ON st.skin_type_id = stm.skin_type_id
+                        WHERE stm.treatment_id = t.treatment_id
+                          AND (
+                              LOWER(st.name) LIKE ?
+                              OR LOWER(st.swedish) LIKE ?
+                              OR LOWER(st.syn_en) LIKE ?
+                              OR LOWER(st.syn_sv) LIKE ?
+                              OR LOWER(st.areas) LIKE ?
+                              OR LOWER(st.description) LIKE ?
+                              OR LOWER(st.desc_sv) LIKE ?
+                          )
+                    )
+                )
+            `);
 
-            // params: 11 treatment fields + 6 concern fields + 7 skin type fields
             queryParams.push(...Array(11).fill(s), ...Array(6).fill(s), ...Array(7).fill(s));
         }
-
 
         // ---------- Treatment IDs Filter ----------
         if (Array.isArray(filters.treatment_ids) && filters.treatment_ids.length) {
@@ -1664,7 +1869,14 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         query += ` GROUP BY t.treatment_id`;
 
         // ---------- Execute Query ----------
-        const results = await db.query(query, queryParams);
+        let results = await db.query(query, queryParams);
+
+        // ---------- Remove embeddings dynamically ----------
+        results = results.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
 
         // ---------- Format Benefits ----------
         return formatBenefitsUnified(results, lang);
@@ -1674,6 +1886,41 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         throw new Error("Failed to fetch treatments.");
     }
 };
+
+
+// export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
+//     try {
+//         let query = `
+//             SELECT
+//                 t.*,
+//                 ANY_VALUE(c.name) AS concern_name,
+//                 IFNULL(MIN(dt.price), 0) AS min_price,
+//                 IFNULL(MAX(dt.price), 0) AS max_price
+//             FROM tbl_treatments t
+//             LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
+//             LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+//             LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+//         `;
+
+//         let params = [];
+
+//         // Add WHERE clause only if treatment_ids is not empty
+//         if (Array.isArray(treatment_ids) && treatment_ids.length > 0) {
+//             const placeholders = treatment_ids.map(() => '?').join(', ');
+//             query += ` WHERE t.treatment_id IN (${placeholders})`;
+//             params = treatment_ids;
+//         }
+
+//         query += ` GROUP BY t.treatment_id`;
+
+//         const results = await db.query(query, params);
+
+//         return formatBenefitsUnified(results, lang);
+//     } catch (error) {
+//         console.error("Database Error in getTreatmentsByTreatmentIds:", error.message);
+//         throw new Error("Failed to fetch treatments.");
+//     }
+// };
 
 export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
     try {
@@ -1700,7 +1947,14 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
 
         query += ` GROUP BY t.treatment_id`;
 
-        const results = await db.query(query, params);
+        let results = await db.query(query, params);
+
+        // Remove embeddings dynamically
+        results = results.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
 
         return formatBenefitsUnified(results, lang);
     } catch (error) {

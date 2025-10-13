@@ -854,12 +854,33 @@ export const insertAppointmentTreatments = async (appointment_id, treatments) =>
     return await db.query(query, [values]);
 };
 
+// export const getAppointmentTreatments = async (appointment_id) => {
+//     const query = `
+//     SELECT t.*,ap.* FROM tbl_appointment_treatments ap INNER JOIN tbl_treatments t ON ap.treatment_id  = t.treatment_id  WHERE appointment_id = ?
+//   `;
+//     return await db.query(query, [appointment_id]);
+// };
+
 export const getAppointmentTreatments = async (appointment_id) => {
     const query = `
-    SELECT t.*,ap.* FROM tbl_appointment_treatments ap INNER JOIN tbl_treatments t ON ap.treatment_id  = t.treatment_id  WHERE appointment_id = ?
-  `;
-    return await db.query(query, [appointment_id]);
+        SELECT t.*, ap.*
+        FROM tbl_appointment_treatments ap
+        INNER JOIN tbl_treatments t ON ap.treatment_id = t.treatment_id
+        WHERE appointment_id = ?
+    `;
+
+    let results = await db.query(query, [appointment_id]);
+
+    // Remove embeddings dynamically
+    results = results.map(row => {
+        const treatmentRow = { ...row };
+        if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+        return treatmentRow;
+    });
+
+    return results;
 };
+
 
 export const getDoctorBookedAppointmentsModel = async (role, user_id) => {
     let whereClause = '';
