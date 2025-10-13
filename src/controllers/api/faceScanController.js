@@ -49,19 +49,20 @@ export const add_face_scan_result = async (req, res) => {
             if (req.files["pdf"]) pdf = req.files["pdf"][0].filename;
         }
         const face_scan_result_id = uuidv4(); // Generate UUID
-        console.log("inside")
-        let face_scan_data = {}
 
+        let face_scan_data = {}
+        console.log("face scan id came", face_scan_id);
         if (!isEmpty(face_scan_id)) {
+            console.log("face scan id came", face_scan_id);
             face_scan_data = {
-                user: user?.user_id || null,
+                user_id: user?.user_id || null,
                 pdf,
                 aiAnalysisResult
             }
 
             await apiModels.update_face_scan_data(face_scan_data, face_scan_id);
         } else {
-            console.log("inside")
+
             face_scan_data = {
                 device_id,
                 user_id: user?.user_id || null,
