@@ -3297,7 +3297,7 @@ export const getInvitedZynqUsers = async () => {
 export const deleteGuestDataModel = async () => {
     try {
         return await db.query(`
-            SELECT * FROM tbl_face_scan_results 
+            DELETE FROM tbl_face_scan_results 
             WHERE 
             device_id IS NOT NULL AND 
             user_id IS NULL AND 
