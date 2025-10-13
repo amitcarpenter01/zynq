@@ -3310,6 +3310,7 @@ export const deleteGuestDataModel = async () => {
 
 export const updateGuestDeviceFaceScanModel = async (device_id, user_id) => {
     try {
+        console.log(device_id, user_id)
         return await db.query(`
             UPDATE tbl_face_scan_results SET user_id = ? WHERE device_id = ? AND user_id IS NULL
         `, [user_id, device_id]);
