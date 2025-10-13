@@ -279,7 +279,7 @@ export const login_with_otp = async (req, res) => {
         await apiModels.update_user(user_data, user.user_id);
 
         if (!isEmpty(device_id)) {
-            await updateGuestDeviceFaceScanModel(user.user_id, device_id);
+            await apiModels.updateGuestDeviceFaceScanModel(user.user_id, device_id);
         }
 
         return handleSuccess(res, 200, language || 'en', "LOGIN_SUCCESSFUL", token);
