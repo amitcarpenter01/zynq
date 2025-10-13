@@ -161,6 +161,24 @@ export const get_face_scan_history_v2 = async (user_id, face_scan_id = null) => 
     }
 };
 
+export const get_face_scan_history_device = async (device_id = null) => {
+    try {
+        let query = `
+            SELECT * 
+            FROM tbl_face_scan_results 
+            WHERE device_id = ?
+        `;
+        const params = [device_id];
+
+        query += ` ORDER BY created_at DESC`;
+
+        return await db.query(query, params);
+    } catch (error) {
+        console.error("DB Error in get_face_scan_history_v2:", error);
+        throw new Error("Failed to fetch face scan history data");
+    }
+};
+
 
 export const get_face_scan_result_by_id = async (user_id, face_scan_result_id) => {
     try {

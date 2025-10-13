@@ -92,8 +92,8 @@ export const add_face_scan_result = async (req, res) => {
 
 export const get_face_scan_history = async (req, res) => {
     try {
-        const face_scan_id = req?.params?.face_scan_id;
-        let scan_hostory = await apiModels.get_face_scan_history_v2(req.user?.user_id, face_scan_id);
+        const device_id = req?.params?.device_id;
+        let scan_hostory = await apiModels.get_face_scan_history_device(device_id);
         if (!scan_hostory) return handleError(res, 404, 'en', "SCAN_HISTORY_NOT_FOUND");
         scan_hostory.forEach(item => {
             if (item.face && !item.face.startsWith("http")) item.face = `${APP_URL}${item.face}`;
