@@ -21,7 +21,7 @@ const image_logo = process.env.LOGO_URL;
 export const add_face_scan_result = async (req, res) => {
     try {
         const user = req.user;
-        const language = user.language || 'en';
+        const language = user?.language || 'en';
 
         const schema = Joi.object({
             device_id: Joi.string().optional().allow("", null),
