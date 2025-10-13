@@ -247,7 +247,7 @@ export const login_with_otp = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
 
         const { mobile_number, otp, language, fcm_token, device_id } = value;
-
+        console.log("device id - ", device_id)
         const [user] = await apiModels.get_user_by_mobile_number(mobile_number);
         if (!user) {
             return handleError(res, 404, language || 'en', "USER_NOT_FOUND");
