@@ -70,6 +70,7 @@ export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
         return handleSuccess(res, openAIResponse.status, "en", "OPENAI_RESPONSE", openAIResponse.data);
 
     } catch (error) {
+        console.log(error)
         // Axios-specific error handling
         if (error.response) {
             // OpenAI returned an error response
