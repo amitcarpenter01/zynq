@@ -3310,11 +3310,37 @@ export const deleteGuestDataModel = async () => {
 
 export const updateGuestDeviceFaceScanModel = async (user_id, device_id) => {
     try {
-        return await db.query(`
-            UPDATE tbl_face_scan_results SET user_id = ? WHERE device_id = ? AND user_id IS NULL
-        `, [user_id, device_id]);
+        const [existingFaceScan] = await db.query(
+            `SELECT * FROM tbl_face_scan_results WHERE device_id = ? LIMIT 1`,
+            [device_id]
+        );
+
+        if (existingFaceScan && existingFaceScan.user_id) {
+
+            const { face_scan_result_id, ...rest } = existingFaceScan;
+
+            const fields = Object.keys(rest).concat("user_id");
+            const placeholders = fields.map(() => "?").join(", ");
+            const params = Object.values(rest).concat(user_id);
+
+            const query = `
+            INSERT INTO tbl_face_scan_results (${fields.join(", ")})
+            VALUES (${placeholders})
+            `;
+
+            await db.query(query, params);
+        }
+
+        await db.query(
+            `UPDATE tbl_face_scan_results 
+       SET user_id = ? 
+       WHERE device_id = ? AND user_id IS NULL`,
+            [user_id, device_id]
+        );
+
+        return { message: "Face scan updated successfully." };
     } catch (error) {
         console.error("Database Error (updateGuestDeviceFaceScanModel):", error.message);
-        throw new Error("Failed to update guest device face scan.");
+        throw new Error("Failed to update or duplicate guest device face scan.");
     }
-}
+};
