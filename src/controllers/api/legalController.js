@@ -1,4 +1,5 @@
 
+import { gemini, openai } from "../../../app.js";
 import { getLegalDocumentsForUsers, updateLegalDocumentsService } from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
 import { isEmpty } from "../../utils/user_helper.js";
@@ -17,14 +18,6 @@ export const updateLegalDocuments = asyncHandler(async (req, res) => {
     if (!result || result.affectedRows === 0) return handleError(res, 404, "en", "DOCUMENTS_NOT_FOUND");
     return handleSuccess(res, 200, 'en', "DOCUMENTS_UPDATED_SUCCESSFULLY");
 });
-
-
-
-import OpenAI from "openai";
-import { GoogleGenAI } from "@google/genai";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const gemini = new GoogleGenAI(process.env.GEMINI_API_KEY);
 
 function sanitizeMessageContent(content) {
     if (typeof content !== "string") return "";

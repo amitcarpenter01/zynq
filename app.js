@@ -7,7 +7,8 @@ import express from "express";
 import cors from "cors";
 import Stripe from "stripe";
 import { fileURLToPath } from "url";
-
+import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 import configureApp from "./src/config/routes.js";
 import initializeSocket from "./src/utils/socket.js";
 import { send_clinic_email_cron, appointmentReminderCron, invitationReminderCron, deleteGuestDataCron } from "./src/utils/cronJob.js";
@@ -23,7 +24,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
 const IS_LIVE = process.env.IS_LIVE === "false" ? false : true;
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+export const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+export const openai = process.env.OPENAI_API_KEY ? new OpenAI(process.env.OPENAI_API_KEY) : null;
+export const gemini = process.env.GEMINI_API_KEY ? new GoogleGenAI(process.env.GEMINI_API_KEY) : null;
 
 // --------------------- MIDDLEWARE ---------------------
 app.use(cors());

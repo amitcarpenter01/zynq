@@ -51,9 +51,7 @@ export const add_face_scan_result = async (req, res) => {
         const face_scan_result_id = uuidv4(); // Generate UUID
 
         let face_scan_data = {}
-        console.log("face scan id came", face_scan_id);
         if (!isEmpty(face_scan_id)) {
-            console.log("face scan id came", face_scan_id);
             face_scan_data = {
                 user_id: user?.user_id || null,
                 pdf,

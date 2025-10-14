@@ -1,6 +1,6 @@
 import configs from "../config/config.js";
 import db from "../config/db.js";
-import OpenAI from "openai";
+import { openai } from "../../app.js"
 import { deleteGuestDataModel, getInvitedZynqUsers } from "../models/api.js";
 import { zynqReminderEnglishTemplate, zynqReminderSwedishTemplate } from "./templates.js";
 import { sendEmail } from "../services/send_email.js";
@@ -204,13 +204,6 @@ export const formatBenefitsUnified = (rows = [], lang = 'en') => {
         return { ...row, benefits: [] };
     });
 };
-
-
-
-const openai = process.env.OPENAI_API_KEY
-    ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-    : null;
-
 
 export async function translateFAQ(question, answer) {
     const fallback = {
