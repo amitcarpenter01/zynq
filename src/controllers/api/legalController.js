@@ -1,5 +1,6 @@
 
 import { gemini, openai } from "../../../app.js";
+import configs from "../../config/config.js";
 import { getLegalDocumentsForUsers, updateLegalDocumentsService } from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
 import { isEmpty } from "../../utils/user_helper.js";
@@ -32,7 +33,6 @@ export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
     try {
         const { payload } = req.body;
 
-        const openaiKey = process.env.OPENAI_API_KEY;
 
         // Ensure payload is JSON
         let parsedPayload;
@@ -55,7 +55,7 @@ export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
             {
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `bearer ${openaiKey}`,
+                    "Authorization": `bearer ${configs.openaiKey}`,
                 },
             }
         );
@@ -63,7 +63,6 @@ export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
         return handleSuccess(res, openAIResponse.status, "en", "OPENAI_RESPONSE", openAIResponse.data);
 
     } catch (error) {
-        console.log(error)
         // Axios-specific error handling
         if (error.response) {
             // OpenAI returned an error response
@@ -72,8 +71,7 @@ export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
                 res,
                 error.response.status,
                 "en",
-                "OPENAI_ERROR",
-                { error: error }
+                error.response.data.error.message,
             );
         } else if (error.request) {
             // Request was made but no response received
