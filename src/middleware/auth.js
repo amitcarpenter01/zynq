@@ -50,7 +50,7 @@ export const authenticateUser = async (req, res, next) => {
             return handleError(res, 404, language, "USER_DELETED")
         }
 
-        const bypassRoutes = ["/profile", "/delete-account", "/delete-my-account"];
+        const bypassRoutes = ["/profile", "/delete-account", "/delete-my-account", "/add-face-scan-result-device"];
 
         const isBypassed = bypassRoutes.some(route => req.path.includes(route));
 
