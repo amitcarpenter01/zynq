@@ -29,58 +29,66 @@ function sanitizeMessageContent(content) {
 }
 
 export const openAIBackendEndpoint = asyncHandler(async (req, res) => {
+  try {
+    const { payload } = req.body;
 
-    try {
-        const { payload } = req.body;
-
-
-        // Ensure payload is JSON
-        let parsedPayload;
-        if (typeof payload === "string") {
-            try {
-                parsedPayload = JSON.parse(payload);
-            } catch (err) {
-                return handleError(res, 400, "en", "INVALID_PAYLOAD", { error: "Payload must be valid JSON string" });
-            }
-        } else if (typeof payload === "object") {
-            parsedPayload = payload;
-        } else {
-            return handleError(res, 400, "en", "INVALID_PAYLOAD", { error: "Payload must be an object or JSON string" });
-        }
-
-        // Axios request to OpenAI
-        const openAIResponse = await axios.post(
-            "https://api.openai.com/v1/chat/completions", // fixed endpoint
-            parsedPayload,
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `bearer ${configs.openaiKey}`,
-                },
-            }
-        );
-
-        return handleSuccess(res, openAIResponse.status, "en", "OPENAI_RESPONSE", openAIResponse.data);
-
-    } catch (error) {
-        // Axios-specific error handling
-        if (error.response) {
-            // OpenAI returned an error response
-
-            return handleError(
-                res,
-                error.response.status,
-                "en",
-                error.response.data.error.message,
-            );
-        } else if (error.request) {
-            // Request was made but no response received
-            return handleError(res, 502, "en", "OPENAI_NO_RESPONSE", { error: "No response from OpenAI" });
-        } else {
-            // Other errors
-            return handleError(res, 500, "en", "OPENAI_PROXY_ERROR", { error: error.message });
-        }
+    // Ensure payload is JSON
+    let parsedPayload;
+    if (typeof payload === "string") {
+      try {
+        parsedPayload = JSON.parse(payload);
+      } catch (err) {
+        return handleError(res, 400, "en", "INVALID_PAYLOAD", { error: "Payload must be valid JSON string" });
+      }
+    } else if (typeof payload === "object") {
+      parsedPayload = payload;
+    } else {
+      return handleError(res, 400, "en", "INVALID_PAYLOAD", { error: "Payload must be an object or JSON string" });
     }
+
+    // --- Retry Logic (1 extra attempt) ---
+    let attempt = 0;
+    let openAIResponse;
+    const maxAttempts = 2;
+
+    while (attempt < maxAttempts) {
+      try {
+        openAIResponse = await axios.post(
+          "https://api.openai.com/v1/chat/completions",
+          parsedPayload,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `bearer ${configs.openaiKey}`,
+            },
+          }
+        );
+        break; // success → exit retry loop
+      } catch (error) {
+        attempt++;
+        if (attempt >= maxAttempts) throw error; // retry only once
+        console.warn(`OpenAI request failed (attempt ${attempt}). Retrying...`);
+        await new Promise((r) => setTimeout(r, 500)); // small delay
+      }
+    }
+
+    return handleSuccess(res, openAIResponse.status, "en", "OPENAI_RESPONSE", openAIResponse.data);
+
+  } catch (error) {
+    // Axios-specific error handling
+    if (error.response) {
+      return handleError(
+        res,
+        error.response.status,
+        "en",
+        error.response.data.error.message,
+      );
+    } else if (error.request) {
+      return handleError(res, 502, "en", "OPENAI_NO_RESPONSE", { error: "No response from OpenAI" });
+    } else {
+      return handleError(res, 500, "en", "OPENAI_PROXY_ERROR", { error: error.message });
+    }
+  }
 });
 
 export const openAIBackendEndpointV2 = asyncHandler(async (req, res) => {
