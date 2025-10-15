@@ -267,7 +267,9 @@ export async function sendInvitationEmail(user) {
 
         const emailTemplate = user?.language === "sv" ? zynqReminderEnglishTemplate : zynqReminderSwedishTemplate
 
-        const { subject, body } = emailTemplate({ recipient_name: user.name, roleKey: user.role });
+        const recipient_name = user.name || "";
+        const roleKey = user.role || "";
+        const { subject, body } = emailTemplate({ recipient_name: recipient_name, roleKey: roleKey });
 
         await sendEmail({
             to: user.email,
