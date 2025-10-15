@@ -38,6 +38,7 @@ export const getTreatmentFiltersSchema = joi.object({
 export const addAppointmentDraftSchema = joi.object({
   user_id: stringValidation,
   clinic_id : stringValidation,
+  report_id : stringValidation,
   treatments: joi.array().items(joi.object({
     treatment_id: stringValidation,
     price: numberValidation.min(0),
