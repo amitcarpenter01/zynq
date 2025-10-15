@@ -575,7 +575,7 @@ export const saveAppointmentAsDraft = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
 
         let {
-            appointment_id: inputId,
+            appointment_id: existingAppointmentId,
             doctor_id,
             clinic_id,
             treatments = [],
@@ -587,13 +587,15 @@ export const saveAppointmentAsDraft = async (req, res) => {
         const appointmentType = hasTreatments ? 'Clinic Visit' : 'Video Call';
         const save_type = 'draft'
 
-        let appointment_id = inputId || uuidv4();
+        let appointment_id = existingAppointmentId || uuidv4();
+        console.log("appointment_id - ", appointment_id)
         const total_price = treatments.reduce((sum, t) => sum + t.price, 0);
         if (isEmpty(report_id)) {
             report_id = await getLatestFaceScanReportIDByUserID(req.user.user_id);
         }
 
         const is_paid = 0;
+        const payment_status = 'unpaid';
 
         const appointmentData = {
             appointment_id,
@@ -610,23 +612,23 @@ export const saveAppointmentAsDraft = async (req, res) => {
             start_time: null,
             end_time: null,
             is_paid,
-            payment_status: 'unpaid'
+            payment_status
         };
 
         const appointmentResponse = await appointmentModel.getAppointmentsByUserIdAndDoctorId(user_id, doctor_id, save_type)
 
-
-        if (inputId || appointmentResponse.length > 0) {
+        if (existingAppointmentId || appointmentResponse.length > 0) {
             if (appointmentResponse.length > 0) {
                 appointment_id = appointmentResponse[0].appointment_id
+                appointmentData.appointment_id = appointment_id
             }
-            await appointmentModel.updateAppointmentV2(appointmentData);
+            const result = await appointmentModel.updateAppointmentV2(appointmentData);
             if (hasTreatments) {
                 await appointmentModel.deleteAppointmentTreatments(appointment_id);
                 await appointmentModel.insertAppointmentTreatments(appointment_id, treatments);
             }
         } else {
-            await appointmentModel.insertAppointment(appointmentData);
+            const result = await appointmentModel.insertAppointment(appointmentData);
             if (hasTreatments) {
                 await appointmentModel.insertAppointmentTreatments(appointment_id, treatments);
             }
