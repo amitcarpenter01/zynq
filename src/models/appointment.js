@@ -1036,13 +1036,11 @@ export const insertDraftTreatmentsModel = async (appointment_id, treatments) => 
             appointment_id,
             t.treatment_id,
             t.price,
-            t.discount_type || 'NO_DISCOUNT',
-            t.discount_amount || 0
         ]);
 
         const query = `
         INSERT INTO tbl_appointment_treatments
-        (appointment_id, treatment_id, price, discount_type, discount_amount)
+        (appointment_id, treatment_id, price)
         VALUES ?
       `;
 
@@ -1053,14 +1051,14 @@ export const insertDraftTreatmentsModel = async (appointment_id, treatments) => 
     }
 }
 
-export const insertDraftAppointmentModel = async (appointment_id, doctor_id, clinic_id, user_id, report_id) => {
+export const insertDraftAppointmentModel = async (appointment_id, doctor_id, clinic_id, user_id, report_id, discount_type, discount_value) => {
     try {
         const query = `
             INSERT INTO tbl_appointments
-        (appointment_id, user_id, doctor_id, clinic_id, status, save_type, is_paid, payment_status, report_id)
-        VALUES (?, ?, ?, ?, 'Scheduled', 'draft', 0, 'unpaid', ?)`
+        (appointment_id, user_id, doctor_id, clinic_id, status, save_type, is_paid, payment_status, report_id, discount_type, discount_value, type)
+        VALUES (?, ?, ?, ?, 'Scheduled', 'draft', 0, 'unpaid', ?, ?, ?, 'Video Call')`
 
-        return await db.query(query, [appointment_id, user_id, doctor_id, clinic_id, report_id]);
+        return await db.query(query, [appointment_id, user_id, doctor_id, clinic_id, report_id, discount_type, discount_value]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to insert draft appointment.");

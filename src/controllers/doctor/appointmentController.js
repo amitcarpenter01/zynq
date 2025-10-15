@@ -316,12 +316,12 @@ export const getDoctorBookedAppointments = asyncHandler(async (req, res) => {
 export const addAppointmentDraft = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
     const doctor_id = req.user.doctorData.doctor_id;
-    const { user_id, clinic_id, report_id, treatments } = req.body;
+    const { user_id, clinic_id, report_id, discount_type, discount_value, treatments } = req.body;
     const appointment_id = uuidv4();
-    console.log(appointment_id)
+
     await Promise.all([
         await appointmentModel.insertDraftTreatmentsModel(appointment_id, treatments),
-        await appointmentModel.insertDraftAppointmentModel(appointment_id, doctor_id, clinic_id, user_id, report_id)
+        await appointmentModel.insertDraftAppointmentModel(appointment_id, doctor_id, clinic_id, user_id, report_id, discount_type, discount_value),
     ])
 
     return handleSuccess(res, 200, language, "APPOINTMENT_DRAFT_ADDED",);
