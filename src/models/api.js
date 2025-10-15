@@ -3316,25 +3316,28 @@ export const updateGuestDeviceFaceScanModel = async (user_id, device_id) => {
         );
 
         if (existingFaceScan && existingFaceScan.user_id) {
-
-            const { face_scan_result_id, user_id, ...rest } = existingFaceScan;
+            // Clone existing record but assign new user_id
+            const { face_scan_result_id, user_id: oldUserId, ...rest } = existingFaceScan;
 
             const fields = Object.keys(rest).concat("user_id");
             const placeholders = fields.map(() => "?").join(", ");
-            const params = Object.values(rest).concat(user_id);
+            const params = Object.values(rest).concat(user_id); // ✅ use the NEW user_id here
 
-            const query = `
-            INSERT INTO tbl_face_scan_results (${fields.join(", ")})
-            VALUES (${placeholders})
+            const insertQuery = `
+                INSERT INTO tbl_face_scan_results (${fields.join(", ")})
+                VALUES (${placeholders})
             `;
 
-            await db.query(query, params);
+            await db.query(insertQuery, params);
         }
 
+        // Update guest record if exists
         await db.query(
-            `UPDATE tbl_face_scan_results 
-       SET user_id = ? 
-       WHERE device_id = ? AND user_id IS NULL`,
+            `
+            UPDATE tbl_face_scan_results 
+            SET user_id = ? 
+            WHERE device_id = ? AND user_id IS NULL
+            `,
             [user_id, device_id]
         );
 
