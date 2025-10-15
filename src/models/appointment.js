@@ -1064,3 +1064,22 @@ export const insertDraftAppointmentModel = async (appointment_id, doctor_id, cli
         throw new Error("Failed to insert draft appointment.");
     }
 }
+
+export const getDraftAppointmentData = async (user_id, doctor_id, clinic_id) => {
+    return await db.query(`
+        SELECT a.* FROM tbl_appointments a
+        WHERE a.user_id = ? AND a.doctor_id = ? AND a.clinic_id = ? AND a.save_type = 'draft' AND a.status = 'Scheduled' AND a.is_paid = 0 AND a.payment_status = 'unpaid'
+    `, [user_id, doctor_id, clinic_id]);
+}
+
+export const deleteDraftTreatmentsModel = async (appointment_id) => {
+    return await db.query(`
+        DELETE FROM tbl_appointment_treatments WHERE appointment_id = ?
+    `, [appointment_id]);
+}
+
+export const deleteDraftAppointmentModel = async (appointment_id) => {
+    return await db.query(`
+        DELETE FROM tbl_appointments WHERE appointment_id = ?
+    `, [appointment_id]);
+}

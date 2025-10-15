@@ -317,15 +317,39 @@ export const addAppointmentDraft = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
     const doctor_id = req.user.doctorData.doctor_id;
     const { user_id, clinic_id, report_id, discount_type, discount_value, treatments } = req.body;
-    const appointment_id = uuidv4();
 
+    let appointment_id = uuidv4();
+
+    // Check if a draft already exists
+    const [existingAppointment] = await appointmentModel.getDraftAppointmentData(user_id, doctor_id, clinic_id);
+
+    if (!isEmpty(existingAppointment?.appointment_id)) {
+        appointment_id = existingAppointment.appointment_id;
+
+        // Clean up existing draft data for this appointment
+        await Promise.all([
+            appointmentModel.deleteDraftTreatmentsModel(appointment_id),
+            appointmentModel.deleteDraftAppointmentModel(appointment_id),
+        ]);
+    }
+
+    // Insert fresh draft records
     await Promise.all([
-        await appointmentModel.insertDraftTreatmentsModel(appointment_id, treatments),
-        await appointmentModel.insertDraftAppointmentModel(appointment_id, doctor_id, clinic_id, user_id, report_id, discount_type, discount_value),
-    ])
+        appointmentModel.insertDraftAppointmentModel(
+            appointment_id,
+            doctor_id,
+            clinic_id,
+            user_id,
+            report_id,
+            discount_type,
+            discount_value
+        ),
+        appointmentModel.insertDraftTreatmentsModel(appointment_id, treatments),
+    ]);
 
-    return handleSuccess(res, 200, language, "APPOINTMENT_DRAFT_ADDED",);
+    return handleSuccess(res, 200, language, "APPOINTMENT_DRAFT_ADDED");
 });
+
 
 export const getRecommendedTreatmentsForUser = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
