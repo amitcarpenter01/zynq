@@ -3317,7 +3317,7 @@ export const updateGuestDeviceFaceScanModel = async (user_id, device_id) => {
 
         if (existingFaceScan && existingFaceScan.user_id) {
 
-            const { face_scan_result_id, ...rest } = existingFaceScan;
+            const { face_scan_result_id, user_id, ...rest } = existingFaceScan;
 
             const fields = Object.keys(rest).concat("user_id");
             const placeholders = fields.map(() => "?").join(", ");
