@@ -336,6 +336,6 @@ export const getRecommendedTreatmentsForUser = asyncHandler(async (req, res) => 
     }
 
     const treatmentIDs = await getTreatmentIDsByUserID(user_id)
-    const recommendedTreatments = getTreatmentsByTreatmentIds(recommendedTreatments, language)
+    const recommendedTreatments = await getTreatmentsByTreatmentIds(treatmentIDs, language)
     return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", recommendedTreatments);
 })
