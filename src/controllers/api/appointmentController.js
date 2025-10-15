@@ -593,7 +593,7 @@ export const saveAppointmentAsDraft = async (req, res) => {
             report_id = await getLatestFaceScanReportIDByUserID(req.user.user_id);
         }
 
-        const is_paid = total_price > 0 ? 1 : 0;
+        const is_paid = 0;
 
         const appointmentData = {
             appointment_id,
@@ -609,7 +609,8 @@ export const saveAppointmentAsDraft = async (req, res) => {
             save_type,
             start_time: null,
             end_time: null,
-            is_paid
+            is_paid,
+            payment_status: 'unpaid'
         };
 
         const appointmentResponse = await appointmentModel.getAppointmentsByUserIdAndDoctorId(user_id, doctor_id, save_type)
@@ -619,7 +620,7 @@ export const saveAppointmentAsDraft = async (req, res) => {
             if (appointmentResponse.length > 0) {
                 appointment_id = appointmentResponse[0].appointment_id
             }
-            await appointmentModel.updateAppointment(appointmentData);
+            await appointmentModel.updateAppointmentV2(appointmentData);
             if (hasTreatments) {
                 await appointmentModel.deleteAppointmentTreatments(appointment_id);
                 await appointmentModel.insertAppointmentTreatments(appointment_id, treatments);

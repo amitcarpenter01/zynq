@@ -861,6 +861,21 @@ export const updateAppointment = async (data) => {
     return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings, type, start_time, end_time, save_type, status, appointment_id]);
 };
 
+export const updateAppointmentV2 = async (data) => {
+    const {
+        appointment_id, doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings,
+        type, start_time, end_time, save_type, status, payment_status
+    } = data;
+
+    const query = `
+    UPDATE tbl_appointments
+    SET doctor_id = ?, clinic_id = ?, total_price = ?, admin_earnings = ?, clinic_earnings = ?, type = ?,
+        start_time = ?, end_time = ?, save_type = ?, status = ?, updated_at = CURRENT_TIMESTAMP, payment_status = ?
+    WHERE appointment_id = ?
+  `;
+    return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings, type, start_time, end_time, save_type, status, payment_status, appointment_id]);
+};
+
 export const deleteAppointmentTreatments = async (appointment_id) => {
     return await db.query(`DELETE FROM tbl_appointment_treatments WHERE appointment_id = ?`, [appointment_id]);
 };
