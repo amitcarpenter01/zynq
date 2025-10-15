@@ -9,9 +9,13 @@ import { getChatBetweenUsers } from '../../models/chat.js';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 import pkg from 'rrule';
 import { generateSlots, weekdayMap } from '../api/authController.js';
-import { extractUserData } from '../../utils/misc.util.js';
+import { extractUserData, getTreatmentIDsByUserID } from '../../utils/misc.util.js';
 const { RRule } = pkg;
 const APP_URL = process.env.APP_URL;
+import { v4 as uuidv4 } from "uuid";
+import { isEmpty } from '../../utils/user_helper.js';
+import { getTreatmentsByTreatmentIds } from '../../models/api.js';
+
 export const getMyAppointmentsDoctor = async (req, res) => {
     try {
         await appointmentModel.updateMissedAppointmentStatusModel();
@@ -308,3 +312,30 @@ export const getDoctorBookedAppointments = asyncHandler(async (req, res) => {
     }
     return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", data);
 });
+
+export const addAppointmentDraft = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const doctor_id = req.user.doctorData.doctor_id;
+    const { user_id, clinic_id, report_id, treatments } = req.body;
+    const appointment_id = uuidv4();
+    console.log(appointment_id)
+    await Promise.all([
+        await appointmentModel.insertDraftTreatmentsModel(appointment_id, treatments),
+        await appointmentModel.insertDraftAppointmentModel(appointment_id, doctor_id, clinic_id, user_id, report_id)
+    ])
+
+    return handleSuccess(res, 200, language, "APPOINTMENT_DRAFT_ADDED",);
+});
+
+export const getRecommendedTreatmentsForUser = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const user_id = req?.params?.user_id;
+
+    if (isEmpty(user_id)) {
+        return handleError(res, 404, language, "USER_NOT_FOUND");
+    }
+
+    const treatmentIDs = await getTreatmentIDsByUserID(user_id)
+    const recommendedTreatments = getTreatmentsByTreatmentIds(recommendedTreatments, language)
+    return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", recommendedTreatments);
+})

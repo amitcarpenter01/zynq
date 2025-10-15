@@ -27,10 +27,29 @@ export const checkIfSlotAlreadyBooked = async (doctor_id, start_time) => {
 
 export const getAppointmentsByUserId = async (user_id, status, payment_status) => {
     const results = await db.query(` 
-        SELECT a.*,d.*,zu.email,r.pdf,c.clinic_name FROM tbl_appointments a INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
-        INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
-        INNER JOIN tbl_clinics c ON c.clinic_id  = a.clinic_id
+        SELECT 
+        a.*,d.*,zu.email,r.pdf,c.clinic_name 
+        FROM tbl_appointments a 
+        LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id 
+        LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
+        LEFT JOIN tbl_clinics c ON c.clinic_id  = a.clinic_id
         WHERE a.user_id = ? AND save_type  = ? AND payment_status != ?
+        ORDER BY  start_time ASC 
+    `, [user_id, status, payment_status]);
+    return results;
+};
+
+export const getAppointmentsByUserIdV2 = async (user_id, status, payment_status) => {
+    const results = await db.query(` 
+        SELECT 
+        a.*,d.*,zu.email,r.pdf,c.clinic_name 
+        FROM tbl_appointments a 
+        LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id 
+        LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
+        LEFT JOIN tbl_clinics c ON c.clinic_id  = a.clinic_id
+        WHERE a.user_id = ? AND save_type  = ? AND payment_status = ?
         ORDER BY  start_time ASC 
     `, [user_id, status, payment_status]);
     return results;
@@ -819,7 +838,9 @@ export const getAppointmentsForNotification = async (windowStart, windowEnd) => 
         LEFT JOIN tbl_users u ON a.user_id = u.user_id
         LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
         LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
-        WHERE a.status IN ('Scheduled', 'Rescheduled')
+        WHERE 
+        a.status IN ('Scheduled', 'Rescheduled')
+        AND a.save_type = 'booked'
         AND a.start_time BETWEEN ? AND ?
         AND (a.reminder_24h_sent = 0 OR a.reminder_1h_sent = 0)
     `, [windowStart, windowEnd]);
@@ -988,4 +1009,43 @@ export const getDraftAppointmentsModel = async (user_id, doctor_id) => {
     AND a.doctor_id = ? 
     AND a.save_type = 'draft'
   `, [user_id, doctor_id]);
+}
+
+export const insertDraftTreatmentsModel = async (appointment_id, treatments) => {
+    if (!treatments || !treatments.length) return;
+    try {
+
+        const params = treatments.map(t => [
+            appointment_id,
+            t.treatment_id,
+            t.price,
+            t.discount_type || 'NO_DISCOUNT',
+            t.discount_amount || 0
+        ]);
+
+        const query = `
+        INSERT INTO tbl_appointment_treatments
+        (appointment_id, treatment_id, price, discount_type, discount_amount)
+        VALUES ?
+      `;
+
+        return await db.query(query, [params]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to insert draft treatments.");
+    }
+}
+
+export const insertDraftAppointmentModel = async (appointment_id, doctor_id, clinic_id, user_id, report_id) => {
+    try {
+        const query = `
+            INSERT INTO tbl_appointments
+        (appointment_id, user_id, doctor_id, clinic_id, status, save_type, is_paid, payment_status, report_id)
+        VALUES (?, ?, ?, ?, 'Scheduled', 'draft', 0, 'unpaid', ?)`
+
+        return await db.query(query, [appointment_id, user_id, doctor_id, clinic_id, report_id]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to insert draft appointment.");
+    }
 }

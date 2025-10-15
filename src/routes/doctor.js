@@ -11,6 +11,7 @@ import { getSinglePatientRecordSchema, rescheduleAppointmentSchema } from '../va
 import { getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
 import { getAllFAQSchema } from '../validations/faq.validation.js';
 import { getAllFAQCategories, getAllFAQs } from '../controllers/api/FAQController.js';
+import { addAppointmentDraftSchema } from '../validations/treatment.validation.js';
 
 
 router.get("/get_profile", authenticate(['DOCTOR']), doctorController.getDoctorProfile);
@@ -131,5 +132,8 @@ router.post('/get-all-faqs', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), 
 router.get('/faq-categories', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getAllFAQCategories);
 
 router.get('/wallet-history', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), doctorController.getWalletHistory);
+
+router.post('/appointment-draft', authenticate(['DOCTOR', 'SOLO_DOCTOR']),validate(addAppointmentDraftSchema, "body") ,appointmentControllers.addAppointmentDraft);
+router.get('/get-recommended-treatments/:user_id', authenticate(['DOCTOR', 'SOLO_DOCTOR']), appointmentControllers.getRecommendedTreatmentsForUser);
 
 export default router;
