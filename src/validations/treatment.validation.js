@@ -39,6 +39,7 @@ export const addAppointmentDraftSchema = joi.object({
   user_id: stringValidation,
   clinic_id: stringValidation,
   report_id: stringValidation,
+  origin_appointment_id: stringValidation,
   discount_type: stringValidation.valid('PERCENTAGE', 'SEK'),
   discount_value: numberValidation.min(0),
   treatments: joi.array().items(joi.object({

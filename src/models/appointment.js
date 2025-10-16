@@ -239,6 +239,26 @@ export const getAppointmentByIdForDoctor = async (doctor_id, appointment_id) => 
     }
 };
 
+export const getAppointmentByIdForDoctorV2 = async (doctor_id, appointment_id) => {
+    try {
+        const results = await db.query(`
+         SELECT 
+         a.*, u.*, c.clinic_name, r.pdf 
+         FROM tbl_appointments a 
+         LEFT JOIN tbl_users u ON a.user_id = u.user_id  
+         LEFT JOIN tbl_clinics c ON a.clinic_id = c.clinic_id 
+         LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id
+         WHERE a.doctor_id = ? AND a.appointment_id  = ? AND a.payment_status != 'unpaid'
+         ORDER BY  start_time ASC
+     `, [doctor_id, appointment_id]);
+        return results;
+    } catch (error) {
+        console.error("Database Error in getAppointmentByIdForDoctor:", error.message);
+        throw error;
+
+    }
+};
+
 export const rescheduleAppointment = async (appointment_id, start_time, end_time) => {
     try {
         return await db.query(`UPDATE tbl_appointments SET start_time = ?, end_time = ?, status = "Rescheduled" WHERE appointment_id = ?`, [start_time, end_time, appointment_id]);
@@ -861,6 +881,24 @@ export const updateAppointment = async (data) => {
     return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings, type, start_time, end_time, save_type, status, appointment_id]);
 };
 
+export const updateAppointmentV3 = async (data) => {
+    const {
+        appointment_id, doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings,
+        type, start_time, end_time, save_type, status, total_price_with_discount, discounted_amount
+    } = data;
+
+    const query = `
+    UPDATE tbl_appointments
+    SET doctor_id = ?, clinic_id = ?, total_price = ?, admin_earnings = ?, clinic_earnings = ?, 
+    type = ?, start_time = ?, end_time = ?, save_type = ?, status = ?, 
+    updated_at = CURRENT_TIMESTAMP, total_price_with_discount = ?, discounted_amount = ?
+    WHERE appointment_id = ?
+  `;
+    return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings,
+        clinic_earnings, type, start_time, end_time, save_type, status,
+        total_price_with_discount, discounted_amount, appointment_id]);
+};
+
 export const updateAppointmentV2 = async (data) => {
     const {
         appointment_id, doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings,
@@ -1082,4 +1120,30 @@ export const deleteDraftAppointmentModel = async (appointment_id) => {
     return await db.query(`
         DELETE FROM tbl_appointments WHERE appointment_id = ?
     `, [appointment_id]);
+}
+
+export const getAppointmentDetailsByAppointmentID = async (appointment_id) => {
+    try {
+        return await db.query(`
+            SELECT * 
+            FROM tbl_appointments 
+            WHERE appointment_id = ?
+        `, [appointment_id]);
+    } catch (error) {
+        console.error("Database Error in getAppointmentDetailsByAppointmentID:", error.message);
+        throw new Error("Failed to get appointment details.");
+    }
+}
+
+export const insertSuggestedAppointmentModel = async (origin_appointment_id, appointment_id) => {
+    try {
+        return await db.query(`
+            UPDATE tbl_appointments SET
+            suggested_appointment_id = ?
+            WHERE appointment_id = ?
+        `, [appointment_id, origin_appointment_id]);
+    } catch (error) {
+        console.error("Database Error in insertSuggestedAppointmentModel:", error.message);
+        throw new Error("Failed to insert suggested appointment.");
+    }
 }

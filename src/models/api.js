@@ -1506,7 +1506,7 @@ export const getAllConcerns = async (lang = "en") => {
 export const getTreatmentsByConcernId = async (concern_id) => {
     try {
         const results = await db.query(`
-            SELECT , c.name AS concern_name
+            SELECT t.*, c.name AS concern_name
             FROM tbl_treatment_concerns tc
             INNER JOIN tbl_treatments t ON tc.treatment_id = t.treatment_id
             INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
@@ -3347,3 +3347,74 @@ export const updateGuestDeviceFaceScanModel = async (user_id, device_id) => {
         throw new Error("Failed to update or duplicate guest device face scan.");
     }
 };
+
+export const getTreatmentsByAppointmentId = async (appointment_id, language = 'en') => {
+    try {
+        const nameCol = language === 'sv' ? 'tt.swedish' : 'tt.name';
+
+        const [row] = await db.query(`
+            SELECT 
+                a.appointment_id,
+                a.discount_type,
+                a.discount_value,
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'treatment_id', tt.treatment_id,
+                        'name', ${nameCol},
+                        'price', tat.price
+                    )
+                ) AS treatments
+            FROM tbl_appointment_treatments tat
+            INNER JOIN tbl_treatments tt 
+                ON tt.treatment_id = tat.treatment_id
+            INNER JOIN tbl_appointments a
+                ON a.appointment_id = tat.appointment_id
+            WHERE tat.appointment_id = ?
+            GROUP BY a.appointment_id, a.discount_type, a.discount_value
+        `, [appointment_id]);
+
+        if (!row) {
+            return {
+                appointment_id,
+                discount_type: null,
+                discount_value: null,
+                treatments: []
+            };
+        }
+
+        const result = {
+            appointment_id,
+            discount_type: row.discount_type,
+            discount_value: row.discount_value,
+            treatments: row.treatments || []
+        }
+
+        // Calculate total price safely
+        result.total_price = Number(
+            result.treatments
+                .reduce((total, treatment) => total + Number(treatment.price), 0)
+                .toFixed(2)
+        );
+
+        // Calculate discount safely
+        result.discount_amount = Number(
+            (result.discount_type === 'PERCENTAGE'
+                ? result.total_price * (Number(result.discount_value) / 100)
+                : result.discount_type === 'SEK'
+                    ? Number(result.discount_value)
+                    : 0
+            ).toFixed(2)
+        );
+
+        // Total price after discount
+        result.total_price_with_discount = Number(
+            (result.total_price - result.discount_amount).toFixed(2)
+        );
+
+        return result;
+    } catch (error) {
+        console.error("Database Error (getTreatmentsByAppointmentId):", error.message);
+        throw new Error("Failed to fetch treatments for appointment.");
+    }
+};
+
