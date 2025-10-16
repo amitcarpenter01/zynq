@@ -695,22 +695,55 @@ export const bookDirectAppointment = async (req, res) => {
         const save_type = 'booked'
 
         const appointment_id = inputId || uuidv4();
-        const total_price = treatments.reduce((sum, t) => sum + t.price, 0);
+        let total_price = treatments.reduce((sum, t) => sum + t.price, 0);
+
         if (isEmpty(report_id)) {
             report_id = await getLatestFaceScanReportIDByUserID(req.user.user_id);
         }
         const normalizedStart = start_time
             ? dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss")
             : null;
+
         const normalizedEnd = end_time
             ? dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss")
             : null;
 
+
         const [{ APPOINTMENT_COMMISSION }] = await getAdminCommissionRatesModel();
         const ADMIN_EARNING_PERCENTAGE = APPOINTMENT_COMMISSION || 3;
-        const admin_earnings = Number(((total_price * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2));
-        const clinic_earnings = Number(total_price) - admin_earnings;
+        let admin_earnings = Number(((total_price * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2));
+        let clinic_earnings = Number(total_price) - admin_earnings;
         const is_paid = total_price > 0 ? 1 : 0;
+
+
+        let existingData;
+        let total_price_with_discount = total_price;
+        let discounted_amount = 0;
+
+        if (inputId) {
+            [existingData] = await appointmentModel.getAppointmentDetailsByAppointmentID(appointment_id);
+
+            if (!existingData) {
+                return handleError(res, 404, 'en', 'APPOINTMENT_NOT_FOUND');
+            }
+
+            const { discount_type = "NO_DISCOUNT", discount_value = 0 } = existingData;
+
+            if (discount_type !== "NO_DISCOUNT") {
+                if (discount_type === "PERCENTAGE") {
+                    discounted_amount = Number(((total_price * discount_value) / 100).toFixed(2));
+                    
+                } else if (discount_type === "SEK") {
+                    discounted_amount = Number(discount_value);
+                }
+
+                total_price = Math.max(0, Number((total_price - discounted_amount).toFixed(2)));
+
+                // Recalculate earnings on discounted total
+                admin_earnings = Number(((total_price_with_discount * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2));
+                clinic_earnings = Number((total_price_with_discount - admin_earnings).toFixed(2));
+            }
+        }
 
         const appointmentData = {
             appointment_id,
@@ -733,7 +766,14 @@ export const bookDirectAppointment = async (req, res) => {
 
 
         if (inputId) {
-            await appointmentModel.updateAppointment(appointmentData);
+            if (existingData?.discount_type !== "NO_DISCOUNT") {
+                appointmentData.total_price_with_discount = total_price_with_discount;
+                appointmentData.discounted_amount = discounted_amount;
+
+                await appointmentModel.updateAppointmentV3(appointmentData);
+            } else {
+                await appointmentModel.updateAppointment(appointmentData);
+            }
             if (hasTreatments) {
                 await appointmentModel.deleteAppointmentTreatments(appointment_id);
                 await appointmentModel.insertAppointmentTreatments(appointment_id, treatments);
