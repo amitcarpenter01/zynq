@@ -483,6 +483,7 @@ export const get_doctors_management = async () => {
     try {
         return await db.query(`
            SELECT 
+    d.zynq_user_id,
     d.doctor_id, 
     d.name, 
     d.specialization, 
