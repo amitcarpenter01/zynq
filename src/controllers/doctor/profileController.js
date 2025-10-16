@@ -715,7 +715,7 @@ export const calculateProfileCompletionPercentageByDoctorId = async (doctorId) =
         const missingSummary = {}; // Store missing fields by category
 
         // ---------- PERSONAL DETAILS ----------
-        const personalFields = ['name', 'phone', 'age', 'address', 'gender', 'profile_image', 'biography'];
+        const personalFields = ['name', 'phone', 'age', 'address', 'gender', 'biography'];
         totalFieldsCount += personalFields.length;
 
         const missingPersonal = personalFields.filter(field => !profileData[field]);
