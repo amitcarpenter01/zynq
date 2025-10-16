@@ -2225,14 +2225,14 @@ export const calculateAndUpdateClinicProfileCompletion = async (clinic) => {
 
         const basicFields = [
             "clinic_name",
-            "org_number",
+            // "org_number",
             "email",
             "mobile_number",
             "address",
             "fee_range",
             "website_url",
             "clinic_description",
-            "clinic_logo",
+            // "clinic_logo",
             "form_stage"
         ];
 
@@ -2311,13 +2311,13 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
                 // 1️⃣ Basic Fields
                 const basicFields = [
                     "clinic_name",
-                    "org_number",
+                    // "org_number",
                     "email",
                     "mobile_number",
                     "address",
                     "website_url",
                     "clinic_description",
-                    "clinic_logo",
+                    // "clinic_logo",
                 ];
 
                 totalFieldsCount += basicFields.length;
