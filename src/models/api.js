@@ -414,7 +414,7 @@ export const getAllRecommendedDoctors = async ({
 
         if (joins.length) query += ' ' + joins.join(' ');
 
-        query += ` WHERE d.profile_status = 'VERIFIED'0`;
+        query += ` WHERE d.profile_status = 'VERIFIED'`;
 
         // ---------- Search ----------
         const trimmedSearch = (search || '').trim().toLowerCase();
