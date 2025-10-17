@@ -16,14 +16,14 @@ const USER_JWT_SECRET = process.env.USER_JWT_SECRET;
 const WEB_JWT_SECRET = process.env.WEB_JWT_SECRET;
 const APP_URL = process.env.LOCAL_APP_URL;
 
-const initializeSocket = (server) => {
-    const io = new Server(server, {
-        cors: {
-            origin: "*",
-            methods: ["GET", "POST"],
-            credentials: true,
-        },
-    });
+const initializeSocket = (io) => {
+    // const io = new Server(server, {
+    //     cors: {
+    //         origin: "*",
+    //         methods: ["GET", "POST"],
+    //         credentials: true,
+    //     },
+    // });
 
     setIO(io);
 
