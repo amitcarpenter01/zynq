@@ -14,6 +14,8 @@ import initializeSocket from "./src/utils/socket.js";
 import { send_clinic_email_cron, appointmentReminderCron, invitationReminderCron, deleteGuestDataCron } from "./src/utils/cronJob.js";
 import { connectDB } from "./src/config/db.js";
 import { loadTreatmentEmbeddings } from "./src/utils/vectorIndex.js";
+import initializeCallSocket from "./src/utils/callSocket.js";
+import { Server } from "socket.io";
 
 // --------------------- ENV + PATH CONFIG ---------------------
 dotenv.config();
@@ -35,7 +37,7 @@ app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 app.use("/", express.static(path.join(__dirname, "src/uploads")));
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "src/views"));
-
+export let io;
 // --------------------- ROUTES ---------------------
 configureApp(app);
 
@@ -59,8 +61,17 @@ function startServer() {
     server = http.createServer(app);
   }
 
-  initializeSocket(server);
+  // / ✅ Create Socket.IO instance and attach to server
+  io = new Server(server, {
+    cors: {
+      origin: "*", // You can restrict this in production
+      methods: ["GET", "POST"]
+    }
+  });
 
+  // ✅ Now pass io instead of raw server
+  initializeSocket(io);
+  initializeCallSocket(io);
   server.listen(PORT, () => {
     console.log(`✅ Server running at ${APP_URL}`);
   });
@@ -76,7 +87,7 @@ function startServer() {
 (async () => {
   try {
     await connectDB(); // ✅ connect to DB first
-    await loadTreatmentEmbeddings()
+    // await loadTreatmentEmbeddings()
     console.log("🟢 Database connection successful. Starting server...");
     startServer();
   } catch (error) {

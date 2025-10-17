@@ -1125,8 +1125,9 @@ export const deleteDraftAppointmentModel = async (appointment_id) => {
 export const getAppointmentDetailsByAppointmentID = async (appointment_id) => {
     try {
         return await db.query(`
-            SELECT * 
-            FROM tbl_appointments 
+            SELECT a.*, d.zynq_user_id as doctor_zynq_user_id 
+            FROM tbl_appointments a
+            LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
             WHERE appointment_id = ?
         `, [appointment_id]);
     } catch (error) {

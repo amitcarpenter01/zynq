@@ -17,6 +17,8 @@ import { getAdminCommissionRatesModel } from '../../models/admin.js';
 import { createPaymentSessionForAppointment } from '../../models/payment.js';
 import { booleanValidation } from '../../utils/joi.util.js';
 import { getIO } from '../../utils/socketManager.js';
+import { onlineUsers } from "../../utils/callSocket.js";
+import { io } from '../../../app.js';
 
 export const bookAppointment = async (req, res) => {
     try {
@@ -158,29 +160,47 @@ export const updateAppointmentStatus = async (req, res) => {
             appointment_id: Joi.string().required(),
             status: Joi.string()
                 .required()
-                .valid('Scheduled', 'Completed', 'Rescheduled', 'Ongoing')
+                .valid("Scheduled", "Completed", "Rescheduled", "Ongoing"),
         });
 
-        const language = req?.user?.language || 'en';
-
-
+        const language = req?.user?.language || "en";
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const { appointment_id, status, fromApp } = value;
+        const { appointment_id, status, fromApp, receiver_id } = value;
 
+        // 1️⃣ Update appointment status in DB
         const result = await appointmentModel.updateAppointmentStatus(appointment_id, status);
-
         if (result.affectedRows === 0) {
             return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
         }
 
-        if (status === 'Ongoing' && fromApp) {
+        // 2️⃣ Trigger socket event when appointment is completed from app
+        if (status === "Completed" && fromApp) {
             try {
-                const io = getIO();
-                io.emit('appointment_started', { message: 'Appointment has started' });
-            } catch (error) {
                 
+                const [appointment] = await appointmentModel.getAppointmentDetailsByAppointmentID(appointment_id);
+
+                if (appointment) {
+                    const receiver_id = appointment.doctor_zynq_user_id;
+                    console.log(`Receiver ID: ${receiver_id}`);
+                    // Get the receiver's socketId from onlineUsers map
+                    const receiverSocketId = onlineUsers.get(receiver_id.toString());
+
+                    if (receiverSocketId) {
+                        io.to(receiverSocketId).emit("appointmentCompleted", {
+                            appointment_id,
+                            message: "Appointment has been completed by the app user.",
+                            fromUser: appointment.user_id,
+                            toUser: appointment.doctor_id,
+                        });
+                        console.log(`Socket event sent to user ${receiver_id} for appointment ${appointment_id}`);
+                    } else {
+                        console.log(`Receiver ${receiver_id} is not online.`);
+                    }
+                }
+            } catch (err) {
+                console.error("Socket emit error:", err);
             }
         }
 
@@ -189,7 +209,7 @@ export const updateAppointmentStatus = async (req, res) => {
         console.error("Error updating appointment status:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
-}
+};
 
 
 export const getAppointmentsById = async (req, res) => {

@@ -1,4 +1,4 @@
-import hnswlib from "hnswlib-node";
+// import hnswlib from "hnswlib-node";
 import dbOperations from '../models/common.js';
 
 // Global in-memory vector index
