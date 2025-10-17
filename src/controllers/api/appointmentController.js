@@ -15,6 +15,8 @@ import { sendEmail } from '../../services/send_email.js';
 import { appointmentBookedTemplate } from '../../utils/templates.js';
 import { getAdminCommissionRatesModel } from '../../models/admin.js';
 import { createPaymentSessionForAppointment } from '../../models/payment.js';
+import { booleanValidation } from '../../utils/joi.util.js';
+import { getIO } from '../../utils/socketManager.js';
 
 export const bookAppointment = async (req, res) => {
     try {
@@ -152,6 +154,7 @@ export const getMyAppointmentsUser = async (req, res) => {
 export const updateAppointmentStatus = async (req, res) => {
     try {
         const schema = Joi.object({
+            fromApp: booleanValidation.optional().default(false),
             appointment_id: Joi.string().required(),
             status: Joi.string()
                 .required()
@@ -164,12 +167,21 @@ export const updateAppointmentStatus = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const { appointment_id, status } = value;
+        const { appointment_id, status, fromApp } = value;
 
         const result = await appointmentModel.updateAppointmentStatus(appointment_id, status);
 
         if (result.affectedRows === 0) {
             return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
+        }
+
+        if (status === 'Ongoing' && fromApp) {
+            try {
+                const io = getIO();
+                io.emit('appointment_started', { message: 'Appointment has started' });
+            } catch (error) {
+                
+            }
         }
 
         return handleSuccess(res, 200, language, "APPOINTMENT_STATUS_UPDATED");
@@ -732,7 +744,7 @@ export const bookDirectAppointment = async (req, res) => {
             if (discount_type !== "NO_DISCOUNT") {
                 if (discount_type === "PERCENTAGE") {
                     discounted_amount = Number(((total_price * discount_value) / 100).toFixed(2));
-                    
+
                 } else if (discount_type === "SEK") {
                     discounted_amount = Number(discount_value);
                 }
