@@ -3,6 +3,7 @@ import {
   booleanValidation,
   emailValidation,
   idArrayValidation,
+  numberValidation,
   stringValidation,
 } from "../utils/joi.util.js";
 
@@ -33,3 +34,17 @@ export const getTreatmentFiltersSchema = joi.object({
     recommended: booleanValidation.optional()
   }).optional()
 }).optional()
+
+export const addAppointmentDraftSchema = joi.object({
+  user_id: stringValidation,
+  clinic_id: stringValidation,
+  report_id: stringValidation,
+  origin_appointment_id: stringValidation,
+  discount_type: stringValidation.valid('PERCENTAGE', 'SEK'),
+  discount_value: numberValidation.min(0),
+  treatments: joi.array().items(joi.object({
+    treatment_id: stringValidation,
+    price: numberValidation.min(0),
+
+  }))
+})

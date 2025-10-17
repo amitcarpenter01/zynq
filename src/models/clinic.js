@@ -295,27 +295,71 @@ export const insertClinicDocuments = async (clinic_id, certification_type_id, do
     }
 };
 
+// export const getAllTreatments = async () => {
+//     try {
+//         const treatments = await db.query('SELECT * FROM tbl_treatments ORDER BY created_at DESC');
+//         return treatments;
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch treatments.");
+//     }
+// };
+
 export const getAllTreatments = async () => {
     try {
         const treatments = await db.query('SELECT * FROM tbl_treatments ORDER BY created_at DESC');
-        return treatments;
+
+        // Remove embeddings dynamically
+        const cleanedTreatments = treatments.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
+
+        return cleanedTreatments;
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch treatments.");
     }
 };
 
+
+// export const getClinicTreatments = async (clinic_id) => {
+//     try {
+//         const treatments = await db.query('SELECT t.* FROM tbl_treatments t ' +
+//             'INNER JOIN tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id ' +
+//             'WHERE ct.clinic_id = ? ORDER BY t.created_at DESC', [clinic_id]);
+//         return treatments;
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch treatments.");
+//     }
+// };
+
 export const getClinicTreatments = async (clinic_id) => {
     try {
-        const treatments = await db.query('SELECT t.* FROM tbl_treatments t ' +
-            'INNER JOIN tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id ' +
-            'WHERE ct.clinic_id = ? ORDER BY t.created_at DESC', [clinic_id]);
-        return treatments;
+        const treatments = await db.query(`
+            SELECT t.*
+            FROM tbl_treatments t
+            INNER JOIN tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id
+            WHERE ct.clinic_id = ?
+            ORDER BY t.created_at DESC
+        `, [clinic_id]);
+
+        // Remove embeddings dynamically
+        const cleanedTreatments = treatments.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
+
+        return cleanedTreatments;
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch treatments.");
     }
 };
+
 
 export const getClinicSurgeries = async (clinic_id) => {
     try {
@@ -935,23 +979,48 @@ export const getDoctorSkinTypes = async (doctor_id) => {
     }
 };
 
+// export const getDoctorTreatments = async (doctor_id) => {
+//     try {
+//         const treatments = await db.query(`
+//             SELECT dt.*, t.* 
+//             FROM tbl_doctor_treatments dt 
+//             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id 
+//             WHERE dt.doctor_id = ? 
+//             ORDER BY dt.created_at DESC`,
+//             [doctor_id]
+//         );
+//         return treatments;
+//     }
+//     catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch doctor treatments.");
+//     }
+// };
+
 export const getDoctorTreatments = async (doctor_id) => {
     try {
         const treatments = await db.query(`
-            SELECT dt.*, t.* 
-            FROM tbl_doctor_treatments dt 
-            LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id 
-            WHERE dt.doctor_id = ? 
-            ORDER BY dt.created_at DESC`,
-            [doctor_id]
-        );
-        return treatments;
-    }
-    catch (error) {
+            SELECT dt.*, t.*
+            FROM tbl_doctor_treatments dt
+            LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+            WHERE dt.doctor_id = ?
+            ORDER BY dt.created_at DESC
+        `, [doctor_id]);
+
+        // Remove embeddings dynamically
+        const cleanedTreatments = treatments.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
+
+        return cleanedTreatments;
+    } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch doctor treatments.");
     }
 };
+
 
 export const create_doctor = async (doctorData) => {
     try {
@@ -1396,27 +1465,56 @@ export const getAllDevices = async () => {
     }
 }
 
-export const getClinicTreatmentsBulk = async (clinicIds) => {
-    const placeholders = clinicIds.map(() => '?').join(',');
-    //const query = `SELECT * FROM tbl_clinic_treatments WHERE clinic_id IN (${placeholders})`;
+// export const getClinicTreatmentsBulk = async (clinicIds) => {
+//     const placeholders = clinicIds.map(() => '?').join(',');
+//     //const query = `SELECT * FROM tbl_clinic_treatments WHERE clinic_id IN (${placeholders})`;
 
-    const query = `SELECT t.*, ct.* FROM tbl_treatments t INNER JOIN  tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id WHERE ct.clinic_id IN (${placeholders})`;
+//     const query = `SELECT t.*, ct.* FROM tbl_treatments t INNER JOIN  tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id WHERE ct.clinic_id IN (${placeholders})`;
+//     const results = await db.query(query, clinicIds);
+
+//     const grouped = {};
+//     results.forEach(row => {
+//         if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
+//         grouped[row.clinic_id].push(row);
+//     });
+//     return grouped;
+// };
+
+export const getClinicTreatmentsBulk = async (clinicIds) => {
+    if (!Array.isArray(clinicIds) || clinicIds.length === 0) return {};
+
+    const placeholders = clinicIds.map(() => '?').join(',');
+
+    const query = `
+        SELECT t.*, ct.*
+        FROM tbl_treatments t
+        INNER JOIN tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id
+        WHERE ct.clinic_id IN (${placeholders})
+    `;
+
     const results = await db.query(query, clinicIds);
 
     const grouped = {};
     results.forEach(row => {
         if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
-        grouped[row.clinic_id].push(row);
+
+        // Remove embeddings from t.*
+        const treatmentRow = { ...row };
+        if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+
+        grouped[row.clinic_id].push(treatmentRow);
     });
+
     return grouped;
 };
+
 
 export const getClinicTreatmentsBulkV2 = async (clinicIds, lang = 'en') => {
     try {
         const placeholders = clinicIds.map(() => '?').join(',');
 
         const query = `
-            SELECT ct.*, t.* 
+            SELECT ct.*, t.*
             FROM tbl_clinic_treatments ct
             LEFT JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
             WHERE ct.clinic_id IN (${placeholders})
@@ -1429,8 +1527,13 @@ export const getClinicTreatmentsBulkV2 = async (clinicIds, lang = 'en') => {
         results.forEach(row => {
             if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
 
+            // Clone row so we can remove embeddings without mutating original
             const treatmentRow = { ...row };
-            // Set treatment name based on language
+
+            // Remove embeddings from treatment
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+
+            // Replace name based on language
             treatmentRow.name = lang === 'sv' ? row.swedish : row.name;
 
             grouped[row.clinic_id].push(treatmentRow);
@@ -1442,7 +1545,6 @@ export const getClinicTreatmentsBulkV2 = async (clinicIds, lang = 'en') => {
         throw new Error("Failed to fetch clinic treatments.");
     }
 };
-
 
 export const getClinicOperationHoursBulk = async (clinicIds) => {
     const placeholders = clinicIds.map(() => '?').join(',');
@@ -1732,45 +1834,117 @@ export const getDoctorSkinTypesBulkV2 = async (doctorIds, lang = "en") => {
     }
 };
 
+// export const getDoctorTreatmentsBulk = async (doctorIds) => {
+//     try {
+//         const placeholders = doctorIds.map(() => '?').join(',');
+
+//         const query = `SELECT dt.*, t.* 
+//             FROM tbl_doctor_treatments dt 
+//             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id  WHERE dt.doctor_id IN (${placeholders}) ORDER BY dt.created_at DESC`;
+//         const results = await db.query(query, doctorIds);
+
+//         const grouped = {};
+//         results.forEach(row => {
+//             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+//             grouped[row.doctor_id].push(row);
+//         });
+//         return grouped;
+//     }
+//     catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch doctor education.");
+//     }
+// };
+
 export const getDoctorTreatmentsBulk = async (doctorIds) => {
+    if (!Array.isArray(doctorIds) || doctorIds.length === 0) return {};
+
     try {
         const placeholders = doctorIds.map(() => '?').join(',');
 
-        const query = `SELECT dt.*, t.* 
-            FROM tbl_doctor_treatments dt 
-            LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id  WHERE dt.doctor_id IN (${placeholders}) ORDER BY dt.created_at DESC`;
+        const query = `
+            SELECT dt.*, t.*
+            FROM tbl_doctor_treatments dt
+            LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+            WHERE dt.doctor_id IN (${placeholders})
+            ORDER BY dt.created_at DESC
+        `;
+
         const results = await db.query(query, doctorIds);
 
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
-            grouped[row.doctor_id].push(row);
+
+            // Remove embeddings from t.*
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+
+            grouped[row.doctor_id].push(treatmentRow);
         });
+
         return grouped;
-    }
-    catch (error) {
+    } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch doctor education.");
+        throw new Error("Failed to fetch doctor treatments.");
     }
 };
 
+
+// export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en') => {
+//     try {
+//         const placeholders = doctorIds.map(() => '?').join(',');
+
+//         const query = `SELECT dt.*, t.* 
+//             FROM tbl_doctor_treatments dt 
+//             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id  
+//             WHERE dt.doctor_id IN (${placeholders}) 
+//             ORDER BY dt.created_at DESC`;
+//         const results = await db.query(query, doctorIds);
+        
+//         const grouped = {};
+//         results.forEach(row => {
+//             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+
+//             // Set treatment name based on lang
+//             const treatmentRow = { ...row };
+//             treatmentRow.name = lang === 'sv' ? row.swedish : row.name;
+
+//             grouped[row.doctor_id].push(treatmentRow);
+//         });
+
+//         return grouped;
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch doctor education.");
+//     }
+// };
+
 export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en') => {
+    if (!Array.isArray(doctorIds) || doctorIds.length === 0) return {};
+
     try {
         const placeholders = doctorIds.map(() => '?').join(',');
 
-        const query = `SELECT dt.*, t.* 
-            FROM tbl_doctor_treatments dt 
-            LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id  
-            WHERE dt.doctor_id IN (${placeholders}) 
-            ORDER BY dt.created_at DESC`;
+        const query = `
+            SELECT dt.*, t.*
+            FROM tbl_doctor_treatments dt
+            LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+            WHERE dt.doctor_id IN (${placeholders})
+            ORDER BY dt.created_at DESC
+        `;
+
         const results = await db.query(query, doctorIds);
 
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
 
-            // Set treatment name based on lang
+            // Remove embeddings from t.*
             const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+
+            // Set treatment name based on language
             treatmentRow.name = lang === 'sv' ? row.swedish : row.name;
 
             grouped[row.doctor_id].push(treatmentRow);
@@ -1779,9 +1953,10 @@ export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en') => {
         return grouped;
     } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch doctor education.");
+        throw new Error("Failed to fetch doctor treatments.");
     }
 };
+
 
 export const getDoctorSkinConditionBulk = async (doctorIds) => {
     const placeholders = doctorIds.map(() => '?').join(',');
@@ -2050,14 +2225,14 @@ export const calculateAndUpdateClinicProfileCompletion = async (clinic) => {
 
         const basicFields = [
             "clinic_name",
-            "org_number",
+            // "org_number",
             "email",
             "mobile_number",
             "address",
             "fee_range",
             "website_url",
             "clinic_description",
-            "clinic_logo",
+            // "clinic_logo",
             "form_stage"
         ];
 
@@ -2123,7 +2298,9 @@ export const calculateAndUpdateClinicProfileCompletion = async (clinic) => {
 
 export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => {
     try {
-        if (!clinics || clinics.length === 0) return [];
+        if (!clinics || clinics.length === 0) {
+            return [];
+        }
 
         const results = await Promise.all(
             clinics.map(async (clinic) => {
@@ -2131,36 +2308,30 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
                 let totalFieldsCount = 0;
                 const missingFields = [];
 
-                // 1. Basic Fields
+                // 1️⃣ Basic Fields
                 const basicFields = [
                     "clinic_name",
-                    "org_number",
+                    // "org_number",
                     "email",
                     "mobile_number",
                     "address",
                     "website_url",
                     "clinic_description",
-                    "clinic_logo",
+                    // "clinic_logo",
                 ];
 
                 totalFieldsCount += basicFields.length;
                 basicFields.forEach(field => {
-                    if (clinic[field]) {
-                        filledFieldsCount++;
-                    } else {
-                        missingFields.push(field);
-                    }
+                    if (clinic[field]) filledFieldsCount++;
+                    else missingFields.push(field);
                 });
 
-                // 2. Treatments
+                // 2️⃣ Treatments
                 totalFieldsCount += 1;
-                if (clinic.treatments && clinic.treatments.length > 0) {
-                    filledFieldsCount++;
-                } else {
-                    missingFields.push("treatments");
-                }
+                if (clinic.treatments?.length > 0) filledFieldsCount++;
+                else missingFields.push("treatments");
 
-                // 3. Expertise Categories
+                // 3️⃣ Expertise Categories
                 const expertiseCategories = {
                     skinTypes: "skinTypes",
                     surgeriesLevel: "surgeriesLevel",
@@ -2170,14 +2341,11 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
 
                 totalFieldsCount += Object.keys(expertiseCategories).length;
                 Object.entries(expertiseCategories).forEach(([key, label]) => {
-                    if (clinic[key] && clinic[key].length > 0) {
-                        filledFieldsCount++;
-                    } else {
-                        missingFields.push(label);
-                    }
+                    if (clinic[key]?.length > 0) filledFieldsCount++;
+                    else missingFields.push(label);
                 });
 
-                // Final %
+                // 🧮 Final %
                 const completionPercentage =
                     totalFieldsCount > 0
                         ? Math.round((filledFieldsCount / totalFieldsCount) * 100)
@@ -2196,7 +2364,6 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
             const caseStatements = results
                 .map(r => `WHEN '${r.clinic_id}' THEN ${r.completionPercentage}`)
                 .join(" ");
-
             const clinicIds = results.map(r => `'${r.clinic_id}'`).join(", ");
 
             const updateQuery = `
@@ -2212,9 +2379,10 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
 
         return results;
     } catch (error) {
-        console.error("Error calculating bulk clinic profile completion:", error);
+        console.error("❌ Error calculating bulk clinic profile completion:", error);
         throw error;
     }
 };
+
 
 

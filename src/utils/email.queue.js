@@ -43,7 +43,6 @@ const worker = new Worker('emailQueue', async (job) => {
 
     await sendEmail(emailOptions);
 
-    console.log(`Email sent to: ${email}`);
 }, { connection });
 
 worker.on('failed', (job, err) => {

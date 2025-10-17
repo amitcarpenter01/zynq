@@ -548,3 +548,207 @@ export const faceScanPDFTemplate = ({
     `
   };
 };
+
+export const zynqReminderEnglishTemplate = ({
+  recipient_name,
+  roleKey = "CLINIC", // either "CLINIC" or "DOCTOR"
+  logoUrl = "https://getzynq.io:4000/logo1.png",
+  heroUrl = "https://getzynq.io:4000/clinic/files/1760014696773-placeholders.png"
+}) => {
+  const roles = {
+    CLINIC: {
+      subject: "Reminder: Complete Your ZYNQ Clinic Profile",
+      intro: `We noticed your clinic hasn't signed in to <strong>ZYNQ</strong> yet. Completing your clinic profile will allow you to start accepting appointments and connect with patients.`,
+      heroAlt: "Clinic Reminder Illustration"
+    },
+    DOCTOR: {
+      subject: "Reminder: Complete Your ZYNQ Doctor Profile",
+      intro: `We noticed you haven't signed in to <strong>ZYNQ</strong> yet. Completing your doctor profile will allow you to start managing appointments and connect with patients.`,
+      heroAlt: "Doctor Reminder Illustration"
+    }
+  };
+
+  const { subject, intro, heroAlt } = roles[roleKey] || roles.CLINIC;
+
+  return {
+    subject,
+    body: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${subject}</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f7f9fc; font-family: 'Poppins', Arial, sans-serif;">
+
+  <!-- Main Wrapper -->
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#73c0cda8; padding:20px 0;">
+    <tr>
+      <td align="center">
+
+        <!-- Container -->
+        <table border="0" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:0px; overflow:hidden;">
+
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding:20px;">
+              <img src="${logoUrl}" alt="ZYNQ Logo" width="180" height="85" style="width:180px; height:85px; object-fit:contain; display:block; margin:0 auto;">
+            </td>
+          </tr>
+
+          <!-- Hero Image -->
+          <tr>
+            <td align="center" style="padding:0;">
+              <img src="${heroUrl}" alt="${heroAlt}" width="600" style="width:100%; max-width:600px; height:auto; display:block;">
+            </td>
+          </tr>
+
+          <!-- Intro Section -->
+          <tr>
+            <td style="padding:30px 20px; text-align:center;">
+              <h2 style="font-size:20px; color:#111111; margin:0 0 15px 0;">Hello ${recipient_name},</h2>
+              <p style="font-size:14px; color:#555555; line-height:20px; margin:0 0 25px 0;">
+                ${intro}
+              </p>
+            
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:30px 20px; text-align:center; background-color:#ffffff;">
+              <div style="padding-top: 0px; text-align: left;">
+                <h4 style="margin-bottom: 10px;">Best regards,</h4>
+                <p style="margin-top: 0px;">ZYNQ Team</p>
+              </div>
+            </td>
+          </tr>
+
+        </table>
+        <!-- End Container -->
+
+        <!-- Footer Bottom -->
+        <table align="center" style="text-align: center; vertical-align: top; width: 100%; max-width: 600px; background-color: #282828;" width="600">
+          <tbody>
+            <tr>
+              <td style="padding:30px;">
+                <p style="margin-bottom:10px; margin-top: 0px; text-align:center; color:#fff;">Need More Help?</p>
+                <a href="#" style="color:#fff; text-decoration: underline; text-align:center; display: block;">We are here to help you out</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <!-- End Footer Bottom -->
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+`
+  };
+};
+
+export const zynqReminderSwedishTemplate = ({
+  recipient_name,
+  roleKey = "CLINIC", // either "CLINIC" or "DOCTOR"
+  logoUrl = "https://getzynq.io:4000/logo1.png",
+  heroUrl = "https://getzynq.io:4000/clinic/files/1760014696773-placeholders.png"
+}) => {
+  const roles = {
+    CLINIC: {
+      subject: "Påminnelse: Slutför din ZYNQ-klinikprofil",
+      intro: `Vi har märkt att din klinik ännu inte har loggat in på <strong>ZYNQ</strong>. Genom att slutföra din klinikprofil kan du börja ta emot bokningar och koppla samman med patienter.`,
+      heroAlt: "Klinik Påminnelse Illustration"
+    },
+    DOCTOR: {
+      subject: "Påminnelse: Slutför din ZYNQ-läkarprofil",
+      intro: `Vi har märkt att du ännu inte har loggat in på <strong>ZYNQ</strong>. Genom att slutföra din läkarprofil kan du börja hantera bokningar och koppla samman med patienter.`,
+      heroAlt: "Läkare Påminnelse Illustration"
+    }
+  };
+
+  const { subject, intro, heroAlt } = roles[roleKey] || roles.CLINIC;
+
+  return {
+    subject,
+    body: `
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${subject}</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f7f9fc; font-family: 'Poppins', Arial, sans-serif;">
+
+  <!-- Main Wrapper -->
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#73c0cda8; padding:20px 0;">
+    <tr>
+      <td align="center">
+
+        <!-- Container -->
+        <table border="0" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:0px; overflow:hidden;">
+
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding:20px;">
+              <img src="${logoUrl}" alt="ZYNQ Logo" width="180" height="85" style="width:180px; height:85px; object-fit:contain; display:block; margin:0 auto;">
+            </td>
+          </tr>
+
+          <!-- Hero Image -->
+          <tr>
+            <td align="center" style="padding:0;">
+              <img src="${heroUrl}" alt="${heroAlt}" width="600" style="width:100%; max-width:600px; height:auto; display:block;">
+            </td>
+          </tr>
+
+          <!-- Intro Section -->
+          <tr>
+            <td style="padding:30px 20px; text-align:center;">
+              <h2 style="font-size:20px; color:#111111; margin:0 0 15px 0;">Hej ${recipient_name},</h2>
+              <p style="font-size:14px; color:#555555; line-height:20px; margin:0 0 25px 0;">
+                ${intro}
+              </p>
+            
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:30px 20px; text-align:center; background-color:#ffffff;">
+              <div style="padding-top: 0px; text-align: left;">
+                <h4 style="margin-bottom: 10px;">Vänliga hälsningar,</h4>
+                <p style="margin-top: 0px;">ZYNQ-teamet</p>
+              </div>
+            </td>
+          </tr>
+
+        </table>
+        <!-- End Container -->
+
+        <!-- Footer Bottom -->
+        <table align="center" style="text-align: center; vertical-align: top; width: 100%; max-width: 600px; background-color: #282828;" width="600">
+          <tbody>
+            <tr>
+              <td style="padding:30px;">
+                <p style="margin-bottom:10px; margin-top: 0px; text-align:center; color:#fff;">Behöver du mer hjälp?</p>
+                <a href="#" style="color:#fff; text-decoration: underline; text-align:center; display: block;">Vi finns här för att hjälpa dig</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <!-- End Footer Bottom -->
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+`
+  };
+};

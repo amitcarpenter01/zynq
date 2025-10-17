@@ -33,7 +33,6 @@ const initializeSocket = (server) => {
             const userType = socket.handshake.headers['user-type'];
 
             if (!authHeader) {
-                console.log("Authorization header is missing");
                 socket.emit('unauthorized', {
                     status: 401,
                     message: 'Authorization header is missing',
@@ -112,7 +111,6 @@ const initializeSocket = (server) => {
                     }
                     if (messages.length > 0) {
                         messages.map(message => {
-                            console.log('message', message.sender_id == senderId);
 
                             message.isOwnMessage = message.sender_id === senderId ? true : false;
                         });
@@ -150,7 +148,6 @@ const initializeSocket = (server) => {
                     socket.emit("chat_details", listOfDocterAvibility[0]);
 
                 } catch (error) {
-                    console.log('error', error);
                     socket.emit("error", error.message);
                 }
             });
@@ -254,7 +251,6 @@ const initializeSocket = (server) => {
             socket.on("fetch_docter_messages", async ({ chatId }) => {
                 try {
                     let senderId = decoded.id;
-                    console.log('senderId', senderId);
 
                     const messages = await fetchMessages(chatId);
                     let fetchChatsUsers = await fetchChatById(chatId);
@@ -274,11 +270,8 @@ const initializeSocket = (server) => {
                             message.isOwnMessage = message.sender_id === senderId ? false : true;
                         });
                     }
-                    console.log('senderId, receiverId', senderId, receiverId);
 
                     const callLogs = await getCallLogs(senderId, receiverId[0]);
-                    console.log('callLogs', callLogs);
-
                     const formattedCallLogs = callLogs.map((log, index) => ({
                         id: 100000 + index,
                         chat_id: 0,
@@ -304,21 +297,18 @@ const initializeSocket = (server) => {
                         const dateB = b.createdAt || b.updatedAt;
                         return new Date(dateA) - new Date(dateB);
                     });
-                    console.log('mergedData', mergedData);
 
                     // socket.emit("chat_history", messages);
                     socket.emit("chat_docter_history", mergedData);
                     socket.emit("chat_details", listOfUserAvibility[0]);
 
                 } catch (error) {
-                    console.log('error', error);
                     socket.emit("error", error.message);
                 }
             });
 
 
         } catch (error) {
-            console.log('error', error);
             socket.emit("error", error.message);
 
         }

@@ -27,10 +27,29 @@ export const checkIfSlotAlreadyBooked = async (doctor_id, start_time) => {
 
 export const getAppointmentsByUserId = async (user_id, status, payment_status) => {
     const results = await db.query(` 
-        SELECT a.*,d.*,zu.email,r.pdf,c.clinic_name FROM tbl_appointments a INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
-        INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
-        INNER JOIN tbl_clinics c ON c.clinic_id  = a.clinic_id
+        SELECT 
+        a.*,d.*,zu.email,r.pdf,c.clinic_name 
+        FROM tbl_appointments a 
+        LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id 
+        LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
+        LEFT JOIN tbl_clinics c ON c.clinic_id  = a.clinic_id
         WHERE a.user_id = ? AND save_type  = ? AND payment_status != ?
+        ORDER BY  start_time ASC 
+    `, [user_id, status, payment_status]);
+    return results;
+};
+
+export const getAppointmentsByUserIdV2 = async (user_id, status, payment_status) => {
+    const results = await db.query(` 
+        SELECT 
+        a.*,d.*,zu.email,r.pdf,c.clinic_name 
+        FROM tbl_appointments a 
+        LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id 
+        LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
+        LEFT JOIN tbl_clinics c ON c.clinic_id  = a.clinic_id
+        WHERE a.user_id = ? AND save_type  = ? AND payment_status = ?
         ORDER BY  start_time ASC 
     `, [user_id, status, payment_status]);
     return results;
@@ -209,6 +228,26 @@ export const getAppointmentByIdForDoctor = async (doctor_id, appointment_id) => 
     try {
         const results = await db.query(`
          SELECT a.*, u.* , c.clinic_name , r.pdf FROM tbl_appointments a INNER JOIN tbl_users u ON a.user_id = u.user_id  INNER JOIN tbl_clinics c ON a.clinic_id = c.clinic_id LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id
+         WHERE a.doctor_id = ? AND a.appointment_id  = ? AND a.payment_status != 'unpaid'
+         ORDER BY  start_time ASC
+     `, [doctor_id, appointment_id]);
+        return results;
+    } catch (error) {
+        console.error("Database Error in getAppointmentByIdForDoctor:", error.message);
+        throw error;
+
+    }
+};
+
+export const getAppointmentByIdForDoctorV2 = async (doctor_id, appointment_id) => {
+    try {
+        const results = await db.query(`
+         SELECT 
+         a.*, u.*, c.clinic_name, r.pdf 
+         FROM tbl_appointments a 
+         LEFT JOIN tbl_users u ON a.user_id = u.user_id  
+         LEFT JOIN tbl_clinics c ON a.clinic_id = c.clinic_id 
+         LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id
          WHERE a.doctor_id = ? AND a.appointment_id  = ? AND a.payment_status != 'unpaid'
          ORDER BY  start_time ASC
      `, [doctor_id, appointment_id]);
@@ -819,7 +858,9 @@ export const getAppointmentsForNotification = async (windowStart, windowEnd) => 
         LEFT JOIN tbl_users u ON a.user_id = u.user_id
         LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
         LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
-        WHERE a.status IN ('Scheduled', 'Rescheduled')
+        WHERE 
+        a.status IN ('Scheduled', 'Rescheduled')
+        AND a.save_type = 'booked'
         AND a.start_time BETWEEN ? AND ?
         AND (a.reminder_24h_sent = 0 OR a.reminder_1h_sent = 0)
     `, [windowStart, windowEnd]);
@@ -840,6 +881,41 @@ export const updateAppointment = async (data) => {
     return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings, type, start_time, end_time, save_type, status, appointment_id]);
 };
 
+export const updateAppointmentV3 = async (data) => {
+    const {
+        appointment_id, doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings,
+        type, start_time, end_time, save_type, status, total_price_with_discount, discounted_amount
+    } = data;
+
+    const query = `
+    UPDATE tbl_appointments
+    SET doctor_id = ?, clinic_id = ?, total_price = ?, admin_earnings = ?, clinic_earnings = ?, 
+    type = ?, start_time = ?, end_time = ?, save_type = ?, status = ?, 
+    updated_at = CURRENT_TIMESTAMP, total_price_with_discount = ?, discounted_amount = ?
+    WHERE appointment_id = ?
+  `;
+    return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings,
+        clinic_earnings, type, start_time, end_time, save_type, status,
+        total_price_with_discount, discounted_amount, appointment_id]);
+};
+
+export const updateAppointmentV2 = async (data) => {
+    const {
+        appointment_id, doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings,
+        type, start_time, end_time, save_type, status, is_paid, payment_status
+    } = data;
+
+    const query = `
+    UPDATE tbl_appointments
+    SET 
+    doctor_id = ?, clinic_id = ?, total_price = ?, admin_earnings = ?, clinic_earnings = ?, 
+    type = ?, start_time = ?, end_time = ?, save_type = ?, status = ?, updated_at = CURRENT_TIMESTAMP, 
+    payment_status = ?, is_paid = ?
+    WHERE appointment_id = ?
+  `;
+    return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings, type, start_time, end_time, save_type, status, payment_status, is_paid, appointment_id]);
+};
+
 export const deleteAppointmentTreatments = async (appointment_id) => {
     return await db.query(`DELETE FROM tbl_appointment_treatments WHERE appointment_id = ?`, [appointment_id]);
 };
@@ -854,12 +930,33 @@ export const insertAppointmentTreatments = async (appointment_id, treatments) =>
     return await db.query(query, [values]);
 };
 
+// export const getAppointmentTreatments = async (appointment_id) => {
+//     const query = `
+//     SELECT t.*,ap.* FROM tbl_appointment_treatments ap INNER JOIN tbl_treatments t ON ap.treatment_id  = t.treatment_id  WHERE appointment_id = ?
+//   `;
+//     return await db.query(query, [appointment_id]);
+// };
+
 export const getAppointmentTreatments = async (appointment_id) => {
     const query = `
-    SELECT t.*,ap.* FROM tbl_appointment_treatments ap INNER JOIN tbl_treatments t ON ap.treatment_id  = t.treatment_id  WHERE appointment_id = ?
-  `;
-    return await db.query(query, [appointment_id]);
+        SELECT t.*, ap.*
+        FROM tbl_appointment_treatments ap
+        INNER JOIN tbl_treatments t ON ap.treatment_id = t.treatment_id
+        WHERE appointment_id = ?
+    `;
+
+    let results = await db.query(query, [appointment_id]);
+
+    // Remove embeddings dynamically
+    results = results.map(row => {
+        const treatmentRow = { ...row };
+        if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+        return treatmentRow;
+    });
+
+    return results;
 };
+
 
 export const getDoctorBookedAppointmentsModel = async (role, user_id) => {
     let whereClause = '';
@@ -967,4 +1064,86 @@ export const getDraftAppointmentsModel = async (user_id, doctor_id) => {
     AND a.doctor_id = ? 
     AND a.save_type = 'draft'
   `, [user_id, doctor_id]);
+}
+
+export const insertDraftTreatmentsModel = async (appointment_id, treatments) => {
+    if (!treatments || !treatments.length) return;
+    try {
+
+        const params = treatments.map(t => [
+            appointment_id,
+            t.treatment_id,
+            t.price,
+        ]);
+
+        const query = `
+        INSERT INTO tbl_appointment_treatments
+        (appointment_id, treatment_id, price)
+        VALUES ?
+      `;
+
+        return await db.query(query, [params]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to insert draft treatments.");
+    }
+}
+
+export const insertDraftAppointmentModel = async (appointment_id, doctor_id, clinic_id, user_id, report_id, discount_type, discount_value) => {
+    try {
+        const query = `
+            INSERT INTO tbl_appointments
+        (appointment_id, user_id, doctor_id, clinic_id, status, save_type, is_paid, payment_status, report_id, discount_type, discount_value, type)
+        VALUES (?, ?, ?, ?, 'Scheduled', 'draft', 0, 'unpaid', ?, ?, ?, 'Video Call')`
+
+        return await db.query(query, [appointment_id, user_id, doctor_id, clinic_id, report_id, discount_type, discount_value]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to insert draft appointment.");
+    }
+}
+
+export const getDraftAppointmentData = async (user_id, doctor_id, clinic_id) => {
+    return await db.query(`
+        SELECT a.* FROM tbl_appointments a
+        WHERE a.user_id = ? AND a.doctor_id = ? AND a.clinic_id = ? AND a.save_type = 'draft' AND a.status = 'Scheduled' AND a.is_paid = 0 AND a.payment_status = 'unpaid'
+    `, [user_id, doctor_id, clinic_id]);
+}
+
+export const deleteDraftTreatmentsModel = async (appointment_id) => {
+    return await db.query(`
+        DELETE FROM tbl_appointment_treatments WHERE appointment_id = ?
+    `, [appointment_id]);
+}
+
+export const deleteDraftAppointmentModel = async (appointment_id) => {
+    return await db.query(`
+        DELETE FROM tbl_appointments WHERE appointment_id = ?
+    `, [appointment_id]);
+}
+
+export const getAppointmentDetailsByAppointmentID = async (appointment_id) => {
+    try {
+        return await db.query(`
+            SELECT * 
+            FROM tbl_appointments 
+            WHERE appointment_id = ?
+        `, [appointment_id]);
+    } catch (error) {
+        console.error("Database Error in getAppointmentDetailsByAppointmentID:", error.message);
+        throw new Error("Failed to get appointment details.");
+    }
+}
+
+export const insertSuggestedAppointmentModel = async (origin_appointment_id, appointment_id) => {
+    try {
+        return await db.query(`
+            UPDATE tbl_appointments SET
+            suggested_appointment_id = ?
+            WHERE appointment_id = ?
+        `, [appointment_id, origin_appointment_id]);
+    } catch (error) {
+        console.error("Database Error in insertSuggestedAppointmentModel:", error.message);
+        throw new Error("Failed to insert suggested appointment.");
+    }
 }

@@ -49,7 +49,8 @@ const configs = {
         pores_jaw_score: "PoresJaw",
         left_dark_circle: "LeftDarkCircle",
         right_dark_circle: "RightDarkCircle"
-    }
+    },
+    openaiKey: process.env.OPENAI_API_KEY
 }
 
 export default configs

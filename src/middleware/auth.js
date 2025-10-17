@@ -27,7 +27,7 @@ export const authenticateUser = async (req, res, next) => {
         } catch (err) {
             return handleError(res, 401, 'en', "UNAUTH")
         }
-        console.log(decodedToken.mobile_number, "User Connected");
+
 
         let [user] = await apiModels.get_user_by_user_id(decodedToken.user_id)
 
@@ -50,7 +50,7 @@ export const authenticateUser = async (req, res, next) => {
             return handleError(res, 404, language, "USER_DELETED")
         }
 
-        const bypassRoutes = ["/profile", "/delete-account", "/delete-my-account"];
+        const bypassRoutes = ["/profile", "/delete-account", "/delete-my-account", "/add-face-scan-result-device"];
 
         const isBypassed = bypassRoutes.some(route => req.path.includes(route));
 
@@ -96,7 +96,6 @@ export const optionalAuthenticateUser = async (req, res, next) => {
             }
 
             req.user = { ...user, role: "USER" };
-            console.log(decodedToken.mobile_number, "User Connected");
         } catch (err) {
             // Invalid/expired token → treat as guest
             req.user = null;

@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken"
 import * as apiModels from "../../models/api.js";
 import * as webModels from "../../models/web_user.js";
 import { sendEmail } from "../../services/send_email.js";
-import { generateAccessToken, generateVerificationLink } from "../../utils/user_helper.js";
+import { generateAccessToken, generateVerificationLink, isEmpty } from "../../utils/user_helper.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import twilio from 'twilio';
 import { fileTypeFromFile } from 'file-type';
@@ -236,6 +236,7 @@ export const login_with_otp = async (req, res) => {
     let language = req.body.language || 'en';
     try {
         const loginOtpSchema = Joi.object({
+            device_id : Joi.string().optional().allow("", null),
             mobile_number: Joi.string().required(),
             otp: Joi.string().length(4).required(),
             language: Joi.string().valid("en", "sv").optional().allow("", null),
@@ -245,7 +246,7 @@ export const login_with_otp = async (req, res) => {
         const { error, value } = loginOtpSchema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const { mobile_number, otp, language, fcm_token } = value;
+        const { mobile_number, otp, language, fcm_token, device_id } = value;
 
         const [user] = await apiModels.get_user_by_mobile_number(mobile_number);
         if (!user) {
@@ -276,6 +277,10 @@ export const login_with_otp = async (req, res) => {
         };
 
         await apiModels.update_user(user_data, user.user_id);
+
+        if (!isEmpty(device_id)) {
+            await apiModels.updateGuestDeviceFaceScanModel(user.user_id, device_id);
+        }
 
         return handleSuccess(res, 200, language || 'en', "LOGIN_SUCCESSFUL", token);
 

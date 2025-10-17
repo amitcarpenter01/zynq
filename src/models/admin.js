@@ -261,6 +261,7 @@ export const get_clinic_managment = async () => {
     try {
         return await db.query(`
             SELECT 
+                c.zynq_user_id,
                 c.clinic_id, 
                 c.clinic_name, 
                 c.org_number, 
@@ -440,7 +441,17 @@ export const updatePasseordByClinicId = async (hashedPassword, password, zynq_us
 
 export const updateClinicCountAndEmailSent = async (clinic_id, email_sent_count, date) => {
     try {
-        return await db.query('UPDATE `tbl_clinics` SET `email_sent_at`= ?,`email_sent_count`= ?, `profile_status`= ?  WHERE clinic_id = ?', [date, email_sent_count, 'INVITED', clinic_id]);
+        const query = `
+            UPDATE tbl_clinics
+            SET 
+                email_sent_at = ?,
+                email_sent_count = ?,
+                profile_status = 'INVITED',
+                invited_date = CURRENT_TIMESTAMP()
+            WHERE clinic_id = ?
+        `;
+        
+        return await db.query(query, [date, email_sent_count, clinic_id]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update clinic count and email sent data.");
@@ -472,6 +483,7 @@ export const get_doctors_management = async () => {
     try {
         return await db.query(`
            SELECT 
+    d.zynq_user_id,
     d.doctor_id, 
     d.name, 
     d.specialization, 
@@ -1286,30 +1298,79 @@ export const getAppointmentsById = async (appointment_id) => {
 };
 
 
+// export const getTreatmentsOfProducts = async (product_id) => {
+//     try {
+//         const query = `
+//     SELECT t.* FROM tbl_product_treatments pt JOIN tbl_treatments t ON t.treatment_id = pt.treatment_id WHERE pt.product_id = ?;
+//     `;
+//         const results = await db.query(query, [product_id]);
+//         return results;
+//     } catch (error) {
+//         console.error("Failed to fetch purchase products data:", error);
+//         throw error;
+//     }
+// };
+
 export const getTreatmentsOfProducts = async (product_id) => {
     try {
         const query = `
-    SELECT t.* FROM tbl_product_treatments pt JOIN tbl_treatments t ON t.treatment_id = pt.treatment_id WHERE pt.product_id = ?;
-    `;
+            SELECT t.* 
+            FROM tbl_product_treatments pt
+            JOIN tbl_treatments t ON t.treatment_id = pt.treatment_id
+            WHERE pt.product_id = ?;
+        `;
         const results = await db.query(query, [product_id]);
-        return results;
+
+        // Remove embeddings from each treatment dynamically
+        const cleanedResults = results.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
+
+        return cleanedResults;
     } catch (error) {
-        console.error("Failed to fetch purchase products data:", error);
+        console.error("Failed to fetch product treatments:", error);
         throw error;
     }
 };
 
+
+// export const getTreatmentsOfProductsBulk = async (productIds) => {
+//     try {
+//         // Ensure we have an array
+//         if (!Array.isArray(productIds)) {
+//             productIds = [productIds];
+//         }
+
+//         // If no IDs, return empty
+//         if (productIds.length === 0) {
+//             return [];
+//         }
+
+//         const query = `
+//             SELECT pt.product_id, t.*
+//             FROM tbl_product_treatments pt
+//             JOIN tbl_treatments t 
+//                 ON t.treatment_id = pt.treatment_id
+//             WHERE pt.product_id IN (?)
+//         `;
+
+//         const results = await db.query(query, [productIds]);
+//         return results;
+//     } catch (error) {
+//         console.error("Failed to fetch treatments for products:", error);
+//         throw error;
+//     }
+// };
+
 export const getTreatmentsOfProductsBulk = async (productIds) => {
     try {
         // Ensure we have an array
-        if (!Array.isArray(productIds)) {
-            productIds = [productIds];
-        }
+        if (!Array.isArray(productIds)) productIds = [productIds];
 
         // If no IDs, return empty
-        if (productIds.length === 0) {
-            return [];
-        }
+        if (productIds.length === 0) return [];
 
         const query = `
             SELECT pt.product_id, t.*
@@ -1320,7 +1381,15 @@ export const getTreatmentsOfProductsBulk = async (productIds) => {
         `;
 
         const results = await db.query(query, [productIds]);
-        return results;
+
+        // Remove embeddings from each treatment dynamically
+        const cleanedResults = results.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
+
+        return cleanedResults;
     } catch (error) {
         console.error("Failed to fetch treatments for products:", error);
         throw error;
@@ -1718,19 +1787,51 @@ export const insertClinics = async (clinics) => {
 
 export const updateZynqUserApprovalStatus = async (userData, status) => {
     try {
-        const table = userData.role === 'CLINIC' ? 'tbl_clinics' : 'tbl_doctors';
-        const idField = userData.role === 'CLINIC' ? 'clinic_id' : 'doctor_id';
+        const { role, user_id, zynq_user_id } = userData;
 
-        await db.query(
-            `UPDATE ${table} SET profile_status = ? WHERE ${idField} = ?`,
-            [status, userData.user_id]
+        const updates = [];
+
+        if (role === 'CLINIC') {
+            updates.push({
+                table: 'tbl_clinics',
+                idField: 'clinic_id',
+                idValue: user_id,
+            });
+        } else if (role === 'DOCTOR' || role === 'SOLO_DOCTOR') {
+            updates.push({
+                table: 'tbl_doctors',
+                idField: 'doctor_id',
+                idValue: user_id,
+            });
+
+            if (role === 'SOLO_DOCTOR') {
+                updates.push({
+                    table: 'tbl_clinics',
+                    idField: 'zynq_user_id',
+                    idValue: zynq_user_id,
+                });
+            }
+        }
+
+        if (updates.length === 0) {
+            console.warn(`No matching table for role: ${role}`);
+            return;
+        }
+
+        await Promise.all(
+            updates.map(({ table, idField, idValue }) =>
+                db.query(
+                    `UPDATE ${table} SET profile_status = ? WHERE ${idField} = ?`,
+                    [status, idValue]
+                )
+            )
         );
+
     } catch (error) {
-        console.error("updateUserProfileStatus error:", error);
+        console.error("updateZynqUserApprovalStatus error:", error);
         throw new Error("Failed to update profile status");
     }
 };
-
 
 export const getZynqUserData = async (zynq_user_id) => {
     try {

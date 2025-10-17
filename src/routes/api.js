@@ -28,7 +28,7 @@ import { getTipsByConcernsSchema, getTreatmentFiltersSchema, getTreatmentsByConc
 import { deleteNotifications, deleteSingleNotification, getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
 import { sendAppointmentNotifications } from '../services/notifications.service.js';
 import { toggleLanguage } from '../controllers/web_users/authController.js';
-import { getLegalDocuments, openAIBackendEndpoint } from '../controllers/api/legalController.js';
+import { geminiBackendEndpoint, getLegalDocuments, openAIBackendEndpoint, openAIBackendEndpointV2 } from '../controllers/api/legalController.js';
 import { uploadMulterChatFiles } from '../services/multer.chat.js';
 import { getAllProductsSchema, getSingleProductSchema } from '../validations/product.validation.js';
 import { getWishlists, toggleWishlistProduct } from '../controllers/api/wishlistController.js';
@@ -77,7 +77,13 @@ router.post("/add-face-scan-result", authenticateUser, upload.fields([
   { name: 'file', maxCount: 1 },
   { name: 'pdf', maxCount: 1 }
 ]), faceScanControllers.add_face_scan_result);
+
+router.post("/add-face-scan-result-device", upload.fields([
+  { name: 'file', maxCount: 1 },
+  { name: 'pdf', maxCount: 1 }
+]), faceScanControllers.add_face_scan_result);
 router.get("/get-face-scan-history/:face_scan_id", authenticateUser, faceScanControllers.get_face_scan_history);
+router.get("/get-face-scan-history-device/:device_id", faceScanControllers.get_face_scan_history_device);
 router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_face_scan_history);
 
 
@@ -85,7 +91,7 @@ router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_f
 //==================================== Doctor ==============================
 // router.get("/get-all-doctors", authenticateUser, doctorControllers.get_all_doctors);
 router.post("/get-all-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_all_doctors_in_app_side);
-router.post("/get-recommended-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
+router.post("/get-recommended-doctors", optionalAuthenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
 router.get("/doctor/get/ratings/:doctor_id", authenticateUser, validate(getSingleDoctorRatingsSchema, "params"), doctorControllers.getSingleDoctorRatings);
 router.get("/doctor/get/:clinic_id/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
 
@@ -94,7 +100,7 @@ router.post("/get-all-products", optionalAuthenticateUser, validate(getAllProduc
 router.get("/product/:product_id", optionalAuthenticateUser, validate(getSingleProductSchema, "params"), productControllers.getSingleProduct);
 
 // ==================================== Clinic ==============================
-router.post("/get-all-clinics", authenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_all_clinics);
+router.post("/get-all-clinics", optionalAuthenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_all_clinics);
 router.get("/clinic/:clinic_id", authenticateUser, validate(getSingleClinicSchema, "params"), clinicControllers.getSingleClinic);
 router.post("/get-nearby-clinics", authenticateUser, validate(getAllClinicsSchema, "body"), clinicControllers.get_nearby_clinics);
 
@@ -186,7 +192,7 @@ router.get('/payments/cancel', stripeCancelHandler);
 router.post('/payments/test', testPayment)
 // -------------------------------------Generic------------------------------------------------//
 
-router.get('/skin-types', authenticateUser, faceScanControllers.getClinicSkinTypes);
+router.get('/skin-types', optionalAuthenticateUser, faceScanControllers.getClinicSkinTypes);
 router.get('/treatments', optionalAuthenticateUser, faceScanControllers.getTreatments);
 router.post('/get-treatments-by-ids', authenticateUser, validate(getTreatmentsSchema, "body"), faceScanControllers.get_treatments_by_treatments);
 router.post("/get-all-search-results", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.search_home_entities);
@@ -230,6 +236,9 @@ router.post('/guest/get-face-scan', validate(getGuestFaceScanSchema, "body"), au
 
 router.get('/draft/:doctor_id', authenticateUser, validate(getDraftAppointmentsSchema, "params"), appointmentController.getDraftAppointments);
 
-router.post('/openai/endpoint', authenticateUser, validate(openAIBackendEndpointSchema, "body"), openAIBackendEndpoint)
+router.post('/openai/endpoint', validate(openAIBackendEndpointSchema, "body"), openAIBackendEndpoint)
+router.post('/openai/endpoint/v2', validate(openAIBackendEndpointSchema, "body"), openAIBackendEndpointV2)
+
+router.post('/gemini/endpoint', geminiBackendEndpoint)
 
 export default router;

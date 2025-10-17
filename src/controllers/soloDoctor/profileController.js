@@ -75,17 +75,24 @@ export const addPersonalInformation = async (req, res) => {
 
 
         const doctorResult = await dbOperations.getData('tbl_doctors', `where zynq_user_id = '${zynqUserId}' `);
+
         const getClinicData = await dbOperations.getData('tbl_clinics', `WHERE zynq_user_id = '${zynqUserId}' `);
         if (getClinicData.length == 0) {
             return handleError(res, 401, 'en', "CLINIC_NOT_FOUND");
         } else {
+            console.log("getClinicData[0]?.profile_status - ", getClinicData[0]?.profile_status)
+            if (getClinicData[0]?.profile_status === "CLAIMED") {
+                clinicData.profile_status = "ONBOARDING";
+            }
             var updatClinic = await dbOperations.updateData('tbl_clinics', clinicData, `WHERE zynq_user_id = '${zynqUserId}' `);
         }
         if (doctorResult.length > 0) {
+            if (doctorResult[0].profile_status === "CLAIMED") {
+                doctorData.profile_status = "ONBOARDING";
+            }
             var update_doctor = await dbOperations.updateData('tbl_doctors', doctorData, `WHERE zynq_user_id = '${zynqUserId}' `);
         } else {
             return handleError(res, 401, 'en', "CLINIC_NOT_FOUND");
-
         }
         if (update_doctor.affectedRows > 0 && updatClinic.affectedRows > 0) {
             await update_onboarding_status(1, zynqUserId)
@@ -141,10 +148,10 @@ export const addContactInformation = async (req, res) => {
         const getClinicLocations = await dbOperations.getData('tbl_clinic_locations', `WHERE clinic_id = '${clinic_id}' `);
         if (getClinicLocations.length == 0) {
             const insertClinicLocations = await dbOperations.insertData('tbl_clinic_locations', clinicData);
-            const updateClinicAddress = await dbOperations.updateData('tbl_clinics', { address: value.address, mobile_number: value.mobile_number }, `WHERE clinic_id  = '${clinic_id}' `);
+            const updateClinicAddress = await dbOperations.updateData('tbl_clinics', { address: value.address, mobile_number: value.mobile_number, website_url: value.website_url }, `WHERE clinic_id  = '${clinic_id}' `);
         } else {
             const updateClinic = await dbOperations.updateData('tbl_clinic_locations', clinicData, `WHERE clinic_id = '${clinic_id}' `);
-            const updateClinicAddress = await dbOperations.updateData('tbl_clinics', { address: value.address, mobile_number: value.mobile_number }, `WHERE clinic_id  = '${clinic_id}' `);
+            const updateClinicAddress = await dbOperations.updateData('tbl_clinics', { address: value.address, mobile_number: value.mobile_number, website_url: value.website_url }, `WHERE clinic_id  = '${clinic_id}' `);
         }
         const updateDoctor = await dbOperations.updateData('tbl_doctors', doctorData, `WHERE zynq_user_id = '${zynqUserId}' `);
 
@@ -182,7 +189,7 @@ export const addEducationAndExperienceInformation = async (req, res) => {
 
         const files = req.files;
         if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
-            for (const key in files) { // 'key' is like 'medical_council', 'deramatology_board', etc.
+            for (const key in files) { // 'key' is like 'medical_council', 'dermatology_board', etc.
                 const certTypeFromDb = await doctorModels.get_certification_type_by_filename(key);
 
                 if (certTypeFromDb.length > 0) {
@@ -195,19 +202,21 @@ export const addEducationAndExperienceInformation = async (req, res) => {
                         const existingCert = await doctorModels.get_doctor_certification_by_type(doctorId, certification_type_id);
 
                         if (existingCert.length > 0) {
-                            // Certification already exists, update its file path
+                            // ✅ Certification already exists → update its file path
                             await doctorModels.update_certification_upload_path(doctorId, certification_type_id, newUploadPath);
-            
-                            // Certification does not exist, add it
-                            await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath); // Add other metadata if available from req.body
-                
+                        } else {
+                            // ✅ Certification does not exist → add a new one
+                            await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath);
                         }
                     }
                 } else {
-                    console.warn(`Certification type with filename key '${key}' not found in tbl_certification_type. Skipping file processing.`);
+                    console.warn(
+                        `Certification type with filename key '${key}' not found in tbl_certification_type. Skipping file processing.`
+                    );
                 }
             }
         }
+
         // --- END IMPROVED LOGIC ---
 
 
@@ -652,7 +661,7 @@ export const getDoctorProfileByStatus = async (req, res) => {
             profileData.on_boarding_status = zynqUser[0].on_boarding_status;
 
         } else if (status == 4) {
-           // const treatments = await clinicModels.getClinicTreatments(clinicId);
+            // const treatments = await clinicModels.getClinicTreatments(clinicId);
             //console.log("treatments", treatments);
             const treatments = await doctorModels.get_doctor_treatments(doctorId);
             clinic.treatments = treatments;

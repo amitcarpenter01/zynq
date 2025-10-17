@@ -198,7 +198,6 @@ export const sendDoctorInvitation = async (req, res) => {
                 }
                 const [existingMap] = await clinicModels.get_doctor_clinic_map_by_both(doctor_id, req.user.clinicData.clinic_id);
                 if (existingMap) {
-                    console.log("DOCTOR_ALREADY_EXISTS");
                     continue;
                 } else {
                     const clinicMapData = {

@@ -9,9 +9,13 @@ import { getChatBetweenUsers } from '../../models/chat.js';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 import pkg from 'rrule';
 import { generateSlots, weekdayMap } from '../api/authController.js';
-import { extractUserData } from '../../utils/misc.util.js';
+import { extractUserData, getTreatmentIDsByUserID } from '../../utils/misc.util.js';
 const { RRule } = pkg;
 const APP_URL = process.env.APP_URL;
+import { v4 as uuidv4 } from "uuid";
+import { isEmpty } from '../../utils/user_helper.js';
+import { getTreatmentsByAppointmentId, getTreatmentsByTreatmentIds } from '../../models/api.js';
+
 export const getMyAppointmentsDoctor = async (req, res) => {
     try {
         await appointmentModel.updateMissedAppointmentStatusModel();
@@ -81,10 +85,10 @@ export const getMyAppointmentById = async (req, res) => {
 
         const now = dayjs.utc();
 
-        const appointments = await appointmentModel.getAppointmentByIdForDoctor(doctorId, appointment_id);
+        const appointments = await appointmentModel.getAppointmentByIdForDoctorV2(doctorId, appointment_id);
 
         const result = await Promise.all(appointments.map(async app => {
-            // Convert local Date object (from MySQL) to local string
+
             const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
             const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
 
@@ -96,11 +100,11 @@ export const getMyAppointmentById = async (req, res) => {
                 app.pdf = `${APP_URL}${app.pdf}`;
             }
 
-
             const startUTC = dayjs.utc(localFormattedStart);
             const endUTC = dayjs.utc(localFormattedEnd);
             const videoCallOn = app.status !== 'Completed' && now.isAfter(startUTC) && now.isBefore(endUTC);
 
+            const suggestedTreatments = await getTreatmentsByAppointmentId(app.suggested_appointment_id);
             const doctor = await doctorModel.getDocterByDocterId(app.doctor_id);
             let chatId = await chatModel.getChatBetweenUsers(app.user_id, doctor[0].zynq_user_id);
             // console.log('chatId', chatId);
@@ -113,8 +117,10 @@ export const getMyAppointmentById = async (req, res) => {
                 end_time: dayjs.utc(localFormattedEnd).toISOString(),
                 chatId: chatId.length > 0 ? chatId : null,
                 videoCallOn,
-                treatments
+                treatments,
+                suggestedTreatments,
             };
+
         }));
 
         return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result[0]);
@@ -308,3 +314,54 @@ export const getDoctorBookedAppointments = asyncHandler(async (req, res) => {
     }
     return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", data);
 });
+
+export const addAppointmentDraft = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const doctor_id = req.user.doctorData.doctor_id;
+    const { user_id, clinic_id, report_id, discount_type, discount_value, origin_appointment_id, treatments } = req.body;
+
+    let appointment_id = uuidv4();
+
+    // Check if a draft already exists
+    const [existingAppointment] = await appointmentModel.getDraftAppointmentData(user_id, doctor_id, clinic_id);
+
+    if (!isEmpty(existingAppointment?.appointment_id)) {
+        appointment_id = existingAppointment.appointment_id;
+
+        // Clean up existing draft data for this appointment
+        await Promise.all([
+            appointmentModel.deleteDraftTreatmentsModel(appointment_id),
+            appointmentModel.deleteDraftAppointmentModel(appointment_id),
+        ]);
+    }
+
+    // Insert fresh draft records
+    await Promise.all([
+        appointmentModel.insertDraftAppointmentModel(
+            appointment_id,
+            doctor_id,
+            clinic_id,
+            user_id,
+            report_id,
+            discount_type,
+            discount_value
+        ),
+        appointmentModel.insertDraftTreatmentsModel(appointment_id, treatments),
+        appointmentModel.insertSuggestedAppointmentModel(origin_appointment_id, appointment_id),
+    ]);
+
+    handleSuccess(res, 200, language, "APPOINTMENT_DRAFT_ADDED");
+
+});
+
+export const getRecommendedTreatmentsForUser = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const user_id = req?.params?.user_id;
+
+    if (isEmpty(user_id)) return handleError(res, 404, language, "USER_NOT_FOUND");
+
+    const treatmentIDs = await getTreatmentIDsByUserID(user_id)
+    const recommendedTreatments = await getTreatmentsByTreatmentIds(treatmentIDs, language)
+
+    return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", recommendedTreatments);
+})

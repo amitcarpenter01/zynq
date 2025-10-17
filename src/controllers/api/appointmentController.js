@@ -15,6 +15,8 @@ import { sendEmail } from '../../services/send_email.js';
 import { appointmentBookedTemplate } from '../../utils/templates.js';
 import { getAdminCommissionRatesModel } from '../../models/admin.js';
 import { createPaymentSessionForAppointment } from '../../models/payment.js';
+import { booleanValidation } from '../../utils/joi.util.js';
+import { getIO } from '../../utils/socketManager.js';
 
 export const bookAppointment = async (req, res) => {
     try {
@@ -152,6 +154,7 @@ export const getMyAppointmentsUser = async (req, res) => {
 export const updateAppointmentStatus = async (req, res) => {
     try {
         const schema = Joi.object({
+            fromApp: booleanValidation.optional().default(false),
             appointment_id: Joi.string().required(),
             status: Joi.string()
                 .required()
@@ -164,12 +167,21 @@ export const updateAppointmentStatus = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const { appointment_id, status } = value;
+        const { appointment_id, status, fromApp } = value;
 
         const result = await appointmentModel.updateAppointmentStatus(appointment_id, status);
 
         if (result.affectedRows === 0) {
             return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
+        }
+
+        if (status === 'Ongoing' && fromApp) {
+            try {
+                const io = getIO();
+                io.emit('appointment_started', { message: 'Appointment has started' });
+            } catch (error) {
+                
+            }
         }
 
         return handleSuccess(res, 200, language, "APPOINTMENT_STATUS_UPDATED");
@@ -418,7 +430,7 @@ export const saveOrBookAppointment = async (req, res) => {
 export const getMyTreatmentPlans = async (req, res) => {
     try {
         const userId = req.user.user_id;
-        const appointments = await appointmentModel.getAppointmentsByUserId(userId, 'draft', 'unpaid');
+        const appointments = await appointmentModel.getAppointmentsByUserIdV2(userId, 'draft', 'unpaid');
 
         const now = dayjs.utc();
 
@@ -575,7 +587,7 @@ export const saveAppointmentAsDraft = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
 
         let {
-            appointment_id: inputId,
+            appointment_id: existingAppointmentId,
             doctor_id,
             clinic_id,
             treatments = [],
@@ -587,13 +599,15 @@ export const saveAppointmentAsDraft = async (req, res) => {
         const appointmentType = hasTreatments ? 'Clinic Visit' : 'Video Call';
         const save_type = 'draft'
 
-        let appointment_id = inputId || uuidv4();
+        let appointment_id = existingAppointmentId || uuidv4();
+        console.log("appointment_id - ", appointment_id)
         const total_price = treatments.reduce((sum, t) => sum + t.price, 0);
         if (isEmpty(report_id)) {
             report_id = await getLatestFaceScanReportIDByUserID(req.user.user_id);
         }
 
-        const is_paid = total_price > 0 ? 1 : 0;
+        const is_paid = 0;
+        const payment_status = 'unpaid';
 
         const appointmentData = {
             appointment_id,
@@ -609,23 +623,24 @@ export const saveAppointmentAsDraft = async (req, res) => {
             save_type,
             start_time: null,
             end_time: null,
-            is_paid
+            is_paid,
+            payment_status
         };
 
         const appointmentResponse = await appointmentModel.getAppointmentsByUserIdAndDoctorId(user_id, doctor_id, save_type)
 
-
-        if (inputId || appointmentResponse.length > 0) {
+        if (existingAppointmentId || appointmentResponse.length > 0) {
             if (appointmentResponse.length > 0) {
                 appointment_id = appointmentResponse[0].appointment_id
+                appointmentData.appointment_id = appointment_id
             }
-            await appointmentModel.updateAppointment(appointmentData);
+            const result = await appointmentModel.updateAppointmentV2(appointmentData);
             if (hasTreatments) {
                 await appointmentModel.deleteAppointmentTreatments(appointment_id);
                 await appointmentModel.insertAppointmentTreatments(appointment_id, treatments);
             }
         } else {
-            await appointmentModel.insertAppointment(appointmentData);
+            const result = await appointmentModel.insertAppointment(appointmentData);
             if (hasTreatments) {
                 await appointmentModel.insertAppointmentTreatments(appointment_id, treatments);
             }
@@ -692,22 +707,55 @@ export const bookDirectAppointment = async (req, res) => {
         const save_type = 'booked'
 
         const appointment_id = inputId || uuidv4();
-        const total_price = treatments.reduce((sum, t) => sum + t.price, 0);
+        let total_price = treatments.reduce((sum, t) => sum + t.price, 0);
+
         if (isEmpty(report_id)) {
             report_id = await getLatestFaceScanReportIDByUserID(req.user.user_id);
         }
         const normalizedStart = start_time
             ? dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss")
             : null;
+
         const normalizedEnd = end_time
             ? dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss")
             : null;
 
+
         const [{ APPOINTMENT_COMMISSION }] = await getAdminCommissionRatesModel();
         const ADMIN_EARNING_PERCENTAGE = APPOINTMENT_COMMISSION || 3;
-        const admin_earnings = Number(((total_price * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2));
-        const clinic_earnings = Number(total_price) - admin_earnings;
+        let admin_earnings = Number(((total_price * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2));
+        let clinic_earnings = Number(total_price) - admin_earnings;
         const is_paid = total_price > 0 ? 1 : 0;
+
+
+        let existingData;
+        let total_price_with_discount = total_price;
+        let discounted_amount = 0;
+
+        if (inputId) {
+            [existingData] = await appointmentModel.getAppointmentDetailsByAppointmentID(appointment_id);
+
+            if (!existingData) {
+                return handleError(res, 404, 'en', 'APPOINTMENT_NOT_FOUND');
+            }
+
+            const { discount_type = "NO_DISCOUNT", discount_value = 0 } = existingData;
+
+            if (discount_type !== "NO_DISCOUNT") {
+                if (discount_type === "PERCENTAGE") {
+                    discounted_amount = Number(((total_price * discount_value) / 100).toFixed(2));
+
+                } else if (discount_type === "SEK") {
+                    discounted_amount = Number(discount_value);
+                }
+
+                total_price = Math.max(0, Number((total_price - discounted_amount).toFixed(2)));
+
+                // Recalculate earnings on discounted total
+                admin_earnings = Number(((total_price_with_discount * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2));
+                clinic_earnings = Number((total_price_with_discount - admin_earnings).toFixed(2));
+            }
+        }
 
         const appointmentData = {
             appointment_id,
@@ -730,7 +778,14 @@ export const bookDirectAppointment = async (req, res) => {
 
 
         if (inputId) {
-            await appointmentModel.updateAppointment(appointmentData);
+            if (existingData?.discount_type !== "NO_DISCOUNT") {
+                appointmentData.total_price_with_discount = total_price_with_discount;
+                appointmentData.discounted_amount = discounted_amount;
+
+                await appointmentModel.updateAppointmentV3(appointmentData);
+            } else {
+                await appointmentModel.updateAppointment(appointmentData);
+            }
             if (hasTreatments) {
                 await appointmentModel.deleteAppointmentTreatments(appointment_id);
                 await appointmentModel.insertAppointmentTreatments(appointment_id, treatments);
