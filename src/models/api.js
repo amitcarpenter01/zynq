@@ -258,7 +258,7 @@ export const getAllDoctors = async ({
 
         if (joins.length) query += ' ' + joins.join(' ');
 
-        query += ` WHERE d.profile_completion_percentage >= 0`;
+        query += ` WHERE d.profile_status = 'VERIFIED' AND d.profile_completion_percentage >= 0`;
         if (filters.length) query += ` AND ${filters.join(' AND ')}`;
 
         // ---------- Search clause ----------
@@ -414,7 +414,7 @@ export const getAllRecommendedDoctors = async ({
 
         if (joins.length) query += ' ' + joins.join(' ');
 
-        query += ` WHERE d.profile_completion_percentage >= 0`;
+        query += ` WHERE d.profile_status = 'VERIFIED' AND d.profile_completion_percentage >= 0`;
 
         // ---------- Search ----------
         const trimmedSearch = (search || '').trim().toLowerCase();
@@ -632,6 +632,7 @@ export const get_all_products_for_user = async ({
                 p.*,
                 CASE WHEN cp.product_id IS NOT NULL THEN TRUE ELSE FALSE END AS added_in_cart
             FROM tbl_products p
+            LEFT JOIN tbl_clinics c ON c.clinic_id = p.clinic_id
             LEFT JOIN tbl_product_treatments pt ON pt.product_id = p.product_id
             LEFT JOIN tbl_treatments t ON t.treatment_id = pt.treatment_id
             LEFT JOIN tbl_cart_products cp 
@@ -642,7 +643,7 @@ export const get_all_products_for_user = async ({
                     WHERE c.user_id = ? 
                     LIMIT 1
                 )
-            WHERE 1=1
+            WHERE 1=1 AND c.profile_status = 'VERIFIED'
         `;
 
         const params = [user_id];
@@ -750,7 +751,6 @@ export const getUserCartProduct = async (
         let query = `
             SELECT 
                 pt.product_id
-                
             FROM tbl_carts AS ct
             LEFT JOIN tbl_cart_products AS pt ON ct.cart_id  = pt.cart_id
            
@@ -2354,7 +2354,7 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', limit, offs
                    ON d.doctor_id = ar.doctor_id
                   AND ar.approval_status = 'APPROVED'
             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
-            WHERE d.profile_completion_percentage >= 0
+            WHERE d.profile_status = 'VERIFIED' AND d.profile_completion_percentage >= 0
         `;
 
         if (search && search.trim()) {
@@ -2507,7 +2507,7 @@ export const getClinicsByNameSearchOnly = async ({ search = '', limit, offset })
             LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
             LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
             LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id AND ar.approval_status='APPROVED'
-            WHERE c.profile_completion_percentage >= 50
+            WHERE c.profile_status = 'VERIFIED' AND c.profile_completion_percentage >= 50
         `;
 
         if (search && search.trim()) {
@@ -2661,7 +2661,8 @@ export const getProductsByNameSearchOnly = async ({ search = '', limit, offset }
         let query = `
             SELECT p.*
             FROM tbl_products AS p
-            WHERE p.is_deleted = 0
+            LEFT JOIN tbl_clinics AS c ON p.clinic_id = c.clinic_id
+            WHERE c.profile_status = 'VERIFIED' AND p.is_deleted = 0
         `;
 
         if (search && search.trim()) {
