@@ -258,7 +258,7 @@ export const getAllDoctors = async ({
 
         if (joins.length) query += ' ' + joins.join(' ');
 
-        query += ` WHERE d.profile_status = 'VERIFIED' AND d.profile_completion_percentage >= 0`;
+        query += ` WHERE d.profile_status = 'VERIFIED'`;
         if (filters.length) query += ` AND ${filters.join(' AND ')}`;
 
         // ---------- Search clause ----------
@@ -414,7 +414,7 @@ export const getAllRecommendedDoctors = async ({
 
         if (joins.length) query += ' ' + joins.join(' ');
 
-        query += ` WHERE d.profile_status = 'VERIFIED' AND d.profile_completion_percentage >= 0`;
+        query += ` WHERE d.profile_status = 'VERIFIED'0`;
 
         // ---------- Search ----------
         const trimmedSearch = (search || '').trim().toLowerCase();
@@ -2354,7 +2354,7 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', limit, offs
                    ON d.doctor_id = ar.doctor_id
                   AND ar.approval_status = 'APPROVED'
             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
-            WHERE d.profile_status = 'VERIFIED' AND d.profile_completion_percentage >= 0
+            WHERE d.profile_status = 'VERIFIED'
         `;
 
         if (search && search.trim()) {
