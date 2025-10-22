@@ -205,7 +205,7 @@ ORDER BY t.treatment_id DESC;
       LEFT JOIN (
         SELECT dad.doctor_id,
                GROUP_CONCAT(DISTINCT CONCAT(
-                 IFNULL(ad.name,'N/A'), ' [Category: ', IFNULL(ad.category,''),
+                 IFNULL(ad.device,'N/A'), ' [Category: ', IFNULL(ad.category,''),
                  ', Manufacturer: ', IFNULL(ad.manufacturer,''),
                  ', Distributor: ', IFNULL(ad.swedish_distributor,''),
                  ', Application: ', IFNULL(ad.main_application,''),
@@ -335,7 +335,7 @@ ORDER BY t.treatment_id DESC;
         SELECT cad.clinic_id,
                GROUP_CONCAT(
                  DISTINCT CONCAT(
-                   IFNULL(ad.name,'N/A'),
+                   IFNULL(ad.device,''),
                    ' [Category: ', IFNULL(ad.category,''),
                    ', Manufacturer: ', IFNULL(ad.manufacturer,''),
                    ', Distributor: ', IFNULL(ad.swedish_distributor,''),
