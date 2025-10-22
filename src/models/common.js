@@ -23,7 +23,8 @@ const dbOperations = {
     return db.query(`SELECT ${column} FROM \`${table}\` ${where}`);
   },
   getTreatmentsWithConcerns: async () => {
-    return db.query(` SELECT 
+    return db.query(` 
+      SELECT 
         t.treatment_id,
         t.name,
         t.swedish,
@@ -32,7 +33,14 @@ const dbOperations = {
         t.benefits_sv,
         t.description_en,
         t.description_sv,
-        GROUP_CONCAT(c.name SEPARATOR ', ') AS concerns
+        GROUP_CONCAT(
+        CONCAT(
+        c.name, ' [EN: ', tc.indications_en, 
+                ', SV: ', tc.indications_sv, 
+                ', Likewise: ', tc.likewise_terms, 
+                ']'
+    ) SEPARATOR '; '
+  ) AS concerns
       FROM tbl_treatments t
       LEFT JOIN tbl_treatment_concerns tc ON t.treatment_id = tc.treatment_id
       LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
