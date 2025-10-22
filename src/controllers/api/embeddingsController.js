@@ -12,7 +12,7 @@ const APP_URL = process.env.APP_URL;
 export const generateTreatmentEmbeddings = async (req, res) => {
   try {
 
-    const rows = await dbOperations.getTreatmentsWithConcerns();
+    const rows = await dbOperations.getTreatmentsEmbeddingText();
     // console.log(rows);
     if (!rows || rows.length === 0) {
       return handleError(res, 404, 'en', "No Data found");
@@ -20,18 +20,9 @@ export const generateTreatmentEmbeddings = async (req, res) => {
 
 
     for (const row of rows) {
-      const combinedText = `
-        Treatment Name: ${row.name || ''}.
-        Swedish: ${row.swedish || ''}.
-        Classification Type: ${row.classification_type || ''}.
-        Benefits EN: ${row.benefits_en || ''}.
-        Benefits SV: ${row.benefits_sv || ''}.
-        Description EN: ${row.description_en || ''}.
-        Description SV: ${row.description_sv || ''}.
-        Related Concerns: ${row.concerns || ''}.
-      `;
+      const combinedText = row.embedding_text;
 
-      if (!combinedText.trim()) continue;
+      if (!combinedText || !combinedText.trim()) continue;
 
       try {
         const response = await axios.post("http://localhost:11434/api/embeddings", {
@@ -61,9 +52,10 @@ export const generateTreatmentEmbeddings = async (req, res) => {
     return handleError(res, 500, "en", "Internal Server Error");
   }
 };
+
 export const generateProductsEmbedding = async (req, res) => {
   try {
-    const rows = await dbOperations.getProductsWithTreatments();
+    const rows = await dbOperations.getProductsWithTreatments()
 
     if (!rows || rows.length === 0) {
       return handleError(res, 404, "en", "No data found");
@@ -71,18 +63,9 @@ export const generateProductsEmbedding = async (req, res) => {
 
     for (const row of rows) {
 
-      const combinedText = [
-        row.product_name ? `Product Name: ${row.product_name}` : "",
-        row.description_en ? `Description: ${row.description_en}` : "",
-        row.treatments_en ? `Treats (EN): ${row.treatments_en}` : "",
-        row.treatments_sv ? `Treats (SV): ${row.treatments_sv}` : ""
-      ]
-        .filter(Boolean)
-        .join(". ");
+      const combinedText = row.embedding_text;
 
       if (!combinedText.trim()) continue;
-
-      console.log(combinedText);
 
       try {
         const response = await axios.post("http://localhost:11434/api/embeddings", {
@@ -114,7 +97,7 @@ export const generateProductsEmbedding = async (req, res) => {
 
 export const generateDoctorsEmbedding = async (req, res) => {
   try {
-    const rows = await dbOperations.getDoctorsWithTreatments();
+    const rows = await dbOperations.getDoctorsEmbeddingText();
 
     if (!rows || rows.length === 0) {
       return handleError(res, 404, "en", "No data found");
@@ -122,13 +105,7 @@ export const generateDoctorsEmbedding = async (req, res) => {
 
     for (const row of rows) {
 
-      const combinedText = [
-        row.expert_name ? `Expert Name: ${row.expert_name}` : "",
-        row.treatments_en ? `Treats (EN): ${row.treatments_en}` : "",
-        row.treatments_sv ? `Treats (SV): ${row.treatments_sv}` : ""
-      ]
-        .filter(Boolean)
-        .join(". ");
+      const combinedText = row.embedding_text;
 
       if (!combinedText.trim()) continue;
 
@@ -165,23 +142,14 @@ export const generateDoctorsEmbedding = async (req, res) => {
 export const generateClinicEmbedding = async (req, res) => {
   try {
     // Fetch clinics with treatments
-    const rows = await dbOperations.getClinicWithTreatments();
-    console.log(rows);
+    const rows = await dbOperations.getClinicsEmbeddingText();
+
     if (!rows || rows.length === 0) {
       return handleError(res, 404, 'en', "No Data found");
     }
 
     for (const row of rows) {
-
-      const fields = [
-        row.clinic_name ? `Clinic Name: ${row.clinic_name}` : "",
-        row.treatments_en ? `Treats (EN): ${row.treatments_en}` : "",
-        row.treatments_sv ? `Treats (SV): ${row.treatments_sv}` : "",
-      ];
-
-
-      const combinedText = fields.filter(Boolean).join(". ") + ".";
-
+      const combinedText = row.embedding_text;
 
       if (!combinedText.trim() || combinedText === ".") {
         console.log(`⏭️ Skipping clinic ID ${row.clinic_id} (no valid data)`);
