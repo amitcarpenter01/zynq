@@ -77,44 +77,48 @@ ORDER BY t.treatment_id DESC;
           ', How To Use: ', IFNULL(p.how_to_use, ''),
           ', Ingredients: ', IFNULL(p.ingredients, ''),
           '; Treatments: ',
-GROUP_CONCAT(
-  DISTINCT CONCAT(
-    t.name, ' / ', t.swedish,
-    ' [Classification: ', t.classification_type,
-    ', Benefits EN: ', t.benefits_en,
-    ', Benefits SV: ', t.benefits_sv,
-    ', Description EN: ', t.description_en,
-    ', Description SV: ', t.description_sv,
-    ', Concerns: ', 
-      GROUP_CONCAT(DISTINCT CONCAT(
-        c.name,
-        ' [EN: ', tc_agg.indications_en,
-        ', SV: ', tc_agg.indications_sv,
-        ', Likewise: ', tc_agg.likewise_terms,
-        ']'
-      ) SEPARATOR ', ')
-    ,']'
-  ) SEPARATOR '; '
-)
+          IFNULL(tagg.treatments_text, 'None')
         ) AS embedding_text
       FROM tbl_products p
-      LEFT JOIN tbl_product_treatments pt ON p.product_id = pt.product_id
-      LEFT JOIN tbl_treatments t ON pt.treatment_id = t.treatment_id
       LEFT JOIN (
-          SELECT treatment_id, concern_id,
-                 GROUP_CONCAT(DISTINCT indications_en SEPARATOR ', ') AS indications_en,
-                 GROUP_CONCAT(DISTINCT indications_sv SEPARATOR ', ') AS indications_sv,
-                 GROUP_CONCAT(DISTINCT likewise_terms SEPARATOR ', ') AS likewise_terms
-          FROM tbl_treatment_concerns
-          GROUP BY treatment_id, concern_id
-      ) tc_agg ON t.treatment_id = tc_agg.treatment_id
-      LEFT JOIN tbl_concerns c ON tc_agg.concern_id = c.concern_id
+          SELECT pt.product_id,
+                 GROUP_CONCAT(
+                   DISTINCT CONCAT(
+                     t.name, ' / ', t.swedish,
+                     ' [Classification: ', t.classification_type,
+                     ', Benefits EN: ', t.benefits_en,
+                     ', Benefits SV: ', t.benefits_sv,
+                     ', Description EN: ', t.description_en,
+                     ', Description SV: ', t.description_sv,
+                     ', Concerns: ', IFNULL(tc.concerns_text, 'None'),
+                     ']'
+                   ) SEPARATOR '; '
+                 ) AS treatments_text
+          FROM tbl_product_treatments pt
+          JOIN tbl_treatments t ON pt.treatment_id = t.treatment_id
+          LEFT JOIN (
+              SELECT tc.treatment_id,
+                     GROUP_CONCAT(
+                       DISTINCT CONCAT(
+                         c.name,
+                         ' [EN: ', tc.indications_en,
+                         ', SV: ', tc.indications_sv,
+                         ', Likewise: ', tc.likewise_terms,
+                         ']'
+                       ) SEPARATOR ', '
+                     ) AS concerns_text
+              FROM tbl_treatment_concerns tc
+              LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+              GROUP BY tc.treatment_id
+          ) tc ON t.treatment_id = tc.treatment_id
+          GROUP BY pt.product_id
+      ) tagg ON p.product_id = tagg.product_id
       WHERE p.embeddings IS NULL
-      GROUP BY p.product_id
-      ORDER BY p.product_id DESC
+      ORDER BY p.product_id DESC;
     `);
     } catch (err) {
-      console.error("❌ Error fetching product embeddings:", err.message);
+      console.error("❌ Error fetching product embeddings:", err);
+      throw err; // re-throw so calling code can handle
     }
   },
   getDoctorsEmbeddingText: async () => {
