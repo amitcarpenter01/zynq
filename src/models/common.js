@@ -77,25 +77,25 @@ ORDER BY t.treatment_id DESC;
           ', How To Use: ', IFNULL(p.how_to_use, ''),
           ', Ingredients: ', IFNULL(p.ingredients, ''),
           '; Treatments: ',
-          GROUP_CONCAT(
-            DISTINCT CONCAT(
-              t.name, ' / ', t.swedish,
-              ' [Classification: ', t.classification_type,
-              ', Benefits EN: ', t.benefits_en,
-              ', Benefits SV: ', t.benefits_sv,
-              ', Description EN: ', t.description_en,
-              ', Description SV: ', t.description_sv,
-              ', Concerns: ', 
-                GROUP_CONCAT(DISTINCT CONCAT(
-                  c.name,
-                  ' [EN: ', tc_agg.indications_en,
-                  ', SV: ', tc_agg.indications_sv,
-                  ', Likewise: ', tc_agg.likewise_terms,
-                  ']'
-                ) SEPARATOR ', ')
-              ,']'
-            ) SEPARATOR '; '
-          )
+GROUP_CONCAT(
+  DISTINCT CONCAT(
+    t.name, ' / ', t.swedish,
+    ' [Classification: ', t.classification_type,
+    ', Benefits EN: ', t.benefits_en,
+    ', Benefits SV: ', t.benefits_sv,
+    ', Description EN: ', t.description_en,
+    ', Description SV: ', t.description_sv,
+    ', Concerns: ', 
+      GROUP_CONCAT(DISTINCT CONCAT(
+        c.name,
+        ' [EN: ', tc_agg.indications_en,
+        ', SV: ', tc_agg.indications_sv,
+        ', Likewise: ', tc_agg.likewise_terms,
+        ']'
+      ) SEPARATOR ', ')
+    ,']'
+  ) SEPARATOR '; '
+)
         ) AS embedding_text
       FROM tbl_products p
       LEFT JOIN tbl_product_treatments pt ON p.product_id = pt.product_id
