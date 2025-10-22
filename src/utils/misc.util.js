@@ -411,8 +411,11 @@ export const getTopSimilarRows = async (rows, search, threshold = 0.5, topN = nu
   return results;
 };
 
-export const paginateRows = (rows, limit = 20, page = 1) => {
+export const paginateRows = (rows, limit, page) => {
   if (!Array.isArray(rows)) return [];
+
+  // If limit or page is not provided, return all rows
+  if (limit == null || page == null) return rows;
 
   const total = rows.length;
   const totalPages = Math.ceil(total / limit);

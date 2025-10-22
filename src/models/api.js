@@ -1,5 +1,5 @@
 import db from "../config/db.js";
-import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID } from "../utils/misc.util.js";
+import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows } from "../utils/misc.util.js";
 
 //======================================= Auth =========================================
 
@@ -1792,11 +1792,11 @@ export const getAllTreatments = async (lang) => {
 // };
 
 export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = null) => {
-  try {
-    // pick the right column for name
-    const nameColumn = lang === 'sv' ? 't.swedish' : 't.name';
+    try {
+        // pick the right column for name
+        const nameColumn = lang === 'sv' ? 't.swedish' : 't.name';
 
-    let query = `
+        let query = `
       SELECT
         t.*,
         ${nameColumn} AS name,
@@ -1808,48 +1808,48 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
       LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
     `;
 
-    const queryParams = [];
-    const whereConditions = [];
+        const queryParams = [];
+        const whereConditions = [];
 
-    // ---------- Recommended Filter ----------
-    if (filters.recommended === true && user_id) {
-      const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
-      if (!fallbackTreatmentIds?.length) return []; // no recommended treatments
-      const placeholders = fallbackTreatmentIds.map(() => '?').join(',');
-      whereConditions.push(`t.treatment_id IN (${placeholders})`);
-      queryParams.push(...fallbackTreatmentIds);
+        // ---------- Recommended Filter ----------
+        if (filters.recommended === true && user_id) {
+            const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
+            if (!fallbackTreatmentIds?.length) return []; // no recommended treatments
+            const placeholders = fallbackTreatmentIds.map(() => '?').join(',');
+            whereConditions.push(`t.treatment_id IN (${placeholders})`);
+            queryParams.push(...fallbackTreatmentIds);
+        }
+
+        // ---------- Treatment IDs Filter ----------
+        if (Array.isArray(filters.treatment_ids) && filters.treatment_ids.length) {
+            const placeholders = filters.treatment_ids.map(() => '?').join(',');
+            whereConditions.push(`t.treatment_id IN (${placeholders})`);
+            queryParams.push(...filters.treatment_ids);
+        }
+
+        // ---------- Combine WHERE conditions ----------
+        if (whereConditions.length) {
+            query += ' WHERE ' + whereConditions.join(' AND ');
+        }
+
+        // ---------- Grouping ----------
+        query += ` GROUP BY t.treatment_id`;
+
+        // ---------- Execute Query ----------
+        let results = await db.query(query, queryParams);
+
+        // ---------- Apply cosine similarity search if search term exists ----------
+        if (filters.search?.trim()) {
+            results = await getTopSimilarRows(results, filters.search);
+        }
+
+        // ---------- Format Benefits ----------
+        return formatBenefitsUnified(results, lang);
+
+    } catch (error) {
+        console.error("Database Error in getAllTreatmentsV2:", error.message);
+        throw new Error("Failed to fetch treatments.");
     }
-
-    // ---------- Treatment IDs Filter ----------
-    if (Array.isArray(filters.treatment_ids) && filters.treatment_ids.length) {
-      const placeholders = filters.treatment_ids.map(() => '?').join(',');
-      whereConditions.push(`t.treatment_id IN (${placeholders})`);
-      queryParams.push(...filters.treatment_ids);
-    }
-
-    // ---------- Combine WHERE conditions ----------
-    if (whereConditions.length) {
-      query += ' WHERE ' + whereConditions.join(' AND ');
-    }
-
-    // ---------- Grouping ----------
-    query += ` GROUP BY t.treatment_id`;
-
-    // ---------- Execute Query ----------
-    let results = await db.query(query, queryParams);
-
-    // ---------- Apply cosine similarity search if search term exists ----------
-    if (filters.search?.trim()) {
-      results = await getTopSimilarRows(results, filters.search);
-    }
-
-    // ---------- Format Benefits ----------
-    return formatBenefitsUnified(results, lang);
-
-  } catch (error) {
-    console.error("Database Error in getAllTreatmentsV2:", error.message);
-    throw new Error("Failed to fetch treatments.");
-  }
 };
 
 
@@ -2274,408 +2274,106 @@ export const getSingleCartByClinicId = async (clinic_id, user_id) => {
 
 // -------------------------------------Updated Code Okay ------------------------------------------------//
 
-export const getDoctorsByFirstNameSearchOnly = async ({ search = '', limit, offset }) => {
-    try {
-        const params = [];
+export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null, limit = null }) => {
+  try {
+    if (!search?.trim()) return [];
 
-        const selectFields = [
-            'd.doctor_id',
-            'd.name',
-            'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
-            'd.specialization',
-            'ANY_VALUE(d.fee_per_session) AS fee_per_session',
-            'd.profile_image',
-            'dm.clinic_id',
-            'c.clinic_name',
-            'c.address AS clinic_address',
-            'ROUND(AVG(ar.rating), 2) AS avg_rating'
-        ].join(', ');
+    // 1️⃣ Fetch doctors with embeddings + aggregated fields
+    let results = await db.query(`
+      SELECT 
+        d.doctor_id,
+        d.name,
+        TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years,
+        d.specialization,
+        ANY_VALUE(d.fee_per_session) AS fee_per_session,
+        d.profile_image,
+        dm.clinic_id,
+        c.clinic_name,
+        c.address AS clinic_address,
+        ROUND(AVG(ar.rating), 2) AS avg_rating,
+        d.embeddings
+      FROM tbl_doctors d
+      LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
+      LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
+      LEFT JOIN tbl_appointment_ratings ar 
+             ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
+      LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
+      WHERE d.embeddings IS NOT NULL
+        AND d.profile_status = 'VERIFIED'
+      GROUP BY d.doctor_id, dm.clinic_id
+    `);
 
-        let query = `
-            SELECT ${selectFields}
-            FROM tbl_doctors d
-            LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
-            LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
-            LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
-            LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
-            LEFT JOIN tbl_appointment_ratings ar
-                   ON d.doctor_id = ar.doctor_id
-                  AND ar.approval_status = 'APPROVED'
-            LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
-            WHERE d.profile_status = 'VERIFIED'
-        `;
+    // 2️⃣ Compute top similar rows using embeddings
+    results = await getTopSimilarRows(results, search);
 
-        if (search && search.trim()) {
-            const s = `%${search.toLowerCase()}%`;
-            params.push(s, s, s, s, s);
-            query += `
-                AND (
-                    LOWER(d.name) LIKE ?
-                    OR LOWER(d.specialization) LIKE ?
-                    OR LOWER(d.phone) LIKE ?
-                    OR LOWER(c.clinic_name) LIKE ?
-                    OR LOWER(c.address) LIKE ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_treatments dt
-                        JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
-                        WHERE dt.doctor_id = d.doctor_id
-                        AND (
-                            LOWER(t.name) LIKE ?
-                            OR LOWER(t.swedish) LIKE ?
-                            OR LOWER(t.application) LIKE ?
-                            OR LOWER(t.type) LIKE ?
-                            OR LOWER(t.technology) LIKE ?
-                            OR LOWER(t.classification_type) LIKE ?
-                            OR LOWER(t.benefits) LIKE ?
-                            OR LOWER(t.benefits_en) LIKE ?
-                            OR LOWER(t.benefits_sv) LIKE ?
-                            OR LOWER(t.description_en) LIKE ?
-                            OR LOWER(t.description_sv) LIKE ?
-                        )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_treatments dt
-                        LEFT JOIN tbl_treatment_concerns tc ON dt.treatment_id = tc.treatment_id
-                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
-                        WHERE dt.doctor_id = d.doctor_id
-                        AND (
-                            LOWER(tc.indications_sv) LIKE ?
-                            OR LOWER(tc.indications_en) LIKE ?
-                            OR LOWER(tc.likewise_terms) LIKE ?
-                            OR LOWER(cns.name) LIKE ?
-                            OR LOWER(cns.swedish) LIKE ?
-                            OR LOWER(cns.tips) LIKE ?
-                        )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_aesthetic_devices dad
-                        JOIN tbl_aesthetic_devices ad ON dad.aesthetic_devices_id = ad.aesthetic_device_id
-                        WHERE dad.doctor_id = d.doctor_id
-                        AND (
-                            LOWER(ad.device) LIKE ?
-                            OR LOWER(ad.category) LIKE ?
-                            OR LOWER(ad.manufacturer) LIKE ?
-                            OR LOWER(ad.swedish_distributor) LIKE ?
-                            OR LOWER(ad.main_application) LIKE ?
-                        )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_surgery ds
-                        JOIN tbl_surgery srg ON ds.surgery_id = srg.surgery_id
-                        WHERE ds.doctor_id = d.doctor_id
-                        AND (
-                            LOWER(srg.type) LIKE ?
-                            OR LOWER(srg.swedish) LIKE ?
-                            OR LOWER(srg.english) LIKE ?
-                            OR LOWER(srg.area) LIKE ?
-                            OR LOWER(srg.technique) LIKE ?
-                        )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_skin_types dst
-                        JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id
-                        WHERE dst.doctor_id = d.doctor_id
-                        AND (
-                            LOWER(st.name) LIKE ?
-                            OR LOWER(st.swedish) LIKE ?
-                            OR LOWER(st.english) LIKE ?
-                            OR LOWER(st.description) LIKE ?
-                        )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_skin_condition dsc
-                        JOIN tbl_skin_conditions sc ON dsc.skin_condition_id = sc.skin_condition_id
-                        WHERE dsc.doctor_id = d.doctor_id
-                        AND (
-                            LOWER(sc.name) LIKE ?
-                            OR LOWER(sc.swedish) LIKE ?
-                            OR LOWER(sc.english) LIKE ?
-                            OR LOWER(sc.description) LIKE ?
-                        )
-                    )
-                )
-            `;
+    // 3️⃣ Apply pagination
+    results = paginateRows(results, limit, page);
 
-            params.push(
-                ...Array(11).fill(s), // treatments
-                ...Array(6).fill(s),  // treatment concerns + tbl_concerns
-                ...Array(5).fill(s),  // devices
-                ...Array(5).fill(s),  // surgeries
-                ...Array(4).fill(s),  // skin types
-                ...Array(4).fill(s)   // skin conditions
-            );
-        }
-
-        query += `
-            GROUP BY d.doctor_id, dm.clinic_id
-            ORDER BY avg_rating DESC
-        `;
-
-        if (limit != null) {
-            query += ` LIMIT ?`;
-            params.push(Number(limit));
-
-            if (offset != null) {
-                query += ` OFFSET ?`;
-                params.push(Number(offset));
-            }
-        }
-
-        return await db.query(query, params);
-    } catch (error) {
-        console.error('Database Error in getDoctorsByFirstNameSearchOnly:', error.message);
-        throw new Error('Failed to fetch doctors.');
-    }
+    return results;
+  } catch (error) {
+    console.error('Database Error in getDoctorsByFirstNameSearchOnly:', error.message);
+    throw new Error('Failed to fetch doctors.');
+  }
 };
 
-export const getClinicsByNameSearchOnly = async ({ search = '', limit, offset }) => {
+export const getClinicsByNameSearchOnly = async ({ search = '', page = null, limit = null }) => {
     try {
-        const params = [];
-        const selectFields = [
-            'c.clinic_id',
-            'c.clinic_name',
-            'c.clinic_logo',
-            'c.address',
-            'c.mobile_number',
-            'MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range',
-            'MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range',
-            'ROUND(AVG(ar.rating), 2) AS avg_rating'
-        ].join(', ');
+        if (!search?.trim()) return [];
 
-        let query = `
-            SELECT ${selectFields}
-            FROM tbl_clinics c
-            LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
-            LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
-            LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
-            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id AND ar.approval_status='APPROVED'
-            WHERE c.profile_status = 'VERIFIED' AND c.profile_completion_percentage >= 50
-        `;
+        // 1️⃣ Fetch clinics with embeddings + aggregated fields
+        let results = await db.query(`
+      SELECT 
+        c.*,
+        MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range,
+        MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range,
+        ROUND(AVG(ar.rating), 2) AS avg_rating
+      FROM tbl_clinics c
+      LEFT JOIN tbl_doctor_clinic_map dcm ON c.clinic_id = dcm.clinic_id
+      LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
+      LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id AND ar.approval_status='APPROVED'
+      WHERE c.embeddings IS NOT NULL
+        AND c.profile_status = 'VERIFIED'
+      GROUP BY c.clinic_id
+    `);
 
-        if (search && search.trim()) {
-            const s = `%${search.toLowerCase()}%`;
-            params.push(s, s, s, s, s);
-            query += `
-                AND (
-                    LOWER(c.clinic_name) LIKE ?
-                    OR LOWER(c.address) LIKE ?
-                    OR LOWER(d.name) LIKE ?
-                    OR LOWER(d.specialization) LIKE ?
-                    OR LOWER(d.phone) LIKE ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_treatments dt
-                        JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
-                        WHERE dt.doctor_id = d.doctor_id
-                        AND (
-                            LOWER(t.name) LIKE ?
-                            OR LOWER(t.swedish) LIKE ?
-                            OR LOWER(t.application) LIKE ?
-                            OR LOWER(t.type) LIKE ?
-                            OR LOWER(t.technology) LIKE ?
-                            OR LOWER(t.classification_type) LIKE ?
-                            OR LOWER(t.benefits) LIKE ?
-                            OR LOWER(t.benefits_en) LIKE ?
-                            OR LOWER(t.benefits_sv) LIKE ?
-                            OR LOWER(t.description_en) LIKE ?
-                            OR LOWER(t.description_sv) LIKE ?
-                        )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_treatments dt
-                        LEFT JOIN tbl_treatment_concerns tc ON dt.treatment_id = tc.treatment_id
-                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
-                        WHERE dt.doctor_id = d.doctor_id
-                        AND (
-                            LOWER(tc.indications_sv) LIKE ?
-                            OR LOWER(tc.indications_en) LIKE ?
-                            OR LOWER(tc.likewise_terms) LIKE ?
-                            OR LOWER(cns.name) LIKE ?
-                            OR LOWER(cns.swedish) LIKE ?
-                            OR LOWER(cns.tips) LIKE ?
-                        )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_aesthetic_devices dad
-                        JOIN tbl_aesthetic_devices ad ON dad.aesthetic_devices_id = ad.aesthetic_device_id
-                        WHERE dad.doctor_id = d.doctor_id
-                        AND (
-                            LOWER(ad.device) LIKE ?
-                            OR LOWER(ad.category) LIKE ?
-                            OR LOWER(ad.manufacturer) LIKE ?
-                            OR LOWER(ad.swedish_distributor) LIKE ?
-                            OR LOWER(ad.main_application) LIKE ?
-                        )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_surgery ds
-                        JOIN tbl_surgery srg ON ds.surgery_id = srg.surgery_id
-                        WHERE ds.doctor_id = d.doctor_id
-                        AND (
-                            LOWER(srg.type) LIKE ?
-                            OR LOWER(srg.swedish) LIKE ?
-                            OR LOWER(srg.english) LIKE ?
-                            OR LOWER(srg.area) LIKE ?
-                            OR LOWER(srg.technique) LIKE ?
-                        )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_skin_types dst
-                        JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id
-                        WHERE dst.doctor_id = d.doctor_id
-                        AND (
-                            LOWER(st.name) LIKE ?
-                            OR LOWER(st.swedish) LIKE ?
-                            OR LOWER(st.english) LIKE ?
-                            OR LOWER(st.description) LIKE ?
-                        )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_doctor_skin_condition dsc
-                        JOIN tbl_skin_conditions sc ON dsc.skin_condition_id = sc.skin_condition_id
-                        WHERE dsc.doctor_id = d.doctor_id
-                        AND (
-                            LOWER(sc.name) LIKE ?
-                            OR LOWER(sc.swedish) LIKE ?
-                            OR LOWER(sc.english) LIKE ?
-                            OR LOWER(sc.description) LIKE ?
-                        )
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_products p
-                        WHERE p.clinic_id = c.clinic_id
-                        AND p.is_deleted = 0
-                        AND (
-                            LOWER(p.name) LIKE ?
-                            OR LOWER(p.short_description) LIKE ?
-                            OR LOWER(p.full_description) LIKE ?
-                            OR LOWER(p.feature_text) LIKE ?
-                            OR LOWER(p.benefit_text) LIKE ?
-                            OR LOWER(p.how_to_use) LIKE ?
-                            OR LOWER(p.ingredients) LIKE ?
-                        )
-                    )
-                )
-            `;
+        // 2️⃣ Compute top similar rows using embedding
+        results = await getTopSimilarRows(results, search);
 
-            params.push(
-                ...Array(11).fill(s), // treatments
-                ...Array(6).fill(s),  // treatment concerns + tbl_concerns
-                ...Array(5).fill(s),  // devices
-                ...Array(5).fill(s),  // surgeries
-                ...Array(4).fill(s),  // skin types
-                ...Array(4).fill(s),  // skin conditions
-                ...Array(7).fill(s)   // products
-            );
-        }
+        // 3️⃣ Apply pagination
+        results = paginateRows(results, limit, page);
 
-        query += `
-            GROUP BY c.clinic_id
-            ORDER BY avg_rating DESC
-        `;
-
-        if (limit != null) {
-            query += ` LIMIT ?`;
-            params.push(Number(limit));
-
-            if (offset != null) {
-                query += ` OFFSET ?`;
-                params.push(Number(offset));
-            }
-        }
-
-        return await db.query(query, params);
+        return results;
     } catch (error) {
         console.error('Database Error in getClinicsByNameSearchOnly:', error.message);
         throw new Error('Failed to fetch clinics by name.');
     }
 };
 
-export const getProductsByNameSearchOnly = async ({ search = '', limit, offset }) => {
+
+export const getProductsByNameSearchOnly = async ({ search = '', page = null, limit = null }) => {
     try {
-        const params = [];
-        let query = `
-            SELECT p.*
-            FROM tbl_products AS p
-            LEFT JOIN tbl_clinics AS c ON p.clinic_id = c.clinic_id
-            WHERE c.profile_status = 'VERIFIED' AND p.is_deleted = 0
-        `;
+        if (!search?.trim()) return [];
 
-        if (search && search.trim()) {
-            const s = `%${search.toLowerCase()}%`;
-            query += `
-                AND (
-                    LOWER(p.name) LIKE ?
-                    OR LOWER(p.short_description) LIKE ?
-                    OR LOWER(p.full_description) LIKE ?
-                    OR LOWER(p.feature_text) LIKE ?
-                    OR LOWER(p.benefit_text) LIKE ?
-                    OR LOWER(p.how_to_use) LIKE ?
-                    OR LOWER(p.ingredients) LIKE ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_product_treatments pt
-                        JOIN tbl_treatments t ON pt.treatment_id = t.treatment_id
-                        WHERE pt.product_id = p.product_id
-                        AND (LOWER(t.name) LIKE ? OR LOWER(t.swedish) LIKE ?)
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_product_treatments pt
-                        LEFT JOIN tbl_treatment_concerns tc ON pt.treatment_id = tc.treatment_id
-                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
-                        WHERE pt.product_id = p.product_id
-                        AND (
-                            LOWER(tc.indications_sv) LIKE ?
-                            OR LOWER(tc.indications_en) LIKE ?
-                            OR LOWER(tc.likewise_terms) LIKE ?
-                            OR LOWER(cns.name) LIKE ?
-                            OR LOWER(cns.swedish) LIKE ?
-                            OR LOWER(cns.tips) LIKE ?
-                        )
-                    )
-                )
-            `;
-            params.push(
-                ...Array(7).fill(s),  // product fields
-                s, s,                  // product treatment name/swedish
-                ...Array(6).fill(s)    // treatment concerns + concerns
-            );
-        }
+        // 1️⃣ Fetch all products that have embeddings
+        let results = await db.query(`
+      SELECT *
+      FROM tbl_products
+      WHERE embeddings IS NOT NULL AND is_deleted = 0
+    `);
 
-        query += `
-            GROUP BY p.product_id
-            ORDER BY p.created_at DESC
-        `;
+        // 2️⃣ Compute top similar rows using embedding
+        results = await getTopSimilarRows(results, search);
 
-        if (limit != null) {
-            query += ` LIMIT ?`;
-            params.push(Number(limit));
+        // 3️⃣ Apply pagination
+        results = paginateRows(results, limit, page);
 
-            if (offset != null) {
-                query += ` OFFSET ?`;
-                params.push(Number(offset));
-            }
-        }
-
-        return await db.query(query, params);
+        return results;
     } catch (error) {
         console.error('Database Error in getProductsByNameSearchOnly:', error.message);
         throw new Error('Failed to fetch products by name.');
     }
 };
+
 
 // export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', limit, offset }) => {
 //     try {
@@ -2740,73 +2438,31 @@ export const getProductsByNameSearchOnly = async ({ search = '', limit, offset }
 //     }
 // };
 
-export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', limit, offset }) => {
+export const getTreatmentsBySearchOnly = async ({
+    search = '',
+    language = 'en',
+    page = null,
+    limit = null,
+}) => {
     try {
-        const safeSearch = search?.trim().toLowerCase();
-        const params = [];
-        let query = `SELECT * FROM tbl_treatments WHERE 1=1`;
+        if (!search?.trim()) return [];
 
-        if (safeSearch) {
-            const s = `%${safeSearch}%`;
-            query += `
-                AND (
-                    LOWER(name) LIKE ?
-                    OR LOWER(swedish) LIKE ?
-                    OR LOWER(application) LIKE ?
-                    OR LOWER(type) LIKE ?
-                    OR LOWER(technology) LIKE ?
-                    OR LOWER(classification_type) LIKE ?
-                    OR LOWER(benefits) LIKE ?
-                    OR LOWER(benefits_en) LIKE ?
-                    OR LOWER(benefits_sv) LIKE ?
-                    OR LOWER(description_en) LIKE ?
-                    OR LOWER(description_sv) LIKE ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM tbl_treatment_concerns tc
-                        LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
-                        WHERE tc.treatment_id = tbl_treatments.treatment_id
-                        AND (
-                            LOWER(tc.indications_sv) LIKE ?
-                            OR LOWER(tc.indications_en) LIKE ?
-                            OR LOWER(tc.likewise_terms) LIKE ?
-                            OR LOWER(cns.name) LIKE ?
-                            OR LOWER(cns.swedish) LIKE ?
-                            OR LOWER(cns.tips) LIKE ?
-                        )
-                    )
-                )
-            `;
-            params.push(
-                ...Array(11).fill(s),  // treatment columns
-                ...Array(6).fill(s)    // treatment concerns + concerns
-            );
-        }
+        // 1️⃣ Fetch all treatments that have embeddings
+        let results = await db.query(`
+      SELECT *
+      FROM tbl_treatments
+      WHERE embeddings IS NOT NULL
+    `);
 
-        query += ` ORDER BY created_at DESC`;
+        // 2️⃣ Compute top similar rows using embedding
+        results = await getTopSimilarRows(results, search);
 
-        if (limit != null) {
-            query += ` LIMIT ?`;
-            params.push(Number(limit));
-
-            if (offset != null) {
-                query += ` OFFSET ?`;
-                params.push(Number(offset));
-            }
-        }
-
-        let results = await db.query(query, params);
-
-        // Remove embeddings dynamically
-        results = results.map(row => {
-            const treatmentRow = { ...row };
-            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
-            return treatmentRow;
-        });
+        // 3️⃣ Apply pagination
+        results = paginateRows(results, limit, page);
 
         return formatBenefitsUnified(results, language);
     } catch (error) {
-        console.error('Database Error in getTreatmentsBySearchOnly:', error.message);
+        console.error('Database Error in getTreatmentsBySearch:', error.message);
         throw new Error('Failed to fetch treatments.');
     }
 };

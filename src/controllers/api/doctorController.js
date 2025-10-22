@@ -433,24 +433,14 @@ export const search_home_entities = asyncHandler(async (req, res) => {
     const { language = 'en' } = req.user || {};
     let { filters = {}, page, limit } = req.body || {};
 
-    // Determine pagination
-    let offset = null;
-    if (page && limit) {
-        limit = Number(limit);
-        offset = (Number(page) - 1) * limit;
-    } else {
-        limit = null;  // no limit if not provided
-        offset = null;
-    }
-
     const search = filters.search?.trim() || "";
 
     try {
         const [doctors, clinics, products, treatments] = await Promise.all([
-            userModels.getDoctorsByFirstNameSearchOnly({ search, offset, limit }),
-            userModels.getClinicsByNameSearchOnly({ search, offset, limit }),
-            userModels.getProductsByNameSearchOnly({ search, offset, limit }),
-            userModels.getTreatmentsBySearchOnly({ search, language, offset, limit })
+            userModels.getDoctorsByFirstNameSearchOnly({ search, page, limit }),
+            userModels.getClinicsByNameSearchOnly({ search, page, limit }),
+            userModels.getProductsByNameSearchOnly({ search, page, limit }),
+            userModels.getTreatmentsBySearchOnly({ search, language, page, limit })
         ]);
 
         const enrichedDoctors = doctors.map(doctor => ({
