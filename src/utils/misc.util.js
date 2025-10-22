@@ -373,58 +373,58 @@ export async function deleteGuestData() {
     await deleteGuestDataModel()
 }
 
-export const getTopSimilarRows = async (rows, search, threshold = 0.5, topN = null) => {
-  if (!search?.trim()) return rows;
+export const getTopSimilarRows = async (rows, search, threshold = 0.4, topN = null) => {
+    if (!search?.trim()) return rows;
 
-  // 1️⃣ Get embedding for the search term
-  const response = await axios.post("http://localhost:11434/api/embeddings", {
-    model: "nomic-embed-text",
-    prompt: search,
-  });
+    // 1️⃣ Get embedding for the search term
+    const response = await axios.post("http://localhost:11434/api/embeddings", {
+        model: "nomic-embed-text",
+        prompt: search,
+    });
 
-  const queryEmbedding = response.data.embedding;
+    const queryEmbedding = response.data.embedding;
 
-  // 2️⃣ Compute similarity for each row
-  const results = [];
+    // 2️⃣ Compute similarity for each row
+    const results = [];
 
-  for (const row of rows) {
-    if (!row.embeddings) continue;
+    for (const row of rows) {
+        if (!row.embeddings) continue;
 
-    const dbEmbedding = Array.isArray(row.embeddings)
-      ? row.embeddings
-      : JSON.parse(row.embeddings);
+        const dbEmbedding = Array.isArray(row.embeddings)
+            ? row.embeddings
+            : JSON.parse(row.embeddings);
 
-    const score = cosineSimilarity(queryEmbedding, dbEmbedding);
-    if (score >= threshold) {
-      const { embeddings, ...rest } = row; // exclude embeddings
-      results.push({ ...rest, score });
+        const score = cosineSimilarity(queryEmbedding, dbEmbedding);
+        if (score >= threshold) {
+            const { embeddings, ...rest } = row; // exclude embeddings
+            results.push({ ...rest, score });
+        }
     }
-  }
 
-  // 3️⃣ Sort descending by similarity
-  results.sort((a, b) => b.score - a.score);
+    // 3️⃣ Sort descending by similarity
+    results.sort((a, b) => b.score - a.score);
 
-  // 4️⃣ Return all above threshold or topN if specified
-  if (topN && topN > 0) {
-    return results.slice(0, topN);
-  }
-  return results;
+    // 4️⃣ Return all above threshold or topN if specified
+    if (topN && topN > 0) {
+        return results.slice(0, topN);
+    }
+    return results;
 };
 
 export const paginateRows = (rows, limit, page) => {
-  if (!Array.isArray(rows)) return [];
+    if (!Array.isArray(rows)) return [];
 
-  // If limit or page is not provided, return all rows
-  if (limit == null || page == null) return rows;
+    // If limit or page is not provided, return all rows
+    if (limit == null || page == null) return rows;
 
-  const total = rows.length;
-  const totalPages = Math.ceil(total / limit);
+    const total = rows.length;
+    const totalPages = Math.ceil(total / limit);
 
-  // ensure page is within bounds
-  const currentPage = Math.min(Math.max(page, 1), totalPages || 1);
+    // ensure page is within bounds
+    const currentPage = Math.min(Math.max(page, 1), totalPages || 1);
 
-  const startIndex = (currentPage - 1) * limit;
-  const endIndex = startIndex + limit;
+    const startIndex = (currentPage - 1) * limit;
+    const endIndex = startIndex + limit;
 
-  return rows.slice(startIndex, endIndex);
+    return rows.slice(startIndex, endIndex);
 };
