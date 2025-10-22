@@ -235,42 +235,35 @@ export const getTreatmentsSuggestions = async (req, res) => {
     });
     const queryEmbedding = response.data.embedding;
 
-    // 2️⃣ Vector search
-    const results = await queryTreatments(queryEmbedding, 20);
+    // 2️⃣ Fetch all treatments with embeddings
+    const rows = await dbOperations.getData(
+      "tbl_treatments",
+      "WHERE embeddings IS NOT NULL"
+    );
+    if (!rows?.length) return handleError(res, 404, "No treatments found");
 
-    if (!results.length) {
-      return res.json({ success: false, suggestions: [] });
+    // 3️⃣ Compute cosine similarity
+    const results = [];
+    for (const item of rows) {
+      const dbEmbedding = Array.isArray(item.embeddings)
+        ? item.embeddings
+        : JSON.parse(item.embeddings); // parse if stored as JSON string
+
+      const score = cosineSimilarity(queryEmbedding, dbEmbedding);
+      if (score >= 0.4) results.push({ ...item, score });
     }
 
-    // 3️⃣ Extract IDs for DB query
-    const ids = results.map(r => `'${r.treatment_id}'`).join(",");
+    // 4️⃣ Sort by similarity descending and take top 20
+    results.sort((a, b) => b.score - a.score);
+    const top = results.slice(0, 20);
 
-    // 4️⃣ Fetch DB rows
-    const treatments = await dbOperations.getSelectedColumn(
-      'treatment_id, name, classification_type',
-      'tbl_treatments',
-      `WHERE treatment_id IN (${ids})`
-    );
-
-    // 5️⃣ Create a map for fast lookup
-    const treatmentMap = new Map();
-    treatments.forEach(t => treatmentMap.set(t.treatment_id, t));
-
-    // 6️⃣ Build ordered array directly from HNSW results
-    const ordered = results
-      .map(r => treatmentMap.get(r.treatment_id))
-      .filter(Boolean);
-
-    return res.json({
-      success: true,
-      suggestions: ordered
-    });
-
+    return res.json({ success: true, suggestions: top });
   } catch (err) {
-    console.error("❌ Error generating suggestions:", err);
+    console.error("❌ Error generating treatment suggestions:", err);
     return handleError(res, 500, "EMBEDDINGS ERROR");
   }
 };
+
 export const getProductSuggestions = async (req, res) => {
   try {
     const { keyword } = req.body;
