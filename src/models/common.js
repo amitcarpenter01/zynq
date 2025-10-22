@@ -25,33 +25,35 @@ const dbOperations = {
   getTreatmentsEmbeddingText: async () => {
     try {
       return await db.query(`
-      SELECT 
-        t.treatment_id,
-        CONCAT(
-          'Treatment Name: ', t.name,
-          ' / ', t.swedish,
-          ', Classification: ', t.classification_type,
-          ', Benefits EN: ', t.benefits_en,
-          ', Benefits SV: ', t.benefits_sv,
-          ', Description EN: ', t.description_en,
-          ', Description SV: ', t.description_sv,
-          '; Concerns: ',
-          GROUP_CONCAT(
-            DISTINCT CONCAT(
-              c.name,
-              ' [EN: ', tc.indications_en,
-              ', SV: ', tc.indications_sv,
-              ', Likewise: ', tc.likewise_terms,
-              ']'
-            ) SEPARATOR '; '
-          )
-        ) AS embedding_text
-      FROM tbl_treatments t
-      LEFT JOIN tbl_treatment_concerns tc ON t.treatment_id = tc.treatment_id
-      LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
-      WHERE t.embeddings IS NULL
-      GROUP BY t.treatment_id
-      ORDER BY t.treatment_id DESC
+SELECT 
+  t.treatment_id,
+  CONCAT(
+    'Treatment Name: ', IFNULL(t.name, ''),
+    ' / ', IFNULL(t.swedish, ''),
+    ', Classification: ', IFNULL(t.classification_type, ''),
+    ', Benefits EN: ', IFNULL(t.benefits_en, ''),
+    ', Benefits SV: ', IFNULL(t.benefits_sv, ''),
+    ', Description EN: ', IFNULL(t.description_en, ''),
+    ', Description SV: ', IFNULL(t.description_sv, ''),
+    '; Concerns: ',
+    IFNULL(
+      GROUP_CONCAT(
+        DISTINCT CONCAT(
+          c.name,
+          ' [EN: ', IFNULL(tc.indications_en, ''),
+          ', SV: ', IFNULL(tc.indications_sv, ''),
+          ', Likewise: ', IFNULL(tc.likewise_terms, ''),
+          ']'
+        ) SEPARATOR '; '
+      ), 'None'
+    )
+  ) AS embedding_text
+FROM tbl_treatments t
+LEFT JOIN tbl_treatment_concerns tc ON t.treatment_id = tc.treatment_id
+LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+WHERE t.embeddings IS NULL
+GROUP BY t.treatment_id
+ORDER BY t.treatment_id DESC;
     `);
     } catch (err) {
       console.error("❌ Error fetching treatment embeddings:", err.message);
