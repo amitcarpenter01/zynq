@@ -290,9 +290,16 @@ export const getProductSuggestions = async (req, res) => {
 
     const results = [];
     for (const item of rows) {
-      const dbEmbedding = (item.embeddings);
+      const dbEmbedding = Array.isArray(item.embeddings)
+        ? item.embeddings
+        : JSON.parse(item.embeddings);
+
       const score = cosineSimilarity(qEmbedding, dbEmbedding);
-      if (score >= 0.4) results.push({ name: item.name, score });
+      if (score >= 0.4) {
+        // Exclude embeddings from the result
+        const { embeddings, ...rest } = item;
+        results.push({ ...rest, score });
+      }
     }
 
 
@@ -328,9 +335,16 @@ export const getDoctorSuggestions = async (req, res) => {
 
     const results = [];
     for (const item of rows) {
-      const dbEmbedding = (item.embeddings);
+      const dbEmbedding = Array.isArray(item.embeddings)
+        ? item.embeddings
+        : JSON.parse(item.embeddings); // parse if stored as JSON string
+
       const score = cosineSimilarity(qEmbedding, dbEmbedding);
-      if (score >= 0.45) results.push({ name: item.name, score });
+      if (score >= 0.45) {
+        // Exclude embeddings from the result
+        const { embeddings, ...rest } = item;
+        results.push({ ...rest, score });
+      }
     }
 
 
@@ -367,9 +381,16 @@ export const getClinicSuggestions = async (req, res) => {
 
     const results = [];
     for (const item of rows) {
-      const dbEmbedding = (item.embeddings);
+      const dbEmbedding = Array.isArray(item.embeddings)
+        ? item.embeddings
+        : JSON.parse(item.embeddings); // parse if stored as JSON string
+
       const score = cosineSimilarity(qEmbedding, dbEmbedding);
-      if (score >= 0.42) results.push({ name: item.clinic_name, score });
+      if (score >= 0.42) {
+        // Exclude embeddings from the result
+        const { embeddings, ...rest } = item;
+        results.push({ name: item.clinic_name, ...rest, score });
+      }
     }
 
 
