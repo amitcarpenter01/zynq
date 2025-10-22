@@ -2302,10 +2302,10 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
         AND d.profile_status = 'VERIFIED'
       GROUP BY d.doctor_id, dm.clinic_id
     `);
-
+    console.log("results 1- ", results);
     // 2️⃣ Compute top similar rows using embeddings
     results = await getTopSimilarRows(results, search);
-
+            console.log("results 2- ", results);
     // 3️⃣ Apply pagination
     results = paginateRows(results, limit, page);
 
@@ -2335,10 +2335,10 @@ export const getClinicsByNameSearchOnly = async ({ search = '', page = null, lim
         AND c.profile_status = 'VERIFIED'
       GROUP BY c.clinic_id
     `);
-
+                console.log("results 1- ", results);
         // 2️⃣ Compute top similar rows using embedding
         results = await getTopSimilarRows(results, search);
-
+    console.log("results 2- ", results);
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
