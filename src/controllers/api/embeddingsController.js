@@ -60,7 +60,7 @@ export const generateProductsEmbedding = async (req, res) => {
     if (!rows || rows.length === 0) {
       return handleError(res, 404, "en", "No data found");
     }
-
+    console.log(rows[0].embedding_text);
     for (const row of rows) {
 
       const combinedText = row.embedding_text;
