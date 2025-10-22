@@ -4,6 +4,8 @@ import { openai } from "../../app.js"
 import { deleteGuestDataModel, getInvitedZynqUsers } from "../models/api.js";
 import { zynqReminderEnglishTemplate, zynqReminderSwedishTemplate } from "./templates.js";
 import { sendEmail } from "../services/send_email.js";
+import { cosineSimilarity } from "./user_helper.js";
+import axios from "axios";
 
 const isEmpty = (value) => {
     if (value === null || value === undefined) return true;
@@ -370,3 +372,41 @@ export async function sendInvitationReminders() {
 export async function deleteGuestData() {
     await deleteGuestDataModel()
 }
+
+export const getTopSimilarRows = async (rows, search, threshold = 0.5, topN = null) => {
+  if (!search?.trim()) return rows;
+
+  // 1️⃣ Get embedding for the search term
+  const response = await axios.post("http://localhost:11434/api/embeddings", {
+    model: "nomic-embed-text",
+    prompt: search,
+  });
+
+  const queryEmbedding = response.data.embedding;
+
+  // 2️⃣ Compute similarity for each row
+  const results = [];
+
+  for (const row of rows) {
+    if (!row.embeddings) continue;
+
+    const dbEmbedding = Array.isArray(row.embeddings)
+      ? row.embeddings
+      : JSON.parse(row.embeddings);
+
+    const score = cosineSimilarity(queryEmbedding, dbEmbedding);
+    if (score >= threshold) {
+      const { embeddings, ...rest } = row; // exclude embeddings
+      results.push({ ...rest, score });
+    }
+  }
+
+  // 3️⃣ Sort descending by similarity
+  results.sort((a, b) => b.score - a.score);
+
+  // 4️⃣ Return all above threshold or topN if specified
+  if (topN && topN > 0) {
+    return results.slice(0, topN);
+  }
+  return results;
+};
