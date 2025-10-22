@@ -410,3 +410,18 @@ export const getTopSimilarRows = async (rows, search, threshold = 0.5, topN = nu
   }
   return results;
 };
+
+export const paginateRows = (rows, limit = 20, page = 1) => {
+  if (!Array.isArray(rows)) return [];
+
+  const total = rows.length;
+  const totalPages = Math.ceil(total / limit);
+
+  // ensure page is within bounds
+  const currentPage = Math.min(Math.max(page, 1), totalPages || 1);
+
+  const startIndex = (currentPage - 1) * limit;
+  const endIndex = startIndex + limit;
+
+  return rows.slice(startIndex, endIndex);
+};
