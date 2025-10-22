@@ -212,7 +212,7 @@ ORDER BY t.treatment_id DESC;
                  ']'
                ) SEPARATOR '; ') AS devices_text
         FROM tbl_doctor_aesthetic_devices dad
-        JOIN tbl_aesthetic_devices ad ON dad.aesthetic_device_id = ad.aesthetic_device_id
+        JOIN tbl_aesthetic_devices ad ON dad.aesthetic_devices_id = ad.aesthetic_device_id
         GROUP BY dad.doctor_id
       ) dagg ON d.doctor_id = dagg.doctor_id
 
@@ -344,7 +344,7 @@ ORDER BY t.treatment_id DESC;
                  ) SEPARATOR '; '
                ) AS devices_text
         FROM tbl_clinic_aesthetic_devices cad
-        LEFT JOIN tbl_aesthetic_devices ad ON cad.aesthetic_device_id = ad.aesthetic_device_id
+        LEFT JOIN tbl_aesthetic_devices ad ON cad.aesthetic_devices_id = ad.aesthetic_device_id
         GROUP BY cad.clinic_id
       ) devicesagg ON c.clinic_id = devicesagg.clinic_id
 
