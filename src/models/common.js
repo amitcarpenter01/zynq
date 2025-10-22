@@ -68,50 +68,49 @@ ORDER BY t.treatment_id DESC;
       SELECT 
         p.product_id,
         CONCAT(
-          'Product Name: ', p.name,
-          ', Price: ', IFNULL(p.price, ''),
-          ', Short Description: ', IFNULL(p.short_description, ''),
-          ', Full Description: ', IFNULL(p.full_description, ''),
-          ', Feature Text: ', IFNULL(p.feature_text, ''),
-          ', Benefit Text: ', IFNULL(p.benefit_text, ''),
-          ', How To Use: ', IFNULL(p.how_to_use, ''),
-          ', Ingredients: ', IFNULL(p.ingredients, ''),
-          '; Treatments: ',
-          IFNULL(tagg.treatments_text, 'None')
+          'Product Name: ', IFNULL(p.name,''),
+          ', Price: ', IFNULL(p.price,''),
+          ', Short Description: ', IFNULL(p.short_description,''),
+          ', Full Description: ', IFNULL(p.full_description,''),
+          ', Feature Text: ', IFNULL(p.feature_text,''),
+          ', Benefit Text: ', IFNULL(p.benefit_text,''),
+          ', How To Use: ', IFNULL(p.how_to_use,''),
+          ', Ingredients: ', IFNULL(p.ingredients,''),
+          '; Treatments: ', IFNULL(tagg.treatments_text,'None')
         ) AS embedding_text
       FROM tbl_products p
       LEFT JOIN (
-          SELECT pt.product_id,
+        SELECT pt.product_id,
+               GROUP_CONCAT(
+                 DISTINCT CONCAT(
+                   IFNULL(t.name,'N/A'), ' / ', IFNULL(t.swedish,''),
+                   ' [Classification: ', IFNULL(t.classification_type,''),
+                   ', Benefits EN: ', IFNULL(t.benefits_en,''),
+                   ', Benefits SV: ', IFNULL(t.benefits_sv,''),
+                   ', Description EN: ', IFNULL(t.description_en,''),
+                   ', Description SV: ', IFNULL(t.description_sv,''),
+                   ', Concerns: ', IFNULL(tcagg.concerns_text,'None'),
+                   ']'
+                 ) SEPARATOR '; '
+               ) AS treatments_text
+        FROM tbl_product_treatments pt
+        JOIN tbl_treatments t ON pt.treatment_id = t.treatment_id
+        LEFT JOIN (
+          SELECT tc.treatment_id,
                  GROUP_CONCAT(
                    DISTINCT CONCAT(
-                     t.name, ' / ', t.swedish,
-                     ' [Classification: ', t.classification_type,
-                     ', Benefits EN: ', t.benefits_en,
-                     ', Benefits SV: ', t.benefits_sv,
-                     ', Description EN: ', t.description_en,
-                     ', Description SV: ', t.description_sv,
-                     ', Concerns: ', IFNULL(tc.concerns_text, 'None'),
+                     IFNULL(c.name,'N/A'),
+                     ' [EN: ', IFNULL(tc.indications_en,''),
+                     ', SV: ', IFNULL(tc.indications_sv,''),
+                     ', Likewise: ', IFNULL(tc.likewise_terms,''),
                      ']'
-                   ) SEPARATOR '; '
-                 ) AS treatments_text
-          FROM tbl_product_treatments pt
-          JOIN tbl_treatments t ON pt.treatment_id = t.treatment_id
-          LEFT JOIN (
-              SELECT tc.treatment_id,
-                     GROUP_CONCAT(
-                       DISTINCT CONCAT(
-                         c.name,
-                         ' [EN: ', tc.indications_en,
-                         ', SV: ', tc.indications_sv,
-                         ', Likewise: ', tc.likewise_terms,
-                         ']'
-                       ) SEPARATOR ', '
-                     ) AS concerns_text
-              FROM tbl_treatment_concerns tc
-              LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
-              GROUP BY tc.treatment_id
-          ) tc ON t.treatment_id = tc.treatment_id
-          GROUP BY pt.product_id
+                   ) SEPARATOR ', '
+                 ) AS concerns_text
+          FROM tbl_treatment_concerns tc
+          LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+          GROUP BY tc.treatment_id
+        ) tcagg ON t.treatment_id = tcagg.treatment_id
+        GROUP BY pt.product_id
       ) tagg ON p.product_id = tagg.product_id
       WHERE p.embeddings IS NULL
       ORDER BY p.product_id DESC;
@@ -121,182 +120,243 @@ ORDER BY t.treatment_id DESC;
       throw err; // re-throw so calling code can handle
     }
   },
+
   getDoctorsEmbeddingText: async () => {
     try {
       return await db.query(`
       SELECT 
         d.doctor_id,
         CONCAT(
-          'Name: ', d.name,
+          'Name: ', IFNULL(d.name, ''),
           ', Address: ', IFNULL(d.address, ''),
           ', Biography: ', IFNULL(d.biography, ''),
           ', Gender: ', IFNULL(d.gender, ''),
           ', Age: ', IFNULL(d.age, ''),
           ', Fee per session: ', IFNULL(d.fee_per_session, ''),
-          '; Treatments: ',
-          GROUP_CONCAT(
-            DISTINCT CONCAT(
-              t.name, ' / ', t.swedish,
-              ' [Classification: ', t.classification_type,
-              ', Benefits EN: ', t.benefits_en,
-              ', Benefits SV: ', t.benefits_sv,
-              ', Description EN: ', t.description_en,
-              ', Description SV: ', t.description_sv,
-              ', Concerns: ', 
-                GROUP_CONCAT(DISTINCT CONCAT(
-                  c.name,
-                  ' [EN: ', tc_agg.indications_en,
-                  ', SV: ', tc_agg.indications_sv,
-                  ', Likewise: ', tc_agg.likewise_terms,
-                  ']'
-                ) SEPARATOR ', ')
-              ,']'
-            ) SEPARATOR '; '
-          ),
-          '; Skin Types: ',
-          GROUP_CONCAT(
-            DISTINCT CONCAT(
-              st.name, ' / ', st.Swedish,
-              ' [English: ', st.English,
-              ', Description EN: ', st.description,
-              ', Description SV: ', st.desc_sv,
-              ', Who can do: ', st.who_can_do,
-              ', Areas: ', st.areas,
-              ', Synonyms EN: ', st.syn_en,
-              ', Synonyms SV: ', st.syn_sv,
-              ']'
-            ) SEPARATOR '; '
-          ),
-          '; Certifications: ',
-          GROUP_CONCAT(DISTINCT CONCAT(ct.name, ' / ', ct.swedish) SEPARATOR '; '),
-          '; Devices: ',
-          GROUP_CONCAT(DISTINCT CONCAT(
-            ad.name, ' [Category: ', ad.category,
-            ', Manufacturer: ', ad.manufacturer,
-            ', Distributor: ', ad.swedish_distributor,
-            ', Application: ', ad.main_application,
-            ']'
-          ) SEPARATOR '; '),
-          '; Education: ',
-          GROUP_CONCAT(DISTINCT CONCAT(degree, ' - ', institution) SEPARATOR '; '),
-          '; Experience: ',
-          GROUP_CONCAT(DISTINCT CONCAT(organization, ' - ', designation) SEPARATOR '; ')
+          '; Treatments: ', IFNULL(tagg.treatments_text, 'None'),
+          '; Skin Types: ', IFNULL(stagg.skin_types_text, 'None'),
+          '; Certifications: ', IFNULL(cagg.certifications_text, 'None'),
+          '; Devices: ', IFNULL(dagg.devices_text, 'None'),
+          '; Education: ', IFNULL(eagg.education_text, 'None'),
+          '; Experience: ', IFNULL(exagg.experience_text, 'None')
         ) AS embedding_text
       FROM tbl_doctors d
-      LEFT JOIN tbl_doctor_treatments dt ON d.doctor_id = dt.doctor_id
-      LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+
+      -- Treatments + Concerns
       LEFT JOIN (
-          SELECT treatment_id, concern_id,
-                 GROUP_CONCAT(DISTINCT indications_en SEPARATOR ', ') AS indications_en,
-                 GROUP_CONCAT(DISTINCT indications_sv SEPARATOR ', ') AS indications_sv,
-                 GROUP_CONCAT(DISTINCT likewise_terms SEPARATOR ', ') AS likewise_terms
-          FROM tbl_treatment_concerns
-          GROUP BY treatment_id, concern_id
-      ) tc_agg ON t.treatment_id = tc_agg.treatment_id
-      LEFT JOIN tbl_concerns c ON tc_agg.concern_id = c.concern_id
-      LEFT JOIN tbl_doctor_skin_types dst ON d.doctor_id = dst.doctor_id
-      LEFT JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id
-      LEFT JOIN tbl_doctor_certification dc ON d.doctor_id = dc.doctor_id
-      LEFT JOIN tbl_certification_type ct ON dc.certification_type_id = ct.certification_type_id
-      LEFT JOIN tbl_doctor_aesthetic_devices dad ON d.doctor_id = dad.doctor_id
-      LEFT JOIN tbl_aesthetic_devices ad ON dad.aesthetic_device_id = ad.aesthetic_device_id
-      LEFT JOIN tbl_doctor_educations de ON d.doctor_id = de.doctor_id
-      LEFT JOIN tbl_doctor_experiences dex ON d.doctor_id = dex.doctor_id
+        SELECT dt.doctor_id,
+               GROUP_CONCAT(DISTINCT CONCAT(
+                 IFNULL(t.name, 'N/A'), ' / ', IFNULL(t.swedish, ''),
+                 ' [Classification: ', IFNULL(t.classification_type, ''),
+                 ', Benefits EN: ', IFNULL(t.benefits_en, ''),
+                 ', Benefits SV: ', IFNULL(t.benefits_sv, ''),
+                 ', Description EN: ', IFNULL(t.description_en, ''),
+                 ', Description SV: ', IFNULL(t.description_sv, ''),
+                 ', Concerns: ', IFNULL(tcagg.concerns_text, 'None'),
+                 ']'
+               ) SEPARATOR '; ') AS treatments_text
+        FROM tbl_doctor_treatments dt
+        JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+        LEFT JOIN (
+          SELECT tc.treatment_id,
+                 GROUP_CONCAT(DISTINCT CONCAT(
+                   IFNULL(c.name,'N/A'),
+                   ' [EN: ', IFNULL(tc.indications_en,''),
+                   ', SV: ', IFNULL(tc.indications_sv,''),
+                   ', Likewise: ', IFNULL(tc.likewise_terms,''),
+                   ']'
+                 ) SEPARATOR ', ') AS concerns_text
+          FROM tbl_treatment_concerns tc
+          LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+          GROUP BY tc.treatment_id
+        ) tcagg ON t.treatment_id = tcagg.treatment_id
+        GROUP BY dt.doctor_id
+      ) tagg ON d.doctor_id = tagg.doctor_id
+
+      -- Skin Types
+      LEFT JOIN (
+        SELECT dst.doctor_id,
+               GROUP_CONCAT(DISTINCT CONCAT(
+                 IFNULL(st.name,'N/A'), ' / ', IFNULL(st.Swedish,''),
+                 ' [English: ', IFNULL(st.English,''),
+                 ', Description EN: ', IFNULL(st.description,''),
+                 ', Description SV: ', IFNULL(st.desc_sv,''),
+                 ', Who can do: ', IFNULL(st.who_can_do,''),
+                 ', Areas: ', IFNULL(st.areas,''),
+                 ', Synonyms EN: ', IFNULL(st.syn_en,''),
+                 ', Synonyms SV: ', IFNULL(st.syn_sv,''),
+                 ']'
+               ) SEPARATOR '; ') AS skin_types_text
+        FROM tbl_doctor_skin_types dst
+        JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id
+        GROUP BY dst.doctor_id
+      ) stagg ON d.doctor_id = stagg.doctor_id
+
+      -- Certifications
+      LEFT JOIN (
+        SELECT dc.doctor_id,
+               GROUP_CONCAT(DISTINCT CONCAT(IFNULL(ct.name,'N/A'), ' / ', IFNULL(ct.swedish,'')) SEPARATOR '; ') AS certifications_text
+        FROM tbl_doctor_certification dc
+        JOIN tbl_certification_type ct ON dc.certification_type_id = ct.certification_type_id
+        GROUP BY dc.doctor_id
+      ) cagg ON d.doctor_id = cagg.doctor_id
+
+      -- Devices
+      LEFT JOIN (
+        SELECT dad.doctor_id,
+               GROUP_CONCAT(DISTINCT CONCAT(
+                 IFNULL(ad.name,'N/A'), ' [Category: ', IFNULL(ad.category,''),
+                 ', Manufacturer: ', IFNULL(ad.manufacturer,''),
+                 ', Distributor: ', IFNULL(ad.swedish_distributor,''),
+                 ', Application: ', IFNULL(ad.main_application,''),
+                 ']'
+               ) SEPARATOR '; ') AS devices_text
+        FROM tbl_doctor_aesthetic_devices dad
+        JOIN tbl_aesthetic_devices ad ON dad.aesthetic_device_id = ad.aesthetic_device_id
+        GROUP BY dad.doctor_id
+      ) dagg ON d.doctor_id = dagg.doctor_id
+
+      -- Education
+      LEFT JOIN (
+        SELECT doctor_id,
+               GROUP_CONCAT(DISTINCT CONCAT(IFNULL(degree,'N/A'), ' - ', IFNULL(institution,'')) SEPARATOR '; ') AS education_text
+        FROM tbl_doctor_educations
+        GROUP BY doctor_id
+      ) eagg ON d.doctor_id = eagg.doctor_id
+
+      -- Experience
+      LEFT JOIN (
+        SELECT doctor_id,
+               GROUP_CONCAT(DISTINCT CONCAT(IFNULL(organization,'N/A'), ' - ', IFNULL(designation,'')) SEPARATOR '; ') AS experience_text
+        FROM tbl_doctor_experiences
+        GROUP BY doctor_id
+      ) exagg ON d.doctor_id = exagg.doctor_id
+
       WHERE d.profile_status = 'VERIFIED' AND d.embeddings IS NULL
       GROUP BY d.doctor_id
-      ORDER BY d.doctor_id DESC
+      ORDER BY d.doctor_id DESC;
     `);
     } catch (err) {
-      console.error("❌ Error fetching doctor embeddings:", err.message);
+      console.error("❌ Error fetching doctor embeddings:", err);
+      throw err;
     }
   },
+
   getClinicsEmbeddingText: async () => {
     try {
       return await db.query(`
       SELECT 
         c.clinic_id,
         CONCAT(
-          'Clinic Name: ', c.clinic_name,
-          ', Email: ', IFNULL(c.email, ''),
-          ', Mobile: ', IFNULL(c.mobile_number, ''),
-          ', Address: ', IFNULL(c.address, ''),
-          ', Website: ', IFNULL(c.website_url, ''),
-          '; Locations: ',
-          GROUP_CONCAT(
-            DISTINCT CONCAT(
-              cl.street_address, ', ', cl.city, ', ', cl.state, ', ', cl.zip_code
-            ) SEPARATOR '; '
-          ),
-          '; Treatments: ',
-          GROUP_CONCAT(
-            DISTINCT CONCAT(
-              t.name, ' / ', t.swedish,
-              ' [Classification: ', t.classification_type,
-              ', Benefits EN: ', t.benefits_en,
-              ', Benefits SV: ', t.benefits_sv,
-              ', Description EN: ', t.description_en,
-              ', Description SV: ', t.description_sv,
-              ', Concerns: ',
-                GROUP_CONCAT(DISTINCT CONCAT(
-                  co.name,
-                  ' [EN: ', tc_agg.indications_en,
-                  ', SV: ', tc_agg.indications_sv,
-                  ', Likewise: ', tc_agg.likewise_terms,
-                  ']'
-                ) SEPARATOR ', ')
-              ,']'
-            ) SEPARATOR '; '
-          ),
-          '; Skin Types: ',
-          GROUP_CONCAT(
-            DISTINCT CONCAT(
-              st.name, ' / ', st.Swedish,
-              ' [English: ', st.English,
-              ', Description EN: ', st.description,
-              ', Description SV: ', st.desc_sv,
-              ', Who can do: ', st.who_can_do,
-              ', Areas: ', st.areas,
-              ', Synonyms EN: ', st.syn_en,
-              ', Synonyms SV: ', st.syn_sv,
-              ']'
-            ) SEPARATOR '; '
-          ),
-          '; Devices: ',
-          GROUP_CONCAT(
-            DISTINCT CONCAT(
-              ad.name, ' [Category: ', ad.category,
-              ', Manufacturer: ', ad.manufacturer,
-              ', Distributor: ', ad.swedish_distributor,
-              ', Application: ', ad.main_application,
-              ']'
-            ) SEPARATOR '; '
-          )
+          'Clinic Name: ', IFNULL(c.clinic_name,''),
+          ', Email: ', IFNULL(c.email,''),
+          ', Mobile: ', IFNULL(c.mobile_number,''),
+          ', Address: ', IFNULL(c.address,''),
+          ', Website: ', IFNULL(c.website_url,''),
+          '; Locations: ', IFNULL(loc.locations_text,'None'),
+          '; Treatments: ', IFNULL(tagg.treatments_text,'None'),
+          '; Skin Types: ', IFNULL(stagg.skin_types_text,'None'),
+          '; Devices: ', IFNULL(devicesagg.devices_text,'None')
         ) AS embedding_text
       FROM tbl_clinics c
-      LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
-      LEFT JOIN tbl_clinic_treatments ct ON c.clinic_id = ct.clinic_id
-      LEFT JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
+      -- Pre-aggregate locations
       LEFT JOIN (
-          SELECT treatment_id, concern_id,
-                 GROUP_CONCAT(DISTINCT indications_en SEPARATOR ', ') AS indications_en,
-                 GROUP_CONCAT(DISTINCT indications_sv SEPARATOR ', ') AS indications_sv,
-                 GROUP_CONCAT(DISTINCT likewise_terms SEPARATOR ', ') AS likewise_terms
-          FROM tbl_treatment_concerns
-          GROUP BY treatment_id, concern_id
-      ) tc_agg ON t.treatment_id = tc_agg.treatment_id
-      LEFT JOIN tbl_concerns co ON tc_agg.concern_id = co.concern_id
-      LEFT JOIN tbl_clinic_skin_types cst ON c.clinic_id = cst.clinic_id
-      LEFT JOIN tbl_skin_types st ON cst.skin_type_id = st.skin_type_id
-      LEFT JOIN tbl_clinic_aesthetic_devices cad ON c.clinic_id = cad.clinic_id
-      LEFT JOIN tbl_aesthetic_devices ad ON cad.aesthetic_device_id = ad.aesthetic_device_id
+        SELECT clinic_id,
+               GROUP_CONCAT(
+                 DISTINCT CONCAT(
+                   IFNULL(street_address,''),
+                   ', ', IFNULL(city,''),
+                   ', ', IFNULL(state,''),
+                   ', ', IFNULL(zip_code,'')
+                 ) SEPARATOR '; '
+               ) AS locations_text
+        FROM tbl_clinic_locations
+        GROUP BY clinic_id
+      ) loc ON c.clinic_id = loc.clinic_id
+
+      -- Pre-aggregate treatments + concerns
+      LEFT JOIN (
+        SELECT ct.clinic_id,
+               GROUP_CONCAT(
+                 DISTINCT CONCAT(
+                   IFNULL(t.name,'N/A'), ' / ', IFNULL(t.swedish,''),
+                   ' [Classification: ', IFNULL(t.classification_type,''),
+                   ', Benefits EN: ', IFNULL(t.benefits_en,''),
+                   ', Benefits SV: ', IFNULL(t.benefits_sv,''),
+                   ', Description EN: ', IFNULL(t.description_en,''),
+                   ', Description SV: ', IFNULL(t.description_sv,''),
+                   ', Concerns: ', IFNULL(tcagg.concerns_text,'None'),
+                   ']'
+                 ) SEPARATOR '; '
+               ) AS treatments_text
+        FROM tbl_clinic_treatments ct
+        JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
+        LEFT JOIN (
+          SELECT tc.treatment_id,
+                 GROUP_CONCAT(
+                   DISTINCT CONCAT(
+                     IFNULL(c.name,'N/A'),
+                     ' [EN: ', IFNULL(tc.indications_en,''),
+                     ', SV: ', IFNULL(tc.indications_sv,''),
+                     ', Likewise: ', IFNULL(tc.likewise_terms,''),
+                     ']'
+                   ) SEPARATOR ', '
+                 ) AS concerns_text
+          FROM tbl_treatment_concerns tc
+          LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+          GROUP BY tc.treatment_id
+        ) tcagg ON t.treatment_id = tcagg.treatment_id
+        GROUP BY ct.clinic_id
+      ) tagg ON c.clinic_id = tagg.clinic_id
+
+      -- Pre-aggregate skin types
+      LEFT JOIN (
+        SELECT cst.clinic_id,
+               GROUP_CONCAT(
+                 DISTINCT CONCAT(
+                   IFNULL(st.name,'N/A'), ' / ', IFNULL(st.Swedish,''),
+                   ' [English: ', IFNULL(st.English,''),
+                   ', Description EN: ', IFNULL(st.description,''),
+                   ', Description SV: ', IFNULL(st.desc_sv,''),
+                   ', Who can do: ', IFNULL(st.who_can_do,''),
+                   ', Areas: ', IFNULL(st.areas,''),
+                   ', Synonyms EN: ', IFNULL(st.syn_en,''),
+                   ', Synonyms SV: ', IFNULL(st.syn_sv,''),
+                   ']'
+                 ) SEPARATOR '; '
+               ) AS skin_types_text
+        FROM tbl_clinic_skin_types cst
+        LEFT JOIN tbl_skin_types st ON cst.skin_type_id = st.skin_type_id
+        GROUP BY cst.clinic_id
+      ) stagg ON c.clinic_id = stagg.clinic_id
+
+      -- Pre-aggregate devices
+      LEFT JOIN (
+        SELECT cad.clinic_id,
+               GROUP_CONCAT(
+                 DISTINCT CONCAT(
+                   IFNULL(ad.name,'N/A'),
+                   ' [Category: ', IFNULL(ad.category,''),
+                   ', Manufacturer: ', IFNULL(ad.manufacturer,''),
+                   ', Distributor: ', IFNULL(ad.swedish_distributor,''),
+                   ', Application: ', IFNULL(ad.main_application,''),
+                   ']'
+                 ) SEPARATOR '; '
+               ) AS devices_text
+        FROM tbl_clinic_aesthetic_devices cad
+        LEFT JOIN tbl_aesthetic_devices ad ON cad.aesthetic_device_id = ad.aesthetic_device_id
+        GROUP BY cad.clinic_id
+      ) devicesagg ON c.clinic_id = devicesagg.clinic_id
+
       WHERE c.profile_status = 'VERIFIED' AND c.embeddings IS NULL
-      GROUP BY c.clinic_id
-      ORDER BY c.clinic_id DESC
+      ORDER BY c.clinic_id DESC;
     `);
     } catch (err) {
-      console.error("❌ Error fetching clinic embeddings:", err.message);
+      console.error("❌ Error fetching clinic embeddings:", err);
+      throw err; // re-throw so calling code can handle
     }
   }
+
 }
 
 export default dbOperations;
