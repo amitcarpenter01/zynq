@@ -233,7 +233,6 @@ ORDER BY t.treatment_id DESC;
       ) exagg ON d.doctor_id = exagg.doctor_id
 
       WHERE d.profile_status = 'VERIFIED' AND d.embeddings IS NULL
-      GROUP BY d.doctor_id
       ORDER BY d.doctor_id DESC;
     `);
     } catch (err) {
