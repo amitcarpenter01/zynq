@@ -11,14 +11,14 @@ const APP_URL = process.env.APP_URL;
 
 export const generateTreatmentEmbeddings = async (req, res) => {
   try {
-    
+
     const rows = await dbOperations.getTreatmentsWithConcerns();
     // console.log(rows);
     if (!rows || rows.length === 0) {
-      return handleError(res, 404,'en', "No Data found");
+      return handleError(res, 404, 'en', "No Data found");
     }
 
- 
+
     for (const row of rows) {
       const combinedText = `
         Treatment Name: ${row.name || ''}.
@@ -42,7 +42,7 @@ export const generateTreatmentEmbeddings = async (req, res) => {
         const vector = response.data.embedding;
         const vectorJson = JSON.stringify(vector);
 
-    
+
         await dbOperations.updateData(
           "tbl_treatments",
           { embeddings: vectorJson },
@@ -70,17 +70,17 @@ export const generateProductsEmbedding = async (req, res) => {
     }
 
     for (const row of rows) {
-      
+
       const combinedText = [
         row.product_name ? `Product Name: ${row.product_name}` : "",
         row.description_en ? `Description: ${row.description_en}` : "",
         row.treatments_en ? `Treats (EN): ${row.treatments_en}` : "",
         row.treatments_sv ? `Treats (SV): ${row.treatments_sv}` : ""
       ]
-        .filter(Boolean) 
-        .join(". "); 
+        .filter(Boolean)
+        .join(". ");
 
-      if (!combinedText.trim()) continue; 
+      if (!combinedText.trim()) continue;
 
       console.log(combinedText);
 
@@ -121,7 +121,7 @@ export const generateDoctorsEmbedding = async (req, res) => {
     }
 
     for (const row of rows) {
-     
+
       const combinedText = [
         row.expert_name ? `Expert Name: ${row.expert_name}` : "",
         row.treatments_en ? `Treats (EN): ${row.treatments_en}` : "",
@@ -168,26 +168,26 @@ export const generateClinicEmbedding = async (req, res) => {
     const rows = await dbOperations.getClinicWithTreatments();
     console.log(rows);
     if (!rows || rows.length === 0) {
-      return handleError(res, 404,'en', "No Data found");
+      return handleError(res, 404, 'en', "No Data found");
     }
 
     for (const row of rows) {
-      
+
       const fields = [
         row.clinic_name ? `Clinic Name: ${row.clinic_name}` : "",
         row.treatments_en ? `Treats (EN): ${row.treatments_en}` : "",
         row.treatments_sv ? `Treats (SV): ${row.treatments_sv}` : "",
       ];
 
-      
+
       const combinedText = fields.filter(Boolean).join(". ") + ".";
 
-      
+
       if (!combinedText.trim() || combinedText === ".") {
         console.log(`⏭️ Skipping clinic ID ${row.clinic_id} (no valid data)`);
         continue;
       }
-console.log(combinedText);
+
       try {
         // Generate embedding from Ollama
         const response = await axios.post("http://localhost:11434/api/embeddings", {
@@ -202,7 +202,7 @@ console.log(combinedText);
           continue;
         }
 
-       
+
         await dbOperations.updateData(
           "tbl_clinics",
           { embeddings: JSON.stringify(vector) },
@@ -228,7 +228,7 @@ export const getTreatmentsSuggestions = async (req, res) => {
     const { keyword } = req.body;
     if (!keyword) return handleError(res, 400, "Keyword is required");
 
-    
+
     const response = await axios.post("http://localhost:11434/api/embeddings", {
       model: "nomic-embed-text",
       prompt: keyword,
@@ -250,7 +250,11 @@ export const getTreatmentsSuggestions = async (req, res) => {
         : JSON.parse(item.embeddings); // parse if stored as JSON string
 
       const score = cosineSimilarity(queryEmbedding, dbEmbedding);
-      if (score >= 0.4) results.push({ ...item, score });
+      if (score >= 0.4) {
+        // Exclude embeddings from the response
+        const { embeddings, ...rest } = item;
+        results.push({ ...rest, score });
+      }
     }
 
     // 4️⃣ Sort by similarity descending and take top 20
@@ -269,21 +273,21 @@ export const getProductSuggestions = async (req, res) => {
     const { keyword } = req.body;
     if (!keyword) return handleError(res, 400, "Keyword is required");
 
-    
+
     const response = await axios.post("http://localhost:11434/api/embeddings", {
       model: "nomic-embed-text",
       prompt: keyword,
     });
-    const qEmbedding  = response.data.embedding;
+    const qEmbedding = response.data.embedding;
 
-    
+
     const rows = await dbOperations.getData(
       "tbl_products",
       "WHERE embeddings IS NOT NULL"
     );
     if (!rows?.length) return handleError(res, 404, "No Products found");
 
-    
+
     const results = [];
     for (const item of rows) {
       const dbEmbedding = (item.embeddings);
@@ -291,7 +295,7 @@ export const getProductSuggestions = async (req, res) => {
       if (score >= 0.4) results.push({ name: item.name, score });
     }
 
-    
+
     results.sort((a, b) => b.score - a.score);
     const top = results.slice(0, 20);
 
@@ -307,21 +311,21 @@ export const getDoctorSuggestions = async (req, res) => {
     const { keyword } = req.body;
     if (!keyword) return handleError(res, 400, "Keyword is required");
 
-    
+
     const response = await axios.post("http://localhost:11434/api/embeddings", {
       model: "nomic-embed-text",
       prompt: keyword,
     });
-    const qEmbedding  = response.data.embedding;
+    const qEmbedding = response.data.embedding;
 
-    
+
     const rows = await dbOperations.getData(
       "tbl_doctors",
       "WHERE embeddings IS NOT NULL"
     );
     if (!rows?.length) return handleError(res, 404, "No doctors found");
 
-    
+
     const results = [];
     for (const item of rows) {
       const dbEmbedding = (item.embeddings);
@@ -329,7 +333,7 @@ export const getDoctorSuggestions = async (req, res) => {
       if (score >= 0.45) results.push({ name: item.name, score });
     }
 
-    
+
     results.sort((a, b) => b.score - a.score);
     const top = results.slice(0, 20);
 
@@ -345,30 +349,30 @@ export const getClinicSuggestions = async (req, res) => {
     const { keyword } = req.body;
     if (!keyword) return handleError(res, 400, "Keyword is required");
 
-    
+
     const response = await axios.post("http://localhost:11434/api/embeddings", {
       model: "nomic-embed-text",
       prompt: keyword,
     });
-    const qEmbedding  = response.data.embedding;
+    const qEmbedding = response.data.embedding;
 
-    
+
     const rows = await dbOperations.getData(
       "tbl_clinics",
       "WHERE embeddings IS NOT NULL"
     );
-  
+
     if (!rows?.length) return handleError(res, 404, "No doctors found");
 
-    
+
     const results = [];
     for (const item of rows) {
       const dbEmbedding = (item.embeddings);
       const score = cosineSimilarity(qEmbedding, dbEmbedding);
-      if (score >= 0.42) results.push({ name: item.clinic_name , score });
+      if (score >= 0.42) results.push({ name: item.clinic_name, score });
     }
 
-    
+
     results.sort((a, b) => b.score - a.score);
     const top = results.slice(0, 20);
 
