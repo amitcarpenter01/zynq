@@ -13,7 +13,7 @@ export const generateTreatmentEmbeddings = async (req, res) => {
   try {
 
     const rows = await dbOperations.getTreatmentsEmbeddingText();
-    // console.log(rows);
+    console.log(rows);
     if (!rows || rows.length === 0) {
       return handleError(res, 404, 'en', "No Data found");
     }
