@@ -50,7 +50,8 @@ const configs = {
         left_dark_circle: "LeftDarkCircle",
         right_dark_circle: "RightDarkCircle"
     },
-    openaiKey: process.env.OPENAI_API_KEY
+    openaiKey: process.env.OPENAI_API_KEY,
+    legalTeamMail :"legal@getzynq.io"
 }
 
 export default configs

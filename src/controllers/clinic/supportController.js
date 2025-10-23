@@ -14,6 +14,8 @@ import { sendEmail } from "../../services/send_email.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { generateAccessToken, generatePassword, generateVerificationLink, generateSupportTicketId } from "../../utils/user_helper.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
+import { supportTicketTemplateEnglish, supportTicketTemplateSwedish } from "../../utils/templates.js";
+import configs from "../../config/config.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,6 +49,24 @@ export const create_support_ticket = async (req, res) => {
             issue_description: issue_description,
             ticket_id: supportTicketId,
         };
+
+        const data = {
+            ticketId: supportTicketId,
+            userName: req?.user?.name || "User",
+            userEmail: req?.user?.email || "",
+            subject: issue_title,
+            description: issue_description,
+        }
+       
+        const emailTemplate = req?.user?.language === "sv" ? supportTicketTemplateSwedish : supportTicketTemplateEnglish
+         
+        const { subject, body } = emailTemplate(data)
+        
+        await sendEmail({
+            to: configs.legalTeamMail,
+            subject: subject,
+            html: body
+        })
 
         await clinicModels.insertSupportTicket(supportTicketData);
         return handleSuccess(res, 201, "en", "SUPPORT_TICKET_CREATED_SUCCESSFULLY");

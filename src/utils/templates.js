@@ -752,3 +752,207 @@ export const zynqReminderSwedishTemplate = ({
 `
   };
 };
+
+export const supportTicketTemplateEnglish = ({
+  ticketId,
+  userName,
+  userEmail,
+  subject,
+  description,
+  logoUrl = "https://getzynq.io:4000/logo1.png"
+}) => {
+  return {
+    subject: `ZYNQ | New Support Ticket #${ticketId}`,
+    body: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Support Ticket #${ticketId}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+  body { font-family: 'Poppins', Arial, sans-serif; margin:0; padding:0; background-color:#f7f9fc; color:#333; }
+  .container { max-width:600px; margin:20px auto; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.08); }
+  .header { text-align:center; padding:25px 20px; background-color:#c3e2f7; }
+  .header img { width:160px; height:auto; }
+  .content { padding:25px 20px; }
+  .content h2 { color:#111; margin:0 0 10px; font-weight:600; }
+  .content p { color:#555; line-height:1.6; margin:8px 0; font-size:15px; }
+  .details-table { width:100%; border:1px solid #e0e0e0; border-radius:6px; margin-top:20px; border-collapse:collapse; }
+  .details-table th, .details-table td { padding:12px 15px; text-align:left; font-size:14px; border-bottom:1px solid #e0e0e0; }
+  .details-table th { background-color:#f5f5f5; font-weight:600; color:#333; width:30%; }
+  .details-table td { color:#444; }
+  .footer { text-align:center; padding:18px; background-color:#282828; color:#fff; font-size:13px; }
+  .footer a { color:#c3e2f7; text-decoration:underline; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="${logoUrl}" alt="ZYNQ Logo" />
+    </div>
+    <div class="content">
+      <h2>New Support Ticket Submitted</h2>
+      <p>Hello Legal Team,</p>
+      <p>A new support ticket has been submitted through the ZYNQ Support System. Please review the details below:</p>
+      <table class="details-table">
+        <tr><th>Ticket ID</th><td>#${ticketId}</td></tr>
+        <tr><th>Submitted By</th><td>${userName} (${userEmail})</td></tr>
+        <tr><th>Subject</th><td>${subject}</td></tr>
+        <tr><th>Description</th><td>${description}</td></tr>
+      </table>
+      <p style="margin-top:20px;">Kindly review and take necessary action on this ticket at the earliest.</p>
+      <p>Best regards,<br><strong>ZYNQ Support System</strong></p>
+    </div>
+    <div class="footer">
+      Need Assistance? <a href="mailto:legal@getzynq.io">Contact Support</a>
+    </div>
+  </div>
+</body>
+</html>`
+  };
+};
+
+export const supportTicketTemplateSwedish = ({
+  ticketId,
+  userName,
+  userEmail,
+  subject,
+  description,
+  logoUrl = "https://getzynq.io:4000/logo1.png"
+}) => {
+  return {
+    subject: `ZYNQ | Ny supportärende #${ticketId}`,
+    body: `
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Supportärende #${ticketId}</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+    body {
+      font-family: 'Poppins', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f7f9fc;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+    .header {
+      text-align: center;
+      padding: 25px 20px;
+      background-color: #c3e2f7;
+    }
+    .header img {
+      width: 160px;
+      height: auto;
+    }
+    .content {
+      padding: 25px 20px;
+    }
+    .content h2 {
+      color: #111;
+      margin: 0 0 10px;
+      font-weight: 600;
+    }
+    .content p {
+      color: #555;
+      line-height: 1.6;
+      margin: 8px 0;
+      font-size: 15px;
+    }
+    .details-table {
+      width: 100%;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    .details-table th, .details-table td {
+      padding: 12px 15px;
+      text-align: left;
+      font-size: 14px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .details-table th {
+      background-color: #f5f5f5;
+      font-weight: 600;
+      color: #333;
+      width: 30%;
+    }
+    .details-table td {
+      color: #444;
+    }
+    .footer {
+      text-align: center;
+      padding: 18px;
+      background-color: #282828;
+      color: #ffffff;
+      font-size: 13px;
+    }
+    .footer a {
+      color: #c3e2f7;
+      text-decoration: underline;
+    }
+</style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <img src="${logoUrl}" alt="ZYNQ Logo" />
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <h2>Nytt supportärende inkommit</h2>
+      <p>Hej Juridiska Teamet,</p>
+      <p>Ett nytt supportärende har skickats in via ZYNQ Support System. Vänligen granska detaljerna nedan:</p>
+
+      <!-- Ticket Details -->
+      <table class="details-table">
+        <tr>
+          <th>Ärende ID</th>
+          <td>#${ticketId}</td>
+        </tr>
+        <tr>
+          <th>Inskickad av</th>
+          <td>${userName} (${userEmail})</td>
+        </tr>
+        <tr>
+          <th>Ämne</th>
+          <td>${subject}</td>
+        </tr>
+        <tr>
+          <th>Beskrivning</th>
+          <td>${description}</td>
+        </tr>
+      </table>
+
+      <p style="margin-top:20px;">Vänligen granska och vidta nödvändiga åtgärder så snart som möjligt.</p>
+      <p>Vänliga hälsningar,<br><strong>ZYNQ Support System</strong></p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      Behöver du hjälp? <a href="mailto:legal@getzynq.io">Kontakta support</a>
+    </div>
+  </div>
+</body>
+</html>
+    `
+  };
+};
+
+
+
+
