@@ -52,7 +52,7 @@ export const create_support_ticket = async (req, res) => {
 
         const data = {
             ticketId: supportTicketId,
-            userName: req?.user?.name || "User",
+            userName: req?.user?.clinicData?.clinic_name || "User",
             userEmail: req?.user?.email || "",
             subject: issue_title,
             description: issue_description,
