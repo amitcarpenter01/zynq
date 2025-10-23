@@ -617,16 +617,21 @@ export const getDoctorTreatments = async (doctor_id) => {
 };
 
 //======================================= Product =========================================
+
 export const get_all_products_for_user = async ({
     user_id,
     treatment_ids = [],
-    search = '',
+    search = "",
     price = {},
-    sort = { by: 'latest', order: 'desc' },
+    sort = { by: "latest", order: "desc" },
     limit = 20,
     offset = 0
 }) => {
     try {
+        const trimmedSearch = (search || "").trim().toLowerCase();
+        const useEmbeddings = !!trimmedSearch;
+
+        // 1️⃣ --- Build Base Query ---
         let query = `
             SELECT 
                 p.*,
@@ -648,102 +653,59 @@ export const get_all_products_for_user = async ({
 
         const params = [user_id];
 
-        // Filter by treatments
+        // 2️⃣ --- Apply Filters ---
         if (treatment_ids.length > 0) {
-            query += ` AND pt.treatment_id IN (${treatment_ids.map(() => '?').join(', ')})`;
+            query += ` AND pt.treatment_id IN (${treatment_ids.map(() => "?").join(", ")})`;
             params.push(...treatment_ids);
         }
 
-        // --- Search block: product + treatments + concerns + skin types ---
-        const trimmedSearch = (search || '').trim().toLowerCase();
-
-        if (trimmedSearch) {
-            const like = `%${trimmedSearch}%`;
-            query += `
-        AND (
-            LOWER(p.name) LIKE ?
-            OR LOWER(p.short_description) LIKE ?
-            OR LOWER(p.full_description) LIKE ?
-            OR LOWER(p.feature_text) LIKE ?
-            OR LOWER(p.benefit_text) LIKE ?
-            OR LOWER(p.how_to_use) LIKE ?
-            OR LOWER(p.ingredients) LIKE ?
-            OR EXISTS (
-                SELECT 1
-                FROM tbl_product_treatments spt
-                JOIN tbl_treatments st ON spt.treatment_id = st.treatment_id
-                WHERE spt.product_id = p.product_id
-                  AND (
-                      LOWER(st.name) LIKE ?
-                      OR LOWER(st.swedish) LIKE ?
-                  )
-            )
-            OR EXISTS (
-                SELECT 1
-                FROM tbl_product_treatments spt
-                LEFT JOIN tbl_treatment_concerns tc ON spt.treatment_id = tc.treatment_id
-                LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
-                WHERE spt.product_id = p.product_id
-                  AND (
-                      LOWER(tc.indications_sv) LIKE ?
-                      OR LOWER(tc.indications_en) LIKE ?
-                      OR LOWER(tc.likewise_terms) LIKE ?
-                      OR LOWER(cns.name) LIKE ?
-                      OR LOWER(cns.swedish) LIKE ?
-                      OR LOWER(cns.tips) LIKE ?
-                  )
-            )
-            OR EXISTS (
-                SELECT 1
-                FROM tbl_skin_types st
-                JOIN tbl_skin_treatment_map stm ON st.skin_type_id = stm.skin_type_id
-                JOIN tbl_product_treatments spt2 ON stm.treatment_id = spt2.treatment_id
-                WHERE spt2.product_id = p.product_id
-                  AND (
-                      LOWER(st.name) LIKE ?
-                      OR LOWER(st.swedish) LIKE ?
-                      OR LOWER(st.syn_en) LIKE ?
-                      OR LOWER(st.syn_sv) LIKE ?
-                      OR LOWER(st.areas) LIKE ?
-                      OR LOWER(st.description) LIKE ?
-                      OR LOWER(st.desc_sv) LIKE ?
-                  )
-            )
-        )
-    `;
-
-            // params: 7 product fields + 2 treatment fields + 6 concern fields + 7 skin type fields
-            params.push(...Array(7).fill(like), like, like, ...Array(6).fill(like), ...Array(7).fill(like));
-        }
-
-
-        // Price filters
-        if (typeof price?.min === 'number') {
+        if (typeof price?.min === "number") {
             query += ` AND p.price >= ?`;
             params.push(price.min);
         }
-        if (typeof price?.max === 'number') {
+        if (typeof price?.max === "number") {
             query += ` AND p.price <= ?`;
             params.push(price.max);
         }
 
-        // Sorting
-        let orderBy = 'ORDER BY';
-        if (sort.by === 'price') {
+        // 3️⃣ --- Sorting ---
+        let orderBy = "ORDER BY";
+        if (sort.by === "price") {
             orderBy += ` p.price ${sort.order}`;
         } else {
             orderBy += ` p.created_at ${sort.order}`;
         }
 
-        query += ` GROUP BY p.product_id ${orderBy} LIMIT ? OFFSET ?`;
-        params.push(limit, offset);
+        // 4️⃣ --- Handle Search Mode ---
+        if (!useEmbeddings) {
+            // Normal mode — DB handles pagination
+            query += ` GROUP BY p.product_id ${orderBy} LIMIT ? OFFSET ?`;
+            params.push(limit, offset);
 
-        return await db.query(query, params);
+            const rows = await db.query(query, params);
+            const sanitizedRows = rows.map(({ embeddings, ...rest }) => rest);
+            return sanitizedRows;
+        }
+
+        // 🔍 Embedding Search Mode
+        // (fetch all filtered products, no pagination here)
+        query += ` GROUP BY p.product_id ${orderBy}`;
+        const rows = await db.query(query, params);
+        if (!rows?.length) return [];
+
+        // 5️⃣ --- Apply Embedding Similarity ---
+        const rankedRows = await getTopSimilarRows(rows, trimmedSearch);
+
+        // 6️⃣ --- Apply Offset-based Pagination ---
+        const paginatedRows = rankedRows.slice(offset, offset + limit);
+
+        return paginatedRows;
     } catch (error) {
         console.error("Database Error in get_all_products_for_user:", error.message);
         throw new Error("Failed to fetch products.");
     }
 };
+
 
 export const getUserCartProduct = async (
     user_id
