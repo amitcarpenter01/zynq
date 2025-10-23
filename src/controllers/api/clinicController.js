@@ -37,7 +37,7 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         latitude: userLatitude = null,
         longitude: userLongitude = null,
         language = 'en'
-    } = req.user;
+    } = req?.user || {};
 
     // userLatitude = 22.72481320
     // userLongitude = 75.88707720

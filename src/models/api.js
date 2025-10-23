@@ -786,210 +786,170 @@ export const get_product_images = async (product_id) => {
 
 //======================================= Clinic =========================================
 
-
 export const getAllClinicsForUser = async ({
-    treatment_ids = [],
-    skin_condition_ids = [],
-    aesthetic_device_ids = [],
-    skin_type_ids = [],
-    surgery_ids = [],
-    search = '',
-    distance = {},
-    price = {},
-    min_rating = null,
-    sort = { by: 'default', order: 'desc' },
-    userLatitude,
-    userLongitude,
-    limit,
-    offset
+  treatment_ids = [],
+  skin_condition_ids = [],
+  aesthetic_device_ids = [],
+  skin_type_ids = [],
+  surgery_ids = [],
+  search = '',
+  distance = {},
+  price = {},
+  min_rating = null,
+  sort = { by: 'default', order: 'desc' },
+  userLatitude,
+  userLongitude,
+  limit = 20,
+  offset = 0
 }) => {
-    try {
-        const params = [];
+  try {
+    const params = [];
 
-        const hasLatLong = userLatitude != null && userLongitude != null;
-        const needsDistanceFilter = distance.min != null || distance.max != null;
-        const needsDistanceSort = sort.by === 'nearest';
+    const trimmedSearch = (search || '').trim().toLowerCase();
+    const useEmbeddings = !!trimmedSearch;
 
-        const needsDistance = hasLatLong;
-        const applyDistanceFilter = hasLatLong && needsDistanceFilter;
-        const applyDistanceSort = hasLatLong && needsDistanceSort;
+    const hasLatLong = userLatitude != null && userLongitude != null;
+    const needsDistanceFilter = distance.min != null || distance.max != null;
+    const needsDistanceSort = sort.by === 'nearest';
 
-        const hasPriceFilter = price.min != null || price.max != null;
-        const needsRating = min_rating !== null || sort.by === 'rating';
+    const needsDistance = hasLatLong;
+    const applyDistanceFilter = hasLatLong && needsDistanceFilter;
+    const applyDistanceSort = hasLatLong && needsDistanceSort;
 
-        const selectFields = [
-            'c.clinic_id',
-            'c.clinic_name',
-            'c.clinic_logo',
-            'c.address',
-            'c.mobile_number',
-            'MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range',
-            'MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range',
-            'ROUND(AVG(ar.rating), 2) AS avg_rating',
-            needsDistance ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance` : null
-        ].filter(Boolean).join(', ');
+    const hasPriceFilter = price.min != null || price.max != null;
 
-        if (needsDistance) {
-            params.push(userLongitude, userLatitude);
-        }
+    // --- Base SELECT ---
+    const selectFields = [
+      'c.clinic_id',
+      'c.clinic_name',
+      'c.clinic_logo',
+      'c.address',
+      'c.mobile_number',
+      'MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range',
+      'MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range',
+      'ROUND(AVG(ar.rating), 2) AS avg_rating',
+      needsDistance
+        ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance`
+        : null
+    ]
+      .filter(Boolean)
+      .join(', ');
 
-        let query = `
-            SELECT ${selectFields}
-            FROM tbl_clinics c
-            LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
-            LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
-            LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
-            LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id AND ar.approval_status = 'APPROVED'
-        `;
-
-        const joins = [];
-        const filters = [];
-
-        const addJoinAndFilter = (ids, table, alias, column) => {
-            if (ids.length > 0) {
-                joins.push(`LEFT JOIN ${table} ${alias} ON c.clinic_id = ${alias}.clinic_id`);
-                filters.push(`${alias}.${column} IN (${ids.map(() => '?').join(', ')})`);
-                params.push(...ids);
-            }
-        };
-
-        addJoinAndFilter(treatment_ids, 'tbl_clinic_treatments', 'ct', 'treatment_id');
-        addJoinAndFilter(skin_condition_ids, 'tbl_clinic_skin_condition', 'csc', 'skin_condition_id');
-        addJoinAndFilter(aesthetic_device_ids, 'tbl_clinic_aesthetic_devices', 'cad', 'aesthetic_devices_id');
-        addJoinAndFilter(skin_type_ids, 'tbl_clinic_skin_types', 'cskt', 'skin_type_id');
-        addJoinAndFilter(surgery_ids, 'tbl_clinic_surgery', 'cr', 'surgery_id');
-
-        if (joins.length > 0) {
-            query += ' ' + joins.join(' ');
-        }
-
-        query += ` WHERE c.profile_status = 'VERIFIED' AND c.profile_completion_percentage >= 50`;
-
-        // --- Search block: clinic name + treatments + concerns + skin types ---
-        const trimmedSearch = (search || '').trim().toLowerCase();
-        if (trimmedSearch) {
-            const like = `%${trimmedSearch}%`;
-
-            filters.push(`
-        (
-            LOWER(c.clinic_name) LIKE ?
-            OR LOWER(c.address) LIKE ?
-            OR EXISTS (
-                SELECT 1
-                FROM tbl_clinic_treatments ct
-                JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
-                WHERE ct.clinic_id = c.clinic_id
-                  AND (
-                      LOWER(t.name) LIKE ?
-                      OR LOWER(t.swedish) LIKE ?
-                      OR LOWER(t.application) LIKE ?
-                      OR LOWER(t.type) LIKE ?
-                      OR LOWER(t.technology) LIKE ?
-                      OR LOWER(t.classification_type) LIKE ?
-                      OR LOWER(t.benefits) LIKE ?
-                      OR LOWER(t.benefits_en) LIKE ?
-                      OR LOWER(t.benefits_sv) LIKE ?
-                      OR LOWER(t.description_en) LIKE ?
-                      OR LOWER(t.description_sv) LIKE ?
-                  )
-            )
-            OR EXISTS (
-                SELECT 1
-                FROM tbl_clinic_treatments ct
-                LEFT JOIN tbl_treatment_concerns tc ON ct.treatment_id = tc.treatment_id
-                LEFT JOIN tbl_concerns cns ON tc.concern_id = cns.concern_id
-                WHERE ct.clinic_id = c.clinic_id
-                  AND (
-                      LOWER(tc.indications_sv) LIKE ?
-                      OR LOWER(tc.indications_en) LIKE ?
-                      OR LOWER(tc.likewise_terms) LIKE ?
-                      OR LOWER(cns.name) LIKE ?
-                      OR LOWER(cns.swedish) LIKE ?
-                      OR LOWER(cns.tips) LIKE ?
-                  )
-            )
-            OR EXISTS (
-                SELECT 1
-                FROM tbl_skin_types st
-                JOIN tbl_skin_treatment_map stm ON st.skin_type_id = stm.skin_type_id
-                JOIN tbl_clinic_treatments ct2 ON stm.treatment_id = ct2.treatment_id
-                WHERE ct2.clinic_id = c.clinic_id
-                  AND (
-                      LOWER(st.name) LIKE ?
-                      OR LOWER(st.swedish) LIKE ?
-                      OR LOWER(st.syn_en) LIKE ?
-                      OR LOWER(st.syn_sv) LIKE ?
-                      OR LOWER(st.areas) LIKE ?
-                      OR LOWER(st.description) LIKE ?
-                      OR LOWER(st.desc_sv) LIKE ?
-                  )
-            )
-        )
-    `);
-
-            // params: clinic_name + address (2) + 11 treatment fields + 6 concern fields + 7 skin type fields
-            params.push(like, like, ...Array(11).fill(like), ...Array(6).fill(like), ...Array(7).fill(like));
-        }
-
-        if (filters.length > 0) {
-            query += ` AND ${filters.join(' AND ')}`;
-        }
-
-        query += ` GROUP BY c.clinic_id`;
-
-        const havingConditions = [];
-
-        if (min_rating !== null) {
-            const ratingCeiling = Math.min(min_rating + 1, 5.01);
-            havingConditions.push(`CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) <= ?`);
-            params.push(min_rating, ratingCeiling);
-        }
-
-        if (hasPriceFilter) {
-            if (price.min != null) {
-                havingConditions.push(`doctor_lower_price_range >= ?`);
-                params.push(price.min);
-            }
-            if (price.max != null) {
-                havingConditions.push(`doctor_higher_price_range <= ?`);
-                params.push(price.max);
-            }
-        }
-
-        if (applyDistanceFilter) {
-            if (distance.min != null) {
-                havingConditions.push(`distance >= ?`);
-                params.push(distance.min);
-            }
-            if (distance.max != null) {
-                havingConditions.push(`distance <= ?`);
-                params.push(distance.max);
-            }
-        }
-
-        if (havingConditions.length > 0) {
-            query += ` HAVING ${havingConditions.join(' AND ')}`;
-        }
-
-        if (applyDistanceSort) {
-            query += ` ORDER BY distance ${sort.order.toUpperCase()}`;
-        } else if (sort.by === 'rating') {
-            query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
-        } else if (sort.by === 'price') {
-            query += ` ORDER BY doctor_lower_price_range ${sort.order.toUpperCase()}`;
-        } else {
-            query += ` ORDER BY c.created_at DESC`;
-        }
-
-        query += ` LIMIT ? OFFSET ?`;
-        params.push(Number(limit), Number(offset));
-
-        return await db.query(query, params);
-    } catch (error) {
-        console.error("Database Error in getAllClinicsForUser:", error.message);
-        throw new Error("Failed to fetch clinics.");
+    if (needsDistance) {
+      params.push(userLongitude, userLatitude);
     }
+
+    // --- FROM and JOINs ---
+    let query = `
+      SELECT ${selectFields}
+      FROM tbl_clinics c
+      LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
+      LEFT JOIN tbl_doctor_clinic_map dcm ON dcm.clinic_id = c.clinic_id
+      LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
+      LEFT JOIN tbl_appointment_ratings ar 
+        ON c.clinic_id = ar.clinic_id AND ar.approval_status = 'APPROVED'
+    `;
+
+    const joins = [];
+    const filters = [];
+
+    // --- Helper to attach filters ---
+    const addJoinAndFilter = (ids, table, alias, column) => {
+      if (ids.length > 0) {
+        joins.push(`LEFT JOIN ${table} ${alias} ON c.clinic_id = ${alias}.clinic_id`);
+        filters.push(`${alias}.${column} IN (${ids.map(() => '?').join(', ')})`);
+        params.push(...ids);
+      }
+    };
+
+    addJoinAndFilter(treatment_ids, 'tbl_clinic_treatments', 'ct', 'treatment_id');
+    addJoinAndFilter(skin_condition_ids, 'tbl_clinic_skin_condition', 'csc', 'skin_condition_id');
+    addJoinAndFilter(aesthetic_device_ids, 'tbl_clinic_aesthetic_devices', 'cad', 'aesthetic_devices_id');
+    addJoinAndFilter(skin_type_ids, 'tbl_clinic_skin_types', 'cskt', 'skin_type_id');
+    addJoinAndFilter(surgery_ids, 'tbl_clinic_surgery', 'cr', 'surgery_id');
+
+    if (joins.length > 0) query += ' ' + joins.join(' ');
+
+    // --- Filters ---
+    query += ` WHERE c.profile_status = 'VERIFIED' AND c.profile_completion_percentage >= 50`;
+
+    if (filters.length > 0) query += ` AND ${filters.join(' AND ')}`;
+
+    // --- GROUP BY ---
+    query += ` GROUP BY c.clinic_id`;
+
+    // --- HAVING Conditions ---
+    const havingConditions = [];
+
+    if (min_rating !== null) {
+      const ratingCeiling = Math.min(min_rating + 1, 5.01);
+      havingConditions.push(`CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) <= ?`);
+      params.push(min_rating, ratingCeiling);
+    }
+
+    if (hasPriceFilter) {
+      if (price.min != null) {
+        havingConditions.push(`doctor_lower_price_range >= ?`);
+        params.push(price.min);
+      }
+      if (price.max != null) {
+        havingConditions.push(`doctor_higher_price_range <= ?`);
+        params.push(price.max);
+      }
+    }
+
+    if (applyDistanceFilter) {
+      if (distance.min != null) {
+        havingConditions.push(`distance >= ?`);
+        params.push(distance.min);
+      }
+      if (distance.max != null) {
+        havingConditions.push(`distance <= ?`);
+        params.push(distance.max);
+      }
+    }
+
+    if (havingConditions.length > 0) {
+      query += ` HAVING ${havingConditions.join(' AND ')}`;
+    }
+
+    // --- Sorting ---
+    if (applyDistanceSort) {
+      query += ` ORDER BY distance ${sort.order.toUpperCase()}`;
+    } else if (sort.by === 'rating') {
+      query += ` ORDER BY avg_rating ${sort.order.toUpperCase()}`;
+    } else if (sort.by === 'price') {
+      query += ` ORDER BY doctor_lower_price_range ${sort.order.toUpperCase()}`;
+    } else {
+      query += ` ORDER BY c.created_at DESC`;
+    }
+
+    // ⚙️ NORMAL MODE (no search)
+    if (!useEmbeddings) {
+      query += ` LIMIT ? OFFSET ?`;
+      params.push(Number(limit), Number(offset));
+      return await db.query(query, params);
+    }
+
+    // ⚡️ EMBEDDING SEARCH MODE
+    const PREFILTER_LIMIT = 1000;
+    query += ` LIMIT ${PREFILTER_LIMIT}`;
+    const rows = await db.query(query, params);
+    if (!rows?.length) return [];
+
+    // Apply vector-based semantic ranking
+    const ranked = await getTopSimilarRows(rows, trimmedSearch);
+
+    // Manual offset/limit
+    const paginated = ranked.slice(offset, offset + limit);
+    return paginated;
+
+  } catch (error) {
+    console.error('Database Error in getAllClinicsForUser:', error.message);
+    throw new Error('Failed to fetch clinics.');
+  }
 };
+
 
 export const getNearbyClinicsForUser = async ({
     treatment_ids = [],
