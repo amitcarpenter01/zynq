@@ -31,3 +31,7 @@ export const openAIBackendEndpointSchema = joi.object({
     )
 
 });
+
+export const addConsentSchema = joi.object({
+  device_id: stringValidation.optional(),
+}).optional()

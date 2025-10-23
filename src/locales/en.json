@@ -283,5 +283,7 @@
   "DRAFT_APPOINTMENTS_FETCHED_SUCCESSFULLY": "Draft Appointments Fetched Successfully",
   "USER_DELETED" : "Account has been deleted",
   "USER_VERIFIED_SUCCESSFULLY" : "User Verified Successfully",
-  "APPOINTMENT_DRAFT_ADDED" : "Draft Appointment Added Successfully"
+  "APPOINTMENT_DRAFT_ADDED" : "Draft Appointment Added Successfully",
+  "CONSENT_ADDED_SUCCESSFULLY" : "Consent Added Successfully",
+  "DEVICE_OR_USER_REQUIRED" : "Device ID or User ID is required"
 }

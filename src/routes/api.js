@@ -28,7 +28,7 @@ import { getTipsByConcernsSchema, getTreatmentFiltersSchema, getTreatmentsByConc
 import { deleteNotifications, deleteSingleNotification, getNotifications, toggleNotification } from '../controllers/api/notificationController.js';
 import { sendAppointmentNotifications } from '../services/notifications.service.js';
 import { toggleLanguage } from '../controllers/web_users/authController.js';
-import { geminiBackendEndpoint, getLegalDocuments, openAIBackendEndpoint, openAIBackendEndpointV2 } from '../controllers/api/legalController.js';
+import { addConsent, geminiBackendEndpoint, getLegalDocuments, openAIBackendEndpoint, openAIBackendEndpointV2 } from '../controllers/api/legalController.js';
 import { uploadMulterChatFiles } from '../services/multer.chat.js';
 import { getAllProductsSchema, getSingleProductSchema } from '../validations/product.validation.js';
 import { getWishlists, toggleWishlistProduct } from '../controllers/api/wishlistController.js';
@@ -43,7 +43,7 @@ import { addEditAddress, deleteAddress, getAddresses, getSingleAddress } from '.
 import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
 import { getAllFAQCategories, getAllFAQs } from '../controllers/api/FAQController.js';
 import { getAllFAQSchema } from '../validations/faq.validation.js';
-import { openAIBackendEndpointSchema } from '../validations/legal.validation.js';
+import { addConsentSchema, openAIBackendEndpointSchema } from '../validations/legal.validation.js';
 
 const router = express.Router();
 
@@ -240,5 +240,7 @@ router.post('/openai/endpoint', validate(openAIBackendEndpointSchema, "body"), o
 router.post('/openai/endpoint/v2', validate(openAIBackendEndpointSchema, "body"), openAIBackendEndpointV2)
 
 router.post('/gemini/endpoint', geminiBackendEndpoint)
+
+router.post('/consent', optionalAuthenticateUser, validate(addConsentSchema, "body"), addConsent);
 
 export default router;

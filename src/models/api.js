@@ -656,6 +656,7 @@ export const get_all_products_for_user = async ({
 
         // --- Search block: product + treatments + concerns + skin types ---
         const trimmedSearch = (search || '').trim().toLowerCase();
+
         if (trimmedSearch) {
             const like = `%${trimmedSearch}%`;
             query += `
@@ -2275,11 +2276,11 @@ export const getSingleCartByClinicId = async (clinic_id, user_id) => {
 // -------------------------------------Updated Code Okay ------------------------------------------------//
 
 export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null, limit = null }) => {
-  try {
-    if (!search?.trim()) return [];
+    try {
+        if (!search?.trim()) return [];
 
-    // 1️⃣ Fetch doctors with embeddings + aggregated fields
-    let results = await db.query(`
+        // 1️⃣ Fetch doctors with embeddings + aggregated fields
+        let results = await db.query(`
       SELECT 
         d.doctor_id,
         d.name,
@@ -2302,18 +2303,18 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
         AND d.profile_status = 'VERIFIED'
       GROUP BY d.doctor_id, dm.clinic_id
     `);
-    console.log("results 1- ", results);
-    // 2️⃣ Compute top similar rows using embeddings
-    results = await getTopSimilarRows(results, search);
-            console.log("results 2- ", results);
-    // 3️⃣ Apply pagination
-    results = paginateRows(results, limit, page);
+        console.log("results 1- ", results);
+        // 2️⃣ Compute top similar rows using embeddings
+        results = await getTopSimilarRows(results, search);
+        console.log("results 2- ", results);
+        // 3️⃣ Apply pagination
+        results = paginateRows(results, limit, page);
 
-    return results;
-  } catch (error) {
-    console.error('Database Error in getDoctorsByFirstNameSearchOnly:', error.message);
-    throw new Error('Failed to fetch doctors.');
-  }
+        return results;
+    } catch (error) {
+        console.error('Database Error in getDoctorsByFirstNameSearchOnly:', error.message);
+        throw new Error('Failed to fetch doctors.');
+    }
 };
 
 export const getClinicsByNameSearchOnly = async ({ search = '', page = null, limit = null }) => {
@@ -2335,10 +2336,10 @@ export const getClinicsByNameSearchOnly = async ({ search = '', page = null, lim
         AND c.profile_status = 'VERIFIED'
       GROUP BY c.clinic_id
     `);
-                console.log("results 1- ", results);
+        console.log("results 1- ", results);
         // 2️⃣ Compute top similar rows using embedding
         results = await getTopSimilarRows(results, search);
-    console.log("results 2- ", results);
+        console.log("results 2- ", results);
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
@@ -3023,3 +3024,14 @@ export const getTreatmentsByAppointmentId = async (appointment_id, language = 'e
     }
 };
 
+export const addConsentModel = async ({ user_id = null, device_id = null }) => {
+    try {
+        return await db.query(`
+            INSERT INTO tbl_consents (user_id, device_id)
+            VALUES (?, ?)
+        `, [user_id, device_id]);
+    } catch (error) {
+        console.error("Database Error (addConsentModel):", error.message);
+        throw new Error("Failed to add consent.");
+    }
+}
