@@ -2985,9 +2985,9 @@ export const getTreatmentEmbeddingTextById = async (treatment_id) => {
     }
 };
 
-export const getDoctorEmbeddingTextById = async (doctor_id) => {
+export const getDoctorEmbeddingTextById = async (zynq_user_id) => {
     try {
-        if (!doctor_id) throw new Error("Doctor ID is required");
+        if (!zynq_user_id) throw new Error("zynq_user_id ID is required");
 
         return await db.query(`
       SELECT 
@@ -3092,19 +3092,19 @@ export const getDoctorEmbeddingTextById = async (doctor_id) => {
         GROUP BY doctor_id
       ) exagg ON d.doctor_id = exagg.doctor_id
 
-      WHERE d.doctor_id = ?
+      WHERE d.zynq_user_id = ?
       LIMIT 1;
-    `, [doctor_id]);
+    `, [zynq_user_id]);
 
     } catch (err) {
-        console.error(`❌ Error fetching doctor ${doctor_id} embeddings:`, err);
+        console.error(`❌ Error fetching doctor ${zynq_user_id} embeddings:`, err);
         throw err;
     }
 };
 
-export const getClinicEmbeddingTextById = async (clinic_id) => {
+export const getClinicEmbeddingTextById = async (zynq_user_id) => {
     try {
-        if (!clinic_id) throw new Error("Clinic ID is required");
+        if (!zynq_user_id) throw new Error("zynq_user_id ID is required");
 
         return await db.query(`
       SELECT 
@@ -3211,12 +3211,12 @@ export const getClinicEmbeddingTextById = async (clinic_id) => {
         GROUP BY cad.clinic_id
       ) devicesagg ON c.clinic_id = devicesagg.clinic_id
 
-      WHERE c.clinic_id = ?
+      WHERE c.zynq_user_id = ?
       LIMIT 1;
-    `, [clinic_id]);
+    `, [zynq_user_id]);
 
     } catch (err) {
-        console.error(`❌ Error fetching clinic ${clinic_id} embeddings:`, err);
+        console.error(`❌ Error fetching clinic ${zynq_user_id} embeddings:`, err);
         throw err;
     }
 };

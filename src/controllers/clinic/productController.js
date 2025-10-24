@@ -12,6 +12,7 @@ import * as webModels from "../../models/web_user.js";
 import { sendEmail } from "../../services/send_email.js";
 import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
+import { generateProductsEmbeddingsV2 } from "../api/embeddingsController.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -90,6 +91,8 @@ export const addProduct = async (req, res) => {
                 }
             }));
         }
+
+        await generateProductsEmbeddingsV2(product_id);
 
         return handleSuccess(res, 201, "en", "PRODUCT_ADDED_SUCCESSFULLY");
 
@@ -219,7 +222,7 @@ export const updateProduct = async (req, res) => {
         }
         await clinicModels.updateProduct(data, product.product_id);
         await clinicModels.updateProductTreatments(treatment_ids_array, product.product_id);
-
+        await generateProductsEmbeddingsV2(product.product_id);
         return handleSuccess(res, 200, "en", "PRODUCT_UPDATED_SUCCESSFULLY");
     } catch (error) {
         console.error("Error in updateProduct:", error);

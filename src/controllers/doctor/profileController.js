@@ -226,6 +226,7 @@ export const addConsultationFeeAndAvailability = async (req, res) => {
 
         const zynqUserId = req.user.id
         await update_onboarding_status(4, zynqUserId)
+        await generateDoctorsEmbeddingsV2(zynqUserId)
         return handleSuccess(res, 200, language, "FEE_AVAILABILITY_ADDED", {});
     } catch (error) {
         console.error(error);
@@ -326,7 +327,7 @@ export const editPersonalInformation = async (req, res) => {
         }
         await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
         const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography);
-
+        await generateDoctorsEmbeddingsV2(zynqUserId)
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", result.affectedRows);
         } else if (result.affectedRows === 0) {
@@ -388,6 +389,7 @@ export const editEducation = async (req, res) => {
             end_year: Joi.string().optional(),
         });
 
+        const zynqUserId = req.user.id;
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
@@ -400,6 +402,8 @@ export const editEducation = async (req, res) => {
             value.start_year,
             value.end_year
         );
+
+        await generateDoctorsEmbeddingsV2(zynqUserId)
 
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "EDUCATION_UPDATED_SUCCESSFULLY", result.affectedRows);
@@ -481,7 +485,7 @@ export const editExperience = async (req, res) => {
             start_date: Joi.string().optional(),
             end_date: Joi.string().optional(),
         });
-
+        const zynqUserId = req.user.id;
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
@@ -496,6 +500,7 @@ export const editExperience = async (req, res) => {
         let language = req?.user?.language || 'en';
 
         if (result.affectedRows > 0) {
+            await generateDoctorsEmbeddingsV2(zynqUserId)
             return handleSuccess(res, 200, language, "EXPERIENCE_UPDATED", result.affectedRows);
         } else {
             return handleSuccess(res, 200, language, "NO_CHANGES_MADE", {});
@@ -551,7 +556,7 @@ export const editExpertise = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
 
         const doctorId = req.user.doctorData.doctor_id;
-
+        const zynqUserId = req.user.id;
         if (value.treatments !== undefined) {
             // const treatmentIds = value.treatment_ids.split(',').map(id => id.trim());
             await doctorModels.update_doctor_treatments(doctorId, value.treatments);
@@ -576,6 +581,8 @@ export const editExpertise = async (req, res) => {
             const aestheticDevicesIds = value.aesthetic_devices_ids.split(',').map(id => id.trim());
             await doctorModels.update_doctor_aesthetic_devices(doctorId, aestheticDevicesIds)
         }
+
+        await generateDoctorsEmbeddingsV2(zynqUserId)
 
         return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", {});
     } catch (error) {
@@ -617,6 +624,7 @@ export const editCertification = async (req, res) => {
         const schema = Joi.object({
             doctor_certification_id: Joi.string().uuid().required(),
         });
+        const zynqUserId = req?.user?.id;
         let language = req?.user?.language || 'en';
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
@@ -624,6 +632,7 @@ export const editCertification = async (req, res) => {
         const result = await doctorModels.update_certification(req.file.filename, value.doctor_certification_id);
 
         if (result.affectedRows > 0) {
+            await generateDoctorsEmbeddingsV2(zynqUserId)
             return handleSuccess(res, 200, language, "CERTIFICATION_UPDATED", result.affectedRows);
         } else {
             return handleSuccess(res, 200, language, "NO_CHANGES_MADE", {});
@@ -677,7 +686,8 @@ export const editConsultationFeeAndAvailability = async (req, res) => {
         // if (error) return joiErrorHandle(res, error);
         // const doctorId = req.user.doctorData.doctor_id;
         let { doctor_availability_id } = req.params;
-
+        const zynqUserId = req?.user?.id;
+        await generateDoctorsEmbeddingsV2(zynqUserId);
         // await doctorModels.update_consultation_fee(doctorId, value.fee_per_session, "USD", value.session_duration);
         // await doctorModels.update_docter_availability(doctorId, value.availability);
         await doctorModels.update_docter_availability(req.body, doctor_availability_id);
@@ -790,7 +800,7 @@ export const editEducationAndExperienceInformation = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
 
         const doctorId = req.user.doctorData.doctor_id;
-
+        const zynqUserId = req.user.id;
         const educationList = JSON.parse(value.education);
         const experienceList = JSON.parse(value.experience);
 
@@ -849,6 +859,7 @@ export const editEducationAndExperienceInformation = async (req, res) => {
                 exp.end_date
             );
         }
+        await generateDoctorsEmbeddingsV2(zynqUserId)
         return handleSuccess(res, 201, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", {});
     } catch (error) {
         console.error(error);

@@ -7,6 +7,7 @@ import { handleError, handleSuccess, joiErrorHandle } from "../../utils/response
 import { update_onboarding_status } from "../../models/web_user.js";
 import dbOperations from '../../models/common.js';
 import { fetchZynqUserByUserId } from "../../models/api.js";
+import { generateDoctorsEmbeddingsV2 } from "../api/embeddingsController.js";
 
 dotenv.config();
 
@@ -92,6 +93,7 @@ export const addPersonalInformation = async (req, res) => {
                 doctorData.profile_status = "ONBOARDING";
             }
             var update_doctor = await dbOperations.updateData('tbl_doctors', doctorData, `WHERE zynq_user_id = '${zynqUserId}' `);
+            await generateDoctorsEmbeddingsV2(zynqUserId)
         } else {
             return handleError(res, 401, 'en', "CLINIC_NOT_FOUND");
         }
@@ -158,6 +160,7 @@ export const addContactInformation = async (req, res) => {
 
 
         await update_onboarding_status(2, zynqUserId)
+        await generateDoctorsEmbeddingsV2(zynqUserId)
         return handleSuccess(res, 201, 'en', "CONTACT_DETAILS_UPDATED", '');
 
     } catch (error) {
@@ -249,6 +252,7 @@ export const addEducationAndExperienceInformation = async (req, res) => {
         }
         const zynqUserId = req.user.id
         await update_onboarding_status(3, zynqUserId)
+        await generateDoctorsEmbeddingsV2(zynqUserId)
         return handleSuccess(res, 201, language, "DOCTOR_PROFILE_INFO_ADDED", {});
     } catch (error) {
         console.error(error);
@@ -344,6 +348,7 @@ export const addExpertise = async (req, res) => {
 
         const zynqUserId = req.user.id
         await update_onboarding_status(4, zynqUserId);
+        await generateDoctorsEmbeddingsV2(zynqUserId);
         return handleSuccess(res, 200, language, "EXPERTISE_UPDATED", {});
     } catch (error) {
         console.error(error);
@@ -378,6 +383,7 @@ export const addConsultationFeeAndAvailability = async (req, res) => {
         const zynqUserId = req.user.id
         await update_onboarding_status(5, zynqUserId)
         await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
+        await generateDoctorsEmbeddingsV2(zynqUserId)
         return handleSuccess(res, 200, language, "FEE_AVAILABILITY_ADDED", {});
     } catch (error) {
         console.error(error);
