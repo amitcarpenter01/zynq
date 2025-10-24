@@ -11,6 +11,7 @@ import { sendEmail } from "../../services/send_email.js";
 import { generateAccessToken, generateVerificationLink, isEmpty } from "../../utils/user_helper.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import axios from 'axios';
+import { generateClinicsEmbeddingsV2 } from "../api/embeddingsController.js";
 
 
 dotenv.config();
@@ -357,6 +358,7 @@ export const onboardClinic = async (req, res) => {
             const treatmentsData = await clinicModels.getClinicTreatments(clinic_id);
             if (treatmentsData) {
                 await clinicModels.updateClinicTreatments(treatments, clinic_id);
+                await generateClinicsEmbeddingsV2(zynq_user_id);
             } else {
                 await clinicModels.insertClinicTreatments(treatments, clinic_id);
             }
@@ -550,7 +552,7 @@ export const updateClinic = async (req, res) => {
                 }
             });
         }
-
+        await generateClinicsEmbeddingsV2(zynq_user_id)
         return handleSuccess(res, 200, language, "CLINIC_PROFILE_UPDATED_SUCCESSFULLY");
     }
     catch (error) {
