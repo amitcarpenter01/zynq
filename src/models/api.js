@@ -342,48 +342,48 @@ export const getAllDoctors = async ({
 };
 
 export const getAllRecommendedDoctors = async ({
-  treatment_ids = [],
-  skin_condition_ids = [],
-  aesthetic_device_ids = [],
-  skin_type_ids = [],
-  surgery_ids = [],
-  distance = {},
-  price = {},
-  search = '',
-  min_rating = null,
-  sort = { by: 'default', order: 'desc' },
-  userLatitude,
-  userLongitude,
-  limit = 20,
-  offset = 0
+    treatment_ids = [],
+    skin_condition_ids = [],
+    aesthetic_device_ids = [],
+    skin_type_ids = [],
+    surgery_ids = [],
+    distance = {},
+    price = {},
+    search = '',
+    min_rating = null,
+    sort = { by: 'default', order: 'desc' },
+    userLatitude,
+    userLongitude,
+    limit = 20,
+    offset = 0
 }) => {
-  try {
-    const params = [];
-    const needsDistance = userLatitude != null && userLongitude != null;
+    try {
+        const params = [];
+        const needsDistance = userLatitude != null && userLongitude != null;
 
-    // Distance calculation if coords provided
-    const distanceSelect = needsDistance
-      ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance`
-      : null;
+        // Distance calculation if coords provided
+        const distanceSelect = needsDistance
+            ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance`
+            : null;
 
-    const selectFields = [
-      'd.doctor_id',
-      'd.name',
-      'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
-      'd.specialization',
-      'ANY_VALUE(d.fee_per_session) AS fee_per_session',
-      'd.profile_image',
-      'dm.clinic_id',
-      'c.clinic_name',
-      'c.address AS clinic_address',
-      'ROUND(AVG(ar.rating), 2) AS avg_rating',
-      distanceSelect
-    ].filter(Boolean).join(', ');
+        const selectFields = [
+            'd.doctor_id',
+            'd.name',
+            'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
+            'd.specialization',
+            'ANY_VALUE(d.fee_per_session) AS fee_per_session',
+            'd.profile_image',
+            'dm.clinic_id',
+            'c.clinic_name',
+            'c.address AS clinic_address',
+            'ROUND(AVG(ar.rating), 2) AS avg_rating',
+            distanceSelect
+        ].filter(Boolean).join(', ');
 
-    if (needsDistance) params.push(userLongitude, userLatitude);
+        if (needsDistance) params.push(userLongitude, userLatitude);
 
-    // Base query
-    let query = `
+        // Base query
+        let query = `
       SELECT ${selectFields}
       FROM tbl_doctors d
       LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
@@ -395,89 +395,89 @@ export const getAllRecommendedDoctors = async ({
       LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
     `;
 
-    // ---------- Joins & filters ----------
-    const joins = [];
-    const filters = [];
+        // ---------- Joins & filters ----------
+        const joins = [];
+        const filters = [];
 
-    const addJoinAndFilter = (ids, table, alias, field) => {
-      if (Array.isArray(ids) && ids.length) {
-        joins.push(`LEFT JOIN ${table} ${alias} ON d.doctor_id = ${alias}.doctor_id`);
-        filters.push(`${alias}.${field} IN (${ids.map(() => '?').join(', ')})`);
-        params.push(...ids);
-      }
-    };
+        const addJoinAndFilter = (ids, table, alias, field) => {
+            if (Array.isArray(ids) && ids.length) {
+                joins.push(`LEFT JOIN ${table} ${alias} ON d.doctor_id = ${alias}.doctor_id`);
+                filters.push(`${alias}.${field} IN (${ids.map(() => '?').join(', ')})`);
+                params.push(...ids);
+            }
+        };
 
-    addJoinAndFilter(treatment_ids, 'tbl_doctor_treatments', 'dt', 'treatment_id');
-    addJoinAndFilter(skin_condition_ids, 'tbl_doctor_skin_condition', 'dsc', 'skin_condition_id');
-    addJoinAndFilter(aesthetic_device_ids, 'tbl_doctor_aesthetic_devices', 'dad', 'aesthetic_devices_id');
-    addJoinAndFilter(skin_type_ids, 'tbl_doctor_skin_types', 'dst', 'skin_type_id');
-    addJoinAndFilter(surgery_ids, 'tbl_doctor_surgery', 'ds', 'surgery_id');
+        addJoinAndFilter(treatment_ids, 'tbl_doctor_treatments', 'dt', 'treatment_id');
+        addJoinAndFilter(skin_condition_ids, 'tbl_doctor_skin_condition', 'dsc', 'skin_condition_id');
+        addJoinAndFilter(aesthetic_device_ids, 'tbl_doctor_aesthetic_devices', 'dad', 'aesthetic_devices_id');
+        addJoinAndFilter(skin_type_ids, 'tbl_doctor_skin_types', 'dst', 'skin_type_id');
+        addJoinAndFilter(surgery_ids, 'tbl_doctor_surgery', 'ds', 'surgery_id');
 
-    if (joins.length) query += ' ' + joins.join(' ');
+        if (joins.length) query += ' ' + joins.join(' ');
 
-    // Always filter verified doctors
-    query += ` WHERE d.profile_status = 'VERIFIED' `;
+        // Always filter verified doctors
+        query += ` WHERE d.profile_status = 'VERIFIED' `;
 
-    // ---------- Distance & Price filters ----------
-    if (needsDistance) {
-      if (typeof distance.min === 'number') {
-        filters.push(`ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) >= ?`);
-        params.push(userLongitude, userLatitude, distance.min);
-      }
-      if (typeof distance.max === 'number') {
-        filters.push(`ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) <= ?`);
-        params.push(userLongitude, userLatitude, distance.max);
-      }
+        // ---------- Distance & Price filters ----------
+        if (needsDistance) {
+            if (typeof distance.min === 'number') {
+                filters.push(`ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) >= ?`);
+                params.push(userLongitude, userLatitude, distance.min);
+            }
+            if (typeof distance.max === 'number') {
+                filters.push(`ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) <= ?`);
+                params.push(userLongitude, userLatitude, distance.max);
+            }
+        }
+
+        if (typeof price.min === 'number') {
+            filters.push(`d.fee_per_session >= ?`);
+            params.push(price.min);
+        }
+        if (typeof price.max === 'number') {
+            filters.push(`d.fee_per_session <= ?`);
+            params.push(price.max);
+        }
+
+        // Apply all filters
+        if (filters.length) query += ` AND ${filters.join(' AND ')}`;
+
+        // ---------- Grouping ----------
+        query += ` GROUP BY d.doctor_id, dm.clinic_id`;
+
+        // ---------- Rating filter ----------
+        if (min_rating !== null) {
+            const ceiling = Math.min(min_rating + 1, 5.01);
+            query += ` HAVING CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) <= ?`;
+            params.push(min_rating, ceiling);
+        }
+
+        // ---------- Sorting ----------
+        if (sort.by === 'rating') {
+            query += ` ORDER BY avg_rating IS NULL, CAST(avg_rating AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
+        } else if (sort.by === 'nearest' && needsDistance) {
+            query += ` ORDER BY distance IS NULL, CAST(distance AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
+        } else if (sort.by === 'price') {
+            query += ` ORDER BY d.fee_per_session IS NULL, CAST(d.fee_per_session AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
+        } else {
+            query += ` ORDER BY d.created_at DESC`;
+        }
+
+        // ---------- Fetch all filtered rows ----------
+        const rows = await db.query(query, params);
+        if (!rows?.length) return [];
+
+        // ---------- Embedding search ----------
+        const trimmedSearch = (search || '').trim();
+        if (!trimmedSearch) return rows.slice(offset, offset + limit);
+
+        const ranked = await getTopSimilarRows(rows, trimmedSearch);
+        return ranked.slice(offset, offset + limit);
+
+    } catch (error) {
+        console.error('Database Error in getAllRecommendedDoctors:', error.message);
+        throw new Error('Failed to fetch doctors.');
     }
-
-    if (typeof price.min === 'number') {
-      filters.push(`d.fee_per_session >= ?`);
-      params.push(price.min);
-    }
-    if (typeof price.max === 'number') {
-      filters.push(`d.fee_per_session <= ?`);
-      params.push(price.max);
-    }
-
-    // Apply all filters
-    if (filters.length) query += ` AND ${filters.join(' AND ')}`;
-
-    // ---------- Grouping ----------
-    query += ` GROUP BY d.doctor_id, dm.clinic_id`;
-
-    // ---------- Rating filter ----------
-    if (min_rating !== null) {
-      const ceiling = Math.min(min_rating + 1, 5.01);
-      query += ` HAVING CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) <= ?`;
-      params.push(min_rating, ceiling);
-    }
-
-    // ---------- Sorting ----------
-    if (sort.by === 'rating') {
-      query += ` ORDER BY avg_rating IS NULL, CAST(avg_rating AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
-    } else if (sort.by === 'nearest' && needsDistance) {
-      query += ` ORDER BY distance IS NULL, CAST(distance AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
-    } else if (sort.by === 'price') {
-      query += ` ORDER BY d.fee_per_session IS NULL, CAST(d.fee_per_session AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
-    } else {
-      query += ` ORDER BY d.created_at DESC`;
-    }
-
-    // ---------- Fetch all filtered rows ----------
-    const rows = await db.query(query, params);
-    if (!rows?.length) return [];
-
-    // ---------- Embedding search ----------
-    const trimmedSearch = (search || '').trim();
-    if (!trimmedSearch) return rows.slice(offset, offset + limit);
-
-    const ranked = await getTopSimilarRows(rows, trimmedSearch);
-    return ranked.slice(offset, offset + limit);
-
-  } catch (error) {
-    console.error('Database Error in getAllRecommendedDoctors:', error.message);
-    throw new Error('Failed to fetch doctors.');
-  }
 };
 
 export const getDoctorAvailability = async (doctor_id) => {
@@ -887,6 +887,7 @@ export const getAllClinicsForUser = async ({
 
         // ⚡️ EMBEDDING SEARCH MODE
         const rows = await db.query(query, params);
+        console.log("ROws", rows);
         if (!rows?.length) return [];
 
         // Apply vector-based semantic ranking
@@ -2161,10 +2162,9 @@ export const getClinicsByNameSearchOnly = async ({ search = '', page = null, lim
         AND c.profile_status = 'VERIFIED' AND c.profile_completion_percentage >= 50
       GROUP BY c.clinic_id
     `);
-        console.log("results 1- ", results);
+
         // 2️⃣ Compute top similar rows using embedding
         results = await getTopSimilarRows(results, search);
-        console.log("results 2- ", results);
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
@@ -2860,3 +2860,343 @@ export const addConsentModel = async ({ user_id = null, device_id = null }) => {
         throw new Error("Failed to add consent.");
     }
 }
+
+export const getProductWithTreatmentsById = async (product_id) => {
+    try {
+        if (!product_id) throw new Error("Product ID is required");
+
+        return await db.query(`
+      SELECT 
+        p.product_id,
+        CONCAT(
+          'Product Name: ', IFNULL(p.name,''),
+          ', Price: ', IFNULL(p.price,''),
+          ', Short Description: ', IFNULL(p.short_description,''),
+          ', Full Description: ', IFNULL(p.full_description,''),
+          ', Feature Text: ', IFNULL(p.feature_text,''),
+          ', Benefit Text: ', IFNULL(p.benefit_text,''),
+          ', How To Use: ', IFNULL(p.how_to_use,''),
+          ', Ingredients: ', IFNULL(p.ingredients,''),
+          '; Treatments: ', IFNULL(tagg.treatments_text,'None')
+        ) AS embedding_text
+      FROM tbl_products p
+      LEFT JOIN (
+        SELECT pt.product_id,
+               GROUP_CONCAT(
+                 DISTINCT CONCAT(
+                   IFNULL(t.name,'N/A'), ' / ', IFNULL(t.swedish,''),
+                   ' [Classification: ', IFNULL(t.classification_type,''),
+                   ', Benefits EN: ', IFNULL(t.benefits_en,''),
+                   ', Benefits SV: ', IFNULL(t.benefits_sv,''),
+                   ', Description EN: ', IFNULL(t.description_en,''),
+                   ', Description SV: ', IFNULL(t.description_sv,''),
+                   ', Concerns: ', IFNULL(tcagg.concerns_text,'None'),
+                   ']'
+                 ) SEPARATOR '; '
+               ) AS treatments_text
+        FROM tbl_product_treatments pt
+        JOIN tbl_treatments t ON pt.treatment_id = t.treatment_id
+        LEFT JOIN (
+          SELECT tc.treatment_id,
+                 GROUP_CONCAT(
+                   DISTINCT CONCAT(
+                     IFNULL(c.name,'N/A'),
+                     ' [EN: ', IFNULL(tc.indications_en,''),
+                     ', SV: ', IFNULL(tc.indications_sv,''),
+                     ', Likewise: ', IFNULL(tc.likewise_terms,''),
+                     ']'
+                   ) SEPARATOR ', '
+                 ) AS concerns_text
+          FROM tbl_treatment_concerns tc
+          LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+          GROUP BY tc.treatment_id
+        ) tcagg ON t.treatment_id = tcagg.treatment_id
+        GROUP BY pt.product_id
+      ) tagg ON p.product_id = tagg.product_id
+      WHERE p.product_id = ?
+      LIMIT 1;
+    `, [product_id]);
+    } catch (err) {
+        console.error(`❌ Error fetching product ${product_id} embeddings:`, err);
+        throw err;
+    }
+};
+
+export const getTreatmentEmbeddingTextById = async (treatment_id) => {
+    try {
+        if (!treatment_id) throw new Error("Treatment ID is required");
+
+        return await db.query(`
+      SELECT 
+        t.treatment_id,
+        CONCAT(
+          'Treatment Name: ', IFNULL(t.name, ''),
+          ' / ', IFNULL(t.swedish, ''),
+          ', Classification: ', IFNULL(t.classification_type, ''),
+          ', Benefits EN: ', IFNULL(t.benefits_en, ''),
+          ', Benefits SV: ', IFNULL(t.benefits_sv, ''),
+          ', Description EN: ', IFNULL(t.description_en, ''),
+          ', Description SV: ', IFNULL(t.description_sv, ''),
+          '; Concerns: ',
+          IFNULL(
+            GROUP_CONCAT(
+              DISTINCT CONCAT(
+                c.name,
+                ' [EN: ', IFNULL(tc.indications_en, ''),
+                ', SV: ', IFNULL(tc.indications_sv, ''),
+                ', Likewise: ', IFNULL(tc.likewise_terms, ''),
+                ']'
+              ) SEPARATOR '; '
+            ), 'None'
+          )
+        ) AS embedding_text
+      FROM tbl_treatments t
+      LEFT JOIN tbl_treatment_concerns tc ON t.treatment_id = tc.treatment_id
+      LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+      WHERE t.treatment_id = ?
+      GROUP BY t.treatment_id
+      LIMIT 1;
+    `, [treatment_id]);
+
+    } catch (err) {
+        console.error(`❌ Error fetching treatment ${treatment_id} embeddings:`, err.message);
+        console.error(err); // full stack for debugging
+        throw err;
+    }
+};
+
+export const getDoctorEmbeddingTextById = async (doctor_id) => {
+    try {
+        if (!doctor_id) throw new Error("Doctor ID is required");
+
+        return await db.query(`
+      SELECT 
+        d.doctor_id,
+        CONCAT(
+          'Name: ', IFNULL(d.name, ''),
+          ', Address: ', IFNULL(d.address, ''),
+          ', Biography: ', IFNULL(d.biography, ''),
+          ', Gender: ', IFNULL(d.gender, ''),
+          ', Age: ', IFNULL(d.age, ''),
+          ', Fee per session: ', IFNULL(d.fee_per_session, ''),
+          '; Treatments: ', IFNULL(tagg.treatments_text, 'None'),
+          '; Skin Types: ', IFNULL(stagg.skin_types_text, 'None'),
+          '; Certifications: ', IFNULL(cagg.certifications_text, 'None'),
+          '; Devices: ', IFNULL(dagg.devices_text, 'None'),
+          '; Education: ', IFNULL(eagg.education_text, 'None'),
+          '; Experience: ', IFNULL(exagg.experience_text, 'None')
+        ) AS embedding_text
+      FROM tbl_doctors d
+
+      LEFT JOIN (
+        SELECT dt.doctor_id,
+               GROUP_CONCAT(DISTINCT CONCAT(
+                 IFNULL(t.name, 'N/A'), ' / ', IFNULL(t.swedish, ''),
+                 ' [Classification: ', IFNULL(t.classification_type, ''),
+                 ', Benefits EN: ', IFNULL(t.benefits_en, ''),
+                 ', Benefits SV: ', IFNULL(t.benefits_sv, ''),
+                 ', Description EN: ', IFNULL(t.description_en, ''),
+                 ', Description SV: ', IFNULL(t.description_sv, ''),
+                 ', Concerns: ', IFNULL(tcagg.concerns_text, 'None'),
+                 ']'
+               ) SEPARATOR '; ') AS treatments_text
+        FROM tbl_doctor_treatments dt
+        JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+        LEFT JOIN (
+          SELECT tc.treatment_id,
+                 GROUP_CONCAT(DISTINCT CONCAT(
+                   IFNULL(c.name,'N/A'),
+                   ' [EN: ', IFNULL(tc.indications_en,''),
+                   ', SV: ', IFNULL(tc.indications_sv,''),
+                   ', Likewise: ', IFNULL(tc.likewise_terms,''),
+                   ']'
+                 ) SEPARATOR ', ') AS concerns_text
+          FROM tbl_treatment_concerns tc
+          LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+          GROUP BY tc.treatment_id
+        ) tcagg ON t.treatment_id = tcagg.treatment_id
+        GROUP BY dt.doctor_id
+      ) tagg ON d.doctor_id = tagg.doctor_id
+
+      LEFT JOIN (
+        SELECT dst.doctor_id,
+               GROUP_CONCAT(DISTINCT CONCAT(
+                 IFNULL(st.name,'N/A'), ' / ', IFNULL(st.Swedish,''),
+                 ' [English: ', IFNULL(st.English,''),
+                 ', Description EN: ', IFNULL(st.description,''),
+                 ', Description SV: ', IFNULL(st.desc_sv,''),
+                 ', Who can do: ', IFNULL(st.who_can_do,''),
+                 ', Areas: ', IFNULL(st.areas,''),
+                 ', Synonyms EN: ', IFNULL(st.syn_en,''),
+                 ', Synonyms SV: ', IFNULL(st.syn_sv,''),
+                 ']'
+               ) SEPARATOR '; ') AS skin_types_text
+        FROM tbl_doctor_skin_types dst
+        JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id
+        GROUP BY dst.doctor_id
+      ) stagg ON d.doctor_id = stagg.doctor_id
+
+      LEFT JOIN (
+        SELECT dc.doctor_id,
+               GROUP_CONCAT(DISTINCT CONCAT(IFNULL(ct.name,'N/A'), ' / ', IFNULL(ct.swedish,'')) SEPARATOR '; ') AS certifications_text
+        FROM tbl_doctor_certification dc
+        JOIN tbl_certification_type ct ON dc.certification_type_id = ct.certification_type_id
+        GROUP BY dc.doctor_id
+      ) cagg ON d.doctor_id = cagg.doctor_id
+
+      LEFT JOIN (
+        SELECT dad.doctor_id,
+               GROUP_CONCAT(DISTINCT CONCAT(
+                 IFNULL(ad.device,'N/A'), ' [Category: ', IFNULL(ad.category,''),
+                 ', Manufacturer: ', IFNULL(ad.manufacturer,''),
+                 ', Distributor: ', IFNULL(ad.swedish_distributor,''),
+                 ', Application: ', IFNULL(ad.main_application,''),
+                 ']'
+               ) SEPARATOR '; ') AS devices_text
+        FROM tbl_doctor_aesthetic_devices dad
+        JOIN tbl_aesthetic_devices ad ON dad.aesthetic_devices_id = ad.aesthetic_device_id
+        GROUP BY dad.doctor_id
+      ) dagg ON d.doctor_id = dagg.doctor_id
+
+      LEFT JOIN (
+        SELECT doctor_id,
+               GROUP_CONCAT(DISTINCT CONCAT(IFNULL(degree,'N/A'), ' - ', IFNULL(institution,'')) SEPARATOR '; ') AS education_text
+        FROM tbl_doctor_educations
+        GROUP BY doctor_id
+      ) eagg ON d.doctor_id = eagg.doctor_id
+
+      LEFT JOIN (
+        SELECT doctor_id,
+               GROUP_CONCAT(DISTINCT CONCAT(IFNULL(organization,'N/A'), ' - ', IFNULL(designation,'')) SEPARATOR '; ') AS experience_text
+        FROM tbl_doctor_experiences
+        GROUP BY doctor_id
+      ) exagg ON d.doctor_id = exagg.doctor_id
+
+      WHERE d.doctor_id = ?
+      LIMIT 1;
+    `, [doctor_id]);
+
+    } catch (err) {
+        console.error(`❌ Error fetching doctor ${doctor_id} embeddings:`, err);
+        throw err;
+    }
+};
+
+export const getClinicEmbeddingTextById = async (clinic_id) => {
+    try {
+        if (!clinic_id) throw new Error("Clinic ID is required");
+
+        return await db.query(`
+      SELECT 
+        c.clinic_id,
+        CONCAT(
+          'Clinic Name: ', IFNULL(c.clinic_name,''),
+          ', Email: ', IFNULL(c.email,''),
+          ', Mobile: ', IFNULL(c.mobile_number,''),
+          ', Address: ', IFNULL(c.address,''),
+          ', Website: ', IFNULL(c.website_url,''),
+          '; Locations: ', IFNULL(loc.locations_text,'None'),
+          '; Treatments: ', IFNULL(tagg.treatments_text,'None'),
+          '; Skin Types: ', IFNULL(stagg.skin_types_text,'None'),
+          '; Devices: ', IFNULL(devicesagg.devices_text,'None')
+        ) AS embedding_text
+      FROM tbl_clinics c
+
+      -- Pre-aggregate locations
+      LEFT JOIN (
+        SELECT clinic_id,
+               GROUP_CONCAT(
+                 DISTINCT CONCAT(
+                   IFNULL(street_address,''),
+                   ', ', IFNULL(city,''),
+                   ', ', IFNULL(state,''),
+                   ', ', IFNULL(zip_code,'')
+                 ) SEPARATOR '; '
+               ) AS locations_text
+        FROM tbl_clinic_locations
+        GROUP BY clinic_id
+      ) loc ON c.clinic_id = loc.clinic_id
+
+      -- Pre-aggregate treatments + concerns
+      LEFT JOIN (
+        SELECT ct.clinic_id,
+               GROUP_CONCAT(
+                 DISTINCT CONCAT(
+                   IFNULL(t.name,'N/A'), ' / ', IFNULL(t.swedish,''),
+                   ' [Classification: ', IFNULL(t.classification_type,''),
+                   ', Benefits EN: ', IFNULL(t.benefits_en,''),
+                   ', Benefits SV: ', IFNULL(t.benefits_sv,''),
+                   ', Description EN: ', IFNULL(t.description_en,''),
+                   ', Description SV: ', IFNULL(t.description_sv,''),
+                   ', Concerns: ', IFNULL(tcagg.concerns_text,'None'),
+                   ']'
+                 ) SEPARATOR '; '
+               ) AS treatments_text
+        FROM tbl_clinic_treatments ct
+        JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
+        LEFT JOIN (
+          SELECT tc.treatment_id,
+                 GROUP_CONCAT(
+                   DISTINCT CONCAT(
+                     IFNULL(c.name,'N/A'),
+                     ' [EN: ', IFNULL(tc.indications_en,''),
+                     ', SV: ', IFNULL(tc.indications_sv,''),
+                     ', Likewise: ', IFNULL(tc.likewise_terms,''),
+                     ']'
+                   ) SEPARATOR ', '
+                 ) AS concerns_text
+          FROM tbl_treatment_concerns tc
+          LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+          GROUP BY tc.treatment_id
+        ) tcagg ON t.treatment_id = tcagg.treatment_id
+        GROUP BY ct.clinic_id
+      ) tagg ON c.clinic_id = tagg.clinic_id
+
+      -- Pre-aggregate skin types
+      LEFT JOIN (
+        SELECT cst.clinic_id,
+               GROUP_CONCAT(
+                 DISTINCT CONCAT(
+                   IFNULL(st.name,'N/A'), ' / ', IFNULL(st.Swedish,''),
+                   ' [English: ', IFNULL(st.English,''),
+                   ', Description EN: ', IFNULL(st.description,''),
+                   ', Description SV: ', IFNULL(st.desc_sv,''),
+                   ', Who can do: ', IFNULL(st.who_can_do,''),
+                   ', Areas: ', IFNULL(st.areas,''),
+                   ', Synonyms EN: ', IFNULL(st.syn_en,''),
+                   ', Synonyms SV: ', IFNULL(st.syn_sv,''),
+                   ']'
+                 ) SEPARATOR '; '
+               ) AS skin_types_text
+        FROM tbl_clinic_skin_types cst
+        LEFT JOIN tbl_skin_types st ON cst.skin_type_id = st.skin_type_id
+        GROUP BY cst.clinic_id
+      ) stagg ON c.clinic_id = stagg.clinic_id
+
+      -- Pre-aggregate devices
+      LEFT JOIN (
+        SELECT cad.clinic_id,
+               GROUP_CONCAT(
+                 DISTINCT CONCAT(
+                   IFNULL(ad.device,''),
+                   ' [Category: ', IFNULL(ad.category,''),
+                   ', Manufacturer: ', IFNULL(ad.manufacturer,''),
+                   ', Distributor: ', IFNULL(ad.swedish_distributor,''),
+                   ', Application: ', IFNULL(ad.main_application,''),
+                   ']'
+                 ) SEPARATOR '; '
+               ) AS devices_text
+        FROM tbl_clinic_aesthetic_devices cad
+        LEFT JOIN tbl_aesthetic_devices ad ON cad.aesthetic_devices_id = ad.aesthetic_device_id
+        GROUP BY cad.clinic_id
+      ) devicesagg ON c.clinic_id = devicesagg.clinic_id
+
+      WHERE c.clinic_id = ?
+      LIMIT 1;
+    `, [clinic_id]);
+
+    } catch (err) {
+        console.error(`❌ Error fetching clinic ${clinic_id} embeddings:`, err);
+        throw err;
+    }
+};
