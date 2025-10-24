@@ -470,7 +470,15 @@ export const getAllRecommendedDoctors = async ({
 
         // ---------- Embedding search ----------
         const trimmedSearch = (search || '').trim();
-        if (!trimmedSearch) return rows.slice(offset, offset + limit);
+        if (!trimmedSearch) {
+            return rows
+                .slice(offset, offset + limit)
+                .map(row => {
+                    const cleanRow = { ...row };
+                    if ('embeddings' in cleanRow) delete cleanRow.embeddings;
+                    return cleanRow;
+                });
+        }
 
         const ranked = await getTopSimilarRows(rows, trimmedSearch);
         return ranked.slice(offset, offset + limit);
@@ -880,11 +888,13 @@ export const getAllClinicsForUser = async ({
             query += ` ORDER BY c.created_at DESC`;
         }
 
-        // ⚙️ NORMAL MODE (no search)
         if (!useEmbeddings) {
             query += ` LIMIT ? OFFSET ?`;
             params.push(Number(limit), Number(offset));
-            return await db.query(query, params);
+            const rows = await db.query(query, params);
+
+            // Remove embeddings using destructuring
+            return rows.map(({ embeddings, ...rest }) => rest);
         }
 
         // ⚡️ EMBEDDING SEARCH MODE
@@ -1046,7 +1056,10 @@ export const getNearbyClinicsForUser = async ({
         if (!useEmbeddings) {
             query += ` LIMIT ? OFFSET ?`;
             params.push(Number(limit), Number(offset));
-            return await db.query(query, params);
+            const rows = await db.query(query, params);
+
+            // Strip embeddings cleanly using destructuring
+            return rows.map(({ embeddings, ...rest }) => rest);
         }
 
         // --- Embedding Mode (NO PREFILTER_LIMIT) ---
@@ -1671,6 +1684,9 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         // ---------- Apply cosine similarity search if search term exists ----------
         if (filters.search?.trim()) {
             results = await getTopSimilarRows(results, filters.search);
+        } else {
+            // No search: just clean results and return without embeddings
+            results = results.map(({ embeddings, ...rest }) => rest);
         }
 
         // ---------- Format Benefits ----------
