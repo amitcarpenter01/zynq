@@ -406,7 +406,7 @@ export const generateTreatmentEmbeddingsV2 = async (id) => {
     if (!rows || !rows.length) return handleError(res, 404, 'en', "No Data found");
 
     await generateEmbeddingsForRows(rows, "tbl_treatments", "treatment_id");
-    return handleSuccess(res, 200, "en", "All treatment embeddings updated successfully");
+    // return handleSuccess(res, 200, "en", "All treatment embeddings updated successfully");
   } catch (err) {
     console.error("Error generating embeddings:", err);
     // return handleError(res, 500, "en", "Internal Server Error");
@@ -419,7 +419,7 @@ export const generateProductsEmbeddingsV2 = async (id) => {
     if (!rows || !rows.length) return handleError(res, 404, "en", "No Data found");
 
     await generateEmbeddingsForRows(rows, "tbl_products", "product_id");
-    return handleSuccess(res, 200, "en", "All product embeddings updated successfully");
+    // return handleSuccess(res, 200, "en", "All product embeddings updated successfully");
   } catch (err) {
     console.error("Error generating embeddings:", err);
     // return handleError(res, 500, "en", "Internal Server Error");
@@ -433,7 +433,7 @@ export const generateDoctorsEmbeddingsV2 = async (id) => {
     if (!rows || !rows.length) return handleError(res, 404, "en", "No Data found");
         console.log("Generate doctor embeddings called", rows)
     await generateEmbeddingsForRows(rows, "tbl_doctors", "doctor_id");
-    return handleSuccess(res, 200, "en", "All doctor embeddings updated successfully");
+    // return handleSuccess(res, 200, "en", "All doctor embeddings updated successfully");
   } catch (err) {
     console.error("Error generating embeddings:", err);
     // return handleError(res, 500, "en", "Internal Server Error");
@@ -446,7 +446,7 @@ export const generateClinicsEmbeddingsV2 = async (id) => {
     if (!rows || !rows.length) return handleError(res, 404, 'en', "No Data found");
 
     await generateEmbeddingsForRows(rows, "tbl_clinics", "clinic_id");
-    return handleSuccess(res, 200, "en", "All clinic embeddings updated successfully");
+    // return handleSuccess(res, 200, "en", "All clinic embeddings updated successfully");
   } catch (err) {
     console.error("Error generating embeddings:", err);
     // return handleError(res, 500, "en", "Internal Server Error");
