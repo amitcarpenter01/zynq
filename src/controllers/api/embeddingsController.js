@@ -374,6 +374,7 @@ export const getClinicSuggestions = async (req, res) => {
 export const generateEmbeddingsForRows = async (rows, tableName, idField) => {
   for (const row of rows) {
     const combinedText = row.embedding_text;
+    console.log(combinedText);
 
     if (!combinedText || !combinedText.trim()) continue;
 
@@ -385,7 +386,7 @@ export const generateEmbeddingsForRows = async (rows, tableName, idField) => {
 
       const vector = response.data.embedding;
       if (!Array.isArray(vector) || !vector.length) continue;
-
+      console.log("vector - ", vector)
       await dbOperations.updateData(
         tableName,
         { embeddings: JSON.stringify(vector) },
@@ -427,9 +428,10 @@ export const generateProductsEmbeddingsV2 = async (id) => {
 
 export const generateDoctorsEmbeddingsV2 = async (id) => {
   try {
+    console.log("Generate doctor embeddings called")
     const rows = await apiModels.getDoctorEmbeddingTextById(id);
     if (!rows || !rows.length) return handleError(res, 404, "en", "No Data found");
-
+        console.log("Generate doctor embeddings called", rows)
     await generateEmbeddingsForRows(rows, "tbl_doctors", "doctor_id");
     return handleSuccess(res, 200, "en", "All doctor embeddings updated successfully");
   } catch (err) {
