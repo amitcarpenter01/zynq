@@ -93,7 +93,7 @@ router.get("/get-face-scan-history", authenticateUser, faceScanControllers.get_f
 router.post("/get-all-doctors", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_all_doctors_in_app_side);
 router.post("/get-recommended-doctors", optionalAuthenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.get_recommended_doctors);
 router.get("/doctor/get/ratings/:doctor_id", authenticateUser, validate(getSingleDoctorRatingsSchema, "params"), doctorControllers.getSingleDoctorRatings);
-router.get("/doctor/get/:clinic_id/:doctor_id", authenticateUser, validate(getSingleDoctorSchema, "params"), doctorControllers.getSingleDoctor);
+router.post("/doctor/get", authenticateUser, validate(getSingleDoctorSchema, "body"), doctorControllers.getSingleDoctor);
 
 // //==================================== Product ==============================
 router.post("/get-all-products", optionalAuthenticateUser, validate(getAllProductsSchema, "body"), productControllers.getAllProducts);
