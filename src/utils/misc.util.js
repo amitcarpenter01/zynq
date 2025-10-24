@@ -28,13 +28,12 @@ export const getTreatmentIDsByUserID = async (userID) => {
         }
     };
 
-    // 1️⃣ Fetch latest face scan
     const result = await db.query(
         `SELECT aiAnalysisResult, scoreInfo
-     FROM tbl_face_scan_results
-     WHERE user_id = ?
-     ORDER BY created_at DESC
-     LIMIT 1`,
+         FROM tbl_face_scan_results
+         WHERE user_id = ?
+         ORDER BY created_at DESC
+         LIMIT 1`,
         [userID]
     );
 
@@ -44,79 +43,70 @@ export const getTreatmentIDsByUserID = async (userID) => {
     const { skinConcernMap, mapping } = configs;
     const SCORE_THRESHOLD = 25;
 
-    // 2️⃣ Try parsing AI result
-    const AIAnalysisResult = safeJSONParse(aiAnalysisResult);
+    // STEP 1: SCORE INFO (PRIMARY PRIORITY)
+    const parsedScoreInfo = safeJSONParse(scoreInfo);
+    if (parsedScoreInfo && mapping && skinConcernMap) {
+        const concernIDs = [];
 
-    // === [LEVEL 1] AI Recommended Treatments ===
-    if (AIAnalysisResult?.skinIssues?.length) {
-        const aiTreatmentIDs = [
-            ...new Set(
-                AIAnalysisResult.skinIssues.flatMap(
-                    (issue) => issue?.recommendedTreatmentsIds || []
-                )
-            ),
-        ];
-
-        if (aiTreatmentIDs.length > 0) {
-            console.log("✅ Using AI-based recommended treatment IDs");
-            return aiTreatmentIDs;
+        for (const key in mapping) {
+            const value = parsedScoreInfo[key];
+            if (typeof value === "number" && value > SCORE_THRESHOLD) {
+                const concernName = mapping[key];
+                const concernID = skinConcernMap[concernName];
+                if (concernID) concernIDs.push(concernID);
+            }
         }
 
-        // === [LEVEL 2] AI-based Concern Fallback ===
-        const concernTitles = AIAnalysisResult.skinIssues
-            .map((issue) => issue?.title?.en?.trim())
-            .filter(Boolean);
+        if (concernIDs.length > 0) {
+            const placeholders = concernIDs.map(() => "?").join(",");
+            const treatmentsResult = await db.query(
+                `SELECT DISTINCT treatment_id
+                 FROM tbl_treatment_concerns
+                 WHERE concern_id IN (${placeholders})`,
+                concernIDs
+            );
 
-        if (concernTitles.length > 0 && skinConcernMap) {
-            const concernIDs = concernTitles
-                .map((title) => skinConcernMap[title])
-                .filter(Boolean);
-
-            if (concernIDs.length > 0) {
-                const placeholders = concernIDs.map(() => "?").join(",");
-                const treatmentsResult = await db.query(
-                    `SELECT DISTINCT treatment_id
-           FROM tbl_treatment_concerns
-           WHERE concern_id IN (${placeholders})`,
-                    concernIDs
-                );
-
-                if (treatmentsResult?.length > 0) {
-                    console.log("🔁 Using AI-based concern fallback treatments");
-                    return [...new Set(treatmentsResult.map((row) => row.treatment_id))];
-                }
+            if (treatmentsResult?.length > 0) {
+                return [...new Set(treatmentsResult.map((r) => r.treatment_id))];
             }
         }
     }
 
-    // === [LEVEL 3] ScoreInfo-based Fallback ===
-    const parsedScoreInfo = safeJSONParse(scoreInfo);
-    if (!parsedScoreInfo || !mapping || !skinConcernMap) return [];
+    // STEP 2: AI ANALYSIS RESULT (SECOND PRIORITY)
+    const AIAnalysisResult = safeJSONParse(aiAnalysisResult);
+    if (!AIAnalysisResult?.skinIssues?.length) return [];
 
-    const concernIDs = [];
-    for (const key in mapping) {
-        const value = parsedScoreInfo[key];
-        if (typeof value === "number" && value > SCORE_THRESHOLD) {
-            const concernName = mapping[key];
-            const concernID = skinConcernMap[concernName];
-            if (concernID) concernIDs.push(concernID);
+    // STEP 2A: Direct recommended treatments
+    const aiTreatmentIDs = [
+        ...new Set(
+            AIAnalysisResult.skinIssues.flatMap(
+                (issue) => issue?.recommendedTreatmentsIds || []
+            )
+        ),
+    ];
+    if (aiTreatmentIDs.length > 0) return aiTreatmentIDs;
+
+    // STEP 2B: Fallback using concernId
+    const concernIDs = AIAnalysisResult.skinIssues
+        .map((issue) => issue?.concernId)
+        .filter(Boolean);
+
+    if (concernIDs.length > 0) {
+        const placeholders = concernIDs.map(() => "?").join(",");
+        const treatmentsResult = await db.query(
+            `SELECT DISTINCT treatment_id
+             FROM tbl_treatment_concerns
+             WHERE concern_id IN (${placeholders})`,
+            concernIDs
+        );
+
+        if (treatmentsResult?.length > 0) {
+            return [...new Set(treatmentsResult.map((r) => r.treatment_id))];
         }
     }
 
-    if (concernIDs.length === 0) return [];
-
-    const placeholders = concernIDs.map(() => "?").join(",");
-    const treatmentsResult = await db.query(
-        `SELECT DISTINCT treatment_id
-     FROM tbl_treatment_concerns
-     WHERE concern_id IN (${placeholders})`,
-        concernIDs
-    );
-
-    if (!treatmentsResult?.length) return [];
-
-    console.log("🧠 Using ScoreInfo-based fallback treatments");
-    return [...new Set(treatmentsResult.map((row) => row.treatment_id))];
+    // STEP 3: Nothing worked
+    return [];
 };
 
 export const getLatestFaceScanReportIDByUserID = async (userID) => {
