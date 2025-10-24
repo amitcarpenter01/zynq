@@ -947,16 +947,12 @@ export const getAppointmentTreatments = async (appointment_id) => {
 
     let results = await db.query(query, [appointment_id]);
 
-    // Remove embeddings dynamically
-    results = results.map(row => {
-        const treatmentRow = { ...row };
-        if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
-        return treatmentRow;
+    return results.map(row => {
+        const cleanRow = { ...row };
+        if ('embeddings' in cleanRow) delete cleanRow.embeddings;
+        return cleanRow;
     });
-
-    return results;
 };
-
 
 export const getDoctorBookedAppointmentsModel = async (role, user_id) => {
     let whereClause = '';
