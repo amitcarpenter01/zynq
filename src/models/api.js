@@ -417,7 +417,7 @@ export const getAllRecommendedDoctors = async ({
         if (joins.length) query += ' ' + joins.join(' ');
 
         // Always filter verified doctors
-        query += ` WHERE d.profile_status = 'VERIFIED' `;
+        query += ` WHERE d.name IS NOT NULL AND d.profile_status = 'VERIFIED' `;
 
         // ---------- Distance & Price filters ----------
         if (needsDistance) {
@@ -2145,7 +2145,8 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
              ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
       LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
       WHERE d.embeddings IS NOT NULL
-        AND d.profile_status = 'VERIFIED'   AND d.profile_completion_percentage >= 50
+        AND d.profile_status = 'VERIFIED'
+        AND d.name IS NOT NULL
       GROUP BY d.doctor_id, dm.clinic_id
     `);
         console.log("results 1- ", results);
@@ -2178,7 +2179,7 @@ export const getClinicsByNameSearchOnly = async ({ search = '', page = null, lim
       LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
       LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id AND ar.approval_status='APPROVED'
       WHERE c.embeddings IS NOT NULL
-        AND c.profile_status = 'VERIFIED' AND c.profile_completion_percentage >= 50
+        AND c.profile_status = 'VERIFIED'
       GROUP BY c.clinic_id
     `);
 
