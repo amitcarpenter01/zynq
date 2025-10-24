@@ -373,7 +373,7 @@ export async function deleteGuestData() {
     await deleteGuestDataModel()
 }
 
-export const getTopSimilarRows = async (rows, search, threshold = 0.4, topN = null) => {
+export const getTopSimilarRows = async (rows, search, threshold = 0.45, topN = null) => {
     if (!search?.trim()) return rows;
 
     // 1️⃣ Get embedding for the search term
