@@ -395,6 +395,8 @@ export const getTopSimilarRows = async (rows, search, threshold = 0.4, topN = nu
             : JSON.parse(row.embeddings);
 
         const score = cosineSimilarity(queryEmbedding, dbEmbedding);
+
+        console.log("name - ", row.name || "user", "score - ", score);
         if (score >= threshold) {
             const { embeddings, ...rest } = row; // exclude embeddings
             results.push({ ...rest, score });
