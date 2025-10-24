@@ -1937,7 +1937,7 @@ export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en', search =
         let results = await db.query(query, doctorIds);
 
         // Apply search if provided
-        if (search?.trim()) {
+        if (search !== null && search !== '') {
             results = await getTopSimilarRows(results, search);
         } else {
             // No search: remove embeddings
