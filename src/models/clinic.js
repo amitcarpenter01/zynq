@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { formatImagePath } from "../utils/user_helper.js";
+import { getTopSimilarRows } from "../utils/misc.util.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1951,7 +1952,7 @@ export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en', search =
             const treatmentRow = { ...row };
 
             // Ensure no embeddings remain
-            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            // if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
 
             // Set treatment name based on language
             treatmentRow.name = lang === 'sv' ? row.swedish : row.name;
