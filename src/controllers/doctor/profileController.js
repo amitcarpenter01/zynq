@@ -9,6 +9,7 @@ import dbOperations from '../../models/common.js';
 import { get_product_images_by_product_ids } from "../../models/api.js";
 import { getDoctorBookedAppointmentsModel } from "../../models/appointment.js";
 import { extractUserData } from "../../utils/misc.util.js";
+import { generateDoctorsEmbeddingsV2 } from "../api/embeddingsController.js";
 dotenv.config();
 
 //const APP_URL = process.env.APP_URL;
@@ -323,7 +324,7 @@ export const editPersonalInformation = async (req, res) => {
         if (req.file) {
             filename = req.file.filename
         }
-
+        await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
         const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography);
 
         if (result.affectedRows > 0) {

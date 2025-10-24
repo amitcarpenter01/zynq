@@ -371,3 +371,82 @@ export const getClinicSuggestions = async (req, res) => {
   }
 };
 
+export const generateEmbeddingsForRows = async (rows, tableName, idField) => {
+  for (const row of rows) {
+    const combinedText = row.embedding_text;
+
+    if (!combinedText || !combinedText.trim()) continue;
+
+    try {
+      const response = await axios.post("http://localhost:11434/api/embeddings", {
+        model: "nomic-embed-text",
+        prompt: combinedText.trim(),
+      });
+
+      const vector = response.data.embedding;
+      if (!Array.isArray(vector) || !vector.length) continue;
+
+      await dbOperations.updateData(
+        tableName,
+        { embeddings: JSON.stringify(vector) },
+        `WHERE ${idField} = '${row[idField]}'`
+      );
+
+      console.log(`✅ Embedding updated for ${tableName} ID: ${row[idField]}`);
+    } catch (err) {
+      console.error(`❌ Error generating embedding for ID ${row[idField]}:`, err.message);
+    }
+  }
+};
+
+export const generateTreatmentEmbeddingsV2 = async (id) => {
+  try {
+    const rows = await apiModels.getTreatmentEmbeddingTextById(id);
+    if (!rows || !rows.length) return handleError(res, 404, 'en', "No Data found");
+
+    await generateEmbeddingsForRows(rows, "tbl_treatments", "treatment_id");
+    return handleSuccess(res, 200, "en", "All treatment embeddings updated successfully");
+  } catch (err) {
+    console.error("Error generating embeddings:", err);
+    // return handleError(res, 500, "en", "Internal Server Error");
+  }
+};
+
+export const generateProductsEmbeddingsV2 = async (id) => {
+  try {
+    const rows = await apiModels.getProductWithTreatmentsById(id);
+    if (!rows || !rows.length) return handleError(res, 404, "en", "No Data found");
+
+    await generateEmbeddingsForRows(rows, "tbl_products", "product_id");
+    return handleSuccess(res, 200, "en", "All product embeddings updated successfully");
+  } catch (err) {
+    console.error("Error generating embeddings:", err);
+    // return handleError(res, 500, "en", "Internal Server Error");
+  }
+};
+
+export const generateDoctorsEmbeddingsV2 = async (id) => {
+  try {
+    const rows = await apiModels.getDoctorEmbeddingTextById(id);
+    if (!rows || !rows.length) return handleError(res, 404, "en", "No Data found");
+
+    await generateEmbeddingsForRows(rows, "tbl_doctors", "doctor_id");
+    return handleSuccess(res, 200, "en", "All doctor embeddings updated successfully");
+  } catch (err) {
+    console.error("Error generating embeddings:", err);
+    // return handleError(res, 500, "en", "Internal Server Error");
+  }
+};
+
+export const generateClinicsEmbeddingsV2 = async (id) => {
+  try {
+    const rows = await apiModels.getClinicEmbeddingTextById(id);
+    if (!rows || !rows.length) return handleError(res, 404, 'en', "No Data found");
+
+    await generateEmbeddingsForRows(rows, "tbl_clinics", "clinic_id");
+    return handleSuccess(res, 200, "en", "All clinic embeddings updated successfully");
+  } catch (err) {
+    console.error("Error generating embeddings:", err);
+    // return handleError(res, 500, "en", "Internal Server Error");
+  }
+};
