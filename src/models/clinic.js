@@ -1920,7 +1920,7 @@ export const getDoctorTreatmentsBulk = async (doctorIds) => {
 //     }
 // };
 
-export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en') => {
+export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en', search = null) => {
     if (!Array.isArray(doctorIds) || doctorIds.length === 0) return {};
 
     try {
@@ -1934,14 +1934,23 @@ export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en') => {
             ORDER BY dt.created_at DESC
         `;
 
-        const results = await db.query(query, doctorIds);
+        let results = await db.query(query, doctorIds);
+
+        // Apply search if provided
+        if (search?.trim()) {
+            results = await getTopSimilarRows(results, search);
+        } else {
+            // No search: remove embeddings
+            results = results.map(({ embeddings, ...rest }) => rest);
+        }
 
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
 
-            // Remove embeddings from t.*
             const treatmentRow = { ...row };
+
+            // Ensure no embeddings remain
             if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
 
             // Set treatment name based on language

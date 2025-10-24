@@ -351,7 +351,7 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
 
 
 export const getSingleDoctor = asyncHandler(async (req, res) => {
-    const { doctor_id, clinic_id } = req.params;
+    const { doctor_id, clinic_id, treatment_search } = req.body;
     const { user_id, language = 'en' } = req.user;
 
     const doctorResult = await doctorModels.getDoctorByDoctorID(doctor_id, clinic_id);
@@ -370,7 +370,7 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         clinicModels.getDoctorEducationBulk([doctor_id]),
         clinicModels.getDoctorExperienceBulk([doctor_id]),
         clinicModels.getDoctorSkinTypesBulkV2([doctor_id], language),
-        clinicModels.getDoctorTreatmentsBulkV2([doctor_id], language),
+        clinicModels.getDoctorTreatmentsBulkV2([doctor_id], language, treatment_search),
         clinicModels.getDoctorSkinConditionBulkV2([doctor_id], language),
         clinicModels.getDoctorSurgeryBulkV2([doctor_id], language),
         clinicModels.getDoctorAstheticDevicesBulk([doctor_id]),

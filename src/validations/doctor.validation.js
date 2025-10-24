@@ -9,7 +9,8 @@ import {
 
 export const getSingleDoctorSchema = joi.object({
   doctor_id: stringValidation,
-  clinic_id: stringValidation
+  clinic_id: stringValidation,
+  treatment_search: stringValidation.optional(),
 });
 
 export const getSingleDoctorRatingsSchema = joi.object({
