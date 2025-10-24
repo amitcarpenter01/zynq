@@ -26,7 +26,8 @@ export const addPersonalInformation = async (req, res) => {
             language: Joi.string().valid('en', 'sv').optional().allow('', null),
             form_stage: Joi.number().optional().allow('', null),
             ivo_registration_number: Joi.string().optional().allow('', null),
-            hsa_id: Joi.string().optional().allow('', null)
+            hsa_id: Joi.string().optional().allow('', null),
+            org_number: Joi.string().optional().allow('', null),
         });
         let language = 'en';
 
