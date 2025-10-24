@@ -887,7 +887,7 @@ export const getAllClinicsForUser = async ({
 
         // ⚡️ EMBEDDING SEARCH MODE
         const rows = await db.query(query, params);
-        console.log("ROws", rows);
+
         if (!rows?.length) return [];
 
         // Apply vector-based semantic ranking

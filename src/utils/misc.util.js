@@ -374,8 +374,9 @@ export async function deleteGuestData() {
 }
 
 export const getTopSimilarRows = async (rows, search, threshold = 0.4, topN = null) => {
+    console.log("ROws - ", rows.length, rows);
+    console.log("Search - ", search);
     if (!search?.trim()) return rows;
-
     // 1️⃣ Get embedding for the search term
     const response = await axios.post("http://localhost:11434/api/embeddings", {
         model: "nomic-embed-text",
