@@ -369,6 +369,7 @@ export const getAllRecommendedDoctors = async ({
         const selectFields = [
             'd.doctor_id',
             'd.name',
+            'd.embeddings',
             'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
             'd.specialization',
             'ANY_VALUE(d.fee_per_session) AS fee_per_session',
@@ -777,6 +778,7 @@ export const getAllClinicsForUser = async ({
         // --- Base SELECT ---
         const selectFields = [
             'c.clinic_id',
+            'c.embeddings',
             'c.clinic_name',
             'c.clinic_logo',
             'c.address',
@@ -939,6 +941,7 @@ export const getNearbyClinicsForUser = async ({
         const selectFields = [
             'c.clinic_id',
             'c.clinic_name',
+            'c.embeddings',
             'c.clinic_logo',
             'c.address',
             'c.mobile_number',
