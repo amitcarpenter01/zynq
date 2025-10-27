@@ -119,7 +119,7 @@ export const openAIBackendEndpointV2 = asyncHandler(async (req, res) => {
 
     // Call OpenAI
     const openAIResponse = await openai.responses.create({
-      model: "gpt-5",
+      model: parsedPayload.model,
       input: parsedPayload.messages
     });
 
