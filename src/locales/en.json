@@ -287,5 +287,7 @@
   "CONSENT_ADDED_SUCCESSFULLY" : "Consent Added Successfully",
   "DEVICE_OR_USER_REQUIRED" : "Device ID or User ID is required",
   "PRODUCT_APPROVED_SUCCESSFULLY" : "Product Approved Successfully",
-  "PRODUCT_REJECTED_SUCCESSFULLY" : "Product Rejected Successfully"
+  "PRODUCT_REJECTED_SUCCESSFULLY" : "Product Rejected Successfully",
+  "PRODUCT_HIDDEN_SUCCESSFULLY" : "Product Hidden Successfully",
+  "PRODUCT_UNHIDDEN_SUCCESSFULLY" : "Product is now visible"
 }

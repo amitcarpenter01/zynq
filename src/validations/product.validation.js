@@ -45,3 +45,7 @@ export const updateProductApprovalStatusSchema = Joi.object({
   product_id: stringValidation,
   approval_status: stringValidation.valid('APPROVED', 'REJECTED')
 })
+
+export const toggleHideProductSchema = Joi.object({
+  product_id: stringValidation
+})

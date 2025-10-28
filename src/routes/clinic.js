@@ -15,6 +15,7 @@ import { validate } from '../middleware/validation.middleware.js';
 import { deleteClinicImageSchema } from '../validations/clinic.validation.js';
 import { updateShipmentStatus } from '../controllers/api/paymentController.js';
 import { updateShipmentStatusSchema } from '../validations/payment.validation.js';
+import { toggleHideProductSchema } from '../validations/product.validation.js';
 
 
 const router = express.Router();
@@ -96,5 +97,7 @@ router.post("/send-response-to-doctor", authenticate(['CLINIC']), supportControl
 router.get('/getMyAppointments', authenticate(['CLINIC', 'SOLO_DOCTOR']), appointmentControllers.getMyAppointmentsClinic);
 
 router.patch('/update-shipment-status', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(updateShipmentStatusSchema, "body"), updateShipmentStatus);
+
+router.patch('/product/toggle-hide/:product_id', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(toggleHideProductSchema, "params"), productControllers.toggleHideProduct);
 
 export default router;

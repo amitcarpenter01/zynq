@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as clinicModels from "../../models/clinic.js";
 import * as webModels from "../../models/web_user.js";
 import { sendEmail } from "../../services/send_email.js";
-import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
 import { generateProductsEmbeddingsV2 } from "../api/embeddingsController.js";
 
@@ -283,3 +283,25 @@ export const deleteProduct = async (req, res) => {
 
     }
 }
+
+export const toggleHideProduct = asyncHandler(async (req, res) => {
+    const { product_id } = req.params;
+    const { language = "en" } = req.user;
+    const clinic_id = req.user.clinicData.clinic_id;
+
+    const [productData] = await clinicModels.getProductByProductAndClinicId(product_id, clinic_id);
+
+    if (!productData) {
+        return handleError(res, 404, language, "PRODUCT_NOT_FOUND");
+    }
+
+    const newIsHidden = !productData.is_hidden;
+
+    await clinicModels.updateProduct({ is_hidden: newIsHidden }, product_id);
+
+    const response_message = newIsHidden
+        ? "PRODUCT_HIDDEN_SUCCESSFULLY"
+        : "PRODUCT_UNHIDDEN_SUCCESSFULLY";
+
+    return handleSuccess(res, 200, language, response_message);
+});

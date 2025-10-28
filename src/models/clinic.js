@@ -2394,5 +2394,14 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
     }
 };
 
-
-
+export const getProductByProductAndClinicId = async (product_id, clinic_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_products WHERE product_id = ? AND clinic_id = ?`,
+            [product_id, clinic_id]
+        );
+    } catch (error) {
+        console.error("getProductByProductAndClinicId error:", error);
+        throw error;
+    }
+}
