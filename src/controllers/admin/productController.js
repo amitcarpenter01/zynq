@@ -1,6 +1,7 @@
 import Joi from "joi";
 import * as adminModels from "../../models/admin.js";
-import { handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
+import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 
 export const get_products_managment = async (req, res) => {
     try {
@@ -54,7 +55,7 @@ export const get_single_products_managment = async (req, res) => {
             })
         );
 
-        return handleSuccess(res, 200, 'en', "Fetch product management successfully", fullProductData[0] );
+        return handleSuccess(res, 200, 'en', "Fetch product management successfully", fullProductData[0]);
     } catch (error) {
         console.error("internal E", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
@@ -84,3 +85,35 @@ export const delete_products_managment = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
+
+export const updateProductApprovalStatus = asyncHandler(async (req, res) => {
+    const { approval_status, product_id } = req.body;
+    const { language = "en" } = req.user;
+
+    const statusMessages = {
+        APPROVED: "PRODUCT_APPROVED_SUCCESSFULLY",
+        REJECTED: "PRODUCT_REJECTED_SUCCESSFULLY",
+    };
+
+    const notificationUpdates = {
+        APPROVED: "product_approved",
+        REJECTED: "product_rejected",
+    };
+
+    const [productData] = await adminModels.updateProductApprovalStatus(product_id, approval_status)
+
+    handleSuccess(res, 200, language, statusMessages[approval_status],)
+
+    if (productData) {
+        console.log("productData", productData)
+        await sendNotification({
+            userData: req.user,
+            type: "PRODUCT",
+            type_id: product_id,
+            notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
+            receiver_id: productData.role === "CLINIC" ? productData.clinic_id : productData.doctor_id,
+            receiver_type: productData.role === "CLINIC" ? "CLINIC" : "DOCTOR",
+        })
+    }
+
+})

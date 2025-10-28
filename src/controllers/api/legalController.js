@@ -116,7 +116,6 @@ export const openAIBackendEndpointV2 = asyncHandler(async (req, res) => {
     //     content: sanitizeMessageContent(msg.content),
     // }));
 
-
     // Call OpenAI
     const openAIResponse = await openai.responses.create({
       model: parsedPayload.model,
@@ -167,19 +166,11 @@ export const geminiBackendEndpoint = asyncHandler(async (req, res) => {
       });
     }
 
-    const sanitizedMessages = parsedPayload.map((msg) => ({
-      role: msg.role,
-      content: sanitizeMessageContent(msg.content),
-    }));
-
-    const prompt = sanitizedMessages
-      .map((msg) => `${msg.role}: ${msg.content}`)
-      .join("\n");
-
     const response = await gemini.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt
     });
+    
     const responseText = response.text();
 
     return handleSuccess(res, 200, "en", "GEMINI_RESPONSE", {

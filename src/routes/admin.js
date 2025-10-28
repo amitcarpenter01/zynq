@@ -22,6 +22,7 @@ import { updateRatingStatusSchema } from '../validations/appointment.validation.
 import { addEditFAQCategorySchema, addEditFAQSchema, deleteFAQCategorySchema, getAllFAQSchema, getSingleFAQCategorySchema, getSingleFAQSchema } from '../validations/faq.validation.js';
 import { addEditFAQ, addEditFAQCategory, deleteFAQ, deleteFAQCategory, getAllFAQCategories, getAllFAQs, getSingleFAQ, getSingleFAQCategory } from '../controllers/api/FAQController.js';
 import { getContactUs } from '../controllers/api/authController.js';
+import { updateProductApprovalStatusSchema } from '../validations/product.validation.js';
 
 const router = express.Router();
 
@@ -143,5 +144,7 @@ router.get('/contact-us', authenticateAdmin, getContactUs);
 router.patch('/user/approval-status', authenticateAdmin, validate(updateUserApprovalStatusSchema, 'body'), userControllers.updateUserApprovalStatus);
 
 router.patch('/zynq-user/approval-status', authenticateAdmin, validate(updateZynqUserApprovalStatusSchema, 'body'), userControllers.updateZynqUserApprovalStatus);
+
+router.patch('/product/approval-status', authenticateAdmin, validate(updateProductApprovalStatusSchema, 'body'), productControllers.updateProductApprovalStatus);
 
 export default router;

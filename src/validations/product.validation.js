@@ -40,3 +40,8 @@ export const deleteClinicImageSchema = Joi.object({
 export const getSingleProductSchema = Joi.object({
   product_id: stringValidation
 })
+
+export const updateProductApprovalStatusSchema = Joi.object({
+  product_id: stringValidation,
+  approval_status: stringValidation.valid('APPROVED', 'REJECTED')
+})

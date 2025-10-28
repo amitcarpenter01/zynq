@@ -277,5 +277,7 @@
   "USER_VERIFIED_SUCCESSFULLY" : "Användare verifierades framgångsrikt",
   "APPOINTMENT_DRAFT_ADDED" : "Utkast tillagd",
   "CONSENT_ADDED_SUCCESSFULLY" : "Samtycke tillagd",
-  "DEVICE_OR_USER_REQUIRED" : "Användare eller enhet ID krävs"
+  "DEVICE_OR_USER_REQUIRED" : "Användare eller enhet ID krävs",
+  "PRODUCT_APPROVED_SUCCESSFULLY" : "Produkt godkännt",
+  "PRODUCT_REJECTED_SUCCESSFULLY" : "Produkt avvisad"
 }

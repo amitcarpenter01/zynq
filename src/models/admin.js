@@ -1860,3 +1860,27 @@ export const getZynqUserData = async (zynq_user_id) => {
         throw new Error("Failed to fetch Zynq user data");
     }
 };
+
+export const updateProductApprovalStatus = async (product_id, approval_status) => {
+    try {
+        await db.query(
+            `UPDATE tbl_products SET approval_status = ? WHERE product_id = ?`,
+            [approval_status, product_id]
+        );
+
+        return await db.query(
+            `SELECT p.clinic_id, r.role, d.doctor_id
+            FROM tbl_products p
+            LEFT JOIN tbl_clinics c ON p.clinic_id = c.clinic_id
+            LEFT JOIN tbl_zqnq_users zu ON c.zynq_user_id = zu.id
+            LEFT JOIN tbl_doctors d ON d.zynq_user_id = zu.id
+            LEFT JOIN tbl_roles r ON zu.role_id = r.id
+            WHERE p.product_id = ?`,
+            [product_id]
+        );
+
+    } catch (error) {
+        console.error("updateProductApprovalStatus error:", error);
+        throw error;
+    }
+}

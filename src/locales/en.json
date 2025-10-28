@@ -285,5 +285,7 @@
   "USER_VERIFIED_SUCCESSFULLY" : "User Verified Successfully",
   "APPOINTMENT_DRAFT_ADDED" : "Draft Appointment Added Successfully",
   "CONSENT_ADDED_SUCCESSFULLY" : "Consent Added Successfully",
-  "DEVICE_OR_USER_REQUIRED" : "Device ID or User ID is required"
+  "DEVICE_OR_USER_REQUIRED" : "Device ID or User ID is required",
+  "PRODUCT_APPROVED_SUCCESSFULLY" : "Product Approved Successfully",
+  "PRODUCT_REJECTED_SUCCESSFULLY" : "Product Rejected Successfully"
 }

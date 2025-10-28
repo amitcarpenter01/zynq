@@ -125,6 +125,14 @@ export const NOTIFICATION_MESSAGES = {
         title: 'Profile Status',
         getBody: () => `Your profile has been verified by administrator.`
     },
+    product_approved: {
+        title: 'Product Approved',
+        getBody: () => `Your product has been approved by administrator.`
+    },
+    product_rejected: {
+        title: 'Product Rejected',
+        getBody: () => `Your product has been rejected by administrator.`
+    },
     default: {
         title: (name) => `${name} Notification`,
         getBody: () => `You have a new notification.`
@@ -306,7 +314,7 @@ export const sendNotification = async ({
             ? (receiver_push_enabled ?? await isPushNotificationEnabled(receiver_id, receiver_type))
             : true;
 
-        const token = receiver_fcm_token || (await getUserDataByReceiverIdAndRole(receiver_id, receiver_type)).token;
+        const token = receiver_fcm_token || (await getUserDataByReceiverIdAndRole(receiver_id, receiver_type))?.token;
 
         const payload = buildNotificationPayload({
             type,
@@ -319,7 +327,7 @@ export const sendNotification = async ({
             title,
             body
         });
-
+        
         const dbPromise = insertUserNotification({
             sender_id,
             sender_type,

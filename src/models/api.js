@@ -613,7 +613,7 @@ export const get_all_products_for_user = async ({
                     WHERE c.user_id = ? 
                     LIMIT 1
                 )
-            WHERE 1=1 AND c.profile_status = 'VERIFIED'
+            WHERE p.is_hidden = 0 AND p.approval_status = 'APPROVED' AND c.profile_status = 'VERIFIED'
         `;
 
         const params = [user_id];
@@ -2204,7 +2204,7 @@ export const getProductsByNameSearchOnly = async ({ search = '', page = null, li
         let results = await db.query(`
       SELECT *
       FROM tbl_products
-      WHERE embeddings IS NOT NULL AND is_deleted = 0
+      WHERE p.is_hidden = 0 AND embeddings IS NOT NULL AND is_deleted = 0 AND approval_status = 'APPROVED' 
     `);
 
         // 2️⃣ Compute top similar rows using embedding
