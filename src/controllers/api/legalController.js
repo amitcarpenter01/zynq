@@ -144,53 +144,82 @@ export const openAIBackendEndpointV2 = asyncHandler(async (req, res) => {
 
 export const geminiBackendEndpoint = asyncHandler(async (req, res) => {
   try {
-    console.log("Gemini API RAN");
+    console.log("⚡ Gemini API triggered");
 
     const { payload } = req.body;
+    if (!payload) {
+      return handleError(res, 400, "en", "MISSING_PAYLOAD");
+    }
 
-    // Parse payload
+    // ✅ Parse payload safely
     let parsedPayload;
     if (typeof payload === "string") {
       try {
         parsedPayload = JSON.parse(payload);
-      } catch (err) {
-        return handleError(res, 400, "en", "INVALID_PAYLOAD", {
-          error: "Payload must be valid JSON string",
-        });
+      } catch {
+        return handleError(res, 400, "en", "INVALID_PAYLOAD");
       }
-    } else if (typeof payload === "object") {
-      parsedPayload = payload;
-    } else {
-      return handleError(res, 400, "en", "INVALID_PAYLOAD", {
-        error: "Payload must be an object or JSON string",
-      });
+    } else if (typeof payload === "object") parsedPayload = payload;
+    else {
+      return handleError(res, 400, "en", "INVALID_PAYLOAD");
     }
 
+    const { model, messages = [], temperature = 0.7, top_p = 0.9 } = parsedPayload;
+    if (!model) return handleError(res, 400, "en", "MISSING_MODEL");
+
+    // ✅ Build prompt
+    let prompt = "";
+    if (Array.isArray(messages) && messages.length > 0) {
+      prompt = messages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n");
+    } else if (parsedPayload.prompt) {
+      prompt = parsedPayload.prompt;
+    } else {
+      return handleError(res, 400, "en", "MISSING_PROMPT");
+    }
+
+    // ✅ Gemini API Call
     const response = await gemini.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt
+      model,
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      // generationConfig: { temperature, topP: top_p },
     });
-    
-    const responseText = response.text();
 
-    return handleSuccess(res, 200, "en", "GEMINI_RESPONSE", {
-      text: responseText,
-    });
+    const responseText = response?.candidates[0].content;
+
+    if (!responseText) return handleError(res, 500, "en", "EMPTY_RESPONSE");
+
+    return handleSuccess(res, 200, "en", "GEMINI_RESPONSE", responseText);
+
   } catch (error) {
-    console.error("Gemini API error:", error);
-    if (error.response) {
-      return handleError(res, error.response.status, "en", "GEMINI_ERROR", {
-        error,
-      });
-    } else if (error.request) {
-      return handleError(res, 502, "en", "GEMINI_NO_RESPONSE", {
-        error: "No response from Gemini",
-      });
-    } else {
-      return handleError(res, 500, "en", "GEMINI_PROXY_ERROR", {
-        error: error.message,
+    // ✅ Specific Gemini API error
+    if (error.name === "ApiError") {
+      let parsedError;
+      try {
+        parsedError = JSON.parse(error.message || "{}")?.error || {};
+      } catch {
+        parsedError = { message: error.message };
+      }
+
+      console.error(`❌ Gemini API Error [${parsedError.code}]: ${parsedError.message}`);
+
+      // 🔹 Use handleSuccess to still return a structured JSON with details
+      return handleSuccess(res, error.status || 500, "en", "GEMINI_API_ERROR", {
+        success: false,
+        type: "GEMINI_API_ERROR",
+        code: parsedError.code || "UNKNOWN",
+        status: parsedError.status || error.status || 500,
+        message: parsedError.message || "Gemini API returned an unknown error",
+        details: parsedError.details || null,
       });
     }
+
+    // ✅ Fallback generic error
+    console.error("❌ Unexpected Gemini Error:", error.message);
+    return handleSuccess(res, 500, "en", "GEMINI_UNHANDLED_ERROR", {
+      success: false,
+      type: "GEMINI_UNHANDLED_ERROR",
+      message: error.message || "Unexpected error occurred",
+    });
   }
 });
 

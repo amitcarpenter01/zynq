@@ -21,7 +21,6 @@ import { Server } from "socket.io";
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);
-
 // --------------------- APP SETUP ---------------------
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,7 +28,7 @@ const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
 const IS_LIVE = process.env.IS_LIVE === "false" ? false : true;
 export const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 export const openai = process.env.OPENAI_API_KEY ? new OpenAI(process.env.OPENAI_API_KEY) : null;
-export const gemini = process.env.GEMINI_API_KEY ? new GoogleGenAI(process.env.GEMINI_API_KEY) : null;
+export const gemini = process.env.GEMINI_API_KEY ? new GoogleGenAI({}) : null;
 
 // --------------------- MIDDLEWARE ---------------------
 app.use(cors());
