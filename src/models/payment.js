@@ -412,7 +412,7 @@ export const createPaymentSession = async ({ payment_gateway, metadata, redirect
         const redirect_cancel_url = `https://getzynq.io/payment-cancel/?redirect_url=${cancel_url}`;
 
         return await stripe.checkout.sessions.create({
-          payment_method_types : payment_types,
+          payment_method_types : ["klarna"],
           mode: "payment",
           line_items,
           success_url,
