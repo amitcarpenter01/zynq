@@ -12,8 +12,8 @@ const APP_URL = process.env.APP_URL;
 export const generateTreatmentEmbeddings = async (req, res) => {
   try {
 
-    const rows = await dbOperations.getTreatmentsEmbeddingText();
-    console.log(rows);
+    const rows = await apiModels.getTreatmentEmbeddingsText();
+
     if (!rows || rows.length === 0) {
       return handleError(res, 404, 'en', "No Data found");
     }

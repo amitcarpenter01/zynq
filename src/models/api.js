@@ -3220,3 +3220,43 @@ export const getClinicEmbeddingTextById = async (zynq_user_id) => {
         throw err;
     }
 };
+
+export const getTreatmentEmbeddingsText = async () => {
+    try {
+        return await db.query(`
+      SELECT 
+        t.treatment_id,
+        CONCAT(
+          'Treatment Name: ', IFNULL(t.name, ''),
+          ' / ', IFNULL(t.swedish, ''),
+          ', Classification: ', IFNULL(t.classification_type, ''),
+          ', Benefits EN: ', IFNULL(t.benefits_en, ''),
+          ', Benefits SV: ', IFNULL(t.benefits_sv, ''),
+          ', Description EN: ', IFNULL(t.description_en, ''),
+          ', Description SV: ', IFNULL(t.description_sv, ''),
+          '; Concerns: ',
+          IFNULL(
+            GROUP_CONCAT(
+              DISTINCT CONCAT(
+                c.name,
+                ' [EN: ', IFNULL(tc.indications_en, ''),
+                ', SV: ', IFNULL(tc.indications_sv, ''),
+                ', Likewise: ', IFNULL(tc.likewise_terms, ''),
+                ']'
+              ) SEPARATOR '; '
+            ), 'None'
+          )
+        ) AS embedding_text
+      FROM tbl_treatments t
+      LEFT JOIN tbl_treatment_concerns tc ON t.treatment_id = tc.treatment_id
+      LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+      GROUP BY t.treatment_id
+;
+    `,);
+
+    } catch (err) {
+        console.error(`❌ Error fetching treatments embeddings:`, err.message);
+        console.error(err); // full stack for debugging
+        throw err;
+    }
+};
