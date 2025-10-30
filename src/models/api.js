@@ -1749,7 +1749,7 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
             LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
             LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
             LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
-            WHERE t.is_device = 0
+            WHERE  t.is_device = 0  
         `;
 
         let params = [];
@@ -1757,7 +1757,7 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
         // Add WHERE clause only if treatment_ids is not empty
         if (Array.isArray(treatment_ids) && treatment_ids.length > 0) {
             const placeholders = treatment_ids.map(() => '?').join(', ');
-            query += ` WHERE t.treatment_id IN (${placeholders})`;
+            query += ` AND t.treatment_id IN (${placeholders})`;
             params = treatment_ids;
         }
 
@@ -2301,7 +2301,7 @@ export const getTreatmentsBySearchOnly = async ({
         let results = await db.query(`
       SELECT *
       FROM tbl_treatments
-      WHERE embeddings IS NOT NULL AND is_device = 0 
+      WHERE embeddings IS NOT NULL AND is_device = 0  
     `);
 
         // 2️⃣ Compute top similar rows using embedding
