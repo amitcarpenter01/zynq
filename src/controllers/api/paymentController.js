@@ -13,47 +13,67 @@ import dayjs from 'dayjs';
 import { getSingleAddressByAddressId } from "../../models/address.js";
 import { getAdminCommissionRatesModel } from "../../models/admin.js";
 import { stripe } from "../../../app.js";
+import configs from "../../config/config.js";
 
-const process_earnings = async (
+export const process_earnings = async (
     metadata,
     user_id,
     products,
     cart_id,
     productDetails,
-    PRODUCT_COMMISSION
+    PRODUCT_COMMISSION,
 ) => {
     try {
-        const total_price = products.reduce(
+        // Step 1️⃣: Compute subtotal
+        const subtotal = products.reduce(
             (acc, item) => acc + Number(item.total_price || 0),
             0
         );
 
-        // Normalize commission
-        const admin_earning_percentage = Number(PRODUCT_COMMISSION) || 3;
+        if (isNaN(subtotal) || subtotal <= 0) {
+            throw new Error("Invalid subtotal calculated");
+        }
+        const VAT_PERCENTAGE = configs.VAT || 25;
+        // Step 2️⃣: Calculate VAT
+        const vat_amount = Number(((subtotal * VAT_PERCENTAGE) / 100).toFixed(2));
 
-        const admin_earnings = Number(((total_price * admin_earning_percentage) / 100).toFixed(2));
-        const clinic_earnings = Number((total_price - admin_earnings).toFixed(2));
+        // Step 3️⃣: Calculate total (includes VAT)
+        const total_price = Number((subtotal + vat_amount).toFixed(2));
 
-        if (isNaN(total_price) || isNaN(admin_earnings) || isNaN(clinic_earnings)) {
-            throw new Error("Computed earnings contain NaN values");
+        // Step 4️⃣: Commission logic (admin share on pre-VAT subtotal)
+        const admin_percentage = Number(PRODUCT_COMMISSION) || 3;
+
+        const admin_base_earning = Number(((subtotal * admin_percentage) / 100).toFixed(2));
+        const clinic_earning = Number((subtotal - admin_base_earning).toFixed(2));
+
+        // Step 5️⃣: Add VAT entirely to admin
+        const admin_earning_final = Number((admin_base_earning + vat_amount).toFixed(2));
+
+        // Step 6️⃣: Sanity validation
+        if ([subtotal, vat_amount, total_price, admin_earning_final, clinic_earning].some(isNaN)) {
+            throw new Error("NaN detected in earnings computation");
         }
 
-        // Return a **new enriched metadata object**
+        // Step 7️⃣: Enriched metadata
         const enrichedMetadata = {
-            ...metadata, // keep original fields
+            ...metadata,
             user_id,
             cart_id,
+            subtotal,
+            vat_amount,
             total_price,
-            admin_earnings,
-            clinic_earnings,
+            order_amount: total_price,
+            admin_earnings: admin_earning_final,
+            clinic_earnings: clinic_earning,
             products: JSON.stringify(products),
             product_details: JSON.stringify(productDetails),
-            order_amount: total_price,
         };
 
         return {
             status: "SUCCESS",
             message: "Earnings processed successfully",
+            subtotal,
+            vat_amount,
             total_price,
             metadata: enrichedMetadata,
         };
@@ -190,7 +210,9 @@ export const stripeSuccessHandler = asyncHandler(async (req, res) => {
         metadata.admin_earnings,
         metadata.clinic_earnings,
         metadata.product_details,
-        metadata.address_id
+        metadata.address_id,
+        metadata.vat_amount,
+        metadata.subtotal
     );
 
     let pro = []

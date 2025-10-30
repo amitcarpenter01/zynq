@@ -685,9 +685,9 @@ export const saveAppointmentAsDraft = async (req, res) => {
     }
 };
 
-export const bookDirectAppointment = async (req, res) => {
+export const bookDirectAppointment = asyncHandler(async (req, res) => {
     try {
-
+        // ---------------- Validation ----------------
         const schema = Joi.object({
             appointment_id: Joi.string().optional(),
             doctor_id: Joi.string().required(),
@@ -704,7 +704,6 @@ export const bookDirectAppointment = async (req, res) => {
             redirect_url: Joi.string().required(),
             cancel_url: Joi.string().required()
         });
-
 
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
@@ -723,15 +722,12 @@ export const bookDirectAppointment = async (req, res) => {
 
         const user_id = req.user.user_id;
         const hasTreatments = treatments.length > 0;
-        const appointmentType = hasTreatments ? 'Clinic Visit' : 'Video Call';
-        const save_type = 'booked'
-
+        const appointmentType = hasTreatments ? "Clinic Visit" : "Video Call";
+        const save_type = "booked";
         const appointment_id = inputId || uuidv4();
-        let total_price = treatments.reduce((sum, t) => sum + t.price, 0);
 
-        if (isEmpty(report_id)) {
-            report_id = await getLatestFaceScanReportIDByUserID(req.user.user_id);
-        }
+        // ---------------- Compute Base Price ----------------
+        let total_price = treatments.reduce((sum, t) => sum + t.price, 0);
         const normalizedStart = start_time
             ? dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss")
             : null;
@@ -740,72 +736,84 @@ export const bookDirectAppointment = async (req, res) => {
             ? dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss")
             : null;
 
+        if (isEmpty(report_id)) {
+            report_id = await getLatestFaceScanReportIDByUserID(user_id);
+        }
 
+        // ---------------- Load Commission & VAT ----------------
         const [{ APPOINTMENT_COMMISSION }] = await getAdminCommissionRatesModel();
         const ADMIN_EARNING_PERCENTAGE = APPOINTMENT_COMMISSION || 3;
-        let admin_earnings = Number(((total_price * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2));
-        let clinic_earnings = Number(total_price) - admin_earnings;
-        const is_paid = total_price > 0 ? 1 : 0;
+        const VAT_PERCENTAGE = 25; // Adjust if Sweden VAT changes
 
-
-        let existingData;
-        let total_price_with_discount = total_price;
+        // ---------------- Discount & VAT Logic ----------------
         let discounted_amount = 0;
+        let subtotal = total_price;
+        let vat_amount = 0;
+        let final_total = total_price;
+
+        let existingData = null;
 
         if (inputId) {
             [existingData] = await appointmentModel.getAppointmentDetailsByAppointmentID(appointment_id);
 
             if (!existingData) {
-                return handleError(res, 404, 'en', 'APPOINTMENT_NOT_FOUND');
+                return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
             }
 
             const { discount_type = "NO_DISCOUNT", discount_value = 0 } = existingData;
 
             if (discount_type !== "NO_DISCOUNT") {
                 if (discount_type === "PERCENTAGE") {
-                    discounted_amount = Number(((total_price * discount_value) / 100).toFixed(2));
-
+                    discounted_amount = +((total_price * discount_value) / 100).toFixed(2);
                 } else if (discount_type === "SEK") {
-                    discounted_amount = Number(discount_value);
+                    discounted_amount = +discount_value;
                 }
-
-                total_price = Math.max(0, Number((total_price - discounted_amount).toFixed(2)));
-
-                // Recalculate earnings on discounted total
-                admin_earnings = Number(((total_price_with_discount * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2));
-                clinic_earnings = Number((total_price_with_discount - admin_earnings).toFixed(2));
+                subtotal = Math.max(0, total_price - discounted_amount);
             }
         }
 
+        // ✅ VAT applies on the discounted subtotal (if any)
+        vat_amount = +(subtotal * (VAT_PERCENTAGE / 100)).toFixed(2);
+        final_total = +(subtotal + vat_amount).toFixed(2);
+
+        // ---------------- Earnings ----------------
+        let admin_earnings = +((subtotal * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2);
+        admin_earnings = +(admin_earnings + vat_amount).toFixed(2); // VAT goes to admin
+        let clinic_earnings = +(subtotal - admin_earnings).toFixed(2);
+
+        const is_paid = final_total > 0 ? 1 : 0;
+
+        // ---------------- Appointment Data ----------------
         const appointmentData = {
             appointment_id,
             user_id,
             doctor_id,
             clinic_id,
-            total_price,
+            subtotal,
+            vat_amount,
+            total_price: final_total,
             admin_earnings,
             clinic_earnings,
-            report_id: report_id,
+            report_id,
             type: appointmentType,
-            status: save_type === 'booked' ? 'Scheduled' : 'Scheduled',
+            status: "Scheduled",
             save_type,
             start_time: normalizedStart,
             end_time: normalizedEnd,
             is_paid,
-            payment_status: is_paid ? 'unpaid' : 'paid'
-
+            payment_status: is_paid ? "unpaid" : "paid",
         };
 
-
+        // ---------------- Save or Update ----------------
         if (inputId) {
             if (existingData?.discount_type !== "NO_DISCOUNT") {
-                appointmentData.total_price_with_discount = total_price_with_discount;
+                appointmentData.total_price_with_discount = total_price;
                 appointmentData.discounted_amount = discounted_amount;
-
                 await appointmentModel.updateAppointmentV3(appointmentData);
             } else {
                 await appointmentModel.updateAppointment(appointmentData);
             }
+
             if (hasTreatments) {
                 await appointmentModel.deleteAppointmentTreatments(appointment_id);
                 await appointmentModel.insertAppointmentTreatments(appointment_id, treatments);
@@ -817,40 +825,32 @@ export const bookDirectAppointment = async (req, res) => {
             }
         }
 
-        const language = req?.user?.language || 'en';
+        // ---------------- Handle Paid or Free ----------------
+        const language = req?.user?.language || "en";
 
         if (is_paid) {
-            const session = await createPaymentSessionForAppointment(
-                {
-                    payment_gateway: "KLARNA",
-                    metadata: {
-                        order_lines: [
-                            {
-                                name: "Appointment",
-                                quantity: 1,
-                                unit_amount: total_price * 100,
-                            }],
-                        // order_lines: treatments.map((t)=>{
-                        //     return {
-                        //         name: `Treatmnet${t.treatment_id}`,
-                        //         quantity:1,
-                        //         unit_amount : parseFloat(t.price) * 100
-                        //     }
-                        // }),
-                        appointment_id: appointment_id,
-                        redirect_url: redirect_url,
-                        cancel_url: cancel_url
-                    }
-                });
-            return handleSuccess(res, 200, "en", "SESSION_CREATED_SUCCESSFULLY", session);
-        }
-        else {
-            let chat_id = 0;
-            let user_id = req.user.user_id
-            const appointmentDetails = await getAppointmentDetails(user_id, appointment_id)
+            // 💰 Create Klarna Payment Session
+            const session = await createPaymentSessionForAppointment({
+                payment_gateway: "KLARNA",
+                metadata: {
+                    order_lines: [
+                        {
+                            name: "Appointment",
+                            quantity: 1,
+                            unit_amount: final_total * 100,
+                        },
+                    ],
+                    appointment_id,
+                    redirect_url,
+                    cancel_url,
+                },
+            });
 
-            const doctor = await getDocterByDocterId(doctor_id);
-            let chatId = await getChatBetweenUsers(user_id, doctor[0].zynq_user_id);
+            return handleSuccess(res, 200, "en", "SESSION_CREATED_SUCCESSFULLY", session);
+        } else {
+            // 🔔 Notify Doctor + Send Email
+            const appointmentDetails = await getAppointmentDetails(user_id, appointment_id);
+            const [doctor] = await getDocterByDocterId(doctor_id);
 
             await sendNotification({
                 userData: req.user,
@@ -858,55 +858,43 @@ export const bookDirectAppointment = async (req, res) => {
                 type_id: appointment_id,
                 notification_type: NOTIFICATION_MESSAGES.appointment_booked,
                 receiver_id: doctor_id,
-                receiver_type: "DOCTOR"
-            })
-
+                receiver_type: "DOCTOR",
+            });
 
             await sendEmail({
-                to: doctor[0].email,
+                to: doctor.email,
                 subject: appointmentBookedTemplate.subject({
-                    user_name: req?.user?.full_name,
-                    appointment_date: normalizedStart
+                    user_name: req.user.full_name,
+                    appointment_date: normalizedStart,
                 }),
                 html: appointmentBookedTemplate.body({
-                    user_name: req?.user?.full_name,
-                    doctor_name: doctor[0].name,
+                    user_name: req.user.full_name,
+                    doctor_name: doctor.name,
                     appointment_date: normalizedStart,
-                    total_price: total_price,
+                    total_price: final_total,
                     clinic_name: appointmentDetails.clinic_name,
                 }),
             });
 
-            if (chatId.length < 1) {
-                let doctorId = doctor[0].zynq_user_id
-                let chatCreatedSuccessfully = await createChat(user_id, doctorId);
-                chat_id = chatCreatedSuccessfully.insertId
-            }
-            else {
-                chat_id = chatId[0].id
-            }
+            // 💬 Ensure chat exists
+            const chatCheck = await getChatBetweenUsers(user_id, doctor.zynq_user_id);
+            let chat_id = chatCheck.length ? chatCheck[0].id : (await createChat(user_id, doctor.zynq_user_id)).insertId;
 
-            return handleSuccess(
-                res,
-                201,
-                language,
-                'APPOINTMENT_BOOKED_SUCCESSFULLY',
-                { appointment_id, chat_id, appointmentDetails: appointmentDetails }
-            );
+            return handleSuccess(res, 201, language, "APPOINTMENT_BOOKED_SUCCESSFULLY", {
+                appointment_id,
+                chat_id,
+                appointmentDetails,
+            });
         }
-
-
-
-
-
     } catch (err) {
-        if (err.code === 'ER_DUP_ENTRY') {
+        if (err.code === "ER_DUP_ENTRY") {
             return handleError(res, 400, "en", "SLOT_ALREADY_BOOKED");
         }
-        console.error("Error in saveOrBookAppointment:", err);
-        return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+        console.error("Error in bookDirectAppointment:", err);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
-};
+});
+
 
 export const markAppointmentAsPaid = async (req, res) => {
     try {

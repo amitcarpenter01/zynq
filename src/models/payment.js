@@ -265,7 +265,9 @@ export const insertProductPurchase = async (
   admin_earnings,
   clinic_earnings,
   productDetails,
-  address_id = null
+  address_id = null,
+  vat_amount,
+  subtotal
 ) => (
   await db.query(
     `
@@ -276,8 +278,10 @@ export const insertProductPurchase = async (
         admin_earnings,
         clinic_earnings,
         product_details,
-        address_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        address_id,
+        vat_amount,
+        subtotal
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [user_id,
       cart_id,
@@ -285,7 +289,9 @@ export const insertProductPurchase = async (
       admin_earnings,
       clinic_earnings,
       productDetails,
-      address_id
+      address_id,
+      vat_amount,
+      subtotal
     ]
   )
 )
@@ -412,7 +418,7 @@ export const createPaymentSession = async ({ payment_gateway, metadata, redirect
         const redirect_cancel_url = `https://getzynq.io/payment-cancel/?redirect_url=${cancel_url}`;
 
         return await stripe.checkout.sessions.create({
-          payment_method_types : payment_types,
+          payment_method_types: payment_types,
           mode: "payment",
           line_items,
           success_url,

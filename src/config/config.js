@@ -51,7 +51,8 @@ const configs = {
         right_dark_circle: "RightDarkCircle"
     },
     openaiKey: process.env.OPENAI_API_KEY,
-    legalTeamMail :"support@getzynq.io"
+    legalTeamMail :"support@getzynq.io",
+    VAT : 25
 }
 
 export default configs
