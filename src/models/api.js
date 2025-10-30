@@ -1650,7 +1650,6 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
       LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
       LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
       LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
-      WHERE t.is_device = 0
     `;
 
         const queryParams = [];
@@ -1671,6 +1670,8 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
             whereConditions.push(`t.treatment_id IN (${placeholders})`);
             queryParams.push(...filters.treatment_ids);
         }
+
+        whereConditions.push(` t.is_device = 0 `);
 
         // ---------- Combine WHERE conditions ----------
         if (whereConditions.length) {
