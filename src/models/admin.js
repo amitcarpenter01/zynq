@@ -550,7 +550,7 @@ export const get_doctor_education = async (doctor_id) => {
 
 export const get_products_management = async () => {
     try {
-        return await db.query('SELECT tbl_products.cover_image, tbl_products.product_id, tbl_products.name AS product_name, tbl_clinics.clinic_name, tbl_products.price, tbl_products.stock, tbl_products.rating, tbl_products.short_description, tbl_products.full_description FROM `tbl_products` LEFT JOIN tbl_clinics ON tbl_clinics.clinic_id = tbl_products.clinic_id WHERE tbl_products.is_deleted = 0 ORDER BY tbl_products.created_at DESC;')
+        return await db.query('SELECT tbl_products.approval_status, tbl_products.cover_image, tbl_products.product_id, tbl_products.name AS product_name, tbl_clinics.clinic_name, tbl_products.price, tbl_products.stock, tbl_products.rating, tbl_products.short_description, tbl_products.full_description FROM `tbl_products` LEFT JOIN tbl_clinics ON tbl_clinics.clinic_id = tbl_products.clinic_id WHERE tbl_products.is_deleted = 0 ORDER BY tbl_products.created_at DESC;')
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get product latest data.");
@@ -559,7 +559,7 @@ export const get_products_management = async () => {
 
 export const get_single_product_management = async (product_id) => {
     try {
-        return await db.query('SELECT  tbl_products.cover_image, tbl_products.product_id, tbl_products.name AS product_name, tbl_clinics.clinic_name, tbl_products.price, tbl_products.stock, tbl_products.rating, tbl_products.short_description, tbl_products.full_description FROM `tbl_products` LEFT JOIN tbl_clinics ON tbl_clinics.clinic_id = tbl_products.clinic_id WHERE tbl_products.is_deleted = 0 AND tbl_products.product_id = ? ORDER BY tbl_products.created_at DESC;', [product_id]);
+        return await db.query('SELECT tbl_products.approval_status,  tbl_products.cover_image, tbl_products.product_id, tbl_products.name AS product_name, tbl_clinics.clinic_name, tbl_products.price, tbl_products.stock, tbl_products.rating, tbl_products.short_description, tbl_products.full_description FROM `tbl_products` LEFT JOIN tbl_clinics ON tbl_clinics.clinic_id = tbl_products.clinic_id WHERE tbl_products.is_deleted = 0 AND tbl_products.product_id = ? ORDER BY tbl_products.created_at DESC;', [product_id]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get product latest data.");
