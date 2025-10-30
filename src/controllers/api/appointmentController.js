@@ -702,7 +702,9 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             start_time: Joi.string().isoDate().required(),
             end_time: Joi.string().isoDate().required(),
             redirect_url: Joi.string().required(),
-            cancel_url: Joi.string().required()
+            cancel_url: Joi.string().required(),
+            appointmentType: Joi.string().required()
+
         });
 
         const { error, value } = schema.validate(req.body);
@@ -717,12 +719,13 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             end_time,
             report_id,
             redirect_url,
-            cancel_url
+            cancel_url,
+            appointmentType
         } = value;
 
         const user_id = req.user.user_id;
         const hasTreatments = treatments.length > 0;
-        const appointmentType = hasTreatments ? "Clinic Visit" : "Video Call";
+        // const appointmentType = hasTreatments ? "Clinic Visit" : "Video Call";
         const save_type = "booked";
         const appointment_id = inputId || uuidv4();
 
