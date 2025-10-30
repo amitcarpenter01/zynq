@@ -26,7 +26,7 @@ export const checkIfSlotAlreadyBooked = async (doctor_id, start_time) => {
 };
 
 export const getAppointmentsByUserId = async (user_id, status, payment_status) => {
-  let results = await db.query(`
+    let results = await db.query(`
     SELECT 
       a.*, 
       d.*, 
@@ -44,11 +44,11 @@ export const getAppointmentsByUserId = async (user_id, status, payment_status) =
     ORDER BY a.start_time ASC
   `, [user_id, status, payment_status]);
 
-  return results.map(row => {
-    const cleanRow = { ...row };
-    if ('embeddings' in cleanRow) delete cleanRow.embeddings;
-    return cleanRow;
-  });;
+    return results.map(row => {
+        const cleanRow = { ...row };
+        if ('embeddings' in cleanRow) delete cleanRow.embeddings;
+        return cleanRow;
+    });;
 };
 
 
@@ -1154,5 +1154,16 @@ export const insertSuggestedAppointmentModel = async (origin_appointment_id, app
     } catch (error) {
         console.error("Database Error in insertSuggestedAppointmentModel:", error.message);
         throw new Error("Failed to insert suggested appointment.");
+    }
+}
+
+export const deleteDraftAppointmentsModel = async (user_id, appointment_id) => {
+    try {
+        return await db.query(`
+            DELETE FROM tbl_appointments WHERE user_id = ? AND appointment_id = ?
+        `, [user_id, appointment_id]);
+    } catch (error) {
+        console.error("Database Error in deleteDraftAppointmentsModel:", error.message);
+        throw new Error("Failed to delete draft appointments.");
     }
 }

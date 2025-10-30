@@ -178,7 +178,7 @@ export const updateAppointmentStatus = async (req, res) => {
         // 2️⃣ Trigger socket event when appointment is completed from app
         if (status === "Completed" && fromApp) {
             try {
-                
+
                 const [appointment] = await appointmentModel.getAppointmentDetailsByAppointmentID(appointment_id);
 
                 if (appointment) {
@@ -1000,4 +1000,11 @@ export const getDraftAppointments = asyncHandler(async (req, res) => {
     const { user_id, language = "en" } = req.user;
     const draftData = await appointmentModel.getDraftAppointmentsModel(user_id, doctor_id);
     return handleSuccess(res, 200, language, "DRAFT_APPOINTMENTS_FETCHED_SUCCESSFULLY", draftData);
+})
+
+export const deleteDraftAppointment = asyncHandler(async (req, res) => {
+    const { appointment_id } = req.params;
+    const { user_id, language = "en" } = req.user;
+    await appointmentModel.deleteDraftAppointmentsModel(user_id, appointment_id);
+    return handleSuccess(res, 200, language, "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY",);
 })

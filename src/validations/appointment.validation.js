@@ -55,3 +55,7 @@ export const getGuestFaceScanSchema = joi.object({
 export const getDraftAppointmentsSchema = joi.object({
   doctor_id : stringValidation
 })
+
+export const deleteDraftAppointmentSchema = joi.object({
+  appointment_id: stringValidation
+})

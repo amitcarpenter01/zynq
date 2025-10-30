@@ -289,5 +289,6 @@
   "PRODUCT_APPROVED_SUCCESSFULLY" : "Product Approved Successfully",
   "PRODUCT_REJECTED_SUCCESSFULLY" : "Product Rejected Successfully",
   "PRODUCT_HIDDEN_SUCCESSFULLY" : "Product Hidden Successfully",
-  "PRODUCT_UNHIDDEN_SUCCESSFULLY" : "Product is now visible"
+  "PRODUCT_UNHIDDEN_SUCCESSFULLY" : "Product is now visible",
+  "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY" : "Draft Appointment Deleted Successfully"
 }

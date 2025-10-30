@@ -21,7 +21,7 @@ import * as appointmentController from "../controllers/api/appointmentController
 import { uploadCertificationFieldsTo } from '../services/doctor_multer.js';
 
 //==================================== Import Validations ==============================
-import { rescheduleAppointmentSchema, rateAppointmentSchema, sendReportToChatSchema, contactUsSchema, guestLoginSchema, getGuestFaceScanSchema, getDraftAppointmentsSchema } from '../validations/appointment.validation.js';
+import { rescheduleAppointmentSchema, rateAppointmentSchema, sendReportToChatSchema, contactUsSchema, guestLoginSchema, getGuestFaceScanSchema, getDraftAppointmentsSchema, deleteDraftAppointmentSchema } from '../validations/appointment.validation.js';
 import { getSingleDoctorSchema, getAllDoctorsSchema, requestCallbackSchema, getSingleDoctorRatingsSchema } from '../validations/doctor.validation.js';
 import { getAllClinicsSchema, getSingleClinicSchema } from '../validations/clinic.validation.js';
 import { getTipsByConcernsSchema, getTreatmentFiltersSchema, getTreatmentsByConcernSchema, getTreatmentsByConcersSchema, getTreatmentsSchema, sendFaceResultToEmailSchema } from '../validations/treatment.validation.js';
@@ -248,5 +248,7 @@ router.post('/face',
   upload.fields([{ name: 'face', maxCount: 1 }]),
   faceScanControllers.addFace
 );
+
+router.delete('/draft-appointment/:appointment_id', authenticateUser, validate(deleteDraftAppointmentSchema, "params"), appointmentController.deleteDraftAppointment);
 
 export default router;

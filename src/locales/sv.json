@@ -281,5 +281,6 @@
   "PRODUCT_APPROVED_SUCCESSFULLY": "Produkt godkännt",
   "PRODUCT_REJECTED_SUCCESSFULLY": "Produkt avvisad",
   "PRODUCT_HIDDEN_SUCCESSFULLY": "Produkten har dolts framgångsrikt",
-  "PRODUCT_UNHIDDEN_SUCCESSFULLY": "Produkten är nu synlig"
+  "PRODUCT_UNHIDDEN_SUCCESSFULLY": "Produkten är nu synlig",
+  "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY" : "Utkast ha meddelanden raderades framgångsrikt"
 }
