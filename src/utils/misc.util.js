@@ -450,3 +450,37 @@ export const paginateRows = (rows, limit, page) => {
 
     return rows.slice(startIndex, endIndex);
 };
+
+export const rankSimilarRows = async (rows, search, threshold = 0, topN = null) => {
+    if (!rows?.length) return [];
+    if (!search?.trim()) return rows;
+
+    // 1️⃣ Fetch embedding for search term
+    const { data } = await axios.post("http://localhost:11434/api/embeddings", {
+        model: "nomic-embed-text",
+        prompt: search,
+    });
+    const queryEmbedding = data.embedding;
+
+    // 2️⃣ Compute similarity scores for all rows
+    const scoredResults = rows.map(row => {
+        if (!row.embeddings) return { ...row, score: 0 };
+
+        const dbEmbedding = Array.isArray(row.embeddings)
+            ? row.embeddings
+            : JSON.parse(row.embeddings);
+
+        const score = cosineSimilarity(queryEmbedding, dbEmbedding);
+        return { ...row, score };
+    });
+
+    // 3️⃣ Sort all rows by descending similarity
+    scoredResults.sort((a, b) => b.score - a.score);
+
+    // 4️⃣ Optionally apply threshold or topN
+    const filtered = threshold > 0 
+        ? scoredResults.filter(r => r.score >= threshold)
+        : scoredResults;
+
+    return topN && topN > 0 ? filtered.slice(0, topN) : filtered;
+};
