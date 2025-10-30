@@ -66,7 +66,7 @@ export const getTreatmentsData = async (treatment_ids, doctor_id) => {
         dt.price AS unit_price
       FROM tbl_treatments t
       LEFT JOIN tbl_doctor_treatments dt ON dt.treatment_id = t.treatment_id
-      WHERE t.treatment_id IN (?) AND dt.doctor_id = ?
+      WHERE t.is_device = 0 AND t.treatment_id IN (?) AND dt.doctor_id = ?
     `;
     const results = await db.query(query, [treatment_ids, doctor_id]);
     return results;
