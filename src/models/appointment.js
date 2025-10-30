@@ -64,7 +64,12 @@ export const getAppointmentsByUserIdV2 = async (user_id, status, payment_status)
         WHERE a.user_id = ? AND save_type  = ? AND payment_status = ?
         ORDER BY  start_time ASC 
     `, [user_id, status, payment_status]);
-    return results;
+    return results.map(row => {
+        if ('embeddings' in row) {
+            delete row.embeddings;
+        }
+        return row;
+    });
 };
 
 export const getBookedAppointmentsByUserId = async (user_id, status) => {
