@@ -1642,11 +1642,10 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
             'dm.clinic_id',
             'c.clinic_name',
             'c.address AS clinic_address',
-            'ROUND(AVG(ar.rating), 2) AS avg_rating',
-            'JSON_ARRAYAGG(DISTINCT dt.treatment_id) AS treatment_ids'
+            'ROUND(AVG(ar.rating), 2) AS avg_rating'
         ].join(', ');
 
-        const query = `
+        let query = `
             SELECT ${selectFields}
             FROM tbl_doctors d
             LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
@@ -1654,7 +1653,6 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
             LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
             LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
-            LEFT JOIN tbl_doctor_treatments dt ON d.doctor_id = dt.doctor_id
             WHERE dm.clinic_id IN (${clinicIds.map(() => '?').join(', ')})
               AND d.profile_completion_percentage >= 0
             GROUP BY d.doctor_id, dm.clinic_id
@@ -1663,20 +1661,10 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
 
         const rows = await db.query(query, params);
 
-        // 🧹 Group results by clinic_id
+        // Grouping by clinic_id
         const grouped = {};
         for (const row of rows) {
             row.profile_image = formatImagePath(row.profile_image, 'doctor/profile_images');
-
-            // Parse JSON array if returned as string
-            if (typeof row.treatment_ids === 'string') {
-                try {
-                    row.treatment_ids = JSON.parse(row.treatment_ids);
-                } catch {
-                    row.treatment_ids = [];
-                }
-            }
-
             if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
             grouped[row.clinic_id].push(row);
         }
@@ -1687,6 +1675,7 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
         throw new Error("Failed to fetch doctors for clinics.");
     }
 };
+
 
 export const getDoctorCertificationsBulk = async (doctorIds) => {
     try {
