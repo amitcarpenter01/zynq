@@ -696,7 +696,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             treatments: Joi.array().items(
                 Joi.object({
                     treatment_id: Joi.string().required(),
-                    price: Joi.number().required()
+                    price: Joi.number().min(0).required().allow(null),
                 })
             ).optional(),
             start_time: Joi.string().isoDate().required(),
