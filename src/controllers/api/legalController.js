@@ -238,3 +238,46 @@ export const addConsent = asyncHandler(async (req, res) => {
 
   return handleSuccess(res, 200, "en", "CONSENT_ADDED_SUCCESSFULLY");
 });
+
+export const generateAIResponse = async ({
+  prompt,
+  base64Image,
+  model = "gpt-4o-mini",
+  expectJson = true,
+}) => {
+  try {
+    const input = [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          ...(base64Image
+            ? [{ type: "image", image_url: `data:image/jpeg;base64,${base64Image}` }]
+            : []),
+        ],
+      },
+    ];
+
+    const response = await openai.responses.create({
+      model,
+      input,
+      response_format: expectJson ? { type: "json_object" } : undefined,
+    });
+
+    const outputText = response.output[0]?.content?.[0]?.text || "";
+
+    if (expectJson) {
+      try {
+        return JSON.parse(outputText);
+      } catch {
+        console.warn("⚠️ Failed to parse JSON output from model.");
+        return { raw_output: outputText };
+      }
+    }
+
+    return outputText;
+  } catch (error) {
+    console.error("❌ OpenAI call failed:", error);
+    throw new Error("AI request failed: " + (error.message || "Unknown error"));
+  }
+};

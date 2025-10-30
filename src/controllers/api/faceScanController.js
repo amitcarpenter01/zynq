@@ -274,3 +274,21 @@ export const sendReportToChat = asyncHandler(async (req, res) => {
 
     return handleSuccess(res, 200, language, "REPORT_SENT_TO_CHAT_SUCCESSFULLY",);
 })
+
+export const addFace = asyncHandler(async (req, res) => {
+    const device_id = req?.body?.device_id || null;
+    const user_id = req?.user?.user_id || null;
+
+    if (isEmpty(device_id) && isEmpty(user_id)) {
+        return handleError(res, 400, "en", "Device id or user id is required");
+    }
+
+    if (!req?.files?.face?.length > 0) {
+        return handleError(res, 400, "en", "Face is required");
+    }
+
+    const face = req.files.face[0].filename;
+    const filepath = req.files.face[0].path;
+
+    return handleSuccess(res, 200, "en", "FACE_ADDED_SUCCESSFULLY",);
+})

@@ -243,4 +243,10 @@ router.post('/gemini/endpoint', geminiBackendEndpoint)
 
 router.post('/consent', optionalAuthenticateUser, validate(addConsentSchema, "body"), addConsent);
 
+router.post('/face', 
+  optionalAuthenticateUser, 
+  upload.fields([{ name: 'face', maxCount: 1 }]),
+  faceScanControllers.addFace
+);
+
 export default router;
