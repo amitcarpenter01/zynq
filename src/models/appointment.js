@@ -223,7 +223,12 @@ export const getAppointmentsById = async (user_id, appointment_id) => {
         WHERE a.user_id = ? AND a.appointment_id = ?
     `, [user_id, appointment_id]);
 
-    return results;
+    return results.map(row => {
+        if ('embeddings' in row) {
+            delete row.embeddings;
+        }
+        return row;
+    });
 };
 
 
