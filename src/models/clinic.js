@@ -1642,10 +1642,11 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
             'dm.clinic_id',
             'c.clinic_name',
             'c.address AS clinic_address',
-            'ROUND(AVG(ar.rating), 2) AS avg_rating'
+            'ROUND(AVG(ar.rating), 2) AS avg_rating',
+            'GROUP_CONCAT(DISTINCT dt.treatment_id) AS treatment_ids'
         ].join(', ');
 
-        let query = `
+        const query = `
             SELECT ${selectFields}
             FROM tbl_doctors d
             LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
@@ -1653,6 +1654,7 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
             LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
             LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
+            LEFT JOIN tbl_doctor_treatments dt ON d.doctor_id = dt.doctor_id
             WHERE dm.clinic_id IN (${clinicIds.map(() => '?').join(', ')})
               AND d.profile_completion_percentage >= 0
             GROUP BY d.doctor_id, dm.clinic_id
@@ -1661,10 +1663,18 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
 
         const rows = await db.query(query, params);
 
-        // Grouping by clinic_id
+        // 🧹 Group results by clinic_id
         const grouped = {};
         for (const row of rows) {
             row.profile_image = formatImagePath(row.profile_image, 'doctor/profile_images');
+
+            // Parse JSON array if returned as string
+            if (typeof row.treatment_ids === 'string' && row.treatment_ids.trim()) {
+                row.treatment_ids = [...new Set(row.treatment_ids.split(',').map(id => id.trim()))];
+            } else {
+                row.treatment_ids = [];
+            }
+
             if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
             grouped[row.clinic_id].push(row);
         }
@@ -1675,7 +1685,6 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
         throw new Error("Failed to fetch doctors for clinics.");
     }
 };
-
 
 export const getDoctorCertificationsBulk = async (doctorIds) => {
     try {
@@ -1902,7 +1911,7 @@ export const getDoctorTreatmentsBulk = async (doctorIds) => {
 //             WHERE dt.doctor_id IN (${placeholders}) 
 //             ORDER BY dt.created_at DESC`;
 //         const results = await db.query(query, doctorIds);
-        
+
 //         const grouped = {};
 //         results.forEach(row => {
 //             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
@@ -2078,22 +2087,22 @@ export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
 };
 
 export const getDoctorRatings = async (doctorId) => {
-  try {
-    const query = `
+    try {
+        const query = `
     SELECT ar.*, u.full_name, u.profile_image
     FROM tbl_appointment_ratings ar
     LEFT JOIN tbl_users u ON ar.user_id = u.user_id
     WHERE ar.doctor_id = ? AND ar.approval_status = 'APPROVED'
     ORDER BY ar.created_at DESC`;
-    const results = await db.query(query, [doctorId]);
-    return results.map(row => ({
-      ...row,
-      profile_image: formatImagePath(row.profile_image, ''),
-    }));
-  } catch (error) {
-    console.error("Database Error:", error.message);
-    throw new Error("Failed to fetch doctor ratings.");
-  }
+        const results = await db.query(query, [doctorId]);
+        return results.map(row => ({
+            ...row,
+            profile_image: formatImagePath(row.profile_image, ''),
+        }));
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch doctor ratings.");
+    }
 }
 
 export const getDoctorAvailabilityBulk = async (doctorIds) => {
