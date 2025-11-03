@@ -1646,15 +1646,21 @@ export const getAllTreatments = async (lang) => {
 
 export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = null) => {
     try {
-        // pick the right column for name
         const nameColumn = lang === 'sv' ? 't.swedish' : 't.name';
+        const concernNameColumn = lang === 'sv' ? 'c.swedish' : 'c.name';
 
         let query = `
       SELECT
         t.*,
         ${nameColumn} AS name,
         IFNULL(MIN(dt.price), 0) AS min_price,
-        IFNULL(MAX(dt.price), 0) AS max_price
+        IFNULL(MAX(dt.price), 0) AS max_price,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'concern_id', c.concern_id,
+            'name', ${concernNameColumn}
+          )
+        ) AS concerns
       FROM tbl_treatments t
       LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
       LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
@@ -1667,7 +1673,7 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         // ---------- Recommended Filter ----------
         if (filters.recommended === true && user_id) {
             const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
-            if (!fallbackTreatmentIds?.length) return []; // no recommended treatments
+            if (!fallbackTreatmentIds?.length) return [];
             const placeholders = fallbackTreatmentIds.map(() => '?').join(',');
             whereConditions.push(`t.treatment_id IN (${placeholders})`);
             queryParams.push(...fallbackTreatmentIds);
@@ -1680,8 +1686,6 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
             queryParams.push(...filters.treatment_ids);
         }
 
-        // whereConditions.push(` t.is_device = 0 `);
-
         // ---------- Combine WHERE conditions ----------
         if (whereConditions.length) {
             query += ' WHERE ' + whereConditions.join(' AND ');
@@ -1693,17 +1697,51 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         // ---------- Execute Query ----------
         let results = await db.query(query, queryParams);
 
-        // ---------- Apply cosine similarity search if search term exists ----------
+        // ---------- Parse + Deduplicate concerns ----------
+        results = results.map(row => {
+            let concerns = [];
+
+            if (Array.isArray(row.concerns)) {
+                // Deduplicate using a Set based on concern_id
+                const seen = new Set();
+                concerns = row.concerns.filter(c => {
+                    if (!c?.concern_id) return false;
+                    if (seen.has(c.concern_id)) return false;
+                    seen.add(c.concern_id);
+                    return true;
+                });
+            } else if (typeof row.concerns === 'string') {
+                // Fallback if MySQL returns JSON string instead of array
+                try {
+                    const parsed = JSON.parse(row.concerns);
+                    const seen = new Set();
+                    concerns = parsed.filter(c => {
+                        if (!c?.concern_id) return false;
+                        if (seen.has(c.concern_id)) return false;
+                        seen.add(c.concern_id);
+                        return true;
+                    });
+                } catch {
+                    concerns = [];
+                }
+            }
+
+            return {
+                ...row,
+                concerns,
+            };
+        });
+
+
+        // ---------- Apply cosine similarity ----------
         if (filters.search?.trim()) {
             results = await getTopSimilarRows(results, filters.search);
         } else {
-            // No search: just clean results and return without embeddings
             results = results.map(({ embeddings, ...rest }) => rest);
         }
 
         // ---------- Format Benefits ----------
         return formatBenefitsUnified(results, lang);
-
     } catch (error) {
         console.error("Database Error in getAllTreatmentsV2:", error.message);
         throw new Error("Failed to fetch treatments.");
