@@ -481,7 +481,7 @@ export const getAllRecommendedDoctors = async ({
                 });
         }
 
-        const ranked = await getTopSimilarRows(rows, trimmedSearch);
+        const ranked = await getTopSimilarRows(rows, trimmedSearch, 0.3);
         return ranked.slice(offset, offset + limit);
 
     } catch (error) {
@@ -904,7 +904,7 @@ export const getAllClinicsForUser = async ({
         if (!rows?.length) return [];
 
         // Apply vector-based semantic ranking
-        const ranked = await getTopSimilarRows(rows, trimmedSearch);
+        const ranked = await getTopSimilarRows(rows, trimmedSearch, 0.3);
 
         // Manual offset/limit
         const paginated = ranked.slice(offset, offset + limit);
@@ -1067,7 +1067,7 @@ export const getNearbyClinicsForUser = async ({
         const rows = await db.query(query, params);
         if (!rows?.length) return [];
 
-        const ranked = await getTopSimilarRows(rows, trimmedSearch);
+        const ranked = await getTopSimilarRows(rows, trimmedSearch, 0.3);
 
         const paginated = ranked.slice(offset, offset + limit);
         return paginated;
@@ -2162,7 +2162,7 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
       GROUP BY d.doctor_id, dm.clinic_id
     `);
         // 2️⃣ Compute top similar rows using embeddings
-        results = await getTopSimilarRows(results, search);
+        results = await getTopSimilarRows(results, search, 0.3);
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
@@ -2194,7 +2194,7 @@ export const getClinicsByNameSearchOnly = async ({ search = '', page = null, lim
     `);
 
         // 2️⃣ Compute top similar rows using embedding
-        results = await getTopSimilarRows(results, search);
+        results = await getTopSimilarRows(results, search, 0.3);
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
