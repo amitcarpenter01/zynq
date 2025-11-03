@@ -311,7 +311,6 @@ export const getAllTreatments = async () => {
         const treatments = await db.query(`
             SELECT * 
             FROM tbl_treatments 
-            WHERE is_device = 0
             ORDER BY created_at DESC`);
 
         // Remove embeddings dynamically
@@ -347,7 +346,7 @@ export const getClinicTreatments = async (clinic_id) => {
             SELECT t.*
             FROM tbl_treatments t
             INNER JOIN tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id
-            WHERE ct.clinic_id = ? AND t.is_device = 0
+            WHERE ct.clinic_id = ?
             ORDER BY t.created_at DESC
         `, [clinic_id]);
 
@@ -616,7 +615,7 @@ export const getUserTreatments = async (lang = 'sv') => {
                 benefits,
                 created_at
             FROM tbl_treatments
-            WHERE ${nameColumn} IS NOT NULL AND is_device = 0
+            WHERE ${nameColumn} IS NOT NULL
             ORDER BY created_at DESC
         `;
 
@@ -1494,7 +1493,7 @@ export const getClinicTreatmentsBulk = async (clinicIds) => {
         SELECT t.*, ct.*
         FROM tbl_treatments t
         INNER JOIN tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id
-        WHERE t.is_device = 0 AND ct.clinic_id IN (${placeholders})
+        ct.clinic_id IN (${placeholders})
     `;
 
     const results = await db.query(query, clinicIds);

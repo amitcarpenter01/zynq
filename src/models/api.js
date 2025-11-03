@@ -1511,7 +1511,6 @@ export const getAllTreatments = async (lang) => {
             LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
             LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
             LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
-            WHERE t.is_device = 0
             GROUP BY t.treatment_id
         `;
 
@@ -1681,7 +1680,7 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
             queryParams.push(...filters.treatment_ids);
         }
 
-        whereConditions.push(` t.is_device = 0 `);
+        // whereConditions.push(` t.is_device = 0 `);
 
         // ---------- Combine WHERE conditions ----------
         if (whereConditions.length) {
@@ -1759,7 +1758,6 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
             LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
             LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
             LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
-            WHERE  t.is_device = 0  
         `;
 
         let params = [];
@@ -2311,7 +2309,7 @@ export const getTreatmentsBySearchOnly = async ({
         let results = await db.query(`
       SELECT *
       FROM tbl_treatments
-      WHERE embeddings IS NOT NULL AND is_device = 0  
+      WHERE embeddings IS NOT NULL
     `);
 
         // 2️⃣ Compute top similar rows using embedding
@@ -3015,7 +3013,7 @@ export const getDoctorEmbeddingTextById = async (zynq_user_id) => {
       SELECT 
         d.doctor_id,
         CONCAT(
-          'Name: ', IFNULL(d.name, ''),
+          'Expert Name: ', IFNULL(d.name, ''),
           ', Address: ', IFNULL(d.address, ''),
           ', Biography: ', IFNULL(d.biography, ''),
           ', Gender: ', IFNULL(d.gender, ''),
