@@ -1298,6 +1298,7 @@ export const fetchZynqUserByUserId = async (user_id) => {
 
 export const getAllConcerns = async (lang = "en", concern_ids) => {
     try {
+        console.log("ASfasf")
         let query = `
             SELECT *
             FROM tbl_concerns
