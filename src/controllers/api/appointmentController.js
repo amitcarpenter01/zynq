@@ -699,6 +699,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
                     price: Joi.number().min(0).required().allow(null),
                 })
             ).optional(),
+            concerns: Joi.array().items(Joi.string()).optional(),
             start_time: Joi.string().isoDate().required(),
             end_time: Joi.string().isoDate().required(),
             redirect_url: Joi.string().required(),
@@ -720,7 +721,8 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             report_id,
             redirect_url,
             cancel_url,
-            appointmentType
+            appointmentType,
+            concerns = []
         } = value;
 
         const user_id = req.user.user_id;
@@ -728,6 +730,10 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         // const appointmentType = hasTreatments ? "Clinic Visit" : "Video Call";
         const save_type = "booked";
         const appointment_id = inputId || uuidv4();
+
+        if (!isEmpty(concerns)) {
+            await updateAppointmentConcerns(appointment_id, concerns);
+        }
 
         // ---------------- Compute Base Price ----------------
         let total_price = treatments.reduce((sum, t) => sum + t.price, 0);

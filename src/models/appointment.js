@@ -1179,3 +1179,18 @@ export const deleteDraftAppointmentsModel = async (user_id, appointment_id) => {
         throw new Error("Failed to delete draft appointments.");
     }
 }
+
+export const updateAppointmentConcerns = async (appointment_id, concerns) => {
+    try {
+        if (concerns.length > 0) {
+            const values = concerns.map(concern_id => [appointment_id, concern_id]);
+            await connection.query(
+                `INSERT INTO tbl_appointment_concerns (appointment_id, concern_id) VALUES ?`,
+                [values]
+            );
+        }
+    } catch (error) {
+        console.error("Database Error in updateAppointmentConcerns:", error.message);
+        throw new Error("Failed to update appointment concerns.");
+    }
+}
