@@ -204,7 +204,9 @@ export const updateAppointmentStatus = async (appointment_id, status) => {
 
 
 
-export const getAppointmentsById = async (user_id, appointment_id) => {
+export const getAppointmentsById = async (user_id, appointment_id, lang = "en") => {
+    const nameColumn = lang === "sv" ? "cnc.swedish" : "cnc.name";
+
     const results = await db.query(`
         SELECT 
             a.*,
@@ -212,27 +214,41 @@ export const getAppointmentsById = async (user_id, appointment_id) => {
             zu.email,
             r.pdf,
             c.clinic_name,
-            cl.latitude,
-            cl.longitude,
-            a.created_at AS created_at,
-            a.updated_at AS updated_at
+            ANY_VALUE(cl.latitude) AS latitude,
+            ANY_VALUE(cl.longitude) AS longitude,
+            ANY_VALUE(a.created_at) AS created_at,
+            ANY_VALUE(a.updated_at) AS updated_at,
+            IFNULL(GROUP_CONCAT(DISTINCT ${nameColumn} SEPARATOR ', '), '') AS concerns
         FROM tbl_appointments a
-        INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
-        INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+        LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
         LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id = a.report_id
         LEFT JOIN tbl_clinic_locations cl ON cl.clinic_id = a.clinic_id
-        INNER JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
+        LEFT JOIN tbl_appointment_concerns ac ON ac.appointment_id = a.appointment_id
+        LEFT JOIN tbl_concerns cnc ON cnc.concern_id = ac.concern_id
+        LEFT JOIN tbl_clinics c ON c.clinic_id = a.clinic_id
         WHERE a.user_id = ? AND a.appointment_id = ?
+        GROUP BY a.appointment_id
     `, [user_id, appointment_id]);
+
+    if (!results || results.length === 0) return [];
 
     return results.map(row => {
         if ('embeddings' in row) {
             delete row.embeddings;
         }
-        return row;
+
+        const concernsArray = (row.concerns || '')
+            .split(',')
+            .map(name => name.trim())
+            .filter(Boolean);
+
+        return {
+            ...row,
+            concerns: concernsArray
+        };
     });
 };
-
 
 
 export const getAppointmentDataByAppointmentID = async (appointment_id) => {

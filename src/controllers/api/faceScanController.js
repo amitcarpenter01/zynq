@@ -145,7 +145,7 @@ export const get_treatments_by_concern_id = async (req, res) => {
 export const get_all_concerns = async (req, res) => {
     try {
         const language = req?.user?.language || 'en';
-        const concern_ids = req.body.concern_ids || [];
+        const concern_ids = req?.body?.concern_ids || [];
         const concerns = await apiModels.getAllConcerns(language, concern_ids);
 
         return handleSuccess(res, 200, "en", "CONCERNS_FETCHED", concerns);
