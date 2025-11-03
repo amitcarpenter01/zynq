@@ -404,6 +404,8 @@ export const getTopSimilarRows = async (rows, search, threshold = 0.4, topN = nu
 
     const queryEmbedding = response.data.embedding;
 
+    console.log("queryEmbeddingqueryEmbedding - ", search, queryEmbedding);
+
     // 2️⃣ Compute similarity for each row
     const results = [];
 
