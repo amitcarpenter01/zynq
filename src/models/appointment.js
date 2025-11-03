@@ -213,7 +213,9 @@ export const getAppointmentsById = async (user_id, appointment_id) => {
             r.pdf,
             c.clinic_name,
             cl.latitude,
-            cl.longitude
+            cl.longitude,
+            a.created_at AS created_at,
+            a.updated_at AS updated_at
         FROM tbl_appointments a
         INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
         INNER JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
