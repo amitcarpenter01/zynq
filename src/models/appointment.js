@@ -1184,7 +1184,7 @@ export const updateAppointmentConcerns = async (appointment_id, concerns) => {
     try {
         if (concerns.length > 0) {
             const values = concerns.map(concern_id => [appointment_id, concern_id]);
-            await connection.query(
+            await db.query(
                 `INSERT INTO tbl_appointment_concerns (appointment_id, concern_id) VALUES ?`,
                 [values]
             );

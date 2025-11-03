@@ -732,7 +732,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         const appointment_id = inputId || uuidv4();
 
         if (!isEmpty(concerns)) {
-            await updateAppointmentConcerns(appointment_id, concerns);
+            await appointmentModel.updateAppointmentConcerns(appointment_id, concerns);
         }
 
         // ---------------- Compute Base Price ----------------
