@@ -2214,7 +2214,7 @@ export const getProductsByNameSearchOnly = async ({ search = '', page = null, li
         let results = await db.query(`
       SELECT *
       FROM tbl_products
-      WHERE p.is_hidden = 0 AND embeddings IS NOT NULL AND is_deleted = 0 AND approval_status = 'APPROVED' 
+      WHERE is_hidden = 0 AND embeddings IS NOT NULL AND is_deleted = 0 AND approval_status = 'APPROVED' 
     `);
 
         // 2️⃣ Compute top similar rows using embedding
