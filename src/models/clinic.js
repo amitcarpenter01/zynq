@@ -1493,7 +1493,7 @@ export const getClinicTreatmentsBulk = async (clinicIds) => {
         SELECT t.*, ct.*
         FROM tbl_treatments t
         INNER JOIN tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id
-        ct.clinic_id IN (${placeholders})
+        WHERE ct.clinic_id IN (${placeholders})
     `;
 
     const results = await db.query(query, clinicIds);
