@@ -2161,10 +2161,8 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
         AND d.name IS NOT NULL
       GROUP BY d.doctor_id, dm.clinic_id
     `);
-        console.log("results 1- ", results);
         // 2️⃣ Compute top similar rows using embeddings
         results = await getTopSimilarRows(results, search);
-        console.log("results 2- ", results);
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
