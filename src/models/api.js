@@ -1,5 +1,6 @@
 import db from "../config/db.js";
 import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows } from "../utils/misc.util.js";
+import { isEmpty } from "../utils/user_helper.js";
 
 //======================================= Auth =========================================
 
@@ -1295,13 +1296,21 @@ export const fetchZynqUserByUserId = async (user_id) => {
     }
 }
 
-export const getAllConcerns = async (lang = "en") => {
+export const getAllConcerns = async (lang = "en", concern_ids) => {
     try {
-
-        const concernData = await db.query(`
+        let query = `
             SELECT *
             FROM tbl_concerns
-            ;`, []);
+        `;
+        const params = [];
+
+        if (Array.isArray(concern_ids) && concern_ids.length > 0) {
+            const placeholders = concern_ids.map(() => '?').join(',');
+            query += ` WHERE concern_id IN (${placeholders})`;
+            params.push(...concern_ids);
+        }
+
+        const concernData = await db.query(query, params);
 
         const result = concernData.map((concern) => {
             let parsedTips = {};
