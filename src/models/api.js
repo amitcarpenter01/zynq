@@ -1785,45 +1785,45 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
 // };
 
 export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
-    try {
-        let query = `
-            SELECT
-                t.*,
-                ANY_VALUE(c.name) AS concern_name,
-                IFNULL(MIN(dt.price), 0) AS min_price,
-                IFNULL(MAX(dt.price), 0) AS max_price
-            FROM tbl_treatments t
-            LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
-            LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
-            LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
-        `;
+  try {
+    let query = `
+      SELECT
+          t.*,
+          ANY_VALUE(c.name) AS concern_name,
+          IFNULL(MIN(dt.price), 0) AS min_price,
+          IFNULL(MAX(dt.price), 0) AS max_price
+      FROM tbl_treatments t
+      LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
+      LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+      LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+    `;
 
-        let params = [];
+    let params = [];
 
-        // Add WHERE clause only if treatment_ids is not empty
-        if (Array.isArray(treatment_ids) && treatment_ids.length > 0) {
-            const placeholders = treatment_ids.map(() => '?').join(', ');
-            query += ` AND t.treatment_id IN (${placeholders})`;
-            params = treatment_ids;
-        }
-
-        query += ` GROUP BY t.treatment_id`;
-
-        let results = await db.query(query, params);
-
-        // Remove embeddings dynamically
-        results = results.map(row => {
-            const treatmentRow = { ...row };
-            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
-            return treatmentRow;
-        });
-
-        return formatBenefitsUnified(results, lang);
-    } catch (error) {
-        console.error("Database Error in getTreatmentsByTreatmentIds:", error.message);
-        throw new Error("Failed to fetch treatments.");
+    if (Array.isArray(treatment_ids) && treatment_ids.length > 0) {
+      const placeholders = treatment_ids.map(() => '?').join(', ');
+      query += ` WHERE t.treatment_id IN (${placeholders})`;
+      params = treatment_ids;
     }
+
+    query += ` GROUP BY t.treatment_id`;
+
+    let results = await db.query(query, params);
+
+    // Remove embeddings if present
+    results = results.map(row => {
+      const treatmentRow = { ...row };
+      if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+      return treatmentRow;
+    });
+
+    return formatBenefitsUnified(results, lang);
+  } catch (error) {
+    console.error("Database Error in getTreatmentsByTreatmentIds:", error.message);
+    throw new Error("Failed to fetch treatments.");
+  }
 };
+
 
 
 export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
