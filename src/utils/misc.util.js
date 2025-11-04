@@ -396,6 +396,7 @@ const GOOGLE_TRANSLATE_KEY = process.env.GOOGLE_TRANSLATE_KEY
 
 export async function translator(question, targetLang) {
     try {
+        // return question
         const url = `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_TRANSLATE_KEY}`;
         const body = {
             q: question,
