@@ -392,19 +392,40 @@ export async function deleteGuestData() {
     await deleteGuestDataModel()
 }
 
+const GOOGLE_TRANSLATE_KEY = process.env.GOOGLE_TRANSLATE_KEY
+
+export async function translator(question, targetLang) {
+    try {
+        const url = `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_TRANSLATE_KEY}`;
+        const body = {
+            q: question,
+            target: targetLang,
+            format: 'text'
+        };
+
+        const resp = await axios.post(url, body);
+        const translated = resp.data.data.translations[0].translatedText;
+        return translated;
+    } catch (err) {
+        console.error('Translate error:', err.response?.data || err.message);
+        // throw err;
+        return question
+    }
+};
+
 export const getTopSimilarRows = async (rows, search, threshold = 0.4, topN = null) => {
-    console.log("ROws - ", rows.length, rows);
-    console.log("Search - ", search);
     if (!search?.trim()) return rows;
+
+    const normalized_search = await translator(search, 'en');
+
+    console.log("normalized_search - ", normalized_search)
     // 1️⃣ Get embedding for the search term
     const response = await axios.post("http://localhost:11434/api/embeddings", {
         model: "nomic-embed-text",
-        prompt: search,
+        prompt: normalized_search,
     });
 
     const queryEmbedding = response.data.embedding;
-
-    console.log("queryEmbeddingqueryEmbedding - ", search, queryEmbedding);
 
     // 2️⃣ Compute similarity for each row
     const results = [];
@@ -418,7 +439,6 @@ export const getTopSimilarRows = async (rows, search, threshold = 0.4, topN = nu
 
         const score = cosineSimilarity(queryEmbedding, dbEmbedding);
 
-        console.log("name - ", row.name || "user", "score - ", score);
         if (score >= threshold) {
             const { embeddings, ...rest } = row; // exclude embeddings
             results.push({ ...rest, score });
@@ -480,9 +500,10 @@ export const rankSimilarRows = async (rows, search, threshold = 0, topN = null) 
     scoredResults.sort((a, b) => b.score - a.score);
 
     // 4️⃣ Optionally apply threshold or topN
-    const filtered = threshold > 0 
+    const filtered = threshold > 0
         ? scoredResults.filter(r => r.score >= threshold)
         : scoredResults;
 
     return topN && topN > 0 ? filtered.slice(0, topN) : filtered;
 };
+
