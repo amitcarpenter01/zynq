@@ -209,7 +209,7 @@ export const formatBenefitsUnified = (rows = [], lang = 'en') => {
             }
         }
 
-        if (row.source === 'new') {
+        if (row.source === 'new' || row.source === null) {
             const raw = lang === 'sv' ? row.benefits_sv : row.benefits_en;
             if (!raw) return { ...row, benefits: [] };
 
