@@ -2073,3 +2073,39 @@ export const updateTreatmentApprovalStatusModel = async (treatment_id, approval_
         throw error;
     }
 };
+
+export const checkExistingConcernModel = async (concern_id, zynq_user_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_concerns WHERE concern_id = ? AND created_by_zynq_user_id = ?`,
+            [concern_id, zynq_user_id]
+        );
+    } catch (error) {
+        console.error("checkExistingConcernModel error:", error);
+        throw error;
+    }
+}
+
+export const updateConcernModel = async (concern_id, data) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_concerns SET ? WHERE concern_id = ?`,
+            [data, concern_id]
+        );
+    } catch (error) {
+        console.error("updateConcernModel error:", error);
+        throw error;
+    }
+}
+
+export const addConcernModel = async (data) => {
+    try {
+        return await db.query(
+            `INSERT INTO tbl_concerns SET ?`,
+            [data]
+        );
+    } catch (error) {
+        console.error("addConcernModel error:", error);
+        throw error;
+    }
+}

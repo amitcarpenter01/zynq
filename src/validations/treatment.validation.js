@@ -72,3 +72,13 @@ export const updateTreatmentApprovalStatusSchema = joi.object({
   treatment_id: stringValidation,
   approval_status: stringValidation.valid('APPROVED', 'REJECTED')
 })
+
+export const addEditConcernSchema = joi.object({
+  concern_id: stringValidation.optional(),
+  name: stringValidation,
+  swedish: stringValidation,
+  tips: joi.object({
+    en: joi.string().allow("").required(),
+    sv: joi.string().allow("").required(),
+  }).required(),
+});

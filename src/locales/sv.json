@@ -282,12 +282,14 @@
   "PRODUCT_REJECTED_SUCCESSFULLY": "Produkt avvisad",
   "PRODUCT_HIDDEN_SUCCESSFULLY": "Produkten har dolts framgångsrikt",
   "PRODUCT_UNHIDDEN_SUCCESSFULLY": "Produkten är nu synlig",
-  "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY" : "Utkast ha meddelanden raderades framgångsrikt",
-  "NOT_AUTHORIZED_TO_EDIT_TREATMENT" : "Du har inte behov att redigera detta behandling",
-  "TREATMENT_ADDED_SUCCESSFULLY" : "Behandling tillagd",
-  "TREATMENT_UPDATED_SUCCESSFULLY" : "Behandling uppdaterad",
-  "TREATMENT_DELETED_SUCCESSFULLY" : "Behandling raderad",
-  "NOT_AUTHORIZED_TO_DELETE_TREATMENT" : "Du har inte behov att radera detta behandling",
-  "TREATMENT_APPROVED_SUCCESSFULLY" : "Behandling godkännt",
-  "TREATMENT_REJECTED_SUCCESSFULLY" : "Behandling avvisad"
+  "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY": "Utkast ha meddelanden raderades framgångsrikt",
+  "NOT_AUTHORIZED_TO_EDIT_TREATMENT": "Du har inte behov att redigera detta behandling",
+  "TREATMENT_ADDED_SUCCESSFULLY": "Behandling tillagd",
+  "TREATMENT_UPDATED_SUCCESSFULLY": "Behandling uppdaterad",
+  "TREATMENT_DELETED_SUCCESSFULLY": "Behandling raderad",
+  "NOT_AUTHORIZED_TO_DELETE_TREATMENT": "Du har inte behov att radera detta behandling",
+  "TREATMENT_APPROVED_SUCCESSFULLY": "Behandling godkännt",
+  "TREATMENT_REJECTED_SUCCESSFULLY": "Behandling avvisad",
+  "CONCERN_ADDED_SUCCESSFULLY": "Behov tillagd",
+  "NOT_AUTHORIZED_TO_EDIT_CONCERN": "Du har inte behov att redigera detta behov"
 }

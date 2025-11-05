@@ -1,4 +1,4 @@
-import { addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingTreatmentModel, deleteClinicTreatmentsModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel, deleteTreatmentModel, deleteZynqUserTreatmentsModel, updateTreatmentApprovalStatusModel, updateTreatmentModel } from "../../models/admin.js";
+import { addConcernModel, addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingConcernModel, checkExistingTreatmentModel, deleteClinicTreatmentsModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel, deleteTreatmentModel, deleteZynqUserTreatmentsModel, updateConcernModel, updateTreatmentApprovalStatusModel, updateTreatmentModel } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
@@ -159,6 +159,51 @@ export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
             receiver_type: treatmentData.role === "CLINIC" ? "CLINIC" : "DOCTOR",
         })
     }
-
-
 })
+
+export const addEditConcern = asyncHandler(async (req, res) => {
+    const { concern_id: input_concern_id, ...body } = req.body;
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+    const language = req.user?.language || "en";
+
+    const isAdmin = role === "ADMIN";
+    const dbData = { ...body };
+
+    dbData.tips = JSON.stringify(dbData.tips);
+
+    // 🧩 Metadata
+    if (isAdmin) {
+        dbData.is_admin_created = true;
+        dbData.approval_status = "APPROVED";
+    } else {
+        dbData.created_by_zynq_user_id = user_id;
+    }
+
+    let concern_id = input_concern_id;
+
+    // ✳️ EDIT FLOW
+    if (concern_id) {
+        if (!isAdmin) {
+            const [existing] = await checkExistingConcernModel(concern_id, user_id);
+            if (!existing) {
+                return handleError(res, 403, language, "NOT_AUTHORIZED_TO_EDIT_CONCERN");
+            }
+        }
+
+        await updateConcernModel(concern_id, dbData);
+    }
+    // ✳️ CREATE FLOW
+    else {
+        concern_id = uuidv4();
+        dbData.concern_id = concern_id;
+
+        await addConcernModel(dbData);
+    }
+
+    const message = input_concern_id
+        ? "CONCERN_UPDATED_SUCCESSFULLY"
+        : "CONCERN_ADDED_SUCCESSFULLY";
+
+    return handleSuccess(res, 200, language, message, { concern_id });
+});
