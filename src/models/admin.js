@@ -2133,3 +2133,35 @@ export const deleteZynqUserConcernsModel = async (concern_id, zynq_user_id) => {
         throw error;
     }
 }
+
+export const updateConcernApprovalStatusModel = async (concern_id, approval_status) => {
+    try {
+        // 🔹 Step 1: Update approval status
+        await db.query(
+            `UPDATE tbl_concerns 
+             SET approval_status = ? 
+             WHERE concern_id = ?`,
+            [approval_status, concern_id]
+        );
+
+        // 🔹 Step 2: Fetch the concern creator metadata
+        return await db.query(
+            `SELECT 
+                c.created_by_zynq_user_id,
+                r.role,
+                d.doctor_id,
+                cl.clinic_id
+             FROM tbl_concerns c
+             LEFT JOIN tbl_zqnq_users zu ON c.created_by_zynq_user_id = zu.id
+             LEFT JOIN tbl_doctors d ON d.zynq_user_id = zu.id
+             LEFT JOIN tbl_clinics cl ON cl.zynq_user_id = zu.id
+             LEFT JOIN tbl_roles r ON zu.role_id = r.id
+             WHERE c.concern_id = ?`,
+            [concern_id]
+        );
+
+    } catch (error) {
+        console.error("updateConcernApprovalStatusModel error:", error);
+        throw error;
+    }
+};

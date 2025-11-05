@@ -141,6 +141,14 @@ export const NOTIFICATION_MESSAGES = {
         title: 'Treatment Rejected',
         getBody: () => `Your treatment has been rejected by administrator.`
     },
+    concern_approved: {
+        title: 'Concern Approved',
+        getBody: () => `Your concern has been approved by administrator.`
+    },
+    concern_rejected: {
+        title: 'Concern Rejected',
+        getBody: () => `Your concern has been rejected by administrator.`
+    },
     default: {
         title: (name) => `${name} Notification`,
         getBody: () => `You have a new notification.`

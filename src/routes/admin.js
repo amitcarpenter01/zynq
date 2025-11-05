@@ -23,8 +23,8 @@ import { addEditFAQCategorySchema, addEditFAQSchema, deleteFAQCategorySchema, ge
 import { addEditFAQ, addEditFAQCategory, deleteFAQ, deleteFAQCategory, getAllFAQCategories, getAllFAQs, getSingleFAQ, getSingleFAQCategory } from '../controllers/api/FAQController.js';
 import { getContactUs } from '../controllers/api/authController.js';
 import { updateProductApprovalStatusSchema } from '../validations/product.validation.js';
-import { addEditConcernSchema, addEditTreatmentSchema, deleteConcernSchema, deleteTreatmentSchema, updateTreatmentApprovalStatusSchema } from '../validations/treatment.validation.js';
-import { addEditConcern, addEditTreatment, deleteConcern, deleteTreatment, updateTreatmentApprovalStatus } from '../controllers/api/treatmentController.js';
+import { addEditConcernSchema, addEditTreatmentSchema, deleteConcernSchema, deleteTreatmentSchema, updateConcernApprovalStatusSchema, updateTreatmentApprovalStatusSchema } from '../validations/treatment.validation.js';
+import { addEditConcern, addEditTreatment, deleteConcern, deleteTreatment, updateConcernApprovalStatus, updateTreatmentApprovalStatus } from '../controllers/api/treatmentController.js';
 
 const router = express.Router();
 
@@ -158,5 +158,7 @@ router.patch('/treatment/approval-status', authenticateAdmin, validate(updateTre
 router.post('/concern', authenticateAdmin, validate(addEditConcernSchema, 'body'), addEditConcern);
 
 router.delete('/concern/:concern_id', authenticateAdmin, validate(deleteConcernSchema, 'params'), deleteConcern);
+
+router.patch('/concern/approval-status', authenticateAdmin, validate(updateConcernApprovalStatusSchema, 'body'), updateConcernApprovalStatus);
 
 export default router;

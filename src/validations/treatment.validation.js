@@ -86,3 +86,8 @@ export const addEditConcernSchema = joi.object({
 export const deleteConcernSchema = joi.object({
   concern_id: stringValidation,
 })
+
+export const updateConcernApprovalStatusSchema = joi.object({
+  concern_id: stringValidation,
+  approval_status: stringValidation.valid('APPROVED', 'REJECTED')
+})

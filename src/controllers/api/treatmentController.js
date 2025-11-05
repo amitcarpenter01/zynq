@@ -1,4 +1,4 @@
-import { addConcernModel, addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingConcernModel, checkExistingTreatmentModel, deleteClinicTreatmentsModel, deleteConcernModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel, deleteTreatmentModel, deleteZynqUserConcernsModel, deleteZynqUserTreatmentsModel, updateConcernModel, updateTreatmentApprovalStatusModel, updateTreatmentModel } from "../../models/admin.js";
+import { addConcernModel, addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingConcernModel, checkExistingTreatmentModel, deleteClinicTreatmentsModel, deleteConcernModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel, deleteTreatmentModel, deleteZynqUserConcernsModel, deleteZynqUserTreatmentsModel, updateConcernApprovalStatusModel, updateConcernModel, updateTreatmentApprovalStatusModel, updateTreatmentModel } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
@@ -99,38 +99,6 @@ export const deleteTreatment = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language, "TREATMENT_DELETED_SUCCESSFULLY");
 });
 
-export const updateProductApprovalStatus = asyncHandler(async (req, res) => {
-    const { approval_status, product_id } = req.body;
-    const { language = "en" } = req.user;
-
-    const statusMessages = {
-        APPROVED: "PRODUCT_APPROVED_SUCCESSFULLY",
-        REJECTED: "PRODUCT_REJECTED_SUCCESSFULLY",
-    };
-
-    const notificationUpdates = {
-        APPROVED: "product_approved",
-        REJECTED: "product_rejected",
-    };
-
-    const [productData] = await adminModels.updateProductApprovalStatus(product_id, approval_status)
-
-    handleSuccess(res, 200, language, statusMessages[approval_status],)
-
-    if (productData) {
-        console.log("productData", productData)
-        await sendNotification({
-            userData: req.user,
-            type: "PRODUCT",
-            type_id: product_id,
-            notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
-            receiver_id: productData.role === "CLINIC" ? productData.clinic_id : productData.doctor_id,
-            receiver_type: productData.role === "CLINIC" ? "CLINIC" : "DOCTOR",
-        })
-    }
-
-})
-
 export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
     const { approval_status, treatment_id } = req.body;
     const { language = "en" } = req.user;
@@ -225,4 +193,38 @@ export const deleteConcern = asyncHandler(async (req, res) => {
     }
 
     return handleSuccess(res, 200, language, "CONCERN_DELETED_SUCCESSFULLY");
+});
+
+export const updateConcernApprovalStatus = asyncHandler(async (req, res) => {
+    const { approval_status, concern_id } = req.body;
+    const { language = "en" } = req.user;
+
+    // 🧩 Map messages dynamically based on status
+    const statusMessages = {
+        APPROVED: "CONCERN_APPROVED_SUCCESSFULLY",
+        REJECTED: "CONCERN_REJECTED_SUCCESSFULLY",
+    };
+
+    const notificationUpdates = {
+        APPROVED: "concern_approved",
+        REJECTED: "concern_rejected",
+    };
+
+    // 🔹 Update approval status and fetch concern creator details
+    const [concernData] = await updateConcernApprovalStatusModel(concern_id, approval_status);
+
+    // ✅ Respond immediately to client
+    handleSuccess(res, 200, language, statusMessages[approval_status]);
+
+    // 🔔 Send notification asynchronously (non-blocking)
+    if (concernData) {
+        await sendNotification({
+            userData: req.user,
+            type: "CONCERN",
+            type_id: concern_id,
+            notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
+            receiver_id: concernData.role === "CLINIC" ? concernData.clinic_id : concernData.doctor_id,
+            receiver_type: concernData.role === "CLINIC" ? "CLINIC" : "DOCTOR",
+        });
+    }
 });
