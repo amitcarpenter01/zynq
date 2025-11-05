@@ -1,8 +1,10 @@
-import { addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingTreatmentModel, deleteClinicTreatmentsModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel, deleteTreatmentModel, deleteZynqUserTreatmentsModel, updateTreatmentModel } from "../../models/admin.js";
+import { addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingTreatmentModel, deleteClinicTreatmentsModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel, deleteTreatmentModel, deleteZynqUserTreatmentsModel, updateTreatmentApprovalStatusModel, updateTreatmentModel } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
+import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
 import { isEmpty } from "../../utils/user_helper.js";
 import { v4 as uuidv4 } from "uuid";
+import { generateTreatmentEmbeddingsV2 } from "./embeddingsController.js";
 
 export const getTreatmentsByConcern = asyncHandler(async (req, res) => {
     const { concern_id } = req.params;
@@ -73,14 +75,16 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
         ? "TREATMENT_UPDATED_SUCCESSFULLY"
         : "TREATMENT_ADDED_SUCCESSFULLY";
 
-    return handleSuccess(res, 200, language, message, { treatment_id });
+
+    handleSuccess(res, 200, language, message, { treatment_id });
+    await generateTreatmentEmbeddingsV2(treatment_id)
 });
 
 export const deleteTreatment = asyncHandler(async (req, res) => {
     const { treatment_id } = req.params;
     const role = req.user?.role;
     const user_id = req.user?.id;
-    console.log("user id = ", user_id);
+
     const language = req.user?.language || 'en';
 
     if (role === "ADMIN") {
@@ -95,4 +99,66 @@ export const deleteTreatment = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language, "TREATMENT_DELETED_SUCCESSFULLY");
 });
 
+export const updateProductApprovalStatus = asyncHandler(async (req, res) => {
+    const { approval_status, product_id } = req.body;
+    const { language = "en" } = req.user;
 
+    const statusMessages = {
+        APPROVED: "PRODUCT_APPROVED_SUCCESSFULLY",
+        REJECTED: "PRODUCT_REJECTED_SUCCESSFULLY",
+    };
+
+    const notificationUpdates = {
+        APPROVED: "product_approved",
+        REJECTED: "product_rejected",
+    };
+
+    const [productData] = await adminModels.updateProductApprovalStatus(product_id, approval_status)
+
+    handleSuccess(res, 200, language, statusMessages[approval_status],)
+
+    if (productData) {
+        console.log("productData", productData)
+        await sendNotification({
+            userData: req.user,
+            type: "PRODUCT",
+            type_id: product_id,
+            notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
+            receiver_id: productData.role === "CLINIC" ? productData.clinic_id : productData.doctor_id,
+            receiver_type: productData.role === "CLINIC" ? "CLINIC" : "DOCTOR",
+        })
+    }
+
+})
+
+export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
+    const { approval_status, treatment_id } = req.body;
+    const { language = "en" } = req.user;
+
+    const statusMessages = {
+        APPROVED: "TREATMENT_APPROVED_SUCCESSFULLY",
+        REJECTED: "TREATMENT_REJECTED_SUCCESSFULLY",
+    };
+
+    const notificationUpdates = {
+        APPROVED: "treatment_approved",
+        REJECTED: "treatment_rejected",
+    };
+
+    const [treatmentData] = await updateTreatmentApprovalStatusModel(treatment_id, approval_status)
+
+    handleSuccess(res, 200, language, statusMessages[approval_status],)
+
+    if (treatmentData) {
+        await sendNotification({
+            userData: req.user,
+            type: "TREATMENT",
+            type_id: treatment_id,
+            notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
+            receiver_id: treatmentData.role === "CLINIC" ? treatmentData.clinic_id : treatmentData.doctor_id,
+            receiver_type: treatmentData.role === "CLINIC" ? "CLINIC" : "DOCTOR",
+        })
+    }
+
+
+})

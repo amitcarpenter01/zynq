@@ -287,5 +287,7 @@
   "TREATMENT_ADDED_SUCCESSFULLY" : "Behandling tillagd",
   "TREATMENT_UPDATED_SUCCESSFULLY" : "Behandling uppdaterad",
   "TREATMENT_DELETED_SUCCESSFULLY" : "Behandling raderad",
-  "NOT_AUTHORIZED_TO_DELETE_TREATMENT" : "Du har inte behov att radera detta behandling"
+  "NOT_AUTHORIZED_TO_DELETE_TREATMENT" : "Du har inte behov att radera detta behandling",
+  "TREATMENT_APPROVED_SUCCESSFULLY" : "Behandling godkännt",
+  "TREATMENT_REJECTED_SUCCESSFULLY" : "Behandling avvisad"
 }

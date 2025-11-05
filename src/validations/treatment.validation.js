@@ -67,3 +67,8 @@ export const addEditTreatmentSchema = joi.object({
 export const deleteTreatmentSchema = joi.object({
   treatment_id: stringValidation,
 })
+
+export const updateTreatmentApprovalStatusSchema = joi.object({
+  treatment_id: stringValidation,
+  approval_status: stringValidation.valid('APPROVED', 'REJECTED')
+})

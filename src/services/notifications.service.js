@@ -133,6 +133,14 @@ export const NOTIFICATION_MESSAGES = {
         title: 'Product Rejected',
         getBody: () => `Your product has been rejected by administrator.`
     },
+    treatment_approved: {
+        title: 'Treatment Approved',
+        getBody: () => `Your treatment has been approved by administrator.`
+    },
+    treatment_rejected: {
+        title: 'Treatment Rejected',
+        getBody: () => `Your treatment has been rejected by administrator.`
+    },
     default: {
         title: (name) => `${name} Notification`,
         getBody: () => `You have a new notification.`

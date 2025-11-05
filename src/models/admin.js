@@ -2041,3 +2041,35 @@ export const deleteZynqUserTreatmentsModel = async (treatment_id, zynq_user_id) 
         throw error;
     }
 }
+
+export const updateTreatmentApprovalStatusModel = async (treatment_id, approval_status) => {
+    try {
+        // 🔹 Step 1: Update approval status
+        await db.query(
+            `UPDATE tbl_treatments 
+             SET approval_status = ? 
+             WHERE treatment_id = ?`,
+            [approval_status, treatment_id]
+        );
+
+        // 🔹 Step 2: Fetch the treatment creator metadata
+        return await db.query(
+            `SELECT 
+                t.created_by_zynq_user_id,
+                r.role,
+                d.doctor_id,
+                c.clinic_id
+             FROM tbl_treatments t
+             LEFT JOIN tbl_zqnq_users zu ON t.created_by_zynq_user_id = zu.id
+             LEFT JOIN tbl_doctors d ON d.zynq_user_id = zu.id
+             LEFT JOIN tbl_clinics c ON c.zynq_user_id = zu.id
+             LEFT JOIN tbl_roles r ON zu.role_id = r.id
+             WHERE t.treatment_id = ?`,
+            [treatment_id]
+        );
+
+    } catch (error) {
+        console.error("updateTreatmentApprovalStatus error:", error);
+        throw error;
+    }
+};

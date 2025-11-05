@@ -295,5 +295,7 @@
   "TREATMENT_ADDED_SUCCESSFULLY" : "Treatment Added Successfully",
   "TREATMENT_UPDATED_SUCCESSFULLY" : "Treatment Updated Successfully",
   "TREATMENT_DELETED_SUCCESSFULLY" : "Treatment Deleted Successfully",
-  "NOT_AUTHORIZED_TO_DELETE_TREATMENT" : "You are not authorized to delete this treatment plan"
+  "NOT_AUTHORIZED_TO_DELETE_TREATMENT" : "You are not authorized to delete this treatment plan",
+  "TREATMENT_APPROVED_SUCCESSFULLY" : "Treatment Approved Successfully",
+  "TREATMENT_REJECTED_SUCCESSFULLY" : "Treatment Rejected Successfully"
 }
