@@ -1302,12 +1302,13 @@ export const getAllConcerns = async (lang = "en", concern_ids) => {
         let query = `
             SELECT *
             FROM tbl_concerns
+            WHERE is_deleted = 0 AND approval_status = 'APPROVED'     
         `;
         const params = [];
 
         if (Array.isArray(concern_ids) && concern_ids.length > 0) {
             const placeholders = concern_ids.map(() => '?').join(',');
-            query += ` WHERE concern_id IN (${placeholders})`;
+            query += `   AND concern_id IN (${placeholders})`;
             params.push(...concern_ids);
         }
 
