@@ -170,9 +170,9 @@ export const get_treatments = asyncHandler(async (req, res) => {
 })
 
 export const get_treatments_by_treatments = asyncHandler(async (req, res) => {
-    const { treatment_ids } = req.body;
+    const { treatment_ids, doctor_id } = req.body;
     const language = req?.user?.language || 'en';
-    const treatments = await apiModels.getTreatmentsByTreatmentIds(treatment_ids, language);
+    const treatments = await apiModels.getTreatmentsByTreatmentIds(treatment_ids, language, doctor_id);
     return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
 })
 

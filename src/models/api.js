@@ -1784,7 +1784,7 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
 //     }
 // };
 
-export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
+export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang, doctor_id = null) => {
   try {
     let query = `
       SELECT
@@ -1798,12 +1798,22 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
       LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
     `;
 
-    let params = [];
+    const whereClauses = [];
+    const params = [];
 
     if (Array.isArray(treatment_ids) && treatment_ids.length > 0) {
       const placeholders = treatment_ids.map(() => '?').join(', ');
-      query += ` WHERE t.treatment_id IN (${placeholders})`;
-      params = treatment_ids;
+      whereClauses.push(`t.treatment_id IN (${placeholders})`);
+      params.push(...treatment_ids);
+    }
+
+    if (doctor_id) {
+      whereClauses.push(`dt.doctor_id = ?`);
+      params.push(doctor_id);
+    }
+
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(' AND ')}`;
     }
 
     query += ` GROUP BY t.treatment_id`;
@@ -1813,7 +1823,7 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
     // Remove embeddings if present
     results = results.map(row => {
       const treatmentRow = { ...row };
-      if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+      delete treatmentRow.embeddings;
       return treatmentRow;
     });
 
@@ -1823,8 +1833,6 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
     throw new Error("Failed to fetch treatments.");
   }
 };
-
-
 
 export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
     try {
