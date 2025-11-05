@@ -1511,6 +1511,7 @@ export const getAllTreatments = async (lang) => {
             LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
             LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
             LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+            WHERE t.is_deleted = 0 AND t.approval_status = 'APPROVED'
             GROUP BY t.treatment_id
         `;
 
@@ -1665,6 +1666,7 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
       LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
       LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
       LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+      WHERE t.is_deleted = 0 AND t.approval_status = 'APPROVED'
     `;
 
         const queryParams = [];
@@ -2353,7 +2355,7 @@ export const getTreatmentsBySearchOnly = async ({
         let results = await db.query(`
       SELECT *
       FROM tbl_treatments
-      WHERE embeddings IS NOT NULL
+      WHERE is_deleted = 0 AND approval_status = 'APPROVED' AND embeddings IS NOT NULL
     `);
 
         // 2️⃣ Compute top similar rows using embedding

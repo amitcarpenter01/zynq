@@ -311,7 +311,10 @@ export const getAllTreatments = async () => {
         const treatments = await db.query(`
             SELECT * 
             FROM tbl_treatments 
-            ORDER BY created_at DESC`);
+            WHERE is_deleted = 0 AND approval_status = 'APPROVED'
+            ORDER BY created_at DESC
+            
+            `);
 
         // Remove embeddings dynamically
         const cleanedTreatments = treatments.map(row => {
