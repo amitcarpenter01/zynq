@@ -1,4 +1,4 @@
-import { addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingTreatmentModel, deleteExistingConcernsModel, deleteExistingSubTreatmentsModel, updateTreatmentModel } from "../../models/admin.js";
+import { addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingTreatmentModel, deleteClinicTreatmentsModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel, deleteTreatmentModel, deleteZynqUserTreatmentsModel, updateTreatmentModel } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
 import { isEmpty } from "../../utils/user_helper.js";
@@ -76,5 +76,23 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language, message, { treatment_id });
 });
 
+export const deleteTreatment = asyncHandler(async (req, res) => {
+    const { treatment_id } = req.params;
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+    console.log("user id = ", user_id);
+    const language = req.user?.language || 'en';
+
+    if (role === "ADMIN") {
+        await deleteTreatmentModel(treatment_id)
+    } else {
+        const deleted = await deleteZynqUserTreatmentsModel(treatment_id, user_id);
+        if (deleted.affectedRows === 0) {
+            return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_TREATMENT");
+        }
+    }
+
+    return handleSuccess(res, 200, language, "TREATMENT_DELETED_SUCCESSFULLY");
+});
 
 

@@ -285,5 +285,7 @@
   "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY" : "Utkast ha meddelanden raderades framgångsrikt",
   "NOT_AUTHORIZED_TO_EDIT_TREATMENT" : "Du har inte behov att redigera detta behandling",
   "TREATMENT_ADDED_SUCCESSFULLY" : "Behandling tillagd",
-  "TREATMENT_UPDATED_SUCCESSFULLY" : "Behandling uppdaterad"
+  "TREATMENT_UPDATED_SUCCESSFULLY" : "Behandling uppdaterad",
+  "TREATMENT_DELETED_SUCCESSFULLY" : "Behandling raderad",
+  "NOT_AUTHORIZED_TO_DELETE_TREATMENT" : "Du har inte behov att radera detta behandling"
 }

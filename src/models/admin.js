@@ -1976,3 +1976,68 @@ export const checkExistingTreatmentModel = async (treatment_id, zynq_user_id) =>
         throw error;
     }
 }
+
+export const deleteExistingParentTreatmentsModel = async (treatment_id) => {
+    try {
+        return await db.query(
+            `DELETE FROM tbl_sub_treatments_map WHERE child_treatment_id = ?`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("deleteExistingParentTreatmentsModel error:", error);
+        throw error;
+    }
+}
+
+export const deleteDoctorTreatmentsModel = async (treatment_id) => {
+    try {
+        return await db.query(
+            `DELETE FROM tbl_doctor_treatments WHERE treatment_id = ?`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("deleteDoctorTreatmentsModel error:", error);
+        throw error;
+    }
+}
+
+export const deleteClinicTreatmentsModel = async (treatment_id) => {
+    try {
+        return await db.query(
+            `DELETE FROM tbl_clinic_treatments WHERE treatment_id = ?`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("deleteClinicTreatmentsModel error:", error);
+        throw error;
+    }
+}
+
+export const deleteTreatmentModel = async (treatment_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_treatments 
+            SET is_deleted = 1
+            WHERE treatment_id = ?`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("deleteTreatmentModel error:", error);
+        throw error;
+    }
+}
+
+export const deleteZynqUserTreatmentsModel = async (treatment_id, zynq_user_id) => {
+    try {
+        return await db.query(
+            `
+            UPDATE tbl_treatments SET
+            is_deleted = 1
+            WHERE treatment_id = ? AND created_by_zynq_user_id = ?`,
+            [treatment_id, zynq_user_id]
+        );
+    } catch (error) {
+        console.error("deleteZynqUserTreatmentsModel error:", error);
+        throw error;
+    }
+}

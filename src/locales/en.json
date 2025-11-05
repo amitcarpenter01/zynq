@@ -293,5 +293,7 @@
   "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY" : "Draft Appointment Deleted Successfully",
   "NOT_AUTHORIZED_TO_EDIT_TREATMENT" : "You are not authorized to edit this treatment plan",
   "TREATMENT_ADDED_SUCCESSFULLY" : "Treatment Added Successfully",
-  "TREATMENT_UPDATED_SUCCESSFULLY" : "Treatment Updated Successfully"
+  "TREATMENT_UPDATED_SUCCESSFULLY" : "Treatment Updated Successfully",
+  "TREATMENT_DELETED_SUCCESSFULLY" : "Treatment Deleted Successfully",
+  "NOT_AUTHORIZED_TO_DELETE_TREATMENT" : "You are not authorized to delete this treatment plan"
 }
