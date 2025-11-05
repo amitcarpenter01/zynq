@@ -300,5 +300,7 @@
   "TREATMENT_REJECTED_SUCCESSFULLY": "Treatment Rejected Successfully",
   "CONCERN_ADDED_SUCCESSFULLY": "Concern Added Successfully",
   "CONCERN_UPDATED_SUCCESSFULLY": "Concern Updated Successfully",
-  "NOT_AUTHORIZED_TO_EDIT_CONCERN" : "You are not authorized to edit this concern"
+  "NOT_AUTHORIZED_TO_EDIT_CONCERN" : "You are not authorized to edit this concern",
+  "CONCERN_DELETED_SUCCESSFULLY" : "Concern Deleted Successfully",
+  "NOT_AUTHORIZED_TO_DELETE_CONCERN" : "You are not authorized to delete this concern"
 }

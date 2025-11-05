@@ -2109,3 +2109,27 @@ export const addConcernModel = async (data) => {
         throw error;
     }
 }
+
+export const deleteConcernModel = async (concern_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_concerns SET is_deleted = 1 WHERE concern_id = ?`,
+            [concern_id]
+        );
+    } catch (error) {
+        console.error("deleteConcernModel error:", error);
+        throw error;
+    }
+}
+
+export const deleteZynqUserConcernsModel = async (concern_id, zynq_user_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_concerns SET is_deleted = 1 WHERE concern_id = ? AND created_by_zynq_user_id = ?`,
+            [concern_id, zynq_user_id]
+        );
+    } catch (error) {
+        console.error("deleteZynqUserConcernsModel error:", error);
+        throw error;
+    }
+}

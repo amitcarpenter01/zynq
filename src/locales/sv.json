@@ -291,5 +291,7 @@
   "TREATMENT_APPROVED_SUCCESSFULLY": "Behandling godkännt",
   "TREATMENT_REJECTED_SUCCESSFULLY": "Behandling avvisad",
   "CONCERN_ADDED_SUCCESSFULLY": "Behov tillagd",
-  "NOT_AUTHORIZED_TO_EDIT_CONCERN": "Du har inte behov att redigera detta behov"
+  "NOT_AUTHORIZED_TO_EDIT_CONCERN": "Du har inte behov att redigera detta behov",
+  "CONCERN_DELETED_SUCCESSFULLY" : "Behov raderad",
+  "NOT_AUTHORIZED_TO_DELETE_CONCERN" : "Du har inte behov att radera detta behov"
 }

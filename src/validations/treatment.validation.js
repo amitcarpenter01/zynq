@@ -82,3 +82,7 @@ export const addEditConcernSchema = joi.object({
     sv: joi.string().allow("").required(),
   }).required(),
 });
+
+export const deleteConcernSchema = joi.object({
+  concern_id: stringValidation,
+})

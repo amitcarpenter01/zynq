@@ -1,4 +1,4 @@
-import { addConcernModel, addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingConcernModel, checkExistingTreatmentModel, deleteClinicTreatmentsModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel, deleteTreatmentModel, deleteZynqUserTreatmentsModel, updateConcernModel, updateTreatmentApprovalStatusModel, updateTreatmentModel } from "../../models/admin.js";
+import { addConcernModel, addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingConcernModel, checkExistingTreatmentModel, deleteClinicTreatmentsModel, deleteConcernModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel, deleteTreatmentModel, deleteZynqUserConcernsModel, deleteZynqUserTreatmentsModel, updateConcernModel, updateTreatmentApprovalStatusModel, updateTreatmentModel } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
@@ -206,4 +206,23 @@ export const addEditConcern = asyncHandler(async (req, res) => {
         : "CONCERN_ADDED_SUCCESSFULLY";
 
     return handleSuccess(res, 200, language, message, { concern_id });
+});
+
+export const deleteConcern = asyncHandler(async (req, res) => {
+    const { concern_id } = req.params;
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+
+    const language = req.user?.language || 'en';
+
+    if (role === "ADMIN") {
+        await deleteConcernModel(concern_id)
+    } else {
+        const deleted = await deleteZynqUserConcernsModel(concern_id, user_id);
+        if (deleted.affectedRows === 0) {
+            return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_CONCERN");
+        }
+    }
+
+    return handleSuccess(res, 200, language, "CONCERN_DELETED_SUCCESSFULLY");
 });
