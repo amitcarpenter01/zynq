@@ -290,5 +290,8 @@
   "PRODUCT_REJECTED_SUCCESSFULLY" : "Product Rejected Successfully",
   "PRODUCT_HIDDEN_SUCCESSFULLY" : "Product Hidden Successfully",
   "PRODUCT_UNHIDDEN_SUCCESSFULLY" : "Product is now visible",
-  "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY" : "Draft Appointment Deleted Successfully"
+  "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY" : "Draft Appointment Deleted Successfully",
+  "NOT_AUTHORIZED_TO_EDIT_TREATMENT" : "You are not authorized to edit this treatment plan",
+  "TREATMENT_ADDED_SUCCESSFULLY" : "Treatment Added Successfully",
+  "TREATMENT_UPDATED_SUCCESSFULLY" : "Treatment Updated Successfully"
 }

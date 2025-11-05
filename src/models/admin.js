@@ -450,7 +450,7 @@ export const updateClinicCountAndEmailSent = async (clinic_id, email_sent_count,
                 invited_date = CURRENT_TIMESTAMP()
             WHERE clinic_id = ?
         `;
-        
+
         return await db.query(query, [date, email_sent_count, clinic_id]);
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -1889,6 +1889,90 @@ export const updateProductApprovalStatus = async (product_id, approval_status) =
 
     } catch (error) {
         console.error("updateProductApprovalStatus error:", error);
+        throw error;
+    }
+}
+
+export const addTreatmentModel = async (data) => {
+    try {
+        return await db.query(
+            `INSERT INTO tbl_treatments SET ?`,
+            [data]
+        );
+    } catch (error) {
+        console.error("addTreatmentModel error:", error);
+        throw error;
+    }
+};
+
+export const updateTreatmentModel = async (treatment_id, data) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_treatments SET ? WHERE treatment_id = ?`,
+            [data, treatment_id]
+        );
+    } catch (error) {
+        console.error("updateTreatmentModel error:", error);
+        throw error;
+    }
+};
+
+export const deleteExistingConcernsModel = async (treatment_id) => {
+    try {
+        return await db.query(
+            `DELETE FROM tbl_treatment_concerns WHERE treatment_id = ?`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("deleteExistingConcernsModel error:", error);
+        throw error;
+    }
+}
+
+export const addTreatmentConcernsModel = async (treatment_id, concerns) => {
+    try {
+        return await db.query(
+            `INSERT INTO tbl_treatment_concerns (treatment_id, concern_id) VALUES ?`,
+            [concerns.map(concern => [treatment_id, concern])]
+        );
+    } catch (error) {
+        console.error("addTreatmentConcernsModel error:", error);
+        throw error;
+    }
+}
+
+export const addSubTreatmentsModel = async (treatment_id, sub_treatments) => {
+    try {
+        return await db.query(
+            `INSERT INTO tbl_sub_treatments_map (parent_treatment_id, child_treatment_id) VALUES ?`,
+            [sub_treatments.map(sub_treatment => [treatment_id, sub_treatment])]
+        );
+    } catch (error) {
+        console.error("addSubTreatmentsModel error:", error);
+        throw error;
+    }
+}
+
+export const deleteExistingSubTreatmentsModel = async (treatment_id) => {
+    try {
+        return await db.query(
+            `DELETE FROM tbl_sub_treatments_map WHERE parent_treatment_id = ?`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("deleteSubTreatmentsModel error:", error);
+        throw error;
+    }
+}
+
+export const checkExistingTreatmentModel = async (treatment_id, zynq_user_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_treatments WHERE treatment_id = ? AND created_by_zynq_user_id = ?`,
+            [treatment_id, zynq_user_id]
+        );
+    } catch (error) {
+        console.error("checkExistingTreatmentModel error:", error);
         throw error;
     }
 }

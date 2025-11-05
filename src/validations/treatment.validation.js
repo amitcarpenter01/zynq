@@ -21,7 +21,7 @@ export const getTipsByConcernsSchema = joi.object({
 
 export const getTreatmentsSchema = joi.object({
   treatment_ids: idArrayValidation.optional(),
-  doctor_id : stringValidation.optional(),
+  doctor_id: stringValidation.optional(),
 });
 
 export const sendFaceResultToEmailSchema = joi.object({
@@ -54,12 +54,12 @@ export const addEditTreatmentSchema = joi.object({
   treatment_id: stringValidation.optional(),
   name: stringValidation,
   swedish: stringValidation,
-  classification_type: stringValidation.valid('medical', 'non-medical'),
+  classification_type: stringValidation.valid('Medical', 'Non Medical'),
   benefits_en: stringValidation,
   benefits_sv: stringValidation,
   description_en: stringValidation,
   description_sv: stringValidation,
   is_device: booleanValidation,
-  parent_treatment_id: stringValidation.optional(),
-  concerns: joi.array().items(stringValidation).min(1).optional(),
+  concerns: idArrayValidation,
+  sub_treatments: idArrayValidation.optional(),
 })
