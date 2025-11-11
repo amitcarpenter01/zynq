@@ -1,6 +1,7 @@
 import Joi from "joi";
 
 import dotenv from "dotenv";
+dotenv.config();
 import * as userModels from "../../models/api.js";
 import * as clinicModels from "../../models/clinic.js";
 import * as doctorModels from "../../models/doctor.js";
@@ -10,12 +11,62 @@ import { formatImagePath, generateAccessToken, generatePassword, generateVerific
 import { fileURLToPath } from 'url';
 import { fetchChatById, getChatBetweenUsers } from "../../models/chat.js";
 import { formatBenefitsUnified, getTreatmentIDsByUserID } from "../../utils/misc.util.js";
+import { openai } from "../../../app.js";
+import { translator } from "../../utils/misc.util.js";
 
 
-dotenv.config();
+/**
+ * Detects gibberish / random / keyboard-smash text
+ * Returns true if text looks like nonsense.
+ */
+export function isGibberishText(text = "") {
+    if (!text || text.trim().length < 2) return true;
+  
+    const clean = text.trim().toLowerCase();
+  
+    // Remove non-letter characters for analysis
+    const lettersOnly = clean.replace(/[^a-z\s]/g, "");
+    if (!lettersOnly) return true;
+  
+    const words = lettersOnly.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return true;
+  
+    // --- Core checks ---
+    const gibberishPattern = /(.)\1{2,}|[zxq]{2,}|[bcdfghjklmnpqrstvwxyz]{5,}|[aeiou]{5,}/i;
+    const repeatedPattern = /^(.{2,4})\1{1,}$/i;
+  
+    let gibberishCount = 0;
+  
+    for (const word of words) {
+      const vowels = (word.match(/[aeiou]/g) || []).length;
+      const consonants = (word.match(/[bcdfghjklmnpqrstvwxyz]/g) || []).length;
+  
+      const vowelRatio = vowels / (word.length || 1);
+  
+      // Flag if:
+      // - too few vowels
+      // - unnatural letter patterns
+      // - repeated nonsense patterns
+      if (
+        gibberishPattern.test(word) ||
+        repeatedPattern.test(word) ||
+        (word.length >= 4 && (vowelRatio < 0.2 || vowelRatio > 0.9))
+      ) {
+        gibberishCount++;
+      }
+    }
+  
+    // If more than 40% of words look nonsense → gibberish
+    const ratio = gibberishCount / words.length;
+    return ratio > 0.4;
+  }
+  
+  
+ 
+  
+
 
 const APP_URL = process.env.APP_URL;
-
 const toMap = (obj) => new Map(Object.entries(obj || {}));
 
 const formatCertifications = (certs) =>
@@ -431,11 +482,33 @@ export const getSingleDoctorRatings = asyncHandler(async (req, res) => {
 
 export const search_home_entities = asyncHandler(async (req, res) => {
     const { language = 'en' } = req.user || {};
+
     let { filters = {}, page, limit } = req.body || {};
 
     const search = filters.search?.trim() || "";
+  
+    if (!search) {
+        return handleError(res, 400, language, "EMPTY_SEARCH_QUERY");
+    }
 
     try {
+
+        const normalized_search = await translator(search, 'en');
+        // 🧠 Detect if the translated text is gibberish
+        const gibberish = isGibberishText(normalized_search);
+
+        if (gibberish) {
+            return handleError(res, 200, language, "Invalid Search", []);
+        }
+        
+        // 1️⃣ Detect search intent ranking
+        const intentRanking = await detectSearchIntent(normalized_search);
+        if (intentRanking.type === "gibberish") {
+            return handleSuccess(res, 200, "en", "No Data Found", []);
+        }
+        console.log("Search Intent Ranking:", intentRanking);
+
+        // 2️⃣ Run all searches (as you already do)
         const [doctors, clinics, products, treatments] = await Promise.all([
             userModels.getDoctorsByFirstNameSearchOnly({ search, page, limit }),
             userModels.getClinicsByNameSearchOnly({ search, page, limit }),
@@ -443,6 +516,7 @@ export const search_home_entities = asyncHandler(async (req, res) => {
             userModels.getTreatmentsBySearchOnly({ search, language, page, limit })
         ]);
 
+        // 3️⃣ Enrich images (same as your code)
         const enrichedDoctors = doctors.map(doctor => ({
             ...doctor,
             profile_image: formatImagePath(doctor.profile_image, 'doctor/profile_images')
@@ -475,15 +549,95 @@ export const search_home_entities = asyncHandler(async (req, res) => {
             }));
         }
 
-        return handleSuccess(res, 200, language, 'SEARCH_RESULTS_FETCHED', {
-            doctors: enrichedDoctors,
-            clinics: enrichedClinics,
-            products: enrichedProducts,
-            treatments
-        });
+        // 4️⃣ Reorder results based on AI ranking
+        const rankedResults = {};
+        for (const entity of intentRanking.ranking) {
+            const key = entity.toLowerCase();
+            if (key === "doctor") rankedResults.doctors = enrichedDoctors;
+            if (key === "clinic") rankedResults.clinics = enrichedClinics;
+            if (key === "product") rankedResults.products = enrichedProducts;
+            if (key === "treatment") rankedResults.treatments = treatments;
+        }
+
+        // 5️⃣ Return ranked response
+        return handleSuccess(res, 200, language, 'SEARCH_RESULTS_FETCHED', rankedResults);
 
     } catch (error) {
         console.error("Search Home Error:", error);
         return handleError(res, 500, language, "INTERNAL_SERVER_ERROR");
     }
 });
+
+async function detectSearchIntent(searchQuery) {
+    console.log("🔍 Raw search query:", searchQuery);
+
+    const prompt = `
+    You are an AI assistant that classifies user search queries for a medical platform.
+    
+    Possible entity types: Doctor, Clinic, Treatment, Devices.
+    
+    You must determine two things for the query: "${searchQuery}"
+    
+    1. **type**:
+       - "valid_medical" → if the query relates to healthcare, doctor names, clinic names, treatments, or medical devices. 
+         (⚠️ This includes personal names of doctors, clinics, hospitals, or branded health centers.)
+       - "non_medical" → if it’s a meaningful phrase but unrelated to health or medicine.
+       - "gibberish" → if it’s random, meaningless, or nonsensical text.
+    
+    2. **ranking**:
+       - A JSON array ranking all 4 entity types: ["Doctor","Clinic","Treatment","Devices"].
+       - "Treatment" and "Devices" must always appear next to each other (either order).
+       - The other two ("Doctor" and "Clinic") can appear anywhere else.
+    
+    Output a pure JSON object only — no markdown or explanations.
+    
+    Example valid outputs:
+    {"type":"valid_medical","ranking":["Doctor","Clinic","Treatment","Devices"]}
+    {"type":"gibberish","ranking":["Treatment","Devices","Doctor","Clinic"]}
+    {"type":"non_medical","ranking":["Clinic","Doctor","Treatment","Devices"]}
+    `;
+    
+
+    const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0,
+    });
+
+    let content = response.choices[0].message.content.trim();
+    console.log("🧠 Raw AI output:", content);
+
+    // Clean markdown / formatting
+    content = content
+        .replace(/```json/gi, "")
+        .replace(/```/g, "")
+        .replace(/[\n\r]/g, "")
+        .replace(/“|”/g, '"')
+        .trim();
+
+    try {
+        const parsed = JSON.parse(content);
+        console.log("✅ Parsed successfully:", parsed);
+
+        if (
+            parsed &&
+            typeof parsed === "object" &&
+            Array.isArray(parsed.ranking) &&
+            parsed.ranking.length === 4
+        ) {
+            parsed.ranking = parsed.ranking.map(
+                (p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()
+            );
+            return parsed;
+        }
+
+        console.warn("⚠️ Unexpected JSON structure, using fallback");
+        return { type: "valid_medical", ranking: ["Treatment", "Devices", "Doctor", "Clinic"] };
+    } catch (e) {
+        console.error("❌ JSON parse error:", e.message, "\nRaw content:", content);
+        return { type: "valid_medical", ranking: ["Treatment", "Devices", "Doctor", "Clinic"] };
+    }
+}
+
+
+
