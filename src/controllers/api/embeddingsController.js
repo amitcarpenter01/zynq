@@ -8,7 +8,8 @@ import { cosineSimilarity } from "../../utils/user_helper.js";
 dotenv.config();
 import axios from 'axios';
 const APP_URL = process.env.APP_URL;
-
+import { v4 as uuidv4 } from 'uuid';
+import { translator } from "../../utils/misc.util.js";
 export const generateTreatmentEmbeddings = async (req, res) => {
   try {
 
@@ -97,27 +98,52 @@ export const generateProductsEmbedding = async (req, res) => {
 
 export const generateDoctorsEmbedding = async (req, res) => {
   try {
-    const rows = await dbOperations.getDoctorsEmbeddingText();
+    const rows = await apiModels.getDoctorEmbeddingTextAllV2();
 
     if (!rows || rows.length === 0) {
       return handleError(res, 404, "en", "No data found");
     }
 
     for (const row of rows) {
+      // 🛑 Skip if doctor_name is null
+      if (!row.doctor_name || !row.doctor_name.trim()) {
+        console.log(`⏭️ Skipped doctor with ID ${row.doctor_id} (no name)`);
+        continue;
+      }
 
-      const combinedText = row.embedding_text;
+      // 🧠 Combine available non-null fields into a natural language text
+      const fields = [];
 
+      fields.push(`Doctor Name: ${row.doctor_name}`);
+
+      if (row.educations)
+        fields.push(`Education: ${row.educations}`);
+
+      if (row.treatments)
+        fields.push(`Treatments offered: ${row.treatments}`);
+
+      if (row.concerns)
+        fields.push(`Specializes in treating: ${row.concerns}`);
+
+      if (row.skin_types)
+        fields.push(`Experienced with skin types or areas like: ${row.skin_types}`);
+
+      const combinedText = fields.join(". ") + "."; // Natural readable text
+
+      // 🛑 Skip empty text
       if (!combinedText.trim()) continue;
 
       try {
+        // 🔍 Generate embedding vector from Ollama or embedding API
         const response = await axios.post("http://localhost:11434/api/embeddings", {
           model: "nomic-embed-text",
-          prompt: combinedText
+          prompt: combinedText,
         });
 
         const vector = response.data.embedding;
         const vectorJson = JSON.stringify(vector);
 
+        // 💾 Save to DB
         await dbOperations.updateData(
           "tbl_doctors",
           { embeddings: vectorJson },
@@ -137,22 +163,37 @@ export const generateDoctorsEmbedding = async (req, res) => {
   }
 };
 
+
 export const generateClinicEmbedding = async (req, res) => {
   try {
     // Fetch clinics with treatments
-    const rows = await dbOperations.getClinicsEmbeddingText();
+    const rows = await apiModels.getClinicEmbeddingTextByAllV2();
 
     if (!rows || rows.length === 0) {
       return handleError(res, 404, 'en', "No Data found");
     }
 
     for (const row of rows) {
-      const combinedText = row.embedding_text;
+          // 🛑 Skip if doctor_name is null
+          if (!row.clinic_name || !row.clinic_name.trim()) {
+            console.log(`⏭️ Skipped clinic with ID ${row.clinic_id} (no name)`);
+            continue;
+          }
+    
+          // 🧠 Combine available non-null fields into a natural language text
+          const fields = [];
+    
+          fields.push(`Clinic Name: ${row.clinic_name}`);
+    
+          if (row.address)
+            fields.push(`Address: ${row.address}`);
+    
+          const combinedText = fields.join(". ") + "."; // Natural readable text
+    
+          // 🛑 Skip empty text
+          if (!combinedText.trim()) continue;
 
-      if (!combinedText.trim() || combinedText === ".") {
-        console.log(`⏭️ Skipping clinic ID ${row.clinic_id} (no valid data)`);
-        continue;
-      }
+          console.log(combinedText);
 
       try {
         // Generate embedding from Ollama
@@ -189,41 +230,114 @@ export const generateClinicEmbedding = async (req, res) => {
 };
 
 
+export const generateTreatmentEmbeddings2 = async (req, res) => {
+  try {
+
+    const rows = await dbOperations.getData('tbl_treatments_copy', '')
+
+    if (!rows || rows.length === 0) {
+      return handleError(res, 404, 'en', "No Data found");
+    }
+
+
+    for (const row of rows) {
+      const combinedText = `
+      ${row.name || ''} is a treatment designed to address ${row.concern_en || 'various skin concerns'}.
+      It offers benefits such as ${row.benefits_en || 'improving overall skin quality'}.
+      ${row.description_en || 'This treatment helps rejuvenate and enhance the skin.'}
+      It commonly uses devices like ${row.device_name || 'advanced medical-grade technology'}.
+      `;
+
+    console.log(combinedText);
+
+    if (!combinedText.trim()) continue;
+
+      try {
+        const response = await axios.post("http://localhost:11434/api/embeddings", {
+          model: "nomic-embed-text",
+          prompt: combinedText
+        });
+
+        const vector = response.data.embedding;
+        const vectorJson = JSON.stringify(vector);
+
+
+        await dbOperations.updateData(
+          "tbl_treatments_copy",
+          { embeddings: vectorJson },
+          `WHERE treatment_id = '${row.treatment_id}'`
+        );
+
+        console.log(`✅ Embedding updated for Treatment ID: ${row.treatment_id}`);
+      } catch (embedErr) {
+        console.error(`❌ Error generating embedding for ID ${row.treatment_id}:`, embedErr.message);
+      }
+    }
+
+    return handleSuccess(res, 200, "en", "All Treatment embeddings updated successfully");
+  } catch (err) {
+    console.error("Error generating embeddings:", err);
+    return handleError(res, 500, "en", "Internal Server Error");
+  }
+};
+
+
 export const getTreatmentsSuggestions = async (req, res) => {
   try {
     const { keyword } = req.body;
     if (!keyword) return handleError(res, 400, "Keyword is required");
 
+    // 🔹 Step 1: Normalize and embed the search keyword
+    const normalized_search = await translator(keyword, "en");
+    console.log("Normalized:", normalized_search);
 
-    const response = await axios.post("http://localhost:11434/api/embeddings", {
+    const embedRes = await axios.post("http://localhost:11434/api/embeddings", {
       model: "nomic-embed-text",
-      prompt: keyword,
+      prompt: normalized_search,
     });
-    const queryEmbedding = response.data.embedding;
+    const queryEmbedding = embedRes.data.embedding;
 
-    // 2️⃣ Fetch all treatments with embeddings
+    // 🔹 Step 2: Fetch all treatments with embeddings
     const rows = await dbOperations.getData(
-      "tbl_treatments",
+      "tbl_treatments_copy",
       "WHERE embeddings IS NOT NULL"
     );
     if (!rows?.length) return handleError(res, 404, "No treatments found");
 
-    // 3️⃣ Compute cosine similarity
+    // 🔹 Step 3: Compute cosine similarity + hybrid keyword boosting
     const results = [];
+
     for (const item of rows) {
+      if (!item.embeddings) continue;
+
       const dbEmbedding = Array.isArray(item.embeddings)
         ? item.embeddings
-        : JSON.parse(item.embeddings); // parse if stored as JSON string
+        : JSON.parse(item.embeddings);
+
+      // 🧠 Combined text for keyword relevance (used for boost)
+      const combinedText = `
+        Treatment Name: ${item.name || ""}
+        Benefits: ${item.benefits_en || ""}
+        Description: ${item.description_en || ""}
+        Concern: ${item.concern_en || ""}
+        Devices Used: ${item.device_name || ""}
+      `.toLowerCase();
 
       const score = cosineSimilarity(queryEmbedding, dbEmbedding);
-      if (score >= 0.4) {
-        // Exclude embeddings from the response
+
+      // 🔹 Keyword match boosting (adds small score if keyword found)
+      const keywordBoost =
+        combinedText.includes(normalized_search.toLowerCase()) ? 0.15 : 0;
+
+      const hybridScore = score + keywordBoost;
+
+      if (hybridScore >= 0.35) {
         const { embeddings, ...rest } = item;
-        results.push({ ...rest, score });
+        results.push({ ...rest, score: hybridScore });
       }
     }
 
-    // 4️⃣ Sort by similarity descending and take top 20
+    // 🔹 Step 4: Sort and limit results
     results.sort((a, b) => b.score - a.score);
     const top = results.slice(0, 20);
 
@@ -233,6 +347,7 @@ export const getTreatmentsSuggestions = async (req, res) => {
     return handleError(res, 500, "EMBEDDINGS ERROR");
   }
 };
+
 
 export const getProductSuggestions = async (req, res) => {
   try {
@@ -375,7 +490,6 @@ export const generateEmbeddingsForRows = async (rows, tableName, idField) => {
   for (const row of rows) {
     const combinedText = row.embedding_text;
 
-
     if (!combinedText || !combinedText.trim()) continue;
 
     try {
@@ -429,10 +543,10 @@ export const generateProductsEmbeddingsV2 = async (id) => {
 export const generateDoctorsEmbeddingsV2 = async (id) => {
   try {
 
-    const rows = await apiModels.getDoctorEmbeddingTextById(id);
+    const rows = await apiModels.getDoctorEmbeddingTextByIdV2(id);
     if (!rows || !rows.length) return handleError(res, 404, "en", "No Data found");
 
-    await generateEmbeddingsForRows(rows, "tbl_doctors", "doctor_id");
+    await generateDoctorsEmbeddingByIdV2(rows);
     // return handleSuccess(res, 200, "en", "All doctor embeddings updated successfully");
   } catch (err) {
     console.error("Error generating embeddings:", err);
@@ -452,3 +566,129 @@ export const generateClinicsEmbeddingsV2 = async (id) => {
     // return handleError(res, 500, "en", "Internal Server Error");
   }
 };
+
+
+export const generateTreatmentDevices = async (req, res) => {
+  try {
+    // 1️⃣ Fetch all treatments from tbl_treatments_copy
+    const treatments = await dbOperations.getData("tbl_treatments_copy", "");
+
+    if (!treatments || treatments.length === 0) {
+      return res.status(404).json({ success: false, message: "No treatments found" });
+    }
+
+    let insertedCount = 0;
+    let skippedCount = 0;
+
+    // 2️⃣ Loop through each treatment
+    for (const treatment of treatments) {
+      const { treatment_id, device_name } = treatment;
+
+      if (!device_name) continue; // skip if no device listed
+
+      // Split comma-separated devices & clean up whitespace
+      const devices = device_name
+        .split(",")
+        .map((d) => d.trim())
+        .filter(Boolean);
+
+      // 3️⃣ Loop through devices
+      for (const device of devices) {
+        // 🔍 Check if this device already exists for this treatment
+        const existingDevice = await dbOperations.getSelectedColumn(
+          "id",
+          "tbl_treatment_devices",
+          `WHERE treatment_id = '${treatment_id}' AND device_name = '${device}' LIMIT 1`
+        );
+
+        if (existingDevice && existingDevice.length > 0) {
+          skippedCount++;
+          continue;
+        }
+  
+        // 4️⃣ Insert if not already present
+        const deviceData = {
+          id: uuidv4(),
+          treatment_id,
+          device_name: device,
+        };
+
+        await dbOperations.insertData("tbl_treatment_devices", deviceData);
+        insertedCount++;
+      }
+    }
+
+    // 5️⃣ Return summary
+    return res.status(200).json({
+      success: true,
+      message: "Devices mapped successfully to treatments",
+      inserted: insertedCount,
+      skipped: skippedCount,
+    });
+
+  } catch (err) {
+    console.error("❌ Error generating treatment devices:", err);
+    return handleError(res, 500, "DEVICE GENERATION ERROR");
+  }
+};
+
+
+export const generateDoctorsEmbeddingByIdV2 = async (rows) => {
+  try {
+    for (const row of rows) {
+      // 🛑 Skip if doctor_name is null
+      if (!row.doctor_name || !row.doctor_name.trim()) {
+        console.log(`⏭️ Skipped doctor with ID ${row.doctor_id} (no name)`);
+        continue;
+      }
+
+      // 🧠 Combine available non-null fields into a natural language text
+      const fields = [];
+
+      fields.push(`Doctor Name: ${row.doctor_name}`);
+
+      if (row.educations)
+        fields.push(`Education: ${row.educations}`);
+
+      if (row.treatments)
+        fields.push(`Treatments offered: ${row.treatments}`);
+
+      if (row.concerns)
+        fields.push(`Specializes in treating: ${row.concerns}`);
+
+      if (row.skin_types)
+        fields.push(`Experienced with skin types or areas like: ${row.skin_types}`);
+
+      const combinedText = fields.join(". ") + "."; // Natural readable text
+
+      // 🛑 Skip empty text
+      if (!combinedText.trim()) continue;
+
+      try {
+        // 🔍 Generate embedding vector from Ollama or embedding API
+        const response = await axios.post("http://localhost:11434/api/embeddings", {
+          model: "nomic-embed-text",
+          prompt: combinedText,
+        });
+
+        const vector = response.data.embedding;
+        const vectorJson = JSON.stringify(vector);
+
+        // 💾 Save to DB
+        await dbOperations.updateData(
+          "tbl_doctors",
+          { embeddings: vectorJson },
+          `WHERE doctor_id = '${row.doctor_id}'`
+        );
+
+        console.log(`✅ Embedding updated for doctor ID: ${row.doctor_id}`);
+      } catch (embedErr) {
+        console.error(`❌ Error generating embedding for ID ${row.doctor_id}:`, embedErr.message);
+      }
+    }
+
+  } catch (err) {
+    console.error("Error generating embeddings:", err);
+  }
+};
+

@@ -20,5 +20,7 @@ router.post("/getTreatmentsSuggestions", embeddingsController.getTreatmentsSugge
 router.post("/getProductSuggestions", embeddingsController.getProductSuggestions);
 router.post("/getDoctorSuggestions", embeddingsController.getDoctorSuggestions);
 router.post("/getClinicSuggestions", embeddingsController.getClinicSuggestions);
+router.post("/generateTreatmentEmbeddings2", embeddingsController.generateTreatmentEmbeddings2);
+router.get("/generateTreatmentDevices", embeddingsController.generateTreatmentDevices);
 
 export default router;  

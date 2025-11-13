@@ -455,6 +455,47 @@ export const getTopSimilarRows = async (rows, search, threshold = 0.4, topN = nu
     }
     return results;
 };
+export const getTopSimilarRowsWithoutTranslate = async (rows, search, threshold = 0.4, topN = null) => {
+    if (!search?.trim()) return rows;
+
+    const normalized_search = search;
+
+   
+    // 1️⃣ Get embedding for the search term
+    const response = await axios.post("http://localhost:11434/api/embeddings", {
+        model: "nomic-embed-text",
+        prompt: normalized_search,
+    });
+
+    const queryEmbedding = response.data.embedding;
+
+    // 2️⃣ Compute similarity for each row
+    const results = [];
+
+    for (const row of rows) {
+        if (!row.embeddings) continue;
+
+        const dbEmbedding = Array.isArray(row.embeddings)
+            ? row.embeddings
+            : JSON.parse(row.embeddings);
+
+        const score = cosineSimilarity(queryEmbedding, dbEmbedding);
+
+        if (score >= threshold) {
+            const { embeddings, ...rest } = row; // exclude embeddings
+            results.push({ ...rest, score });
+        }
+    }
+
+    // 3️⃣ Sort descending by similarity
+    results.sort((a, b) => b.score - a.score);
+
+    // 4️⃣ Return all above threshold or topN if specified
+    if (topN && topN > 0) {
+        return results.slice(0, topN);
+    }
+    return results;
+};
 
 export const paginateRows = (rows, limit, page) => {
     if (!Array.isArray(rows)) return [];
@@ -530,11 +571,11 @@ export async function translator(question, targetLang = "en") {
   
       console.log("Detected language:", detectedLang);
   
-      // ✅ Step 2: Skip translation if English or already known term
-      if (detectedLang === "en" || shouldSkipTranslation(question)) {
-        console.log("Skipping translation: English or known brand term");
-        return question;
-      }
+    //   // ✅ Step 2: Skip translation if English or already known term
+    //   if (detectedLang === "en" || shouldSkipTranslation(question)) {
+    //     console.log("Skipping translation: English or known brand term");
+    //     return question;
+    //   }
   
       // 🌍 Step 3: Only translate if it’s Swedish or other non-English
       if (["sv", "da", "no", "de", "fr", "it", "es"].includes(detectedLang)) {

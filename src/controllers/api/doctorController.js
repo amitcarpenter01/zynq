@@ -20,51 +20,76 @@ import { translator } from "../../utils/misc.util.js";
  * Returns true if text looks like nonsense.
  */
 export function isGibberishText(text = "") {
-    if (!text || text.trim().length < 2) return true;
+    if (!text) return true;
   
     const clean = text.trim().toLowerCase();
   
-    // Remove non-letter characters for analysis
-    const lettersOnly = clean.replace(/[^a-z\s]/g, "");
+    // 🚫 Stop if starts with special char, number, or hyphen
+    if (/^[^a-z\u00C0-\u017F]/i.test(clean)) return true;
+  
+    // Allow short partial searches like “ph”, “bo”, “la”
+    if (clean.length <= 3) return false;
+  
+    // ✅ Keep extended Latin letters (supports accents like é, ö, å)
+    const lettersOnly = clean.replace(/[^a-z\u00C0-\u017F\s]/gi, "");
     if (!lettersOnly) return true;
   
     const words = lettersOnly.split(/\s+/).filter(Boolean);
     if (words.length === 0) return true;
   
-    // --- Core checks ---
-    const gibberishPattern = /(.)\1{2,}|[zxq]{2,}|[bcdfghjklmnpqrstvwxyz]{5,}|[aeiou]{5,}/i;
+    // ✅ Predefined whitelist (brand, clinic, treatment, device names)
+    const whitelist = [
+      "wallstrom", "wallström", "asclepius", "quadrostar", "fotona", "lumenis",
+      "cutera", "alma", "hydrafacial", "restylane", "juvederm", "belotero",
+      "dermalux", "emsculpt", "morpheus", "ultherapy", "thermage", "syneron",
+      "cynosure", "ipl", "laser", "botox", "fillers", "clinic"
+    ];
+  
+    if (whitelist.some(w => clean.includes(w))) return false; // ✅ skip known valid terms
+  
+    // Patterns for nonsense detection
+    const gibberishPattern = /(.)\1{2,}|[zxq]{3,}|[bcdfghjklmnpqrstvwxyz]{6,}|[aeiou]{5,}/i;
     const repeatedPattern = /^(.{2,4})\1{1,}$/i;
+    const alphanumericJunk = /[a-z\u00C0-\u017F]+\d+|\d+[a-z\u00C0-\u017F]+/i;
+  
+    // ✅ Allow common European clusters (e.g., “strom”, “berg”, “lund”)
+    const allowedClusters = [
+      "strom", "ström", "berg", "holm", "lund", "wall", "borg", "quist", "sson", "skov"
+    ];
   
     let gibberishCount = 0;
   
     for (const word of words) {
-      const vowels = (word.match(/[aeiou]/g) || []).length;
-      const consonants = (word.match(/[bcdfghjklmnpqrstvwxyz]/g) || []).length;
+      if (word.length <= 3) continue;
   
+      // skip if allowed cluster or known pattern
+      if (
+        allowedClusters.some(cluster => word.includes(cluster)) ||
+        whitelist.includes(word)
+      )
+        continue;
+  
+      const vowels = (word.match(/[aeiou\u00C0-\u017F]/gi) || []).length;
       const vowelRatio = vowels / (word.length || 1);
   
-      // Flag if:
-      // - too few vowels
-      // - unnatural letter patterns
-      // - repeated nonsense patterns
       if (
         gibberishPattern.test(word) ||
         repeatedPattern.test(word) ||
-        (word.length >= 4 && (vowelRatio < 0.2 || vowelRatio > 0.9))
+        alphanumericJunk.test(word) ||
+        vowelRatio < 0.15 ||
+        vowelRatio > 0.9
       ) {
         gibberishCount++;
       }
     }
   
-    // If more than 40% of words look nonsense → gibberish
     const ratio = gibberishCount / words.length;
     return ratio > 0.4;
   }
   
   
- 
   
-
+  
 
 const APP_URL = process.env.APP_URL;
 const toMap = (obj) => new Map(Object.entries(obj || {}));
@@ -492,11 +517,15 @@ export const search_home_entities = asyncHandler(async (req, res) => {
     }
 
     try {
-
-        const normalized_search = await translator(search, 'en');
+        var normalized_search;
+        if (search.length <= 3){
+            normalized_search = search
+        }else{
+           normalized_search = await translator(search, 'en');
+        }
         // 🧠 Detect if the translated text is gibberish
         const gibberish = isGibberishText(normalized_search);
-
+console.log("gibberish", gibberish);
         if (gibberish) {
             return handleError(res, 200, language, "Invalid Search", []);
         }
@@ -516,6 +545,7 @@ export const search_home_entities = asyncHandler(async (req, res) => {
             userModels.getTreatmentsBySearchOnly({ search, language, page, limit })
         ]);
 
+     
         // 3️⃣ Enrich images (same as your code)
         const enrichedDoctors = doctors.map(doctor => ({
             ...doctor,
@@ -571,30 +601,118 @@ export const search_home_entities = asyncHandler(async (req, res) => {
 async function detectSearchIntent(searchQuery) {
     console.log("🔍 Raw search query:", searchQuery);
 
+    const trimmed = (searchQuery || "").trim().toLowerCase();
+
+    // ✅ Special handling for "dr" or similar inputs
+    if (["dr", "dr.", "doctor", "daktar"].includes(trimmed)) {
+        console.log("⚙️ Detected doctor keyword — prioritizing Doctor ranking");
+        return {
+            type: "valid_medical",
+            ranking: ["Doctor", "Clinic", "Treatment", "Devices"]
+        };
+    }
+
+    // 🛑 Short queries fallback
+    if (trimmed.length <=3) {
+        console.log("⚙️ Skipping AI — short query, returning default valid_medical");
+        return {
+            type: "valid_medical",
+            ranking: ["Treatment", "Devices", "Doctor", "Clinic"]
+        };
+    }
+
     const prompt = `
-    You are an AI assistant that classifies user search queries for a medical platform.
+    You are an intelligent and context-aware AI assistant that classifies user search queries for a medical platform.
     
-    Possible entity types: Doctor, Clinic, Treatment, Devices.
+    Your goal is to analyze the query and always output a pure JSON object with exactly these two fields:
+    {
+      "type": "valid_medical" | "non_medical",
+      "ranking": ["Doctor","Clinic","Treatment","Devices"] (in the most contextually correct order)
+    }
     
-    You must determine two things for the query: "${searchQuery}"
+    ---
     
-    1. **type**:
-       - "valid_medical" → if the query relates to healthcare, doctor names, clinic names, treatments, or medical devices. 
-         (⚠️ This includes personal names of doctors, clinics, hospitals, or branded health centers.)
-       - "non_medical" → if it’s a meaningful phrase but unrelated to health or medicine.
-       - "gibberish" → if it’s random, meaningless, or nonsensical text.
+    ### RULES & LOGIC
     
-    2. **ranking**:
-       - A JSON array ranking all 4 entity types: ["Doctor","Clinic","Treatment","Devices"].
-       - "Treatment" and "Devices" must always appear next to each other (either order).
-       - The other two ("Doctor" and "Clinic") can appear anywhere else.
+    #### 1️⃣ General behavior
+    - Always return a valid JSON object — no markdown or explanations.
+    - Case-insensitive and tolerant of spelling errors (“wrinckle”, “daktar”, etc.).
+    - Use fuzzy understanding to infer intent.
+    - Always keep **"Treatment"** and **"Devices"** next to each other (either order).
     
-    Output a pure JSON object only — no markdown or explanations.
+    ---
     
-    Example valid outputs:
-    {"type":"valid_medical","ranking":["Doctor","Clinic","Treatment","Devices"]}
-    {"type":"gibberish","ranking":["Treatment","Devices","Doctor","Clinic"]}
-    {"type":"non_medical","ranking":["Clinic","Doctor","Treatment","Devices"]}
+    #### 2️⃣ Type classification
+    
+    **"valid_medical"** → related to doctors, clinics, treatments, symptoms, or medical devices.
+    
+    Includes:
+    - **Doctor names/prefixes**: “dr”, “doctor”, “daktar”, etc.
+    - **Clinic/hospital names**: “Apollo”, “Smile Dental”, “Skin Clinic”, etc.
+    - **Treatments or conditions**: “wrinkle”, “acne”, “botox”, “laser”, “IPL”, “filler”, “HIFU”, etc.
+    - **Devices**: “RF device”, “IPL machine”, “laser machine”, etc.
+    
+    **"non_medical"** → unrelated meaningful text (e.g., “football”, “laptop”)
+    
+    ---
+    
+    #### 3️⃣ Ranking logic (priority order)
+    
+    | Query Type | Ranking |
+    |-------------|----------|
+    | Mentions “dr”, “doctor”, “daktar” | ["Doctor","Clinic","Treatment","Devices"] |
+    | Mentions clinic/hospital name | ["Clinic","Doctor","Treatment","Devices"] |
+    | Refers to **treatment, symptom, condition, or therapy** (e.g., “laser”, “botox”, “IPL”, “peel”, “scar removal”, “acne”) | ["Treatment","Devices","Doctor","Clinic"] |
+    | Refers to **medical device, machine, or equipment** (e.g., “RF device”, “IPL machine”, “laser machine”) | ["Devices","Treatment","Doctor","Clinic"] |
+    | General health or beauty-related phrases (e.g., “skin glow”, “rejuvenation”) | ["Treatment","Clinic","Doctor","Devices"] |
+    | Unclear but still medical | ["Treatment","Devices","Doctor","Clinic"] |
+    
+    ---
+    
+    #### 4️⃣ Consistency rule
+    Always keep "Treatment" and "Devices" **adjacent** in ranking.
+    
+    ---
+    
+    #### 5️⃣ Multilingual & transliteration tolerance
+    Understand words like “aspataal”, “ilaaj”, “davakhana”, “klinikk”, “daktar”, etc.
+    
+    ---
+    
+    #### 6️⃣ Output format
+    - Output **only JSON**
+    - Keys lowercase
+    - Always valid JSON
+    
+    ---
+    
+    ### ✅ Examples
+    
+    Input: "dr harshit"  
+    → {"type":"valid_medical","ranking":["Doctor","Clinic","Treatment","Devices"]}
+    
+    Input: "apollo clinic"  
+    → {"type":"valid_medical","ranking":["Clinic","Doctor","Treatment","Devices"]}
+    
+    Input: "wrinkle"  
+    → {"type":"valid_medical","ranking":["Treatment","Devices","Doctor","Clinic"]}
+    
+    Input: "laser"  
+    → {"type":"valid_medical","ranking":["Treatment","Devices","Doctor","Clinic"]}
+    
+    Input: "IPL machine"  
+    → {"type":"valid_medical","ranking":["Devices","Treatment","Doctor","Clinic"]}
+    
+    Input: "skin rejuvenation"  
+    → {"type":"valid_medical","ranking":["Treatment","Clinic","Doctor","Devices"]}
+    
+    Input: "hello world"  
+    → {"type":"non_medical","ranking":["Clinic","Doctor","Treatment","Devices"]}
+    
+    ---
+    
+    Now classify the following query and return only the JSON:
+    "${trimmed}"
     `;
     
 
@@ -607,7 +725,6 @@ async function detectSearchIntent(searchQuery) {
     let content = response.choices[0].message.content.trim();
     console.log("🧠 Raw AI output:", content);
 
-    // Clean markdown / formatting
     content = content
         .replace(/```json/gi, "")
         .replace(/```/g, "")
@@ -638,6 +755,7 @@ async function detectSearchIntent(searchQuery) {
         return { type: "valid_medical", ranking: ["Treatment", "Devices", "Doctor", "Clinic"] };
     }
 }
+
 
 
 
