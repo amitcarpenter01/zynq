@@ -2349,24 +2349,25 @@ export const getTreatmentsBySearchOnly = async ({
     language = 'en',
     page = null,
     limit = null,
+    actualSearch
 }) => {
     try {
         if (!search?.trim()) return [];
 
         // 1️⃣ Fetch all treatments that have embeddings
         let results = await db.query(`
-      SELECT treatment_id,name,device_name,classification_type,benefits_en,description_en,concern_en,embeddings
-      FROM tbl_treatments_copy
+      SELECT treatment_id,name,swedish ,benefits_sv ,device_name,classification_type,benefits_en,description_en,concern_en,embeddings
+      FROM tbl_treatments
       WHERE is_deleted = 0 AND approval_status = 'APPROVED' AND embeddings IS NOT NULL
     `);
 
         // 2️⃣ Compute top similar rows using embedding
-        results = await getTreatmentsVectorResult(results, search);
+        results = await getTreatmentsVectorResult(results, search,0.4, null, language, actualSearch);
 
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
-        return formatBenefitsUnified(results, language);
+        return results;
     } catch (error) {
         console.error('Database Error in getTreatmentsBySearch:', error.message);
         throw new Error('Failed to fetch treatments.');
