@@ -1414,3 +1414,12 @@ export const getSingleClinicCartProductModel = async (clinic_id, purchase_id) =>
         throw error;
     }
 };
+
+export const updateDoctorAdmindetails = async (zynqUserId, name, phone, age, address, gender, profile_image, biography) => {
+    try {
+        return await db.query(`UPDATE tbl_doctors SET  name = ?, phone=? , age=?, address=?, gender=?, profile_image=?,biography=? where zynq_user_id = ? `, [ name, phone, age, address, gender, profile_image, biography, zynqUserId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to add doctor personal details.");
+    }
+};

@@ -25,6 +25,11 @@ import { getContactUs } from '../controllers/api/authController.js';
 import { updateProductApprovalStatusSchema } from '../validations/product.validation.js';
 import { addEditConcernSchema, addEditTreatmentSchema, deleteConcernSchema, deleteTreatmentSchema, updateConcernApprovalStatusSchema, updateTreatmentApprovalStatusSchema } from '../validations/treatment.validation.js';
 import { addEditConcern, addEditTreatment, deleteConcern, deleteTreatment, updateConcernApprovalStatus, updateTreatmentApprovalStatus } from '../controllers/api/treatmentController.js';
+import { uploadDynamicClinicFiles } from '../services/clinic_multer.js';
+import { updateClinicAdmin } from '../controllers/clinic/authController.js';
+import * as clinicModels from '../models/clinic.js';
+import { uploadFileTo } from '../services/doctor_multer.js';
+import { updateDoctorAdminController } from '../controllers/doctor/profileController.js';
 
 const router = express.Router();
 
@@ -160,5 +165,25 @@ router.post('/concern', authenticateAdmin, validate(addEditConcernSchema, 'body'
 router.delete('/concern/:concern_id', authenticateAdmin, validate(deleteConcernSchema, 'params'), deleteConcern);
 
 router.patch('/concern/approval-status', authenticateAdmin, validate(updateConcernApprovalStatusSchema, 'body'), updateConcernApprovalStatus);
+
+
+const getFieldsFn = async (req) => {
+    const certificationType = await clinicModels.getCertificateType();
+    if (certificationType.length === 0) {
+        return [];
+    }
+    const dynamicFields = certificationType.map(type => ({
+        name: type.file_name ? type.file_name.toLowerCase() : '',
+        maxCount: 10
+    }));
+    dynamicFields.push({ name: 'logo', maxCount: 1 });
+    return dynamicFields;
+};
+
+router.patch("/update-clinic", authenticateAdmin, uploadDynamicClinicFiles(getFieldsFn), updateClinicAdmin);
+
+
+router.patch("/update-doctor", authenticateAdmin, uploadFileTo('profile_images'), updateDoctorAdminController);
+
 
 export default router;
