@@ -525,7 +525,7 @@ export const search_home_entities = asyncHandler(async (req, res) => {
         }
         // 🧠 Detect if the translated text is gibberish
         const gibberish = isGibberishText(normalized_search);
-console.log("gibberish", gibberish);
+
         if (gibberish) {
             return handleError(res, 200, language, "Invalid Search", []);
         }
@@ -542,7 +542,7 @@ console.log("gibberish", gibberish);
             userModels.getDoctorsByFirstNameSearchOnly({ search, page, limit }),
             userModels.getClinicsByNameSearchOnly({ search, page, limit }),
             userModels.getProductsByNameSearchOnly({ search, page, limit }),
-            userModels.getTreatmentsBySearchOnly({ search, language, page, limit })
+            userModels.getTreatmentsBySearchOnly({ search, language, page, limit, actualSearch: search })
         ]);
 
      

@@ -233,7 +233,7 @@ export const generateClinicEmbedding = async (req, res) => {
 export const generateTreatmentEmbeddings2 = async (req, res) => {
   try {
 
-    const rows = await dbOperations.getData('tbl_treatments_copy', '')
+    const rows = await dbOperations.getData('tbl_treatments', '')
 
     if (!rows || rows.length === 0) {
       return handleError(res, 404, 'en', "No Data found");
@@ -248,7 +248,7 @@ export const generateTreatmentEmbeddings2 = async (req, res) => {
       It commonly uses devices like ${row.device_name || 'advanced medical-grade technology'}.
       `;
 
-    console.log(combinedText);
+   
 
     if (!combinedText.trim()) continue;
 
@@ -263,7 +263,7 @@ export const generateTreatmentEmbeddings2 = async (req, res) => {
 
 
         await dbOperations.updateData(
-          "tbl_treatments_copy",
+          "tbl_treatments",
           { embeddings: vectorJson },
           `WHERE treatment_id = '${row.treatment_id}'`
         );
@@ -299,7 +299,7 @@ export const getTreatmentsSuggestions = async (req, res) => {
 
     // 🔹 Step 2: Fetch all treatments with embeddings
     const rows = await dbOperations.getData(
-      "tbl_treatments_copy",
+      "tbl_treatments",
       "WHERE embeddings IS NOT NULL"
     );
     if (!rows?.length) return handleError(res, 404, "No treatments found");
@@ -570,8 +570,8 @@ export const generateClinicsEmbeddingsV2 = async (id) => {
 
 export const generateTreatmentDevices = async (req, res) => {
   try {
-    // 1️⃣ Fetch all treatments from tbl_treatments_copy
-    const treatments = await dbOperations.getData("tbl_treatments_copy", "");
+    // 1️⃣ Fetch all treatments from tbl_treatments
+    const treatments = await dbOperations.getData("tbl_treatments", "");
 
     if (!treatments || treatments.length === 0) {
       return res.status(404).json({ success: false, message: "No treatments found" });
