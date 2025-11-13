@@ -10,6 +10,7 @@ import { get_product_images_by_product_ids } from "../../models/api.js";
 import { getDoctorBookedAppointmentsModel } from "../../models/appointment.js";
 import { extractUserData } from "../../utils/misc.util.js";
 import { generateDoctorsEmbeddingsV2 } from "../api/embeddingsController.js";
+import { addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingTreatmentModel, deleteExistingConcernsModel, deleteExistingSubTreatmentsModel, updateTreatmentModel } from "../../models/admin.js";
 dotenv.config();
 
 //const APP_URL = process.env.APP_URL;
@@ -1235,3 +1236,241 @@ export const getEarnings = asyncHandler(async (req, res) => {
         appointments
     });
 });
+
+export const updateDoctorAdminController = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || 'en';
+    const body = req.body;
+
+    try {
+        // 🧩 Validate top-level payload (flattened structure)
+        const schema = Joi.object({
+            zynq_user_id: Joi.string().required(),
+
+            // Personal Info
+            name: Joi.string().max(255).required(),
+            phone: Joi.string().max(255).required(),
+            age: Joi.string().max(255).required(),
+            address: Joi.string().max(255).required(),
+            gender: Joi.string().max(255).required(),
+            biography: Joi.string().optional().allow(''),
+            // fee_per_session: Joi.number().positive().required(),
+
+            // Education & Experience
+            // education: Joi.string().optional(), // JSON
+            // experience: Joi.string().optional(), // JSON
+        });
+
+        const { error, value } = schema.validate(body);
+        if (error) return joiErrorHandle(res, error);
+
+        const { zynq_user_id } = value;
+
+        // 🧠 Fetch doctor
+        const [doctorData] = await doctorModels.get_doctor_by_zynquser_id(zynq_user_id);
+        if (!doctorData) return handleError(res, 404, language, "DOCTOR_NOT_FOUND");
+
+        const doctor_id = doctorData.doctor_id;
+
+        // =====================================================
+        // 1️⃣ PERSONAL INFORMATION UPDATE
+        // =====================================================
+        if (
+            value.name ||
+            value.phone ||
+            value.age ||
+            value.address ||
+            value.gender ||
+            value.biography
+        ) {
+            let filename = doctorData.profile_image;
+            if (req.file) filename = req.file.filename;
+
+            await doctorModels.updateDoctorAdmindetails(
+                zynq_user_id,
+                value.name,
+                value.phone,
+                value.age,
+                value.address,
+                value.gender,
+                filename,
+                value.biography,
+            );
+
+            await generateDoctorsEmbeddingsV2(zynq_user_id);
+        }
+
+
+        // ✅ Final success response
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY", {});
+    } catch (error) {
+        console.error("updateDoctorProfile error:", error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+});
+
+
+// export const updateDoctorAdminController = asyncHandler(async (req, res) => {
+//     const language = req?.user?.language || 'en';
+//     const body = req.body;
+
+//     try {
+//         // 🧩 Validate top-level payload (flattened structure)
+//         const schema = Joi.object({
+//             zynq_user_id: Joi.string().required(),
+
+//             // Personal Info
+//             name: Joi.string().max(255).optional(),
+//             phone: Joi.string().max(255).optional(),
+//             age: Joi.string().max(255).optional(),
+//             address: Joi.string().max(255).optional(),
+//             gender: Joi.string().max(255).optional(),
+//             biography: Joi.string().optional().allow(''),
+
+//             // Education & Experience
+//             education: Joi.string().optional(), // JSON
+//             experience: Joi.string().optional(), // JSON
+
+//             // Treatment Data (flattened)
+//             treatment_id: Joi.string().optional(),
+//             name_treatment: Joi.string().optional(), // renamed to avoid conflict with personal name
+//             swedish: Joi.string().optional(),
+//             classification_type: Joi.string().valid('Medical', 'Non Medical').optional(),
+//             benefits_en: Joi.string().optional(),
+//             benefits_sv: Joi.string().optional(),
+//             description_en: Joi.string().optional(),
+//             description_sv: Joi.string().optional(),
+//             is_device: Joi.boolean().optional(),
+//             concerns: Joi.array().items(Joi.string()).optional(),
+//             sub_treatments: Joi.array().items(Joi.string()).optional(),
+//         });
+
+//         const { error, value } = schema.validate(body);
+//         if (error) return joiErrorHandle(res, error);
+
+//         const { zynq_user_id } = value;
+
+//         // 🧠 Fetch doctor
+//         const [doctorData] = await doctorModels.get_doctor_by_zynquser_id(zynq_user_id);
+//         if (!doctorData) return handleError(res, 404, language, "DOCTOR_NOT_FOUND");
+
+//         const doctor_id = doctorData.doctor_id;
+
+//         // =====================================================
+//         // 1️⃣ PERSONAL INFORMATION UPDATE
+//         // =====================================================
+//         if (value.name || value.phone || value.age || value.address || value.gender || value.biography) {
+//             let filename = doctorData.profile_image;
+//             if (req.file) filename = req.file.filename;
+
+//             await doctorModels.add_personal_details(
+//                 zynq_user_id,
+//                 value.name,
+//                 value.phone,
+//                 value.age,
+//                 value.address,
+//                 value.gender,
+//                 filename,
+//                 value.biography
+//             );
+
+//             await generateDoctorsEmbeddingsV2(zynq_user_id);
+//         }
+
+//         // =====================================================
+//         // 2️⃣ EDUCATION & EXPERIENCE UPDATE
+//         // =====================================================
+//         if (value.education || value.experience) {
+//             const educationList = value.education
+//                 ? JSON.parse(value.education)
+//                 : [];
+//             const experienceList = value.experience
+//                 ? JSON.parse(value.experience)
+//                 : [];
+
+//             await doctorModels.delete_all_education(doctor_id);
+//             await doctorModels.delete_all_experience(doctor_id);
+
+//             for (const edu of educationList) {
+//                 await doctorModels.add_education(
+//                     doctor_id,
+//                     edu.institute,
+//                     edu.degree,
+//                     edu.start_year,
+//                     edu.end_year
+//                 );
+//             }
+
+//             for (const exp of experienceList) {
+//                 await doctorModels.add_experience(
+//                     doctor_id,
+//                     exp.organization,
+//                     exp.designation,
+//                     exp.start_date,
+//                     exp.end_date
+//                 );
+//             }
+
+//             await generateDoctorsEmbeddingsV2(zynq_user_id);
+//         }
+
+//         // =====================================================
+//         // 3️⃣ ADD / EDIT TREATMENT (flattened)
+//         // =====================================================
+//         if (value.name_treatment) {
+//             const treatment = {
+//                 treatment_id: value.treatment_id,
+//                 name: value.name_treatment,
+//                 swedish: value.swedish,
+//                 classification_type: value.classification_type,
+//                 benefits_en: value.benefits_en,
+//                 benefits_sv: value.benefits_sv,
+//                 description_en: value.description_en,
+//                 description_sv: value.description_sv,
+//                 is_device: value.is_device,
+//                 concerns: value.concerns || [],
+//                 sub_treatments: value.sub_treatments || [],
+//             };
+
+//             const dbData = { ...treatment };
+//             delete dbData.concerns;
+//             delete dbData.sub_treatments;
+
+//             dbData.is_admin_created = true;
+//             dbData.approval_status = "APPROVED";
+
+//             let treatment_id = treatment.treatment_id;
+
+//             if (treatment_id) {
+//                 // Edit existing
+//                 await Promise.all([
+//                     updateTreatmentModel(treatment_id, dbData),
+//                     deleteExistingConcernsModel(treatment_id),
+//                     deleteExistingSubTreatmentsModel(treatment_id),
+//                 ]);
+
+//                 if (treatment.concerns.length)
+//                     await addTreatmentConcernsModel(treatment_id, treatment.concerns);
+//                 if (treatment.sub_treatments.length)
+//                     await addSubTreatmentsModel(treatment_id, treatment.sub_treatments);
+//             } else {
+//                 // Add new
+//                 treatment_id = uuidv4();
+//                 dbData.treatment_id = treatment_id;
+
+//                 await addTreatmentModel(dbData);
+//                 if (treatment.concerns.length)
+//                     await addTreatmentConcernsModel(treatment_id, treatment.concerns);
+//                 if (treatment.sub_treatments.length)
+//                     await addSubTreatmentsModel(treatment_id, treatment.sub_treatments);
+//             }
+
+//             await generateTreatmentEmbeddingsV2(treatment_id);
+//         }
+
+//         return handleSuccess(res, 200, language, "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY", {});
+//     } catch (error) {
+//         console.error("updateDoctorProfile error:", error);
+//         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+//     }
+// });
+
