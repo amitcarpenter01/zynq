@@ -394,25 +394,25 @@ export async function deleteGuestData() {
 
 const GOOGLE_TRANSLATE_KEY = process.env.GOOGLE_TRANSLATE_KEY
 
-export async function translator(question, targetLang) {
-    try {
-        // return question
-        const url = `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_TRANSLATE_KEY}`;
-        const body = {
-            q: question,
-            target: targetLang,
-            format: 'text'
-        };
+// export async function translator(question, targetLang) {
+//     try {
+//         // return question
+//         const url = `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_TRANSLATE_KEY}`;
+//         const body = {
+//             q: question,
+//             target: targetLang,
+//             format: 'text'
+//         };
 
-        const resp = await axios.post(url, body);
-        const translated = resp.data.data.translations[0].translatedText;
-        return translated;
-    } catch (err) {
-        console.error('Translate error:', err.response?.data || err.message);
-        // throw err;
-        return question
-    }
-};
+//         const resp = await axios.post(url, body);
+//         const translated = resp.data.data.translations[0].translatedText;
+//         return translated;
+//     } catch (err) {
+//         console.error('Translate error:', err.response?.data || err.message);
+//         // throw err;
+//         return question
+//     }
+// };
 
 export const getTopSimilarRows = async (rows, search, threshold = 0.4, topN = null) => {
     if (!search?.trim()) return rows;
@@ -420,6 +420,47 @@ export const getTopSimilarRows = async (rows, search, threshold = 0.4, topN = nu
     const normalized_search = await translator(search, 'en');
 
     console.log("normalized_search - ", normalized_search)
+    // 1️⃣ Get embedding for the search term
+    const response = await axios.post("http://localhost:11434/api/embeddings", {
+        model: "nomic-embed-text",
+        prompt: normalized_search,
+    });
+
+    const queryEmbedding = response.data.embedding;
+
+    // 2️⃣ Compute similarity for each row
+    const results = [];
+
+    for (const row of rows) {
+        if (!row.embeddings) continue;
+
+        const dbEmbedding = Array.isArray(row.embeddings)
+            ? row.embeddings
+            : JSON.parse(row.embeddings);
+
+        const score = cosineSimilarity(queryEmbedding, dbEmbedding);
+
+        if (score >= threshold) {
+            const { embeddings, ...rest } = row; // exclude embeddings
+            results.push({ ...rest, score });
+        }
+    }
+
+    // 3️⃣ Sort descending by similarity
+    results.sort((a, b) => b.score - a.score);
+
+    // 4️⃣ Return all above threshold or topN if specified
+    if (topN && topN > 0) {
+        return results.slice(0, topN);
+    }
+    return results;
+};
+export const getTopSimilarRowsWithoutTranslate = async (rows, search, threshold = 0.4, topN = null) => {
+    if (!search?.trim()) return rows;
+
+    const normalized_search = search;
+
+   
     // 1️⃣ Get embedding for the search term
     const response = await axios.post("http://localhost:11434/api/embeddings", {
         model: "nomic-embed-text",
@@ -507,4 +548,67 @@ export const rankSimilarRows = async (rows, search, threshold = 0, topN = null) 
 
     return topN && topN > 0 ? filtered.slice(0, topN) : filtered;
 };
+
+
+// Common medical/brand words you don't want translated
+const SAFE_TERMS = [
+  "Fotona", "Hydrafacial", "Lumenis", "Candela", "Cynosure", "Restylane",
+  "Juvederm", "Botox", "Belotero", "Dysport", "Allergan", "HIFU", "Laser", "Clinic"
+];
+
+function containsSafeTerm(text) {
+  return SAFE_TERMS.some(term => text.toLowerCase().includes(term.toLowerCase()));
+}
+
+export async function translator(question, targetLang = "en") {
+    try {
+      if (!question || !question.trim()) return question;
+  
+      // 🧩 Step 1: Detect language first
+      const detectUrl = `https://translation.googleapis.com/language/translate/v2/detect?key=${GOOGLE_TRANSLATE_KEY}`;
+      const detectResp = await axios.post(detectUrl, { q: question });
+      const detectedLang = detectResp.data?.data?.detections?.[0]?.[0]?.language || "en";
+  
+      console.log("Detected language:", detectedLang);
+  
+    //   // ✅ Step 2: Skip translation if English or already known term
+    //   if (detectedLang === "en" || shouldSkipTranslation(question)) {
+    //     console.log("Skipping translation: English or known brand term");
+    //     return question;
+    //   }
+  
+      // 🌍 Step 3: Only translate if it’s Swedish or other non-English
+      if (["sv", "da", "no", "de", "fr", "it", "es"].includes(detectedLang)) {
+        const translateUrl = `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_TRANSLATE_KEY}`;
+        const resp = await axios.post(translateUrl, {
+          q: question,
+          target: targetLang,
+          format: "text"
+        });
+  
+        const translated = resp.data.data.translations[0].translatedText;
+        console.log(`Translated (${detectedLang} → ${targetLang}): '${question}' → '${translated}'`);
+        return translated;
+      }
+  
+      // Otherwise, return unchanged
+      return question;
+    } catch (err) {
+      console.error("Translate error:", err.response?.data || err.message);
+      return question;
+    }
+  }
+
+// 🧠 Only skip if text *is exactly or mostly* a brand name, not if it just contains one
+function shouldSkipTranslation(text) {
+  const lowerText = text.toLowerCase().trim();
+  return SAFE_TERMS.some(term => {
+    const lowerTerm = term.toLowerCase();
+    return (
+      lowerText === lowerTerm || // exact match
+      lowerText.split(/\s+/).includes(lowerTerm) // appears as separate word
+    );
+  });
+}
+
 

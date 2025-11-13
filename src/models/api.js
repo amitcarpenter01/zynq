@@ -1,6 +1,7 @@
 import db from "../config/db.js";
-import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows } from "../utils/misc.util.js";
+import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows,getTopSimilarRowsWithoutTranslate } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
+import {getTreatmentsVectorResult,getDoctorsVectorResult,getClinicsVectorResult} from "../utils/global_search.js"
 
 //======================================= Auth =========================================
 
@@ -2211,7 +2212,7 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
       GROUP BY d.doctor_id, dm.clinic_id
     `);
         // 2️⃣ Compute top similar rows using embeddings
-        results = await getTopSimilarRows(results, search, 0.3);
+        results = await getDoctorsVectorResult(results, search, 0.3);
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
@@ -2243,7 +2244,7 @@ export const getClinicsByNameSearchOnly = async ({ search = '', page = null, lim
     `);
 
         // 2️⃣ Compute top similar rows using embedding
-        results = await getTopSimilarRows(results, search, 0.3);
+        results = await getClinicsVectorResult(results, search, 0.3);
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
@@ -2354,13 +2355,13 @@ export const getTreatmentsBySearchOnly = async ({
 
         // 1️⃣ Fetch all treatments that have embeddings
         let results = await db.query(`
-      SELECT *
-      FROM tbl_treatments
+      SELECT treatment_id,name,device_name,classification_type,benefits_en,description_en,concern_en,embeddings
+      FROM tbl_treatments_copy
       WHERE is_deleted = 0 AND approval_status = 'APPROVED' AND embeddings IS NOT NULL
     `);
 
         // 2️⃣ Compute top similar rows using embedding
-        results = await getTopSimilarRows(results, search);
+        results = await getTreatmentsVectorResult(results, search);
 
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
@@ -3169,6 +3170,69 @@ export const getDoctorEmbeddingTextById = async (zynq_user_id) => {
     }
 };
 
+export const getDoctorEmbeddingTextByIdV2 = async (zynq_user_id) => {
+    try {
+      if (!zynq_user_id) throw new Error("zynq_user_id ID is required");
+  
+      return await db.query(`
+        SELECT 
+          d.doctor_id,
+          d.name AS doctor_name,
+          GROUP_CONCAT(DISTINCT t.name SEPARATOR ', ') AS treatments,
+          GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS concerns,
+          GROUP_CONCAT(DISTINCT st.name SEPARATOR ', ') AS skin_types,
+          GROUP_CONCAT(DISTINCT ct.name SEPARATOR ', ') AS certifications,
+          GROUP_CONCAT(DISTINCT de.degree SEPARATOR ', ') AS educations,
+        FROM tbl_doctors d
+        LEFT JOIN tbl_doctor_treatments dt ON d.doctor_id = dt.doctor_id
+        LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+        LEFT JOIN tbl_treatment_concerns tc ON t.treatment_id = tc.treatment_id
+        LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+        LEFT JOIN tbl_doctor_skin_types dst ON d.doctor_id = dst.doctor_id
+        LEFT JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id
+        LEFT JOIN tbl_doctor_certification dc ON d.doctor_id = dc.doctor_id
+        LEFT JOIN tbl_certification_type ct ON dc.certification_type_id = ct.certification_type_id
+        LEFT JOIN tbl_doctor_educations de ON d.doctor_id = de.doctor_id
+        WHERE d.zynq_user_id = ?
+        GROUP BY d.doctor_id
+        LIMIT 1;
+      `, [zynq_user_id]);
+  
+    } catch (err) {
+      console.error(`❌ Error fetching doctor ${zynq_user_id} embeddings:`, err);
+      throw err;
+    }
+  };
+  export const getDoctorEmbeddingTextAllV2 = async () => {
+    try {
+      return await db.query(`
+        SELECT 
+          d.doctor_id,
+          d.name AS doctor_name,
+          GROUP_CONCAT(DISTINCT t.name SEPARATOR ', ') AS treatments,
+          GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS concerns,
+          GROUP_CONCAT(DISTINCT st.name SEPARATOR ', ') AS skin_types,
+          GROUP_CONCAT(DISTINCT de.degree SEPARATOR ', ') AS educations
+        FROM tbl_doctors d
+        LEFT JOIN tbl_doctor_treatments dt ON d.doctor_id = dt.doctor_id
+        LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+        LEFT JOIN tbl_treatment_concerns tc ON t.treatment_id = tc.treatment_id
+        LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+        LEFT JOIN tbl_doctor_skin_types dst ON d.doctor_id = dst.doctor_id
+        LEFT JOIN tbl_skin_types st ON dst.skin_type_id = st.skin_type_id
+        LEFT JOIN tbl_doctor_certification dc ON d.doctor_id = dc.doctor_id
+        LEFT JOIN tbl_certification_type ct ON dc.certification_type_id = ct.certification_type_id
+        LEFT JOIN tbl_doctor_educations de ON d.doctor_id = de.doctor_id
+        GROUP BY d.doctor_id;
+      `);
+    } catch (err) {
+      console.error(`❌ Error fetching all doctor embeddings:`, err);
+      throw err;
+    }
+  };
+  
+  
+
 export const getClinicEmbeddingTextById = async (zynq_user_id) => {
     try {
         if (!zynq_user_id) throw new Error("zynq_user_id ID is required");
@@ -3288,7 +3352,115 @@ export const getClinicEmbeddingTextById = async (zynq_user_id) => {
     }
 };
 
+export const getClinicEmbeddingTextByIdV2 = async (zynq_user_id) => {
+    try {
+      if (!zynq_user_id) throw new Error("zynq_user_id is required");
+  
+      const query = `
+        SELECT 
+          c.clinic_id,
+          c.clinic_name,
+          c.address,
+          treat.treatments_text,
+          skin.skin_types_text
+        FROM tbl_clinics c
+        
+        -- Treatments
+        LEFT JOIN (
+          SELECT 
+            ct.clinic_id,
+            GROUP_CONCAT(DISTINCT JSON_OBJECT(
+              'treatment_name', t.name,
+              'benefits_en', t.benefits_en
+            )) AS treatments_text
+          FROM tbl_clinic_treatments ct
+          JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
+          GROUP BY ct.clinic_id
+        ) treat ON c.clinic_id = treat.clinic_id
+  
+        -- Skin Types
+        LEFT JOIN (
+          SELECT 
+            cst.clinic_id,
+            GROUP_CONCAT(DISTINCT JSON_OBJECT(
+              'skin_type_name', st.name,
+              'english', st.English
+            )) AS skin_types_text
+          FROM tbl_clinic_skin_types cst
+          JOIN tbl_skin_types st ON cst.skin_type_id = st.skin_type_id
+          GROUP BY cst.clinic_id
+        ) skin ON c.clinic_id = skin.clinic_id
+  
+        WHERE c.zynq_user_id = ?
+        LIMIT 1;
+      `;
+  
+      return await db.query(query, [zynq_user_id]);
+    } catch (err) {
+      console.error(`❌ Error fetching clinic ${zynq_user_id} data:`, err);
+      throw err;
+    }
+  };
+export const getClinicEmbeddingTextByAllV2 = async () => {
+    try {
+ 
+      const query = `
+        SELECT 
+          c.clinic_id,
+          c.clinic_name,
+          c.address
+        FROM tbl_clinics c
+        WHERE c.profile_status = 'VERIFIED'
+      `;
+  
+      return await db.query(query);
+    } catch (err) {
+      console.error(`❌ Error fetching clinic data:`, err);
+      throw err;
+    }
+  };
+  
+
 export const getTreatmentEmbeddingsText = async () => {
+    try {
+        return await db.query(`
+      SELECT 
+        t.treatment_id,
+        CONCAT(
+          'Treatment Name: ', IFNULL(t.name, ''),
+          ' / ', IFNULL(t.swedish, ''),
+          ', Classification: ', IFNULL(t.classification_type, ''),
+          ', Benefits EN: ', IFNULL(t.benefits_en, ''),
+          ', Benefits SV: ', IFNULL(t.benefits_sv, ''),
+          ', Description EN: ', IFNULL(t.description_en, ''),
+          ', Description SV: ', IFNULL(t.description_sv, ''),
+          '; Concerns: ',
+          IFNULL(
+            GROUP_CONCAT(
+              DISTINCT CONCAT(
+                c.name,
+                ' [EN: ', IFNULL(tc.indications_en, ''),
+                ', SV: ', IFNULL(tc.indications_sv, ''),
+                ', Likewise: ', IFNULL(tc.likewise_terms, ''),
+                ']'
+              ) SEPARATOR '; '
+            ), 'None'
+          )
+        ) AS embedding_text
+      FROM tbl_treatments t
+      LEFT JOIN tbl_treatment_concerns tc ON t.treatment_id = tc.treatment_id
+      LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+      GROUP BY t.treatment_id
+;
+    `,);
+
+    } catch (err) {
+        console.error(`❌ Error fetching treatments embeddings:`, err.message);
+        console.error(err); // full stack for debugging
+        throw err;
+    }
+};
+export const getTreatmentEmbeddingsText2 = async () => {
     try {
         return await db.query(`
       SELECT 

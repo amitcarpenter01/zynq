@@ -183,7 +183,7 @@ const getNotificationContent = (notification_type, full_name) => {
 // ============================================================================
 
 if (!admin.apps.length) {
-    const serviceAccountPath = path.resolve(__dirname, `../../${process.env.FIREBASE_SERVICE_ACCOUNT}`);
+    const serviceAccountPath = path.resolve(__dirname, `../../${process.env.FIREBASE_SERVICE_ACCOUNT}`);    
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
 
     admin.initializeApp({
