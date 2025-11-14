@@ -242,7 +242,6 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
     const { language = 'en' } = req.user;
     const clinics = await apiModels.getSingleClinicForUser(clinic_id);
     if (!clinics || clinics.length === 0) return handleSuccess(res, 200, language || 'en', "CLINIC_FETCHED_SUCCESSFULLY", clinics);
-console.log("clinics =>", clinics);
 
     const clinicIds = clinics.map(c => c.clinic_id);
     const images = await clinicModels.getClinicImages(clinic_id);
