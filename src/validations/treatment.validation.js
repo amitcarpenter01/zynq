@@ -54,7 +54,7 @@ export const addEditTreatmentSchema = joi.object({
   treatment_id: stringValidation.optional(),
   name: stringValidation,
   // swedish: stringValidation,
-  classification_type: stringValidation.valid('Medical', 'Non Medical'),
+  classification_type: stringValidation.valid('Medical', 'Non-Medical'),
   benefits_en: stringValidation,
   // benefits_sv: stringValidation,
   description_en: stringValidation,
