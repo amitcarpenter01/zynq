@@ -21,21 +21,9 @@ import { translator } from "../../utils/misc.util.js";
  */
 export function isGibberishText(text = "") {
     if (!text) return true;
-  
+    
     const clean = text.trim().toLowerCase();
-  
-    // 🚫 Stop if starts with special char, number, or hyphen
-    if (/^[^a-z\u00C0-\u017F]/i.test(clean)) return true;
-  
-    // Allow short partial searches like “ph”, “bo”, “la”
-    if (clean.length <= 3) return false;
-  
-    // ✅ Keep extended Latin letters (supports accents like é, ö, å)
-    const lettersOnly = clean.replace(/[^a-z\u00C0-\u017F\s]/gi, "");
-    if (!lettersOnly) return true;
-  
-    const words = lettersOnly.split(/\s+/).filter(Boolean);
-    if (words.length === 0) return true;
+    if (!clean) return true;
   
     // ✅ Predefined whitelist (brand, clinic, treatment, device names)
     const whitelist = [
@@ -45,14 +33,27 @@ export function isGibberishText(text = "") {
       "cynosure", "ipl", "laser", "botox", "fillers", "clinic"
     ];
   
-    if (whitelist.some(w => clean.includes(w))) return false; // ✅ skip known valid terms
+    if (whitelist.some(w => clean.includes(w))) return false;
   
-    // Patterns for nonsense detection
-    const gibberishPattern = /(.)\1{2,}|[zxq]{3,}|[bcdfghjklmnpqrstvwxyz]{6,}|[aeiou]{5,}/i;
-    const repeatedPattern = /^(.{2,4})\1{1,}$/i;
-    const alphanumericJunk = /[a-z\u00C0-\u017F]+\d+|\d+[a-z\u00C0-\u017F]+/i;
+    // 🚫 Immediate rejection for obvious garbage
+    // Mixed alphanumeric with special chars
+    if (/[a-z]+\d+[^a-z\d]+|[^a-z\d]+\d+[a-z]+|\d+[a-z]+[^a-z\d]+/i.test(clean)) return true;
+    
+    // Excessive special characters
+    if ((clean.match(/[^a-z\d\s]/gi) || []).length > clean.length * 0.3) return true;
+    
+    // Multiple words starting with invalid characters
+    const words = clean.split(/\s+/).filter(Boolean);
+    const invalidStartWords = words.filter(word => 
+      /^[^a-z\u00C0-\u017F]/.test(word)
+    ).length;
+    
+    if (invalidStartWords / words.length > 0.5) return true;
   
-    // ✅ Allow common European clusters (e.g., “strom”, “berg”, “lund”)
+    // Allow short searches
+    if (clean.length <= 3) return false;
+  
+    // ✅ Allow common European clusters
     const allowedClusters = [
       "strom", "ström", "berg", "holm", "lund", "wall", "borg", "quist", "sson", "skov"
     ];
@@ -60,31 +61,82 @@ export function isGibberishText(text = "") {
     let gibberishCount = 0;
   
     for (const word of words) {
-      if (word.length <= 3) continue;
+      if (word.length <= 2) continue;
   
-      // skip if allowed cluster or known pattern
-      if (
-        allowedClusters.some(cluster => word.includes(cluster)) ||
-        whitelist.includes(word)
-      )
-        continue;
+      const lettersOnly = word.replace(/[^a-z\u00C0-\u017F]/gi, "");
+      
+      // Skip if word contains allowed clusters
+      if (allowedClusters.some(cluster => lettersOnly.includes(cluster))) continue;
+      
+      // Skip if in whitelist
+      if (whitelist.includes(lettersOnly)) continue;
   
-      const vowels = (word.match(/[aeiou\u00C0-\u017F]/gi) || []).length;
-      const vowelRatio = vowels / (word.length || 1);
-  
-      if (
-        gibberishPattern.test(word) ||
-        repeatedPattern.test(word) ||
-        alphanumericJunk.test(word) ||
-        vowelRatio < 0.15 ||
-        vowelRatio > 0.9
-      ) {
+      // 🔥 NEW: Advanced gibberish detection
+      if (isGibberishWord(lettersOnly)) {
         gibberishCount++;
       }
     }
   
-    const ratio = gibberishCount / words.length;
+    const ratio = words.length > 0 ? gibberishCount / words.length : 1;
     return ratio > 0.4;
+  }
+  
+  // 🔥 NEW: Specialized function for word-level gibberish detection
+  function isGibberishWord(word) {
+    if (word.length <= 2) return false;
+    
+    const vowels = 'aeiouáéíóúàèìòùäëïöüâêîôû';
+    const vowelCount = (word.match(new RegExp(`[${vowels}]`, 'gi')) || []).length;
+    const consonantCount = word.length - vowelCount;
+    const vowelRatio = vowelCount / word.length;
+  
+    // 🚫 Very low or very high vowel ratio
+    if (vowelRatio < 0.1 || vowelRatio > 0.9) return true;
+  
+    // 🚫 Consecutive consonant sequences (like "asdkjashd" has "sdkj")
+    if (/([bcdfghjklmnpqrstvwxyz]){4,}/i.test(word)) return true;
+  
+    // 🚫 Repeated character patterns
+    if (/(.)\1{2,}/.test(word)) return true; // AAA, BBB, etc.
+    
+    // 🚫 Alternating vowel-consonant nonsense (like "asdkja")
+    if (word.length >= 6) {
+      const pattern = word.split('').map(char => 
+        vowels.includes(char.toLowerCase()) ? 'V' : 'C'
+      ).join('');
+      
+      // Patterns like CVCVCV (too regular for long words) or CCCVCCC
+      if (pattern.includes('CCCC') || pattern.includes('VVVV')) return true;
+      
+      // Too many consonants overall for word length
+      if (consonantCount > word.length * 0.8) return true;
+    }
+  
+    // 🚫 Uncommon letter combinations
+    const uncommonPatterns = [
+      /[zxq]{2,}/i,      // Multiple rare letters
+      /[jqxz][jqxz]/i,   // Pairs of uncommon letters
+      /^[bcdfghjklmnpqrstvwxyz]{3,}/i, // Starts with 3+ consonants
+      /[bcdfghjklmnpqrstvwxyz]{3,}$/i  // Ends with 3+ consonants
+    ];
+    
+    if (uncommonPatterns.some(pattern => pattern.test(word))) return true;
+  
+    // 🚫 Check for keyboard smashing patterns
+    const commonBigrams = ['th', 'he', 'in', 'er', 'an', 're', 'es', 'on', 'st', 'nt', 'en', 'at', 'ed', 'nd', 'to', 'or', 'ea', 'ti', 'ar', 'te', 'ng', 'al', 'it', 'as', 'is', 'ha', 'et', 'se', 'ou', 'of'];
+    const bigrams = [];
+    for (let i = 0; i < word.length - 1; i++) {
+      bigrams.push(word.substr(i, 2));
+    }
+    
+    const commonBigramCount = bigrams.filter(bigram => 
+      commonBigrams.includes(bigram)
+    ).length;
+    
+    // If very few common bigrams, likely gibberish
+    if (commonBigramCount / bigrams.length < 0.2 && word.length > 5) return true;
+  
+    return false;
   }
   
   
@@ -525,7 +577,7 @@ export const search_home_entities = asyncHandler(async (req, res) => {
         }
         // 🧠 Detect if the translated text is gibberish
         const gibberish = isGibberishText(normalized_search);
-console.log("gibberish", gibberish);
+
         if (gibberish) {
             return handleError(res, 200, language, "Invalid Search", []);
         }
@@ -539,10 +591,11 @@ console.log("gibberish", gibberish);
 
         // 2️⃣ Run all searches (as you already do)
         const [doctors, clinics, products, treatments] = await Promise.all([
-            userModels.getDoctorsByFirstNameSearchOnly({ search, page, limit }),
-            userModels.getClinicsByNameSearchOnly({ search, page, limit }),
-            userModels.getProductsByNameSearchOnly({ search, page, limit }),
-            userModels.getTreatmentsBySearchOnly({ search, language, page, limit })
+            
+            userModels.getDoctorsByFirstNameSearchOnly({   search: normalized_search, page, limit }),
+            userModels.getClinicsByNameSearchOnly({ search: normalized_search, page, limit }),
+            userModels.getProductsByNameSearchOnly({ search: normalized_search, page, limit }),
+            userModels.getTreatmentsBySearchOnly({ search: normalized_search, language, page, limit, actualSearch: search })
         ]);
 
      

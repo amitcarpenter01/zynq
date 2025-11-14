@@ -233,12 +233,11 @@ export const generateClinicEmbedding = async (req, res) => {
 export const generateTreatmentEmbeddings2 = async (req, res) => {
   try {
 
-    const rows = await dbOperations.getData('tbl_treatments_copy', '')
+    const rows = await dbOperations.getData('tbl_treatments', '')
 
     if (!rows || rows.length === 0) {
       return handleError(res, 404, 'en', "No Data found");
     }
-
 
     for (const row of rows) {
       const combinedText = `
@@ -247,8 +246,6 @@ export const generateTreatmentEmbeddings2 = async (req, res) => {
       ${row.description_en || 'This treatment helps rejuvenate and enhance the skin.'}
       It commonly uses devices like ${row.device_name || 'advanced medical-grade technology'}.
       `;
-
-    console.log(combinedText);
 
     if (!combinedText.trim()) continue;
 
@@ -263,7 +260,7 @@ export const generateTreatmentEmbeddings2 = async (req, res) => {
 
 
         await dbOperations.updateData(
-          "tbl_treatments_copy",
+          "tbl_treatments",
           { embeddings: vectorJson },
           `WHERE treatment_id = '${row.treatment_id}'`
         );
@@ -278,6 +275,53 @@ export const generateTreatmentEmbeddings2 = async (req, res) => {
   } catch (err) {
     console.error("Error generating embeddings:", err);
     return handleError(res, 500, "en", "Internal Server Error");
+  }
+};
+export const generateTreatmentEmbeddingsV2 = async (id) => {
+  try {
+
+    const rows = await dbOperations.getData('tbl_treatments', `where treatment_id = '${id}'`);
+
+    if (!rows || rows.length === 0) {
+      return handleError(res, 404, 'en', "No Data found");
+    }
+
+    for (const row of rows) {
+      const combinedText = `
+      ${row.name || ''} is a treatment designed to address ${row.concern_en || 'various skin concerns'}.
+      It offers benefits such as ${row.benefits_en || 'improving overall skin quality'}.
+      ${row.description_en || 'This treatment helps rejuvenate and enhance the skin.'}
+      It commonly uses devices like ${row.device_name || 'advanced medical-grade technology'}.
+      `;
+
+    if (!combinedText.trim()) continue;
+
+      try {
+        const response = await axios.post("http://localhost:11434/api/embeddings", {
+          model: "nomic-embed-text",
+          prompt: combinedText
+        });
+
+        const vector = response.data.embedding;
+        const vectorJson = JSON.stringify(vector);
+
+
+        await dbOperations.updateData(
+          "tbl_treatments",
+          { embeddings: vectorJson },
+          `WHERE treatment_id = '${row.treatment_id}'`
+        );
+
+        console.log(`✅ Embedding updated for Treatment ID: ${row.treatment_id}`);
+      } catch (embedErr) {
+        console.error(`❌ Error generating embedding for ID ${row.treatment_id}:`, embedErr.message);
+      }
+    }
+
+    return handleSuccess(res, 200, "en", "All Treatment embeddings updated successfully");
+  } catch (err) {
+    console.error("Error generating embeddings:", err);
+    // return handleError(res, 500, "en", "Internal Server Error");
   }
 };
 
@@ -299,7 +343,7 @@ export const getTreatmentsSuggestions = async (req, res) => {
 
     // 🔹 Step 2: Fetch all treatments with embeddings
     const rows = await dbOperations.getData(
-      "tbl_treatments_copy",
+      "tbl_treatments",
       "WHERE embeddings IS NOT NULL"
     );
     if (!rows?.length) return handleError(res, 404, "No treatments found");
@@ -514,18 +558,7 @@ export const generateEmbeddingsForRows = async (rows, tableName, idField) => {
   }
 };
 
-export const generateTreatmentEmbeddingsV2 = async (id) => {
-  try {
-    const rows = await apiModels.getTreatmentEmbeddingTextById(id);
-    if (!rows || !rows.length) return handleError(res, 404, 'en', "No Data found");
 
-    await generateEmbeddingsForRows(rows, "tbl_treatments", "treatment_id");
-    // return handleSuccess(res, 200, "en", "All treatment embeddings updated successfully");
-  } catch (err) {
-    console.error("Error generating embeddings:", err);
-    // return handleError(res, 500, "en", "Internal Server Error");
-  }
-};
 
 export const generateProductsEmbeddingsV2 = async (id) => {
   try {
@@ -570,8 +603,8 @@ export const generateClinicsEmbeddingsV2 = async (id) => {
 
 export const generateTreatmentDevices = async (req, res) => {
   try {
-    // 1️⃣ Fetch all treatments from tbl_treatments_copy
-    const treatments = await dbOperations.getData("tbl_treatments_copy", "");
+    // 1️⃣ Fetch all treatments from tbl_treatments
+    const treatments = await dbOperations.getData("tbl_treatments", "");
 
     if (!treatments || treatments.length === 0) {
       return res.status(404).json({ success: false, message: "No treatments found" });

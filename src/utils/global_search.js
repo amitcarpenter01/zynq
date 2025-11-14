@@ -33,63 +33,85 @@ const levenshteinDistance = (a, b) => {
     const maxLen = Math.max(a.length, b.length);
     return 1 - dist / maxLen;
   };
-export const getTreatmentsVectorResult = async (rows, search, threshold = 0.4, topN = null) => {
+  export const getTreatmentsVectorResult = async (
+    rows,
+    search,
+    threshold = 0.4,
+    topN = null,
+    language = 'en',
+    actualSearch
+  ) => {
     if (!search?.trim()) return rows;
-    
+  
     const normalized_search = search;
+    
     // 1️⃣ Get embedding for the search term
     const response = await axios.post("http://localhost:11434/api/embeddings", {
-        model: "nomic-embed-text",
-        prompt: normalized_search,
+      model: "nomic-embed-text",
+      prompt: normalized_search,
     });
-
+  
     const queryEmbedding = response.data.embedding;
-
+  
     // 2️⃣ Compute similarity for each row
-    const results = [];
-
+    let results = [];
+  
     for (const row of rows) {
-        if (!row.embeddings) continue;
-
-        const dbEmbedding = Array.isArray(row.embeddings)
-            ? row.embeddings
-            : JSON.parse(row.embeddings);
-
-    // 🧠 Combined text for keyword relevance (used for boost)
-        const combinedText = `
-      Treatment Name: ${row.name || ""}
-      Benefits: ${row.benefits_en || ""}
-      Description: ${row.description_en || ""}
-      Concern: ${row.concern_en || ""}
-      Devices Used: ${row.device_name || ""}
-    `.toLowerCase();
-
-        const score = cosineSimilarity(queryEmbedding, dbEmbedding);
-        // 🔹 Keyword match boosting (adds small score if keyword found)
-        const keywordBoost =
-            combinedText.includes(normalized_search.toLowerCase()) ? 0.15 : 0;
-
-        const hybridScore = score + keywordBoost;
-        if (hybridScore >= threshold) {
-            const { embeddings, ...rest } = row; // exclude embeddings
-            results.push({ ...rest, score: hybridScore });
-        }
+      if (!row.embeddings) continue;
+  
+      const dbEmbedding = Array.isArray(row.embeddings)
+        ? row.embeddings
+        : JSON.parse(row.embeddings);
+  
+      // 🧠 Combined text for keyword relevance (used for boost)
+      const combinedText = `
+        Treatment Name: ${row.name || ""}
+        Swedish: ${row.swedish || ""}
+        Benefits: ${row.benefits_en || ""}
+        Benefits Swedish: ${row.benefits_sv || ""}
+        Description: ${row.description_en || ""}
+        Concern: ${row.concern_en || ""}
+        Devices Used: ${row.device_name || ""}
+      `.toLowerCase();
+  
+      const score = cosineSimilarity(queryEmbedding, dbEmbedding);
+      const keywordBoost =
+        combinedText.includes(actualSearch.toLowerCase()) ? 0.15 : 0;
+  
+      const hybridScore = score + keywordBoost;
+  
+      if (hybridScore >= threshold) {
+        const { embeddings, ...rest } = row;
+        results.push({ ...rest, score: hybridScore });
+      }
     }
-
+  
     // 3️⃣ Sort descending by similarity
     results.sort((a, b) => b.score - a.score);
-
+  
+    results = results.map((result) => ({
+      ...result,
+      name: language === "en" ? result.name : result.swedish,
+      benefits: language === "en" ? result.benefits_en : result.benefits_sv,
+      description: language === "en" ? result.description_en : result.description_sv,
+      devices: result.device_name,
+      classification_type: result.classification_type,
+      treatment_id: result.treatment_id,
+      score: result.score,
+    }));
+  
     // 4️⃣ Return all above threshold or topN if specified
     if (topN && topN > 0) {
-        return results.slice(0, topN);
+      return results.slice(0, topN);
     }
     return results;
-};
+  };
+  
 export const getDoctorsVectorResult = async (rows, search, threshold = 0.4, topN = null) => {
     if (!search?.trim()) return rows;
-  
+ 
     const normalized_search = search.toLowerCase().replace(/^dr\.?\s*/, "").trim();
-  
+   
     // 1️⃣ Get embedding for the search term
     const response = await axios.post("http://localhost:11434/api/embeddings", {
       model: "nomic-embed-text",
@@ -98,7 +120,7 @@ export const getDoctorsVectorResult = async (rows, search, threshold = 0.4, topN
     const queryEmbedding = response.data.embedding;
   
     // 2️⃣ Compute similarity for each row
-    const results = [];
+    let results = [];
   
     for (const row of rows) {
       if (!row.embeddings) continue;
