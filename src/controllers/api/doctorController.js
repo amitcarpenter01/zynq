@@ -26,121 +26,43 @@ export function isGibberishText(text = "") {
     const clean = text.trim().toLowerCase();
     if (!clean) return true;
 
-    // ✅ Predefined whitelist (brand, clinic, treatment, device names)
+    // Relaxed whitelist
     const whitelist = [
-        "wallstrom", "wallström", "asclepius", "quadrostar", "fotona", "lumenis",
-        "cutera", "alma", "hydrafacial", "restylane", "juvederm", "belotero",
-        "dermalux", "emsculpt", "morpheus", "ultherapy", "thermage", "syneron",
-        "cynosure", "ipl", "laser", "botox", "fillers", "clinic"
+        "wallstrom", "wallström", "clinic", "laser", "botox", "fillers", "wrinkles",
+        "hollywood", "pigmentation", "acne", "asclepius", "quadrostar", "fotona",
+        "lumenis", "cutera", "alma", "hydrafacial", "restylane", "juvederm", "belotero",
+        "thermage", "ultherapy", "emsculpt", "morpheus", "dermalux", "ipl"
     ];
 
     if (whitelist.some(w => clean.includes(w))) return false;
 
-    // 🚫 Immediate rejection for obvious garbage
-    // Mixed alphanumeric with special chars
-    if (/[a-z]+\d+[^a-z\d]+|[^a-z\d]+\d+[a-z]+|\d+[a-z]+[^a-z\d]+/i.test(clean)) return true;
-
-    // Excessive special characters
-    if ((clean.match(/[^a-z\d\s]/gi) || []).length > clean.length * 0.3) return true;
-
-    // Multiple words starting with invalid characters
-    const words = clean.split(/\s+/).filter(Boolean);
-    const invalidStartWords = words.filter(word =>
-        /^[^a-z\u00C0-\u017F]/.test(word)
-    ).length;
-
-    if (invalidStartWords / words.length > 0.5) return true;
-
-    // Allow short searches
+    // Allow short searches always
     if (clean.length <= 3) return false;
 
-    // ✅ Allow common European clusters
-    const allowedClusters = [
-        "strom", "ström", "berg", "holm", "lund", "wall", "borg", "quist", "sson", "skov"
-    ];
+    // Allow Swedish/European letters
+    const lettersOnly = clean.replace(/[^a-z\u00C0-\u017F\s]/gi, "");
 
-    let gibberishCount = 0;
+    // Allow if it has at least 1 vowel (Swedish also ok)
+    const vowels = "aeiouyåäöéèáàüö";
+    const vowelCount = (lettersOnly.match(new RegExp(`[${vowels}]`, "gi")) || []).length;
 
-    for (const word of words) {
-        if (word.length <= 2) continue;
+    if (vowelCount >= 1) return false;
 
-        const lettersOnly = word.replace(/[^a-z\u00C0-\u017F]/gi, "");
-
-        // Skip if word contains allowed clusters
-        if (allowedClusters.some(cluster => lettersOnly.includes(cluster))) continue;
-
-        // Skip if in whitelist
-        if (whitelist.includes(lettersOnly)) continue;
-
-        // 🔥 NEW: Advanced gibberish detection
-        if (isGibberishWord(lettersOnly)) {
-            gibberishCount++;
-        }
+    // If no vowels AND contains weird characters — likely gibberish
+    if (vowelCount === 0 && /[^a-z\u00C0-\u017F\s]/i.test(clean)) {
+        return true;
     }
 
-    const ratio = words.length > 0 ? gibberishCount / words.length : 1;
-    return ratio > 0.4;
-}
+    // Reject if mostly symbols
+    const symbolCount = (clean.match(/[^a-z\u00C0-\u017F\d\s]/gi) || []).length;
+    if (symbolCount > clean.length * 0.4) return true;
 
-// 🔥 NEW: Specialized function for word-level gibberish detection
-function isGibberishWord(word) {
-    if (word.length <= 2) return false;
+    // Reject obvious keyboard smash (but very relaxed)
+    if (/^[zxqwv]{5,}$/i.test(lettersOnly)) return true;
 
-    const vowels = 'aeiouáéíóúàèìòùäëïöüâêîôû';
-    const vowelCount = (word.match(new RegExp(`[${vowels}]`, 'gi')) || []).length;
-    const consonantCount = word.length - vowelCount;
-    const vowelRatio = vowelCount / word.length;
-
-    // 🚫 Very low or very high vowel ratio
-    if (vowelRatio < 0.1 || vowelRatio > 0.9) return true;
-
-    // 🚫 Consecutive consonant sequences (like "asdkjashd" has "sdkj")
-    if (/([bcdfghjklmnpqrstvwxyz]){4,}/i.test(word)) return true;
-
-    // 🚫 Repeated character patterns
-    if (/(.)\1{2,}/.test(word)) return true; // AAA, BBB, etc.
-
-    // 🚫 Alternating vowel-consonant nonsense (like "asdkja")
-    if (word.length >= 6) {
-        const pattern = word.split('').map(char =>
-            vowels.includes(char.toLowerCase()) ? 'V' : 'C'
-        ).join('');
-
-        // Patterns like CVCVCV (too regular for long words) or CCCVCCC
-        if (pattern.includes('CCCC') || pattern.includes('VVVV')) return true;
-
-        // Too many consonants overall for word length
-        if (consonantCount > word.length * 0.8) return true;
-    }
-
-    // 🚫 Uncommon letter combinations
-    const uncommonPatterns = [
-        /[zxq]{2,}/i,      // Multiple rare letters
-        /[jqxz][jqxz]/i,   // Pairs of uncommon letters
-        /^[bcdfghjklmnpqrstvwxyz]{3,}/i, // Starts with 3+ consonants
-        /[bcdfghjklmnpqrstvwxyz]{3,}$/i  // Ends with 3+ consonants
-    ];
-
-    if (uncommonPatterns.some(pattern => pattern.test(word))) return true;
-
-    // 🚫 Check for keyboard smashing patterns
-    const commonBigrams = ['th', 'he', 'in', 'er', 'an', 're', 'es', 'on', 'st', 'nt', 'en', 'at', 'ed', 'nd', 'to', 'or', 'ea', 'ti', 'ar', 'te', 'ng', 'al', 'it', 'as', 'is', 'ha', 'et', 'se', 'ou', 'of'];
-    const bigrams = [];
-    for (let i = 0; i < word.length - 1; i++) {
-        bigrams.push(word.substr(i, 2));
-    }
-
-    const commonBigramCount = bigrams.filter(bigram =>
-        commonBigrams.includes(bigram)
-    ).length;
-
-    // If very few common bigrams, likely gibberish
-    if (commonBigramCount / bigrams.length < 0.2 && word.length > 5) return true;
-
+    // Otherwise treat as valid
     return false;
 }
-
-
 
 
 
@@ -798,7 +720,7 @@ async function detectSearchIntent(searchQuery) {
 
     try {
         const parsed = JSON.parse(content);
-        console.log("✅ Parsed successfully:", parsed);
+
 
         if (
             parsed &&

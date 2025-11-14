@@ -2363,7 +2363,7 @@ export const getTreatmentsBySearchOnly = async ({
 
         // 1️⃣ Fetch all treatments that have embeddings
         let results = await db.query(`
-      SELECT treatment_id,name,swedish ,benefits_sv ,device_name,classification_type,benefits_en,description_en,concern_en,embeddings
+      SELECT treatment_id,name,swedish ,benefits_sv ,device_name,classification_type,benefits_en,description_en,concern_en,embeddings,name_embeddings
       FROM tbl_treatments
       WHERE is_deleted = 0 AND approval_status = 'APPROVED' AND embeddings IS NOT NULL
     `);
