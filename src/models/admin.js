@@ -2176,7 +2176,7 @@ export const deleteZynqUserSubTreatmentsModel = async (sub_treatment_id, zynq_us
             `
             UPDATE tbl_sub_treatments SET
             is_deleted = 1
-            WHERE tbl_sub_treatments = ? AND created_by_zynq_user_id = ?`,
+            WHERE sub_treatment_id = ? AND created_by_zynq_user_id = ?`,
             [sub_treatment_id, zynq_user_id]
         );
     } catch (error) {

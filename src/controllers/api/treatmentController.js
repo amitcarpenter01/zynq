@@ -134,6 +134,8 @@ export const addEditSubtreatment = asyncHandler(async (req, res) => {
 
     const dbData = { ...body };
 
+    dbData.swedish = await googleTranslator(dbData.name, "sv");
+
     // 🧩 Creator metadata
     if (isAdmin) {
         dbData.is_admin_created = true;
@@ -321,7 +323,7 @@ export const getAllTreatmentById = asyncHandler(async (req, res) => {
                 );
         })
     );
-    return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
+    return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments[0]);
 });
 
 export const addEditConcern = asyncHandler(async (req, res) => {
