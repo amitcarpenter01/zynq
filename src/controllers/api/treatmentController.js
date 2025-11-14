@@ -2,9 +2,10 @@ import { getAllConcerns, addConcernModel, addSubTreatmentsModel, addTreatmentCon
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
-import { isEmpty } from "../../utils/user_helper.js";
+import { googleTranslator, isEmpty } from "../../utils/user_helper.js";
 import { v4 as uuidv4 } from "uuid";
 import { generateTreatmentEmbeddingsV2 } from "./embeddingsController.js";
+import db from "../../config/db.js";
 
 export const getTreatmentsByConcern = asyncHandler(async (req, res) => {
     const { concern_id } = req.params;
@@ -22,6 +23,9 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
     const isAdmin = role === "ADMIN";
 
     const dbData = { ...body };
+    dbData.swedish = await googleTranslator(dbData.name, "sv");
+    dbData.benefits_sv = await googleTranslator(dbData.benefits_en, "sv");
+    dbData.description_sv = await googleTranslator(dbData.description_en, "sv");
 
     // 🧩 Creator metadata
     if (isAdmin) {
@@ -33,6 +37,7 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
     }
 
     if (Array.isArray(dbData.device_name)) dbData.device_name = dbData.device_name.join(',');
+    if (Array.isArray(dbData.like_wise_terms)) dbData.like_wise_terms = dbData.like_wise_terms.join(',');
 
     // ✳️ EDIT FLOW
     if (treatment_id) {
@@ -41,10 +46,13 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             const [existing] = await checkExistingTreatmentModel(treatment_id, user_id);
             if (!existing) return handleError(res, 403, language, "NOT_AUTHORIZED_TO_EDIT_TREATMENT");
         }
+
+
         const updateTreatment = {
             name: dbData.name,
             swedish: dbData.swedish,
             device_name: dbData.device_name,
+            like_wise_terms: dbData.like_wise_terms,
             classification_type: dbData.classification_type,
             benefits_en: dbData.benefits_en,
             benefits_sv: dbData.benefits_sv,
@@ -74,6 +82,7 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             name: dbData.name,
             swedish: dbData.swedish,
             device_name: dbData.device_name,
+            like_wise_terms: dbData.like_wise_terms,
             classification_type: dbData.classification_type,
             benefits_en: dbData.benefits_en,
             benefits_sv: dbData.benefits_sv,
@@ -96,8 +105,8 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
         ? "TREATMENT_UPDATED_SUCCESSFULLY"
         : "TREATMENT_ADDED_SUCCESSFULLY";
 
+    await generateTreatmentEmbeddingsV2(treatment_id ? treatment_id : dbData.treatment_id)
     handleSuccess(res, 200, language, message, { treatment_id: treatment_id ? treatment_id : dbData.treatment_id });
-    // await generateTreatmentEmbeddingsV2(treatment_id)
 });
 
 export const addEditSubtreatment = asyncHandler(async (req, res) => {
@@ -122,7 +131,7 @@ export const addEditSubtreatment = asyncHandler(async (req, res) => {
     // ✳️ EDIT FLOW
     if (sub_treatment_id) {
         // 🛡️ Non-admin ownership check
-      
+
         const updateSubTreatment = {
             treatment_id: treatment_id,
             name: dbData.name,
@@ -141,7 +150,7 @@ export const addEditSubtreatment = asyncHandler(async (req, res) => {
         const addSubTreatment = {
             treatment_id: treatment_id,
             name: dbData.name,
-            swedish: dbData.swedish, 
+            swedish: dbData.swedish,
             is_admin_created: dbData.is_admin_created,
             approval_status: dbData.approval_status,
         };
@@ -222,7 +231,7 @@ export const get_all_concerns = async (req, res) => {
 
 export const getAllTreatments = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
-    const treatments = await getAllTreatmentsModel();    
+    const treatments = await getAllTreatmentsModel();
     return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
 });
 

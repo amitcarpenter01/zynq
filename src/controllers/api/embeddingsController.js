@@ -318,7 +318,7 @@ export const generateTreatmentEmbeddingsV2 = async (id) => {
       }
     }
 
-    return handleSuccess(res, 200, "en", "All Treatment embeddings updated successfully");
+    // return handleSuccess(res, 200, "en", "All Treatment embeddings updated successfully");
   } catch (err) {
     console.error("Error generating embeddings:", err);
     // return handleError(res, 500, "en", "Internal Server Error");
