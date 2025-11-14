@@ -103,7 +103,7 @@ router.patch('/update-shipment-status', authenticate(['CLINIC', 'SOLO_DOCTOR']),
 router.patch('/product/toggle-hide/:product_id', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(toggleHideProductSchema, "params"), productControllers.toggleHideProduct);
 
 
-router.delete('/treatment/:treatment_id', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(deleteTreatmentSchema, 'params'), deleteTreatment);
-router.delete('/sub_treatment/:sub_treatment_id', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(deleteSubTreatmentSchema, 'params'), deleteSubTreatment);
+router.delete('/treatment/:treatment_id', authenticate(['CLINIC', 'SOLO_DOCTOR', 'DOCTOR']), validate(deleteTreatmentSchema, 'params'), deleteTreatment);
+router.delete('/sub_treatment/:sub_treatment_id', authenticate(['CLINIC', 'SOLO_DOCTOR', 'DOCTOR']), validate(deleteSubTreatmentSchema, 'params'), deleteSubTreatment);
 
 export default router;

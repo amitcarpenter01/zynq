@@ -85,7 +85,7 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
         ]);
 
         if (dbData.concerns.length > 0) await addTreatmentConcernsModel(treatment_id, dbData.concerns);
-        if (dbData.device_name.length > 0) await addTreatmentDeviceNameModel(treatment_id, req.body.device_name);
+        if (dbData.device_name?.length > 0) await addTreatmentDeviceNameModel(treatment_id, req.body.device_name);
     }
 
     // ✳️ CREATE FLOW

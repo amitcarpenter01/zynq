@@ -1902,12 +1902,43 @@ export const getAllTreatmentsModel = async () => {
     }
 };
 
+// export const getTreatmentsByTreatmentId = async (treatment_id) => {
+//     try {
+//         return await db.query(
+//             `SELECT * FROM tbl_treatments WHERE treatment_id = ? AND is_deleted = 0`,
+//             [treatment_id]
+//         );
+//     } catch (error) {
+//         console.error("getTreatmentsByTreatmentId error:", error);
+//         throw error;
+//     }
+// };
+
 export const getTreatmentsByTreatmentId = async (treatment_id) => {
     try {
-        return await db.query(
-            `SELECT * FROM tbl_treatments WHERE treatment_id = ? AND is_deleted = 0`,
+        const result = await db.query(
+            `
+            SELECT 
+                t.*,
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'concern_id', c.concern_id,
+                        'concern_name', c.name
+                    )
+                ) AS concerns
+            FROM tbl_treatments t
+            LEFT JOIN tbl_treatment_concerns tc 
+                ON tc.treatment_id = t.treatment_id
+            LEFT JOIN tbl_concerns c 
+                ON c.concern_id = tc.concern_id
+            WHERE t.treatment_id = ? 
+              AND t.is_deleted = 0
+            GROUP BY t.treatment_id
+            `,
             [treatment_id]
         );
+
+        return result;
     } catch (error) {
         console.error("getTreatmentsByTreatmentId error:", error);
         throw error;
