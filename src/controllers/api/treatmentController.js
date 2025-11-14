@@ -19,26 +19,28 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
     const role = req.user?.role;
     const user_id = req.user?.id;
     const language = req.user?.language || 'en';
-
+    
     const isAdmin = role === "ADMIN";
-
+    
     const dbData = { ...body };
     dbData.swedish = await googleTranslator(dbData.name, "sv");
     dbData.benefits_sv = await googleTranslator(dbData.benefits_en, "sv");
     dbData.description_sv = await googleTranslator(dbData.description_en, "sv");
-
+    
     // 🧩 Creator metadata
     if (isAdmin) {
+        dbData.created_by_zynq_user_id = null;
         dbData.is_admin_created = true;
         dbData.approval_status = "APPROVED";
     } else {
         dbData.created_by_zynq_user_id = user_id;
+        dbData.is_admin_created = false;
         dbData.approval_status = "PENDING";
     }
-
+    
     if (Array.isArray(dbData.device_name)) dbData.device_name = dbData.device_name.join(',');
     if (Array.isArray(dbData.like_wise_terms)) dbData.like_wise_terms = dbData.like_wise_terms.join(',');
-
+    
     // ✳️ EDIT FLOW
     if (treatment_id) {
         // 🛡️ Non-admin ownership check
@@ -61,6 +63,7 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             source: dbData.source,
             is_device: dbData.is_device,
             is_admin_created: dbData.is_admin_created,
+            created_by_zynq_user_id: dbData.created_by_zynq_user_id,
             approval_status: dbData.approval_status,
         };
         // 🧹 Cleanup + reinserts only if editing
@@ -91,9 +94,10 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             source: dbData.source,
             is_device: dbData.is_device,
             is_admin_created: dbData.is_admin_created,
+            created_by_zynq_user_id: dbData.created_by_zynq_user_id,
             approval_status: dbData.approval_status,
         };
-
+        
         // Insert main + related tables together
         await addTreatmentModel(addTreatment);
         if (dbData.concerns.length > 0) await addTreatmentConcernsModel(dbData.treatment_id, dbData.concerns);
@@ -105,7 +109,7 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
         ? "TREATMENT_UPDATED_SUCCESSFULLY"
         : "TREATMENT_ADDED_SUCCESSFULLY";
 
-    await generateTreatmentEmbeddingsV2(treatment_id ? treatment_id : dbData.treatment_id)
+    // await generateTreatmentEmbeddingsV2(treatment_id ? treatment_id : dbData.treatment_id)
     handleSuccess(res, 200, language, message, { treatment_id: treatment_id ? treatment_id : dbData.treatment_id });
 });
 
