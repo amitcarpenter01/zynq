@@ -109,9 +109,9 @@ const levenshteinDistance = (a, b) => {
   
 export const getDoctorsVectorResult = async (rows, search, threshold = 0.4, topN = null) => {
     if (!search?.trim()) return rows;
-  
+ 
     const normalized_search = search.toLowerCase().replace(/^dr\.?\s*/, "").trim();
-  
+   
     // 1️⃣ Get embedding for the search term
     const response = await axios.post("http://localhost:11434/api/embeddings", {
       model: "nomic-embed-text",

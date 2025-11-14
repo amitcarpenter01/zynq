@@ -2183,6 +2183,7 @@ export const getSingleCartByClinicId = async (clinic_id, user_id) => {
 // -------------------------------------Updated Code Okay ------------------------------------------------//
 
 export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null, limit = null }) => {
+  console.log("search", search);
     try {
         if (!search?.trim()) return [];
 
