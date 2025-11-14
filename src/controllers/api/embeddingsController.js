@@ -10,6 +10,14 @@ import axios from 'axios';
 const APP_URL = process.env.APP_URL;
 import { v4 as uuidv4 } from 'uuid';
 import { translator } from "../../utils/misc.util.js";
+
+function cleanTreatmentName(name = "") {
+  return name
+    .replace(/[()]/g, " ")           // remove brackets
+    .replace(/\btreatment\b/gi, " ") // remove the word "treatment"
+    .replace(/\s+/g, " ")            // compress spaces
+    .trim();
+}
 export const generateTreatmentEmbeddings = async (req, res) => {
   try {
 
@@ -232,40 +240,76 @@ export const generateClinicEmbedding = async (req, res) => {
 
 export const generateTreatmentEmbeddings2 = async (req, res) => {
   try {
-
-    const rows = await dbOperations.getData('tbl_treatments', '')
+    const rows = await dbOperations.getData('tbl_treatments', '');
 
     if (!rows || rows.length === 0) {
       return handleError(res, 404, 'en', "No Data found");
     }
 
     for (const row of rows) {
-      const combinedText = `
-      ${row.name || ''} is a treatment designed to address ${row.concern_en || 'various skin concerns'}.
-      It offers benefits such as ${row.benefits_en || 'improving overall skin quality'}.
-      ${row.description_en || 'This treatment helps rejuvenate and enhance the skin.'}
-      It commonly uses devices like ${row.device_name || 'advanced medical-grade technology'}.
-      `;
 
-    if (!combinedText.trim()) continue;
+      // -------------------------------------------------------
+      // 1️⃣ Combined full-text block
+      // -------------------------------------------------------
+      const combinedText = `
+        ${row.name || ''} is a treatment designed to address ${row.concern_en || 'various skin concerns'}.
+        It offers benefits such as ${row.benefits_en || 'improving overall skin quality'}.
+        ${row.description_en || 'This treatment helps rejuvenate and enhance the skin.'}
+        It commonly uses devices like ${row.device_name || 'advanced medical-grade technology'}.
+      `.trim();
+
+      if (!combinedText) continue;
 
       try {
-        const response = await axios.post("http://localhost:11434/api/embeddings", {
-          model: "nomic-embed-text",
-          prompt: combinedText
-        });
+        // -------------------------------------------------------
+        // 🧠 Embedding 1: Full text
+        // -------------------------------------------------------
+        const fullEmbedRes = await axios.post(
+          "http://localhost:11434/api/embeddings",
+          {
+            model: "nomic-embed-text",
+            prompt: combinedText
+          }
+        );
 
-        const vector = response.data.embedding;
-        const vectorJson = JSON.stringify(vector);
+        const fullVectorJson = JSON.stringify(fullEmbedRes.data.embedding);
 
 
+        // -------------------------------------------------------
+        // 🧠 Embedding 2: Name only
+        // -------------------------------------------------------
+        const cleanName = cleanTreatmentName(row.name || "");
+
+        let nameVectorJson = null;
+        
+        if (cleanName.length > 0) {
+          const nameEmbedRes = await axios.post(
+            "http://localhost:11434/api/embeddings",
+            {
+              model: "nomic-embed-text",
+              prompt: cleanName
+            }
+          );
+        
+          nameVectorJson = JSON.stringify(nameEmbedRes.data.embedding);
+        }
+
+        console.log(`Embedding created → name: ${cleanName}, hasNameEmbed: ${!!nameVectorJson}`);
+
+        // -------------------------------------------------------
+        // 💾 Save both embeddings
+        // -------------------------------------------------------
         await dbOperations.updateData(
           "tbl_treatments",
-          { embeddings: vectorJson },
+          {
+            embeddings: fullVectorJson,
+            name_embeddings: nameVectorJson
+          },
           `WHERE treatment_id = '${row.treatment_id}'`
         );
 
-        console.log(`✅ Embedding updated for Treatment ID: ${row.treatment_id}`);
+        console.log(`✅ Updated embeddings for Treatment ID: ${row.treatment_id}`);
+
       } catch (embedErr) {
         console.error(`❌ Error generating embedding for ID ${row.treatment_id}:`, embedErr.message);
       }
@@ -277,53 +321,102 @@ export const generateTreatmentEmbeddings2 = async (req, res) => {
     return handleError(res, 500, "en", "Internal Server Error");
   }
 };
+
 export const generateTreatmentEmbeddingsV2 = async (id) => {
   try {
-
-    const rows = await dbOperations.getData('tbl_treatments', `where treatment_id = '${id}'`);
+    const rows = await dbOperations.getData(
+      "tbl_treatments",
+      `WHERE treatment_id = '${id}'`
+    );
 
     if (!rows || rows.length === 0) {
-      return handleError(res, 404, 'en', "No Data found");
+      return console.log("❌ No data found");
     }
 
     for (const row of rows) {
+      // -------------------------------------------------------
+      // 🧹 CLEANUP HELPER (for name only)
+      // -------------------------------------------------------
+      const clean = (txt = "") => {
+        return txt
+          .replace(/\(.*?\)/g, " ")        // remove text inside ()
+          .replace(/\btreatment\b/gi, " ") // remove the word "treatment"
+          .replace(/[^a-zA-Z0-9\s]/g, " ") // remove non-letters
+          .replace(/\s+/g, " ")            // collapse spaces
+          .trim();
+      };
+
+      // -------------------------------------------------------
+      // 🧠 FULL combined text (your original)
+      // -------------------------------------------------------
       const combinedText = `
-      ${row.name || ''} is a treatment designed to address ${row.concern_en || 'various skin concerns'}.
-      It offers benefits such as ${row.benefits_en || 'improving overall skin quality'}.
-      ${row.description_en || 'This treatment helps rejuvenate and enhance the skin.'}
-      It commonly uses devices like ${row.device_name || 'advanced medical-grade technology'}.
+${row.name || ''} is a treatment designed to address ${row.concern_en || 'various skin concerns'}.
+It offers benefits such as ${row.benefits_en || 'improving overall skin quality'}.
+${row.description_en || 'This treatment helps rejuvenate and enhance the skin.'}
+It commonly uses devices like ${row.device_name || 'advanced medical-grade technology'}.
       `;
 
-    if (!combinedText.trim()) continue;
+      // -------------------------------------------------------
+      // 🧠 NAME-only (cleaned)
+      // -------------------------------------------------------
+      const cleanName = clean(row.name || "");
 
       try {
-        const response = await axios.post("http://localhost:11434/api/embeddings", {
-          model: "nomic-embed-text",
-          prompt: combinedText
-        });
+        // -------------------------------------------------------
+        // 🔵 Embedding 1: Full semantic text
+        // -------------------------------------------------------
+        const fullEmbedRes = await axios.post(
+          "http://localhost:11434/api/embeddings",
+          {
+            model: "nomic-embed-text",
+            prompt: combinedText,
+          }
+        );
 
-        const vector = response.data.embedding;
-        const vectorJson = JSON.stringify(vector);
+        const fullVectorJson = JSON.stringify(fullEmbedRes.data.embedding);
 
+        // -------------------------------------------------------
+        // 🔵 Embedding 2: Name-only cleaned
+        // -------------------------------------------------------
+        let nameVectorJson = null;
+        if (cleanName.length > 0) {
+          const nameEmbedRes = await axios.post(
+            "http://localhost:11434/api/embeddings",
+            {
+              model: "nomic-embed-text",
+              prompt: cleanName,
+            }
+          );
 
+          nameVectorJson = JSON.stringify(nameEmbedRes.data.embedding);
+        }
+
+        // -------------------------------------------------------
+        // 🟢 Update DB with both embeddings
+        // -------------------------------------------------------
         await dbOperations.updateData(
           "tbl_treatments",
-          { embeddings: vectorJson },
+          {
+            embeddings: fullVectorJson,
+            name_embeddings: nameVectorJson,
+          },
           `WHERE treatment_id = '${row.treatment_id}'`
         );
 
-        console.log(`✅ Embedding updated for Treatment ID: ${row.treatment_id}`);
+        console.log(`✅ Embeddings updated for treatment: ${row.name}`);
+
       } catch (embedErr) {
-        console.error(`❌ Error generating embedding for ID ${row.treatment_id}:`, embedErr.message);
+        console.error(`❌ Embedding error for ${row.name}:`, embedErr.message);
       }
     }
 
-    return handleSuccess(res, 200, "en", "All Treatment embeddings updated successfully");
+    console.log("✅ All embeddings updated successfully");
   } catch (err) {
-    console.error("Error generating embeddings:", err);
-    // return handleError(res, 500, "en", "Internal Server Error");
+    console.error("❌ Server error in embedding generator:", err);
   }
 };
+
+
 
 
 export const getTreatmentsSuggestions = async (req, res) => {
