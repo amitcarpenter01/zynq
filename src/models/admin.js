@@ -1902,6 +1902,30 @@ export const getAllTreatmentsModel = async () => {
     }
 };
 
+export const getTreatmentsByTreatmentId = async (treatment_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_treatments WHERE treatment_id = ? AND is_deleted = 0`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("getTreatmentsByTreatmentId error:", error);
+        throw error;
+    }
+};
+
+export const getSubTreatmentsByTreatmentId = async (treatment_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_sub_treatments WHERE treatment_id = ? AND is_deleted = 0`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("getSubTreatmentsByTreatmentId error:", error);
+        throw error;
+    }
+};
+
 export const addTreatmentModel = async (data) => {
     try {
         return await db.query(
