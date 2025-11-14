@@ -1895,7 +1895,7 @@ export const updateProductApprovalStatus = async (product_id, approval_status) =
 
 export const getAllTreatmentsModel = async () => {
     try {
-        return await db.query("SELECT t.*, GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ', ') AS concerns, GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ', ') AS device_names FROM tbl_treatments t LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id LEFT JOIN tbl_treatment_devices d ON d.treatment_id = t.treatment_id WHERE t.is_deleted = 0 GROUP BY t.treatment_id ORDER BY `treatment_id` DESC;");
+        return await db.query("SELECT t.*, GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ', ') AS concerns, GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ', ') AS device_names FROM tbl_treatments t LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id LEFT JOIN tbl_treatment_devices d ON d.treatment_id = t.treatment_id WHERE t.is_deleted = 0 GROUP BY t.treatment_id ORDER BY t.created_at DESC;");
     } catch (error) {
         console.error("getAllTreatmentsModel error:", error);
         throw error;
