@@ -1981,18 +1981,23 @@ export const addSubTreatmentModel = async (data) => {
     }
 };
 
-export const getSubTreatmentModel = async (data) => {
+export const getSubTreatmentModel = async (treatment_id, name) => {
     try {
-        const { treatment_id, name, is_admin_created, approval_status, created_by_zynq_user_id } = data;
-        return await db.query(
-            `SELECT * FROM tbl_sub_treatments WHERE treatment_id = ? AND name = ? AND is_admin_created = ? AND approval_status = ? AND created_by_zynq_user_id = ?`,
-            [treatment_id, name, is_admin_created, approval_status, created_by_zynq_user_id]
+        const [rows] = await db.query(
+            `SELECT * FROM tbl_sub_treatments 
+             WHERE treatment_id = ? 
+               AND name = ? 
+               ORDER BY created_at desc`,
+            [treatment_id, name,]
         );
+
+        return rows; // return only array of results
     } catch (error) {
         console.error("getSubTreatmentModel error:", error);
         throw error;
     }
 };
+
 
 export const updateTreatmentModel = async (treatment_id, data) => {
     try {

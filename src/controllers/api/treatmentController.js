@@ -248,8 +248,9 @@ export const addEditSubtreatment = asyncHandler(async (req, res) => {
         };
 
         const insertResult = await addSubTreatmentModel(addSubTreatment);
-        const [newData] = await getSubTreatmentModel(addSubTreatment)
-        newSubTreatmentId = newData.sub_treatment_id;
+        const newData = await getSubTreatmentModel(treatment_id, dbData.name);
+        console.log("newData", newData)
+        newSubTreatmentId = newData?.sub_treatment_id;
 
         // 👉 Insert mapping if created by non-admin
         if (!isAdmin) {
