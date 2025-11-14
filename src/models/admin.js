@@ -1981,6 +1981,19 @@ export const addSubTreatmentModel = async (data) => {
     }
 };
 
+export const getSubTreatmentModel = async (data) => {
+    try {
+        const { treatment_id, name, is_admin_created, approval_status, created_by_zynq_user_id } = data;
+        return await db.query(
+            `SELECT * FROM tbl_sub_treatments WHERE treatment_id = ? AND name = ? AND is_admin_created = ? AND approval_status = ? AND created_by_zynq_user_id = ?`,
+            [treatment_id, name, is_admin_created, approval_status, created_by_zynq_user_id]
+        );
+    } catch (error) {
+        console.error("getSubTreatmentModel error:", error);
+        throw error;
+    }
+};
+
 export const updateTreatmentModel = async (treatment_id, data) => {
     try {
         return await db.query(
@@ -2001,6 +2014,32 @@ export const updateSubtreatmentModel = async (sub_treatment_id, data) => {
         );
     } catch (error) {
         console.error("updateTreatmentModel error:", error);
+        throw error;
+    }
+};
+
+export const addSubTreatmentUserMap = async (data) => {
+    try {
+        return await db.query(
+            `INSERT INTO tbl_sub_treatment_user_maps SET ?`,
+            [data]
+        );
+    } catch (error) {
+        console.error("addSubTreatmentUserMap error:", error);
+        throw error;
+    }
+};
+
+export const updateSubTreatmentUserMap = async (sub_treatment_id, user_id, data) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_sub_treatment_user_maps 
+             SET ? 
+             WHERE sub_treatment_id = ? AND zynq_user_id = ?`,
+            [data, sub_treatment_id, user_id]
+        );
+    } catch (error) {
+        console.error("updateSubTreatmentUserMap error:", error);
         throw error;
     }
 };
@@ -2141,13 +2180,13 @@ export const deleteTreatmentModel = async (treatment_id) => {
     }
 }
 
-export const deleteSubTreatmentModel = async (sub_treatment_id ) => {
+export const deleteSubTreatmentModel = async (sub_treatment_id) => {
     try {
         return await db.query(
             `UPDATE tbl_sub_treatments 
             SET is_deleted = 1
             WHERE sub_treatment_id  = ?`,
-            [sub_treatment_id ]
+            [sub_treatment_id]
         );
     } catch (error) {
         console.error("deleteSubTreatmentModel error:", error);
@@ -2176,7 +2215,7 @@ export const deleteZynqUserSubTreatmentsModel = async (sub_treatment_id, zynq_us
             `
             UPDATE tbl_sub_treatments SET
             is_deleted = 1
-            WHERE sub_treatment_id = ? AND created_by_zynq_user_id = ?`,
+            WHERE sub_treatment_id LIKE ? AND created_by_zynq_user_id = ?`,
             [sub_treatment_id, zynq_user_id]
         );
     } catch (error) {

@@ -8,7 +8,10 @@ import {
     deleteTreatmentDeviceNameModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel,
     deleteTreatmentModel, deleteZynqUserConcernsModel, deleteZynqUserTreatmentsModel, updateConcernApprovalStatusModel,
     updateConcernModel, updateTreatmentApprovalStatusModel, updateTreatmentModel, updateSubtreatmentModel,
-    deleteSubTreatmentModel, deleteZynqUserSubTreatmentsModel
+    deleteSubTreatmentModel, deleteZynqUserSubTreatmentsModel,
+    updateSubTreatmentUserMap,
+    addSubTreatmentUserMap,
+    getSubTreatmentModel
 } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
@@ -124,16 +127,76 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
     handleSuccess(res, 200, language, message, { treatment_id: treatment_id ? treatment_id : dbData.treatment_id });
 });
 
+// export const addEditSubtreatment = asyncHandler(async (req, res) => {
+//     const { treatment_id, sub_treatment_id, ...body } = req.body;
+//     const role = req.user?.role;
+//     const user_id = req.user?.id;
+//     const language = req.user?.language || 'en';
+
+//     const isAdmin = role === "ADMIN";
+
+//     const dbData = { ...body };
+
+//     dbData.swedish = await googleTranslator(dbData.name, "sv");
+
+//     // 🧩 Creator metadata
+//     if (isAdmin) {
+//         dbData.is_admin_created = true;
+//         dbData.approval_status = "APPROVED";
+//     } else {
+//         dbData.created_by_zynq_user_id = user_id;
+//         dbData.approval_status = "PENDING";
+//     }
+
+//     // ✳️ EDIT FLOW
+//     if (sub_treatment_id) {
+//         // 🛡️ Non-admin ownership check
+
+//         const updateSubTreatment = {
+//             treatment_id: treatment_id,
+//             name: dbData.name,
+//             swedish: dbData.swedish,
+//             is_admin_created: dbData.is_admin_created,
+//             approval_status: dbData.approval_status,
+//         };
+//         // 🧹 Cleanup + reinserts only if editing
+//         await Promise.all([
+//             updateSubtreatmentModel(sub_treatment_id, updateSubTreatment),
+//         ]);
+//     }
+
+//     // ✳️ CREATE FLOW
+//     else {
+//         const addSubTreatment = {
+//             treatment_id: treatment_id,
+//             name: dbData.name,
+//             swedish: dbData.swedish,
+//             is_admin_created: dbData.is_admin_created,
+//             approval_status: dbData.approval_status,
+//         };
+
+//         // Insert main + related tables together
+//         await addSubTreatmentModel(addSubTreatment);
+//     }
+
+//     // ✅ Unified response
+//     const message = sub_treatment_id
+//         ? "SUBTREATMENT_UPDATED_SUCCESSFULLY"
+//         : "SUBTREATMENT_ADDED_SUCCESSFULLY";
+
+//     handleSuccess(res, 200, language, message, { sub_treatment_id: sub_treatment_id ? sub_treatment_id : dbData.sub_treatment_id });
+//     // await generateTreatmentEmbeddingsV2(treatment_id)
+// });
+
 export const addEditSubtreatment = asyncHandler(async (req, res) => {
     const { treatment_id, sub_treatment_id, ...body } = req.body;
     const role = req.user?.role;
     const user_id = req.user?.id;
-    const language = req.user?.language || 'en';
+    const language = req.user?.language || "en";
 
     const isAdmin = role === "ADMIN";
 
     const dbData = { ...body };
-
     dbData.swedish = await googleTranslator(dbData.name, "sv");
 
     // 🧩 Creator metadata
@@ -141,14 +204,15 @@ export const addEditSubtreatment = asyncHandler(async (req, res) => {
         dbData.is_admin_created = true;
         dbData.approval_status = "APPROVED";
     } else {
+        dbData.is_admin_created = false;
         dbData.created_by_zynq_user_id = user_id;
         dbData.approval_status = "PENDING";
     }
 
+    let newSubTreatmentId = sub_treatment_id;
+
     // ✳️ EDIT FLOW
     if (sub_treatment_id) {
-        // 🛡️ Non-admin ownership check
-
         const updateSubTreatment = {
             treatment_id: treatment_id,
             name: dbData.name,
@@ -156,33 +220,54 @@ export const addEditSubtreatment = asyncHandler(async (req, res) => {
             is_admin_created: dbData.is_admin_created,
             approval_status: dbData.approval_status,
         };
-        // 🧹 Cleanup + reinserts only if editing
-        await Promise.all([
-            updateSubtreatmentModel(sub_treatment_id, updateSubTreatment),
-        ]);
+
+        await updateSubtreatmentModel(sub_treatment_id, updateSubTreatment);
+
+        // 👉 Update mapping if created by non-admin
+        if (!isAdmin) {
+            await updateSubTreatmentUserMap(
+                sub_treatment_id,
+                user_id,
+                {
+                    approval_status: dbData.approval_status
+                }
+            );
+        }
     }
 
     // ✳️ CREATE FLOW
     else {
+        console.log("user_id=>", user_id)
         const addSubTreatment = {
             treatment_id: treatment_id,
             name: dbData.name,
             swedish: dbData.swedish,
             is_admin_created: dbData.is_admin_created,
             approval_status: dbData.approval_status,
+            created_by_zynq_user_id: user_id
         };
 
-        // Insert main + related tables together
-        await addSubTreatmentModel(addSubTreatment);
+        const insertResult = await addSubTreatmentModel(addSubTreatment);
+        const [newData] = await getSubTreatmentModel(addSubTreatment)
+        newSubTreatmentId = newData.sub_treatment_id;
+
+        // 👉 Insert mapping if created by non-admin
+        if (!isAdmin) {
+            await addSubTreatmentUserMap({
+                sub_treatment_id: newSubTreatmentId,
+                zynq_user_id: user_id,
+                approval_status: dbData.approval_status
+            });
+        }
     }
 
-    // ✅ Unified response
-    const message = sub_treatment_id
-        ? "SUBTREATMENT_UPDATED_SUCCESSFULLY"
-        : "SUBTREATMENT_ADDED_SUCCESSFULLY";
-
-    handleSuccess(res, 200, language, message, { sub_treatment_id: sub_treatment_id ? sub_treatment_id : dbData.sub_treatment_id });
-    // await generateTreatmentEmbeddingsV2(treatment_id)
+    // Response
+    handleSuccess(res, 200, language,
+        sub_treatment_id
+            ? "SUBTREATMENT_UPDATED_SUCCESSFULLY"
+            : "SUBTREATMENT_ADDED_SUCCESSFULLY",
+        { sub_treatment_id: newSubTreatmentId }
+    );
 });
 
 export const deleteTreatment = asyncHandler(async (req, res) => {
@@ -208,17 +293,18 @@ export const deleteSubTreatment = asyncHandler(async (req, res) => {
     const { sub_treatment_id } = req.params;
     const role = req.user?.role;
     const user_id = req.user?.id;
-
+    console.log(user_id, '<=user_id')
 
     const language = req.user?.language || 'en';
-    if (role === "ADMIN") {
-        await deleteSubTreatmentModel(sub_treatment_id)
-    } else {
-        const deleted = await deleteZynqUserSubTreatmentsModel(sub_treatment_id, user_id);
-        if (deleted.affectedRows === 0) {
-            return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_SUB_TREATMENT");
-        }
-    }
+    // if (role === "ADMIN") {
+    await deleteSubTreatmentModel(sub_treatment_id)
+    // } else {
+    //     const deleted = await deleteZynqUserSubTreatmentsModel(sub_treatment_id, user_id);
+    //     console.log(deleted, '<=data')
+    //     if (deleted.affectedRows === 0) {
+    //         return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_SUB_TREATMENT");
+    //     }
+    // }
 
 
     return handleSuccess(res, 200, language, "SUB_TREATMENT_DELETED_SUCCESSFULLY");
@@ -270,7 +356,7 @@ export const get_all_concerns = async (req, res) => {
 // export const getAllTreatments = asyncHandler(async (req, res) => {
 //     const language = req?.user?.language || 'en';
 //     const treatments = await getAllTreatmentsModel();
-    
+
 //     treatments.APPROVED = [];
 //     treatments.OTHERS = [];
 //     treatments.map((treatment) => {
