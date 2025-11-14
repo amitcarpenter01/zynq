@@ -16,6 +16,8 @@ import { deleteClinicImageSchema } from '../validations/clinic.validation.js';
 import { updateShipmentStatus } from '../controllers/api/paymentController.js';
 import { updateShipmentStatusSchema } from '../validations/payment.validation.js';
 import { toggleHideProductSchema } from '../validations/product.validation.js';
+import { deleteSubTreatmentSchema, deleteTreatmentSchema } from '../validations/treatment.validation.js';
+import { deleteSubTreatment, deleteTreatment } from '../controllers/api/treatmentController.js';
 
 
 const router = express.Router();
@@ -99,5 +101,9 @@ router.get('/getMyAppointments', authenticate(['CLINIC', 'SOLO_DOCTOR']), appoin
 router.patch('/update-shipment-status', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(updateShipmentStatusSchema, "body"), updateShipmentStatus);
 
 router.patch('/product/toggle-hide/:product_id', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(toggleHideProductSchema, "params"), productControllers.toggleHideProduct);
+
+
+router.delete('/treatment/:treatment_id', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(deleteTreatmentSchema, 'params'), deleteTreatment);
+router.delete('/sub_treatment/:sub_treatment_id', authenticate(['CLINIC', 'SOLO_DOCTOR']), validate(deleteSubTreatmentSchema, 'params'), deleteSubTreatment);
 
 export default router;

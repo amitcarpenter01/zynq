@@ -1895,9 +1895,33 @@ export const updateProductApprovalStatus = async (product_id, approval_status) =
 
 export const getAllTreatmentsModel = async () => {
     try {
-        return await db.query("SELECT t.*, GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ', ') AS concerns, GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ', ') AS device_names FROM tbl_treatments t LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id LEFT JOIN tbl_treatment_devices d ON d.treatment_id = t.treatment_id WHERE t.is_deleted = 0 GROUP BY t.treatment_id ORDER BY t.created_at DESC;");
+        return await db.query("SELECT    t.*,    GROUP_CONCAT(        DISTINCT c.concern_id    ORDER BY        c.concern_id SEPARATOR ', '    ) AS concern_ids,    GROUP_CONCAT(        DISTINCT c.name    ORDER BY        c.name SEPARATOR ', '    ) AS concern_name,    GROUP_CONCAT(        DISTINCT d.device_name    ORDER BY        d.device_name SEPARATOR ', '    ) AS device_names FROM    tbl_treatments t LEFT JOIN tbl_treatment_concerns tc ON    tc.treatment_id = t.treatment_id LEFT JOIN tbl_concerns c ON     c.concern_id = tc.concern_id LEFT JOIN tbl_treatment_devices d ON     d.treatment_id = t.treatment_id WHERE    t.is_deleted = 0 GROUP BY    t.treatment_id ORDER BY    t.created_at DESC ");
     } catch (error) {
         console.error("getAllTreatmentsModel error:", error);
+        throw error;
+    }
+};
+
+export const getTreatmentsByTreatmentId = async (treatment_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_treatments WHERE treatment_id = ? AND is_deleted = 0`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("getTreatmentsByTreatmentId error:", error);
+        throw error;
+    }
+};
+
+export const getSubTreatmentsByTreatmentId = async (treatment_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_sub_treatments WHERE treatment_id = ? AND is_deleted = 0`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("getSubTreatmentsByTreatmentId error:", error);
         throw error;
     }
 };
@@ -2086,6 +2110,20 @@ export const deleteTreatmentModel = async (treatment_id) => {
     }
 }
 
+export const deleteSubTreatmentModel = async (sub_treatment_id ) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_sub_treatments 
+            SET is_deleted = 1
+            WHERE sub_treatment_id  = ?`,
+            [sub_treatment_id ]
+        );
+    } catch (error) {
+        console.error("deleteSubTreatmentModel error:", error);
+        throw error;
+    }
+}
+
 export const deleteZynqUserTreatmentsModel = async (treatment_id, zynq_user_id) => {
     try {
         return await db.query(
@@ -2097,6 +2135,21 @@ export const deleteZynqUserTreatmentsModel = async (treatment_id, zynq_user_id) 
         );
     } catch (error) {
         console.error("deleteZynqUserTreatmentsModel error:", error);
+        throw error;
+    }
+}
+
+export const deleteZynqUserSubTreatmentsModel = async (sub_treatment_id, zynq_user_id) => {
+    try {
+        return await db.query(
+            `
+            UPDATE tbl_sub_treatments SET
+            is_deleted = 1
+            WHERE tbl_sub_treatments = ? AND created_by_zynq_user_id = ?`,
+            [sub_treatment_id, zynq_user_id]
+        );
+    } catch (error) {
+        console.error("deleteZynqUserSubTreatmentsModel error:", error);
         throw error;
     }
 }

@@ -1,4 +1,4 @@
-import { getAllConcerns, addConcernModel, addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentDeviceNameModel, getAllTreatmentsModel, addTreatmentModel, addSubTreatmentModel, checkExistingConcernModel, checkExistingTreatmentModel, deleteClinicTreatmentsModel, deleteConcernModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel, deleteTreatmentDeviceNameModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel, deleteTreatmentModel, deleteZynqUserConcernsModel, deleteZynqUserTreatmentsModel, updateConcernApprovalStatusModel, updateConcernModel, updateTreatmentApprovalStatusModel, updateTreatmentModel, updateSubtreatmentModel } from "../../models/admin.js";
+import { getAllConcerns, addConcernModel, addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentDeviceNameModel, getAllTreatmentsModel, getTreatmentsByTreatmentId, getSubTreatmentsByTreatmentId, addTreatmentModel, addSubTreatmentModel, checkExistingConcernModel, checkExistingTreatmentModel, deleteClinicTreatmentsModel, deleteConcernModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel, deleteTreatmentDeviceNameModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel, deleteTreatmentModel, deleteZynqUserConcernsModel, deleteZynqUserTreatmentsModel, updateConcernApprovalStatusModel, updateConcernModel, updateTreatmentApprovalStatusModel, updateTreatmentModel, updateSubtreatmentModel, deleteSubTreatmentModel, deleteZynqUserSubTreatmentsModel } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
@@ -187,6 +187,27 @@ export const deleteTreatment = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language, "TREATMENT_DELETED_SUCCESSFULLY");
 });
 
+export const deleteSubTreatment = asyncHandler(async (req, res) => {
+    const { sub_treatment_id } = req.params;
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+
+
+    const language = req.user?.language || 'en';
+    if (role === "ADMIN") {
+        await deleteSubTreatmentModel(sub_treatment_id)
+    } else {
+        const deleted = await deleteZynqUserSubTreatmentsModel(sub_treatment_id, user_id);
+        if (deleted.affectedRows === 0) {
+            return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_SUB_TREATMENT");
+        }
+    }
+
+
+    return handleSuccess(res, 200, language, "SUB_TREATMENT_DELETED_SUCCESSFULLY");
+});
+
+
 export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
     const { approval_status, treatment_id } = req.body;
     const { language = "en" } = req.user;
@@ -232,6 +253,23 @@ export const get_all_concerns = async (req, res) => {
 export const getAllTreatments = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
     const treatments = await getAllTreatmentsModel();
+    return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
+});
+
+export const getAllTreatmentById = asyncHandler(async (req, res) => {
+    const { treatment_id } = req.query;
+    const language = req?.user?.language || 'en';
+    const treatments = await getTreatmentsByTreatmentId(treatment_id);
+    if (treatments.length === 0) return handleError(res, 404, language, "TREATMENT_NOT_FOUND");
+    await Promise.all(
+        treatments.map(async (t) => {
+            t.sub_treatments =
+                await getSubTreatmentsByTreatmentId(
+                    t.treatment_id,
+                    language
+                );
+        })
+    );
     return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
 });
 
