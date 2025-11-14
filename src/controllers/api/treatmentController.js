@@ -265,11 +265,47 @@ export const get_all_concerns = async (req, res) => {
     }
 };
 
+// export const getAllTreatments = asyncHandler(async (req, res) => {
+//     const language = req?.user?.language || 'en';
+//     const treatments = await getAllTreatmentsModel();
+    
+//     treatments.APPROVED = [];
+//     treatments.OTHERS = [];
+//     treatments.map((treatment) => {
+//         if (treatment.approval_status === "APPROVED") {
+//             treatments.APPROVED.push(treatment);
+//         } else {
+//             treatments.OTHERS.push(treatment);
+//         }
+//     })
+
+//     return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
+// });
 export const getAllTreatments = asyncHandler(async (req, res) => {
-    const language = req?.user?.language || 'en';
+    const language = req?.user?.language || "en";
+
     const treatments = await getAllTreatmentsModel();
-    return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
+
+    const approved = [];
+    const others = [];
+
+    for (const item of treatments) {
+        if (item.approval_status === "APPROVED") {
+            approved.push(item);
+        } else {
+            others.push(item);
+        }
+    }
+
+    const response = {
+        ALL: treatments,
+        APPROVED: approved,
+        OTHERS: others
+    };
+
+    return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", response);
 });
+
 
 export const getAllTreatmentById = asyncHandler(async (req, res) => {
     const { treatment_id } = req.query;
