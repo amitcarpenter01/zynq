@@ -409,7 +409,6 @@ It commonly uses devices like ${row.device_name || 'advanced medical-grade techn
         console.error(`❌ Embedding error for ${row.name}:`, embedErr.message);
       }
     }
-
     console.log("✅ All embeddings updated successfully");
   } catch (err) {
     console.error("❌ Server error in embedding generator:", err);

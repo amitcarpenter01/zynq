@@ -5,6 +5,7 @@ dotenv.config();
 import * as userModels from "../../models/api.js";
 import * as clinicModels from "../../models/clinic.js";
 import * as doctorModels from "../../models/doctor.js";
+import * as apiModels from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { sendEmail } from "../../services/send_email.js";
 import { formatImagePath, generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
@@ -21,49 +22,49 @@ import { translator } from "../../utils/misc.util.js";
  */
 export function isGibberishText(text = "") {
     if (!text) return true;
-  
+
     const clean = text.trim().toLowerCase();
     if (!clean) return true;
-  
+
     // Relaxed whitelist
     const whitelist = [
-      "wallstrom","wallström","clinic","laser","botox","fillers","wrinkles",
-      "hollywood","pigmentation","acne","asclepius","quadrostar","fotona",
-      "lumenis","cutera","alma","hydrafacial","restylane","juvederm","belotero",
-      "thermage","ultherapy","emsculpt","morpheus","dermalux","ipl"
+        "wallstrom", "wallström", "clinic", "laser", "botox", "fillers", "wrinkles",
+        "hollywood", "pigmentation", "acne", "asclepius", "quadrostar", "fotona",
+        "lumenis", "cutera", "alma", "hydrafacial", "restylane", "juvederm", "belotero",
+        "thermage", "ultherapy", "emsculpt", "morpheus", "dermalux", "ipl"
     ];
-  
+
     if (whitelist.some(w => clean.includes(w))) return false;
-  
+
     // Allow short searches always
     if (clean.length <= 3) return false;
-  
+
     // Allow Swedish/European letters
     const lettersOnly = clean.replace(/[^a-z\u00C0-\u017F\s]/gi, "");
-  
+
     // Allow if it has at least 1 vowel (Swedish also ok)
     const vowels = "aeiouyåäöéèáàüö";
     const vowelCount = (lettersOnly.match(new RegExp(`[${vowels}]`, "gi")) || []).length;
-  
+
     if (vowelCount >= 1) return false;
-  
+
     // If no vowels AND contains weird characters — likely gibberish
     if (vowelCount === 0 && /[^a-z\u00C0-\u017F\s]/i.test(clean)) {
-      return true;
+        return true;
     }
-  
+
     // Reject if mostly symbols
     const symbolCount = (clean.match(/[^a-z\u00C0-\u017F\d\s]/gi) || []).length;
     if (symbolCount > clean.length * 0.4) return true;
-  
+
     // Reject obvious keyboard smash (but very relaxed)
     if (/^[zxqwv]{5,}$/i.test(lettersOnly)) return true;
-  
+
     // Otherwise treat as valid
     return false;
-  }
-  
-  
+}
+
+
 
 const APP_URL = process.env.APP_URL;
 const toMap = (obj) => new Map(Object.entries(obj || {}));
@@ -436,11 +437,21 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
             url: formatImagePath(img.image_url, 'clinic/files'),
         }));
 
+    const treatments = allTreatments[doctor_id] || [];
+    await Promise.all(
+        treatments.map(async (t) => {
+            t.sub_treatments = await apiModels.getSubTreatmentsByTreatmentId(
+                t.treatment_id,
+                language
+            );
+        })
+    );
+
     const processedDoctor = {
         ...doctor,
         chatId: chat?.[0]?.id || null,
         ratings: allRatings || [],
-        treatments: formatBenefitsUnified(allTreatments[doctor_id], 'en') || [],
+        treatments: formatBenefitsUnified(treatments, 'en') || [],
         skin_types: allSkinTypes[doctor_id] || [],
         allSkinCondition: allSkinCondition[doctor_id] || [],
         allSurgery: allSurgery[doctor_id] || [],
@@ -485,17 +496,17 @@ export const search_home_entities = asyncHandler(async (req, res) => {
     let { filters = {}, page, limit } = req.body || {};
 
     const search = filters.search?.trim() || "";
-  
+
     if (!search) {
         return handleError(res, 400, language, "EMPTY_SEARCH_QUERY");
     }
 
     try {
         var normalized_search;
-        if (search.length <= 3){
+        if (search.length <= 3) {
             normalized_search = search
-        }else{
-           normalized_search = await translator(search, 'en');
+        } else {
+            normalized_search = await translator(search, 'en');
         }
         // 🧠 Detect if the translated text is gibberish
         const gibberish = isGibberishText(normalized_search);
@@ -503,7 +514,7 @@ export const search_home_entities = asyncHandler(async (req, res) => {
         if (gibberish) {
             return handleError(res, 200, language, "Invalid Search", []);
         }
-        
+
         // 1️⃣ Detect search intent ranking
         const intentRanking = await detectSearchIntent(normalized_search);
         if (intentRanking.type === "gibberish") {
@@ -513,14 +524,14 @@ export const search_home_entities = asyncHandler(async (req, res) => {
 
         // 2️⃣ Run all searches (as you already do)
         const [doctors, clinics, products, treatments] = await Promise.all([
-            
-            userModels.getDoctorsByFirstNameSearchOnly({   search: normalized_search, page, limit }),
+
+            userModels.getDoctorsByFirstNameSearchOnly({ search: normalized_search, page, limit }),
             userModels.getClinicsByNameSearchOnly({ search: normalized_search, page, limit }),
             userModels.getProductsByNameSearchOnly({ search: normalized_search, page, limit }),
             userModels.getTreatmentsBySearchOnly({ search: normalized_search, language, page, limit, actualSearch: search })
         ]);
 
-     
+
         // 3️⃣ Enrich images (same as your code)
         const enrichedDoctors = doctors.map(doctor => ({
             ...doctor,
@@ -588,7 +599,7 @@ async function detectSearchIntent(searchQuery) {
     }
 
     // 🛑 Short queries fallback
-    if (trimmed.length <=3) {
+    if (trimmed.length <= 3) {
         console.log("⚙️ Skipping AI — short query, returning default valid_medical");
         return {
             type: "valid_medical",
@@ -689,7 +700,7 @@ async function detectSearchIntent(searchQuery) {
     Now classify the following query and return only the JSON:
     "${trimmed}"
     `;
-    
+
 
     const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -709,7 +720,7 @@ async function detectSearchIntent(searchQuery) {
 
     try {
         const parsed = JSON.parse(content);
-        
+
 
         if (
             parsed &&

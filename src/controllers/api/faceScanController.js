@@ -159,6 +159,15 @@ export const get_treatments_by_concerns = asyncHandler(async (req, res) => {
     const { concern_ids } = req.body;
     const language = req?.user?.language || 'en';
     const treatments = await apiModels.getTreatmentsByConcernIds(concern_ids, language);
+    await Promise.all(
+        treatments.map(async (treatment) => {
+            treatment.sub_treatments =
+                await apiModels.getSubTreatmentsByTreatmentId(
+                    treatment.treatment_id,
+                    language
+                );
+        })
+    );
     return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
 })
 
