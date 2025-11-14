@@ -5,6 +5,7 @@ dotenv.config();
 import * as userModels from "../../models/api.js";
 import * as clinicModels from "../../models/clinic.js";
 import * as doctorModels from "../../models/doctor.js";
+import * as apiModels from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
 import { sendEmail } from "../../services/send_email.js";
 import { formatImagePath, generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
@@ -21,127 +22,127 @@ import { translator } from "../../utils/misc.util.js";
  */
 export function isGibberishText(text = "") {
     if (!text) return true;
-    
+
     const clean = text.trim().toLowerCase();
     if (!clean) return true;
-  
+
     // ✅ Predefined whitelist (brand, clinic, treatment, device names)
     const whitelist = [
-      "wallstrom", "wallström", "asclepius", "quadrostar", "fotona", "lumenis",
-      "cutera", "alma", "hydrafacial", "restylane", "juvederm", "belotero",
-      "dermalux", "emsculpt", "morpheus", "ultherapy", "thermage", "syneron",
-      "cynosure", "ipl", "laser", "botox", "fillers", "clinic"
+        "wallstrom", "wallström", "asclepius", "quadrostar", "fotona", "lumenis",
+        "cutera", "alma", "hydrafacial", "restylane", "juvederm", "belotero",
+        "dermalux", "emsculpt", "morpheus", "ultherapy", "thermage", "syneron",
+        "cynosure", "ipl", "laser", "botox", "fillers", "clinic"
     ];
-  
+
     if (whitelist.some(w => clean.includes(w))) return false;
-  
+
     // 🚫 Immediate rejection for obvious garbage
     // Mixed alphanumeric with special chars
     if (/[a-z]+\d+[^a-z\d]+|[^a-z\d]+\d+[a-z]+|\d+[a-z]+[^a-z\d]+/i.test(clean)) return true;
-    
+
     // Excessive special characters
     if ((clean.match(/[^a-z\d\s]/gi) || []).length > clean.length * 0.3) return true;
-    
+
     // Multiple words starting with invalid characters
     const words = clean.split(/\s+/).filter(Boolean);
-    const invalidStartWords = words.filter(word => 
-      /^[^a-z\u00C0-\u017F]/.test(word)
+    const invalidStartWords = words.filter(word =>
+        /^[^a-z\u00C0-\u017F]/.test(word)
     ).length;
-    
+
     if (invalidStartWords / words.length > 0.5) return true;
-  
+
     // Allow short searches
     if (clean.length <= 3) return false;
-  
+
     // ✅ Allow common European clusters
     const allowedClusters = [
-      "strom", "ström", "berg", "holm", "lund", "wall", "borg", "quist", "sson", "skov"
+        "strom", "ström", "berg", "holm", "lund", "wall", "borg", "quist", "sson", "skov"
     ];
-  
+
     let gibberishCount = 0;
-  
+
     for (const word of words) {
-      if (word.length <= 2) continue;
-  
-      const lettersOnly = word.replace(/[^a-z\u00C0-\u017F]/gi, "");
-      
-      // Skip if word contains allowed clusters
-      if (allowedClusters.some(cluster => lettersOnly.includes(cluster))) continue;
-      
-      // Skip if in whitelist
-      if (whitelist.includes(lettersOnly)) continue;
-  
-      // 🔥 NEW: Advanced gibberish detection
-      if (isGibberishWord(lettersOnly)) {
-        gibberishCount++;
-      }
+        if (word.length <= 2) continue;
+
+        const lettersOnly = word.replace(/[^a-z\u00C0-\u017F]/gi, "");
+
+        // Skip if word contains allowed clusters
+        if (allowedClusters.some(cluster => lettersOnly.includes(cluster))) continue;
+
+        // Skip if in whitelist
+        if (whitelist.includes(lettersOnly)) continue;
+
+        // 🔥 NEW: Advanced gibberish detection
+        if (isGibberishWord(lettersOnly)) {
+            gibberishCount++;
+        }
     }
-  
+
     const ratio = words.length > 0 ? gibberishCount / words.length : 1;
     return ratio > 0.4;
-  }
-  
-  // 🔥 NEW: Specialized function for word-level gibberish detection
-  function isGibberishWord(word) {
+}
+
+// 🔥 NEW: Specialized function for word-level gibberish detection
+function isGibberishWord(word) {
     if (word.length <= 2) return false;
-    
+
     const vowels = 'aeiouáéíóúàèìòùäëïöüâêîôû';
     const vowelCount = (word.match(new RegExp(`[${vowels}]`, 'gi')) || []).length;
     const consonantCount = word.length - vowelCount;
     const vowelRatio = vowelCount / word.length;
-  
+
     // 🚫 Very low or very high vowel ratio
     if (vowelRatio < 0.1 || vowelRatio > 0.9) return true;
-  
+
     // 🚫 Consecutive consonant sequences (like "asdkjashd" has "sdkj")
     if (/([bcdfghjklmnpqrstvwxyz]){4,}/i.test(word)) return true;
-  
+
     // 🚫 Repeated character patterns
     if (/(.)\1{2,}/.test(word)) return true; // AAA, BBB, etc.
-    
+
     // 🚫 Alternating vowel-consonant nonsense (like "asdkja")
     if (word.length >= 6) {
-      const pattern = word.split('').map(char => 
-        vowels.includes(char.toLowerCase()) ? 'V' : 'C'
-      ).join('');
-      
-      // Patterns like CVCVCV (too regular for long words) or CCCVCCC
-      if (pattern.includes('CCCC') || pattern.includes('VVVV')) return true;
-      
-      // Too many consonants overall for word length
-      if (consonantCount > word.length * 0.8) return true;
+        const pattern = word.split('').map(char =>
+            vowels.includes(char.toLowerCase()) ? 'V' : 'C'
+        ).join('');
+
+        // Patterns like CVCVCV (too regular for long words) or CCCVCCC
+        if (pattern.includes('CCCC') || pattern.includes('VVVV')) return true;
+
+        // Too many consonants overall for word length
+        if (consonantCount > word.length * 0.8) return true;
     }
-  
+
     // 🚫 Uncommon letter combinations
     const uncommonPatterns = [
-      /[zxq]{2,}/i,      // Multiple rare letters
-      /[jqxz][jqxz]/i,   // Pairs of uncommon letters
-      /^[bcdfghjklmnpqrstvwxyz]{3,}/i, // Starts with 3+ consonants
-      /[bcdfghjklmnpqrstvwxyz]{3,}$/i  // Ends with 3+ consonants
+        /[zxq]{2,}/i,      // Multiple rare letters
+        /[jqxz][jqxz]/i,   // Pairs of uncommon letters
+        /^[bcdfghjklmnpqrstvwxyz]{3,}/i, // Starts with 3+ consonants
+        /[bcdfghjklmnpqrstvwxyz]{3,}$/i  // Ends with 3+ consonants
     ];
-    
+
     if (uncommonPatterns.some(pattern => pattern.test(word))) return true;
-  
+
     // 🚫 Check for keyboard smashing patterns
     const commonBigrams = ['th', 'he', 'in', 'er', 'an', 're', 'es', 'on', 'st', 'nt', 'en', 'at', 'ed', 'nd', 'to', 'or', 'ea', 'ti', 'ar', 'te', 'ng', 'al', 'it', 'as', 'is', 'ha', 'et', 'se', 'ou', 'of'];
     const bigrams = [];
     for (let i = 0; i < word.length - 1; i++) {
-      bigrams.push(word.substr(i, 2));
+        bigrams.push(word.substr(i, 2));
     }
-    
-    const commonBigramCount = bigrams.filter(bigram => 
-      commonBigrams.includes(bigram)
+
+    const commonBigramCount = bigrams.filter(bigram =>
+        commonBigrams.includes(bigram)
     ).length;
-    
+
     // If very few common bigrams, likely gibberish
     if (commonBigramCount / bigrams.length < 0.2 && word.length > 5) return true;
-  
+
     return false;
-  }
-  
-  
-  
-  
+}
+
+
+
+
 
 const APP_URL = process.env.APP_URL;
 const toMap = (obj) => new Map(Object.entries(obj || {}));
@@ -514,11 +515,21 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
             url: formatImagePath(img.image_url, 'clinic/files'),
         }));
 
+    const treatments = allTreatments[doctor_id] || [];
+    await Promise.all(
+        treatments.map(async (t) => {
+            t.sub_treatments = await apiModels.getSubTreatmentsByTreatmentId(
+                t.treatment_id,
+                language
+            );
+        })
+    );
+
     const processedDoctor = {
         ...doctor,
         chatId: chat?.[0]?.id || null,
         ratings: allRatings || [],
-        treatments: formatBenefitsUnified(allTreatments[doctor_id], 'en') || [],
+        treatments: formatBenefitsUnified(treatments, 'en') || [],
         skin_types: allSkinTypes[doctor_id] || [],
         allSkinCondition: allSkinCondition[doctor_id] || [],
         allSurgery: allSurgery[doctor_id] || [],
@@ -563,17 +574,17 @@ export const search_home_entities = asyncHandler(async (req, res) => {
     let { filters = {}, page, limit } = req.body || {};
 
     const search = filters.search?.trim() || "";
-  
+
     if (!search) {
         return handleError(res, 400, language, "EMPTY_SEARCH_QUERY");
     }
 
     try {
         var normalized_search;
-        if (search.length <= 3){
+        if (search.length <= 3) {
             normalized_search = search
-        }else{
-           normalized_search = await translator(search, 'en');
+        } else {
+            normalized_search = await translator(search, 'en');
         }
         // 🧠 Detect if the translated text is gibberish
         const gibberish = isGibberishText(normalized_search);
@@ -581,7 +592,7 @@ export const search_home_entities = asyncHandler(async (req, res) => {
         if (gibberish) {
             return handleError(res, 200, language, "Invalid Search", []);
         }
-        
+
         // 1️⃣ Detect search intent ranking
         const intentRanking = await detectSearchIntent(normalized_search);
         if (intentRanking.type === "gibberish") {
@@ -591,14 +602,14 @@ export const search_home_entities = asyncHandler(async (req, res) => {
 
         // 2️⃣ Run all searches (as you already do)
         const [doctors, clinics, products, treatments] = await Promise.all([
-            
-            userModels.getDoctorsByFirstNameSearchOnly({   search: normalized_search, page, limit }),
+
+            userModels.getDoctorsByFirstNameSearchOnly({ search: normalized_search, page, limit }),
             userModels.getClinicsByNameSearchOnly({ search: normalized_search, page, limit }),
             userModels.getProductsByNameSearchOnly({ search: normalized_search, page, limit }),
             userModels.getTreatmentsBySearchOnly({ search: normalized_search, language, page, limit, actualSearch: search })
         ]);
 
-     
+
         // 3️⃣ Enrich images (same as your code)
         const enrichedDoctors = doctors.map(doctor => ({
             ...doctor,
@@ -666,7 +677,7 @@ async function detectSearchIntent(searchQuery) {
     }
 
     // 🛑 Short queries fallback
-    if (trimmed.length <=3) {
+    if (trimmed.length <= 3) {
         console.log("⚙️ Skipping AI — short query, returning default valid_medical");
         return {
             type: "valid_medical",
@@ -767,7 +778,7 @@ async function detectSearchIntent(searchQuery) {
     Now classify the following query and return only the JSON:
     "${trimmed}"
     `;
-    
+
 
     const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
