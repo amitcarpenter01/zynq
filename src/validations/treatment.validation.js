@@ -59,9 +59,18 @@ export const addEditTreatmentSchema = joi.object({
   benefits_sv: stringValidation,
   description_en: stringValidation,
   description_sv: stringValidation,
+  source: stringValidation.valid("old", "new"),
+  embeddings: joi.array().items(numberValidation).min(1),
   is_device: booleanValidation,
   concerns: idArrayValidation,
-  sub_treatments: idArrayValidation.optional(),
+  device_name: idArrayValidation,
+})
+
+export const addEditSubtreatmentSchema = joi.object({
+  treatment_id: stringValidation.optional(),
+  sub_treatment_id: stringValidation.optional(),
+  name: stringValidation,
+  swedish: stringValidation
 })
 
 export const deleteTreatmentSchema = joi.object({

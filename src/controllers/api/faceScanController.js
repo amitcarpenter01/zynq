@@ -168,6 +168,15 @@ export const get_treatments = asyncHandler(async (req, res) => {
 
     const { filters } = req.body;
     const treatments = await apiModels.getAllTreatmentsV2(filters, language, user_id);
+    await Promise.all(
+        treatments.map(async (treatment) => {
+            treatment.sub_treatments =
+                await apiModels.getSubTreatmentsByTreatmentId(
+                    treatment.treatment_id,
+                    language
+                );
+        })
+    );
     return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
 })
 

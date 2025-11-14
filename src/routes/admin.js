@@ -23,8 +23,8 @@ import { addEditFAQCategorySchema, addEditFAQSchema, deleteFAQCategorySchema, ge
 import { addEditFAQ, addEditFAQCategory, deleteFAQ, deleteFAQCategory, getAllFAQCategories, getAllFAQs, getSingleFAQ, getSingleFAQCategory } from '../controllers/api/FAQController.js';
 import { getContactUs } from '../controllers/api/authController.js';
 import { updateProductApprovalStatusSchema } from '../validations/product.validation.js';
-import { addEditConcernSchema, addEditTreatmentSchema, deleteConcernSchema, deleteTreatmentSchema, updateConcernApprovalStatusSchema, updateTreatmentApprovalStatusSchema } from '../validations/treatment.validation.js';
-import { addEditConcern, addEditTreatment, deleteConcern, deleteTreatment, updateConcernApprovalStatus, updateTreatmentApprovalStatus } from '../controllers/api/treatmentController.js';
+import { addEditConcernSchema, addEditTreatmentSchema, addEditSubtreatmentSchema, deleteConcernSchema, deleteTreatmentSchema, updateConcernApprovalStatusSchema, updateTreatmentApprovalStatusSchema } from '../validations/treatment.validation.js';
+import { get_all_concerns, addEditConcern, getAllTreatments, addEditTreatment, addEditSubtreatment, deleteConcern, deleteTreatment, updateConcernApprovalStatus, updateTreatmentApprovalStatus } from '../controllers/api/treatmentController.js';
 import { uploadDynamicClinicFiles } from '../services/clinic_multer.js';
 import { updateClinicAdmin } from '../controllers/clinic/authController.js';
 import * as clinicModels from '../models/clinic.js';
@@ -154,11 +154,17 @@ router.patch('/zynq-user/approval-status', authenticateAdmin, validate(updateZyn
 
 router.patch('/product/approval-status', authenticateAdmin, validate(updateProductApprovalStatusSchema, 'body'), productControllers.updateProductApprovalStatus);
 
+router.get('/get-all-treatments', authenticateAdmin, getAllTreatments);
+
 router.post('/treatment', authenticateAdmin, validate(addEditTreatmentSchema, 'body'), addEditTreatment);
 
 router.delete('/treatment/:treatment_id', authenticateAdmin, validate(deleteTreatmentSchema, 'params'), deleteTreatment);
 
 router.patch('/treatment/approval-status', authenticateAdmin, validate(updateTreatmentApprovalStatusSchema, 'body'), updateTreatmentApprovalStatus);
+
+router.post('/sub-treatment', authenticateAdmin, validate(addEditSubtreatmentSchema, 'body'), addEditSubtreatment);
+
+router.get('/get-allconcerns', authenticateAdmin, get_all_concerns);
 
 router.post('/concern', authenticateAdmin, validate(addEditConcernSchema, 'body'), addEditConcern);
 
