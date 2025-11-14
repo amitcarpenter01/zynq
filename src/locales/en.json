@@ -304,9 +304,11 @@
   "TREATMENT_REJECTED_SUCCESSFULLY": "Treatment Rejected Successfully",
   "CONCERN_ADDED_SUCCESSFULLY": "Concern Added Successfully",
   "CONCERN_UPDATED_SUCCESSFULLY": "Concern Updated Successfully",
-  "NOT_AUTHORIZED_TO_EDIT_CONCERN" : "You are not authorized to edit this concern",
-  "CONCERN_DELETED_SUCCESSFULLY" : "Concern Deleted Successfully",
-  "NOT_AUTHORIZED_TO_DELETE_CONCERN" : "You are not authorized to delete this concern",
-  "CONCERN_APPROVED_SUCCESSFULLY" : "Concern Approved Successfully",
-  "CONCERN_REJECTED_SUCCESSFULLY" : "Concern Rejected Successfully"
+  "NOT_AUTHORIZED_TO_EDIT_CONCERN": "You are not authorized to edit this concern",
+  "CONCERN_DELETED_SUCCESSFULLY": "Concern Deleted Successfully",
+  "NOT_AUTHORIZED_TO_DELETE_CONCERN": "You are not authorized to delete this concern",
+  "CONCERN_APPROVED_SUCCESSFULLY": "Concern Approved Successfully",
+  "CONCERN_REJECTED_SUCCESSFULLY": "Concern Rejected Successfully",
+  "SUBTREATMENT_ADDED_SUCCESSFULLY": "Sub Treatment Added Successfully",
+  "SUBTREATMENT_UPDATED_SUCCESSFULLY": "Sub Treatment Updated Successfully"
 }
