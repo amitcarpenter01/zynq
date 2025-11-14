@@ -241,14 +241,11 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
     const { clinic_id } = req.params;
     const { language = 'en' } = req.user;
     const clinics = await apiModels.getSingleClinicForUser(clinic_id);
-    if (!clinics || clinics.length === 0) {
-        return handleSuccess(res, 200, language || 'en', "CLINIC_FETCHED_SUCCESSFULLY", clinics);
-    }
+    if (!clinics || clinics.length === 0) return handleSuccess(res, 200, language || 'en', "CLINIC_FETCHED_SUCCESSFULLY", clinics);
+console.log("clinics =>", clinics);
 
     const clinicIds = clinics.map(c => c.clinic_id);
-
     const images = await clinicModels.getClinicImages(clinic_id);
-
 
     const [
         allTreatments,
@@ -269,6 +266,21 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
         clinicModels.getClinicLocationsBulk(clinicIds),
         clinicModels.getClinicDoctorsBulk(clinicIds)
     ]);
+
+    await Promise.all(
+        clinicIds.map(async (cid) => {
+            const treatments = allTreatments[cid] || [];
+            await Promise.all(
+                treatments.map(async (t) => {
+                    t.sub_treatments =
+                        await apiModels.getSubTreatmentsByTreatmentId(
+                            t.treatment_id,
+                            language
+                        );
+                })
+            );
+        })
+    );
 
     const processedClinics = clinics.map(clinic => ({
         ...clinic,

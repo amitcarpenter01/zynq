@@ -11,8 +11,8 @@ import { getSinglePatientRecordSchema, rescheduleAppointmentSchema } from '../va
 import { getSinglePurchasedProductSchema } from '../validations/payment.validation.js';
 import { getAllFAQSchema } from '../validations/faq.validation.js';
 import { getAllFAQCategories, getAllFAQs } from '../controllers/api/FAQController.js';
-import { addAppointmentDraftSchema, addEditConcernSchema, addEditTreatmentSchema, deleteConcernSchema, deleteTreatmentSchema } from '../validations/treatment.validation.js';
-import { addEditConcern, addEditTreatment, deleteConcern, deleteTreatment } from '../controllers/api/treatmentController.js';
+import { addAppointmentDraftSchema, addEditConcernSchema, addEditSubtreatmentSchema, addEditTreatmentSchema, deleteConcernSchema, deleteTreatmentSchema } from '../validations/treatment.validation.js';
+import { get_all_concerns, addEditConcern, addEditSubtreatment, addEditTreatment, deleteConcern, deleteTreatment } from '../controllers/api/treatmentController.js';
 
 
 router.get("/get_profile", authenticate(['DOCTOR']), doctorController.getDoctorProfile);
@@ -140,6 +140,10 @@ router.get('/get-recommended-treatments/:user_id', authenticate(['DOCTOR', 'SOLO
 router.post('/treatment', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(addEditTreatmentSchema, 'body'), addEditTreatment);
 
 router.delete('/treatment/:treatment_id', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(deleteTreatmentSchema, 'params'), deleteTreatment);
+
+router.post('/sub-treatment', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(addEditSubtreatmentSchema, 'body'), addEditSubtreatment);
+
+router.get('/get-allconcerns', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), get_all_concerns);
 
 router.post('/concern', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(addEditConcernSchema, 'body'), addEditConcern);
 

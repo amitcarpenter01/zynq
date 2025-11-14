@@ -1,7 +1,7 @@
 import db from "../config/db.js";
-import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows,getTopSimilarRowsWithoutTranslate } from "../utils/misc.util.js";
+import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows, getTopSimilarRowsWithoutTranslate } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
-import {getTreatmentsVectorResult,getDoctorsVectorResult,getClinicsVectorResult} from "../utils/global_search.js"
+import { getTreatmentsVectorResult, getDoctorsVectorResult, getClinicsVectorResult } from "../utils/global_search.js"
 
 //======================================= Auth =========================================
 
@@ -1299,7 +1299,6 @@ export const fetchZynqUserByUserId = async (user_id) => {
 
 export const getAllConcerns = async (lang = "en", concern_ids) => {
     try {
-        console.log("ASfasf")
         let query = `
             SELECT *
             FROM tbl_concerns
@@ -1752,7 +1751,17 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
     }
 };
 
-
+export const getSubTreatmentsByTreatmentId = async (treatment_id) => {
+    try {
+        console.log(treatment_id);
+        
+        return await db.query(`SELECT * FROM tbl_sub_treatments WHERE treatment_id = ? AND is_deleted = 0 AND approval_status = 'APPROVED'`, [treatment_id]);
+    }
+    catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch sub-treatments.");
+    }
+};
 
 // export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang) => {
 //     try {
@@ -1789,8 +1798,8 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
 // };
 
 export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang, doctor_id = null) => {
-  try {
-    let query = `
+    try {
+        let query = `
       SELECT
           t.*,
           ANY_VALUE(c.name) AS concern_name,
@@ -1802,40 +1811,40 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang, doct
       LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
     `;
 
-    const whereClauses = [];
-    const params = [];
+        const whereClauses = [];
+        const params = [];
 
-    if (Array.isArray(treatment_ids) && treatment_ids.length > 0) {
-      const placeholders = treatment_ids.map(() => '?').join(', ');
-      whereClauses.push(`t.treatment_id IN (${placeholders})`);
-      params.push(...treatment_ids);
+        if (Array.isArray(treatment_ids) && treatment_ids.length > 0) {
+            const placeholders = treatment_ids.map(() => '?').join(', ');
+            whereClauses.push(`t.treatment_id IN (${placeholders})`);
+            params.push(...treatment_ids);
+        }
+
+        if (doctor_id) {
+            whereClauses.push(`dt.doctor_id = ?`);
+            params.push(doctor_id);
+        }
+
+        if (whereClauses.length > 0) {
+            query += ` WHERE ${whereClauses.join(' AND ')}`;
+        }
+
+        query += ` GROUP BY t.treatment_id`;
+
+        let results = await db.query(query, params);
+
+        // Remove embeddings if present
+        results = results.map(row => {
+            const treatmentRow = { ...row };
+            delete treatmentRow.embeddings;
+            return treatmentRow;
+        });
+
+        return formatBenefitsUnified(results, lang);
+    } catch (error) {
+        console.error("Database Error in getTreatmentsByTreatmentIds:", error.message);
+        throw new Error("Failed to fetch treatments.");
     }
-
-    if (doctor_id) {
-      whereClauses.push(`dt.doctor_id = ?`);
-      params.push(doctor_id);
-    }
-
-    if (whereClauses.length > 0) {
-      query += ` WHERE ${whereClauses.join(' AND ')}`;
-    }
-
-    query += ` GROUP BY t.treatment_id`;
-
-    let results = await db.query(query, params);
-
-    // Remove embeddings if present
-    results = results.map(row => {
-      const treatmentRow = { ...row };
-      delete treatmentRow.embeddings;
-      return treatmentRow;
-    });
-
-    return formatBenefitsUnified(results, lang);
-  } catch (error) {
-    console.error("Database Error in getTreatmentsByTreatmentIds:", error.message);
-    throw new Error("Failed to fetch treatments.");
-  }
 };
 
 export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
@@ -3172,9 +3181,9 @@ export const getDoctorEmbeddingTextById = async (zynq_user_id) => {
 
 export const getDoctorEmbeddingTextByIdV2 = async (zynq_user_id) => {
     try {
-      if (!zynq_user_id) throw new Error("zynq_user_id ID is required");
-  
-      return await db.query(`
+        if (!zynq_user_id) throw new Error("zynq_user_id ID is required");
+
+        return await db.query(`
         SELECT 
           d.doctor_id,
           d.name AS doctor_name,
@@ -3197,15 +3206,15 @@ export const getDoctorEmbeddingTextByIdV2 = async (zynq_user_id) => {
         GROUP BY d.doctor_id
         LIMIT 1;
       `, [zynq_user_id]);
-  
+
     } catch (err) {
-      console.error(`❌ Error fetching doctor ${zynq_user_id} embeddings:`, err);
-      throw err;
+        console.error(`❌ Error fetching doctor ${zynq_user_id} embeddings:`, err);
+        throw err;
     }
-  };
-  export const getDoctorEmbeddingTextAllV2 = async () => {
+};
+export const getDoctorEmbeddingTextAllV2 = async () => {
     try {
-      return await db.query(`
+        return await db.query(`
         SELECT 
           d.doctor_id,
           d.name AS doctor_name,
@@ -3226,12 +3235,12 @@ export const getDoctorEmbeddingTextByIdV2 = async (zynq_user_id) => {
         GROUP BY d.doctor_id;
       `);
     } catch (err) {
-      console.error(`❌ Error fetching all doctor embeddings:`, err);
-      throw err;
+        console.error(`❌ Error fetching all doctor embeddings:`, err);
+        throw err;
     }
-  };
-  
-  
+};
+
+
 
 export const getClinicEmbeddingTextById = async (zynq_user_id) => {
     try {
@@ -3354,9 +3363,9 @@ export const getClinicEmbeddingTextById = async (zynq_user_id) => {
 
 export const getClinicEmbeddingTextByIdV2 = async (zynq_user_id) => {
     try {
-      if (!zynq_user_id) throw new Error("zynq_user_id is required");
-  
-      const query = `
+        if (!zynq_user_id) throw new Error("zynq_user_id is required");
+
+        const query = `
         SELECT 
           c.clinic_id,
           c.clinic_name,
@@ -3394,17 +3403,17 @@ export const getClinicEmbeddingTextByIdV2 = async (zynq_user_id) => {
         WHERE c.zynq_user_id = ?
         LIMIT 1;
       `;
-  
-      return await db.query(query, [zynq_user_id]);
+
+        return await db.query(query, [zynq_user_id]);
     } catch (err) {
-      console.error(`❌ Error fetching clinic ${zynq_user_id} data:`, err);
-      throw err;
+        console.error(`❌ Error fetching clinic ${zynq_user_id} data:`, err);
+        throw err;
     }
-  };
+};
 export const getClinicEmbeddingTextByAllV2 = async () => {
     try {
- 
-      const query = `
+
+        const query = `
         SELECT 
           c.clinic_id,
           c.clinic_name,
@@ -3412,14 +3421,14 @@ export const getClinicEmbeddingTextByAllV2 = async () => {
         FROM tbl_clinics c
         WHERE c.profile_status = 'VERIFIED'
       `;
-  
-      return await db.query(query);
+
+        return await db.query(query);
     } catch (err) {
-      console.error(`❌ Error fetching clinic data:`, err);
-      throw err;
+        console.error(`❌ Error fetching clinic data:`, err);
+        throw err;
     }
-  };
-  
+};
+
 
 export const getTreatmentEmbeddingsText = async () => {
     try {

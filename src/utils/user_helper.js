@@ -91,9 +91,9 @@ export const generateSupportTicketId = () => {
 export const cosineSimilarity = (a, b) => {
     let dot = 0, normA = 0, normB = 0;
     for (let i = 0; i < a.length; i++) {
-      dot += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
+        dot += a[i] * b[i];
+        normA += a[i] * a[i];
+        normB += b[i] * b[i];
     }
     return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
@@ -166,3 +166,23 @@ export const getAppointmentDetails = async (userId, appointmentId) => {
     };
 };
 
+export const googleTranslator = async (text, targetLang) => {
+    const apiKey = process.env.GOOGLE_TRANSLATE_KEY;
+    const url = `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            q: text,
+            target: targetLang,
+        }),
+    });
+    const data = await response.json();
+    if (data && data.data && data.data.translations && data.data.translations.length > 0) {
+        return data.data.translations[0].translatedText;
+    } else {
+        throw new Error('Translation failed');
+    }
+};

@@ -1893,6 +1893,15 @@ export const updateProductApprovalStatus = async (product_id, approval_status) =
     }
 }
 
+export const getAllTreatmentsModel = async () => {
+    try {
+        return await db.query("SELECT t.*, GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ', ') AS concerns, GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ', ') AS device_names FROM tbl_treatments t LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id LEFT JOIN tbl_treatment_devices d ON d.treatment_id = t.treatment_id WHERE is_deleted = 0 GROUP BY t.treatment_id ORDER BY `treatment_id` DESC;");
+    } catch (error) {
+        console.error("getAllTreatmentsModel error:", error);
+        throw error;
+    }
+};
+
 export const addTreatmentModel = async (data) => {
     try {
         return await db.query(
@@ -1905,11 +1914,35 @@ export const addTreatmentModel = async (data) => {
     }
 };
 
+export const addSubTreatmentModel = async (data) => {
+    try {
+        return await db.query(
+            `INSERT INTO tbl_sub_treatments SET ?`,
+            [data]
+        );
+    } catch (error) {
+        console.error("addSubTreatmentModel error:", error);
+        throw error;
+    }
+};
+
 export const updateTreatmentModel = async (treatment_id, data) => {
     try {
         return await db.query(
             `UPDATE tbl_treatments SET ? WHERE treatment_id = ?`,
             [data, treatment_id]
+        );
+    } catch (error) {
+        console.error("updateTreatmentModel error:", error);
+        throw error;
+    }
+};
+
+export const updateSubtreatmentModel = async (sub_treatment_id, data) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_sub_treatments SET ? WHERE sub_treatment_id = ?`,
+            [data, sub_treatment_id]
         );
     } catch (error) {
         console.error("updateTreatmentModel error:", error);
@@ -1929,17 +1962,43 @@ export const deleteExistingConcernsModel = async (treatment_id) => {
     }
 }
 
-export const addTreatmentConcernsModel = async (treatment_id, concerns) => {
+export const deleteTreatmentDeviceNameModel = async (treatment_id) => {
     try {
         return await db.query(
+            `DELETE FROM tbl_treatment_devices WHERE treatment_id = ?`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("deleteTreatmentDeviceNameModel error:", error);
+        throw error;
+    }
+};
+
+export const addTreatmentConcernsModel = async (treatment_id, concerns) => {
+    try {
+        const values = concerns.map(concern => [treatment_id, concern]);
+        return await db.query(
             `INSERT INTO tbl_treatment_concerns (treatment_id, concern_id) VALUES ?`,
-            [concerns.map(concern => [treatment_id, concern])]
+            [values]
         );
     } catch (error) {
         console.error("addTreatmentConcernsModel error:", error);
         throw error;
     }
-}
+};
+
+export const addTreatmentDeviceNameModel = async (treatment_id, devices) => {
+    try {
+        const values = devices.map(device => [treatment_id, device]);
+        return await db.query(
+            `INSERT INTO tbl_treatment_devices (treatment_id, device_name) VALUES ?`,
+            [values]
+        );
+    } catch (error) {
+        console.error("addTreatmentDeviceNameModel error:", error);
+        throw error;
+    }
+};
 
 export const addSubTreatmentsModel = async (treatment_id, sub_treatments) => {
     try {
@@ -2096,7 +2155,48 @@ export const updateConcernModel = async (concern_id, data) => {
         console.error("updateConcernModel error:", error);
         throw error;
     }
-}
+};
+
+export const getAllConcerns = async (lang = "en") => {
+    try {
+        let query = `
+            SELECT *
+            FROM tbl_concerns
+            WHERE is_deleted = 0 AND approval_status = 'APPROVED'     
+        `;
+        const params = [];
+
+        const concernData = await db.query(query, params);
+
+        const result = concernData.map((concern) => {
+            let parsedTips = {};
+            try {
+                parsedTips = typeof concern.tips === "string"
+                    ? JSON.parse(concern.tips)
+                    : concern.tips || {};
+            } catch (err) {
+                console.warn(`Invalid JSON in tips for concern_id: ${concern.concern_id}`);
+                parsedTips = {};
+            }
+
+            // Ensure tips is an array of trimmed strings
+            const tipsString = parsedTips?.[lang] || "";
+            const tipsArray = typeof tipsString === "string"
+                ? tipsString.split(".,").map((tip) => tip.trim()).filter(Boolean)
+                : [];
+
+            return {
+                ...concern,
+                tips: tipsArray,
+            };
+        });
+
+        return result;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch concerns.");
+    }
+};
 
 export const addConcernModel = async (data) => {
     try {
