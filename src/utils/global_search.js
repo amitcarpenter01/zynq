@@ -70,10 +70,9 @@ function getHybridScore(nameScore, fullScore) {
     return Math.min(hybrid, 1);
   }
 
-  // 2️⃣ If nameScore is weak (< 0.50), do NOT boost name
+  // 2️⃣ If nameScore is weak (< 0.50), give ZERO weight to nameScore
   if (nameScore < 0.50) {
-    // only slight contribution from name
-    return (fullScore * 0.80) + (nameScore * 0.20);
+    return fullScore;   // ❗ Only semantic score matters
   }
 
   // 3️⃣ Adaptive Hybrid Weighting (middle range 0.50 - 0.79)
@@ -94,6 +93,7 @@ function getHybridScore(nameScore, fullScore) {
 
   return (nameScore * nameWeight) + (fullScore * fullWeight);
 }
+
 
 
 
