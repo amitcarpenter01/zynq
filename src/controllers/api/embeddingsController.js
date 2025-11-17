@@ -240,7 +240,7 @@ export const generateClinicEmbedding = async (req, res) => {
 
 export const generateTreatmentEmbeddings2 = async (req, res) => {
   try {
-    const rows = await dbOperations.getData('tbl_treatments', '');
+    const rows = await dbOperations.getData('tbl_treatments', `where approval_status = 'APPROVED'`);
 
     if (!rows || rows.length === 0) {
       return handleError(res, 404, 'en', "No Data found");
@@ -253,7 +253,6 @@ export const generateTreatmentEmbeddings2 = async (req, res) => {
       // -------------------------------------------------------
       const combinedText = `
         ${row.name || ''} is a treatment designed to address ${row.concern_en || 'various skin concerns'}.
-        It offers benefits such as ${row.benefits_en || 'improving overall skin quality'}.
         ${row.description_en || 'This treatment helps rejuvenate and enhance the skin.'}
         It commonly uses devices like ${row.device_name || 'advanced medical-grade technology'}.
       `.trim();
@@ -326,7 +325,7 @@ export const generateTreatmentEmbeddingsV2 = async (id) => {
   try {
     const rows = await dbOperations.getData(
       "tbl_treatments",
-      `WHERE treatment_id = '${id}'`
+      `WHERE treatment_id = '${id}' AND approval_status = 'APPROVED'`
     );
 
     if (!rows || rows.length === 0) {
@@ -351,7 +350,6 @@ export const generateTreatmentEmbeddingsV2 = async (id) => {
       // -------------------------------------------------------
       const combinedText = `
 ${row.name || ''} is a treatment designed to address ${row.concern_en || 'various skin concerns'}.
-It offers benefits such as ${row.benefits_en || 'improving overall skin quality'}.
 ${row.description_en || 'This treatment helps rejuvenate and enhance the skin.'}
 It commonly uses devices like ${row.device_name || 'advanced medical-grade technology'}.
       `;
