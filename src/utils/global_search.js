@@ -58,6 +58,42 @@ const phraseMeaningSimilarity = (a, b) => {
 // --------------------------------------
 // 4️⃣ Final boost logic (only based on name)
 // --------------------------------------
+function getHybridScore(nameScore, fullScore) {
+
+  // 1️⃣ Strong exact/near match → name dominates
+  if (nameScore >= 0.80) {
+    let hybrid =
+      (nameScore * 0.85) +
+      (fullScore * 0.10) +
+      0.05;
+
+    return Math.min(hybrid, 1);
+  }
+
+  // 2️⃣ If nameScore is weak (< 0.50), do NOT boost name
+  if (nameScore < 0.50) {
+    // only slight contribution from name
+    return (fullScore * 0.80) + (nameScore * 0.20);
+  }
+
+  // 3️⃣ Adaptive Hybrid Weighting (middle range 0.50 - 0.79)
+  const diff = Math.abs(fullScore - nameScore);
+  let nameWeight = 0.50;
+  let fullWeight = 0.50;
+
+  if (diff >= 0.20) {
+    nameWeight = 0.35;
+    fullWeight = 0.65;
+  } else if (diff >= 0.10) {
+    nameWeight = 0.45;
+    fullWeight = 0.55;
+  } else {
+    nameWeight = 0.60;
+    fullWeight = 0.40;
+  }
+
+  return (nameScore * nameWeight) + (fullScore * fullWeight);
+}
 
 
 
@@ -111,23 +147,7 @@ export const getTreatmentsVectorResult = async (
       nameScore = cosineSimilarity(queryEmbedding, nameEmbedding);
     }
 
-    let hybridScore;
-
-    if (nameScore >= 0.80) {
-      // 🔥 Strong name match priority
-      hybridScore =
-        (nameScore * 0.85) +   // name dominates
-        (fullScore * 0.10) +   // just a tiny semantic influence
-        0.05;                  // bonus boost
-
-      // cap at 1.0
-      hybridScore = Math.min(hybridScore, 1);
-    } else {
-      // 🧠 Normal hybrid logic
-      hybridScore =
-        (0.60 * nameScore) +
-        (0.40 * fullScore);
-    }
+const hybridScore = getHybridScore(nameScore, fullScore);
 
     if (hybridScore >= threshold) {
       const { embeddings, name_embeddings, ...rest } = row;
