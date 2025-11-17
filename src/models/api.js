@@ -1752,12 +1752,9 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
 };
 
 export const getSubTreatmentsByTreatmentId = async (treatment_id) => {
-    try {
-        console.log(treatment_id);
-        
+    try {        
         return await db.query(`SELECT * FROM tbl_sub_treatments WHERE treatment_id = ? AND is_deleted = 0 AND approval_status = 'APPROVED'`, [treatment_id]);
-    }
-    catch (error) {
+    }catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch sub-treatments.");
     }

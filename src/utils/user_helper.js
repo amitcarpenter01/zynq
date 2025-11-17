@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import base64url from 'base64url';
 import dotenv from "dotenv";
 import dayjs from 'dayjs';
+import axios from 'axios';
 dotenv.config();
 const APP_URL = process.env.APP_URL;
 
@@ -166,23 +167,43 @@ export const getAppointmentDetails = async (userId, appointmentId) => {
     };
 };
 
-export const googleTranslator = async (text, targetLang) => {
-    const apiKey = process.env.GOOGLE_TRANSLATE_KEY;
-    const url = `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`;
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            q: text,
+// export const googleTranslator = async (text, targetLang) => {
+//     const apiKey = process.env.GOOGLE_TRANSLATE_KEY;
+//     const url = `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`;
+//     const response = await fetch(url, {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({
+//             q: text,
+//             target: targetLang,
+//         }),
+//     });
+//     console.log(response);
+//     return
+//     const data = await response.json();
+//     if (data && data.data && data.data.translations && data.data.translations.length > 0) {
+//         return data.data.translations[0].translatedText;
+//     } else {
+//         throw new Error('Translation failed');
+//     }
+// };
+
+export const googleTranslator = async(question, targetLang) => {
+    try {
+        const url = `https://translation.googleapis.com/language/translate/v2?key=${process.env.GOOGLE_TRANSLATE_KEY}`;
+        const body = {
+            q: question,
             target: targetLang,
-        }),
-    });
-    const data = await response.json();
-    if (data && data.data && data.data.translations && data.data.translations.length > 0) {
-        return data.data.translations[0].translatedText;
-    } else {
-        throw new Error('Translation failed');
+            format: 'text'
+        };
+
+        const resp = await axios.post(url, body);
+        const translated = resp.data.data.translations[0].translatedText;        
+        return translated;
+    } catch (err) {
+        console.error('Translate error:', err.response?.data || err.message);
+        throw err;
     }
 };

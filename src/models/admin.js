@@ -1895,9 +1895,64 @@ export const updateProductApprovalStatus = async (product_id, approval_status) =
 
 export const getAllTreatmentsModel = async () => {
     try {
-        return await db.query("SELECT t.*, GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ', ') AS concerns, GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ', ') AS device_names FROM tbl_treatments t LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id LEFT JOIN tbl_treatment_devices d ON d.treatment_id = t.treatment_id WHERE is_deleted = 0 GROUP BY t.treatment_id ORDER BY `treatment_id` DESC;");
+        return await db.query("SELECT    t.*,    GROUP_CONCAT(        DISTINCT c.concern_id    ORDER BY        c.concern_id SEPARATOR ', '    ) AS concern_ids,    GROUP_CONCAT(        DISTINCT c.name    ORDER BY        c.name SEPARATOR ', '    ) AS concern_name,    GROUP_CONCAT(        DISTINCT d.device_name    ORDER BY        d.device_name SEPARATOR ', '    ) AS device_names FROM    tbl_treatments t LEFT JOIN tbl_treatment_concerns tc ON    tc.treatment_id = t.treatment_id LEFT JOIN tbl_concerns c ON     c.concern_id = tc.concern_id LEFT JOIN tbl_treatment_devices d ON     d.treatment_id = t.treatment_id WHERE    t.is_deleted = 0 GROUP BY    t.treatment_id ORDER BY    t.created_at DESC ");
     } catch (error) {
         console.error("getAllTreatmentsModel error:", error);
+        throw error;
+    }
+};
+
+// export const getTreatmentsByTreatmentId = async (treatment_id) => {
+//     try {
+//         return await db.query(
+//             `SELECT * FROM tbl_treatments WHERE treatment_id = ? AND is_deleted = 0`,
+//             [treatment_id]
+//         );
+//     } catch (error) {
+//         console.error("getTreatmentsByTreatmentId error:", error);
+//         throw error;
+//     }
+// };
+
+export const getTreatmentsByTreatmentId = async (treatment_id) => {
+    try {
+        const result = await db.query(
+            `
+            SELECT 
+                t.*,
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'concern_id', c.concern_id,
+                        'concern_name', c.name
+                    )
+                ) AS concerns
+            FROM tbl_treatments t
+            LEFT JOIN tbl_treatment_concerns tc 
+                ON tc.treatment_id = t.treatment_id
+            LEFT JOIN tbl_concerns c 
+                ON c.concern_id = tc.concern_id
+            WHERE t.treatment_id = ? 
+              AND t.is_deleted = 0
+            GROUP BY t.treatment_id
+            `,
+            [treatment_id]
+        );
+
+        return result;
+    } catch (error) {
+        console.error("getTreatmentsByTreatmentId error:", error);
+        throw error;
+    }
+};
+
+export const getSubTreatmentsByTreatmentId = async (treatment_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_sub_treatments WHERE treatment_id = ? AND is_deleted = 0`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("getSubTreatmentsByTreatmentId error:", error);
         throw error;
     }
 };
@@ -1926,6 +1981,24 @@ export const addSubTreatmentModel = async (data) => {
     }
 };
 
+export const getSubTreatmentModel = async (treatment_id, name) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT * FROM tbl_sub_treatments 
+             WHERE treatment_id = ? 
+               AND name = ? 
+               ORDER BY created_at desc`,
+            [treatment_id, name,]
+        );
+
+        return rows; // return only array of results
+    } catch (error) {
+        console.error("getSubTreatmentModel error:", error);
+        throw error;
+    }
+};
+
+
 export const updateTreatmentModel = async (treatment_id, data) => {
     try {
         return await db.query(
@@ -1946,6 +2019,32 @@ export const updateSubtreatmentModel = async (sub_treatment_id, data) => {
         );
     } catch (error) {
         console.error("updateTreatmentModel error:", error);
+        throw error;
+    }
+};
+
+export const addSubTreatmentUserMap = async (data) => {
+    try {
+        return await db.query(
+            `INSERT INTO tbl_sub_treatment_user_maps SET ?`,
+            [data]
+        );
+    } catch (error) {
+        console.error("addSubTreatmentUserMap error:", error);
+        throw error;
+    }
+};
+
+export const updateSubTreatmentUserMap = async (sub_treatment_id, user_id, data) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_sub_treatment_user_maps 
+             SET ? 
+             WHERE sub_treatment_id = ? AND zynq_user_id = ?`,
+            [data, sub_treatment_id, user_id]
+        );
+    } catch (error) {
+        console.error("updateSubTreatmentUserMap error:", error);
         throw error;
     }
 };
@@ -2086,6 +2185,20 @@ export const deleteTreatmentModel = async (treatment_id) => {
     }
 }
 
+export const deleteSubTreatmentModel = async (sub_treatment_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_sub_treatments 
+            SET is_deleted = 1
+            WHERE sub_treatment_id  = ?`,
+            [sub_treatment_id]
+        );
+    } catch (error) {
+        console.error("deleteSubTreatmentModel error:", error);
+        throw error;
+    }
+}
+
 export const deleteZynqUserTreatmentsModel = async (treatment_id, zynq_user_id) => {
     try {
         return await db.query(
@@ -2097,6 +2210,21 @@ export const deleteZynqUserTreatmentsModel = async (treatment_id, zynq_user_id) 
         );
     } catch (error) {
         console.error("deleteZynqUserTreatmentsModel error:", error);
+        throw error;
+    }
+}
+
+export const deleteZynqUserSubTreatmentsModel = async (sub_treatment_id, zynq_user_id) => {
+    try {
+        return await db.query(
+            `
+            UPDATE tbl_sub_treatments SET
+            is_deleted = 1
+            WHERE sub_treatment_id LIKE ? AND created_by_zynq_user_id = ?`,
+            [sub_treatment_id, zynq_user_id]
+        );
+    } catch (error) {
+        console.error("deleteZynqUserSubTreatmentsModel error:", error);
         throw error;
     }
 }

@@ -53,28 +53,33 @@ export const addAppointmentDraftSchema = joi.object({
 export const addEditTreatmentSchema = joi.object({
   treatment_id: stringValidation.optional(),
   name: stringValidation,
-  swedish: stringValidation,
-  classification_type: stringValidation.valid('Medical', 'Non Medical'),
+  // swedish: stringValidation,
+  classification_type: stringValidation.valid('Medical', 'Non-Medical'),
   benefits_en: stringValidation,
-  benefits_sv: stringValidation,
+  // benefits_sv: stringValidation,
   description_en: stringValidation,
-  description_sv: stringValidation,
-  source: stringValidation.valid("old", "new"),
+  // description_sv: stringValidation,
+  // source: stringValidation.valid("old", "new"),
   embeddings: joi.array().items(numberValidation).min(1),
   is_device: booleanValidation,
   concerns: idArrayValidation,
-  device_name: idArrayValidation,
+  device_name: idArrayValidation.optional(),
+  like_wise_terms: idArrayValidation.optional(),
 })
 
 export const addEditSubtreatmentSchema = joi.object({
   treatment_id: stringValidation.optional(),
   sub_treatment_id: stringValidation.optional(),
   name: stringValidation,
-  swedish: stringValidation
+  swedish: stringValidation.optional()
 })
 
 export const deleteTreatmentSchema = joi.object({
   treatment_id: stringValidation,
+})
+
+export const deleteSubTreatmentSchema = joi.object({
+  sub_treatment_id: stringValidation,
 })
 
 export const updateTreatmentApprovalStatusSchema = joi.object({

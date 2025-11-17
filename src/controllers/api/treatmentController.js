@@ -1,10 +1,25 @@
-import { getAllConcerns, addConcernModel, addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentDeviceNameModel, getAllTreatmentsModel, addTreatmentModel, addSubTreatmentModel, checkExistingConcernModel, checkExistingTreatmentModel, deleteClinicTreatmentsModel, deleteConcernModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel, deleteTreatmentDeviceNameModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel, deleteTreatmentModel, deleteZynqUserConcernsModel, deleteZynqUserTreatmentsModel, updateConcernApprovalStatusModel, updateConcernModel, updateTreatmentApprovalStatusModel, updateTreatmentModel, updateSubtreatmentModel } from "../../models/admin.js";
+import {
+    getAllConcerns,
+    addConcernModel, addSubTreatmentsModel,
+    addTreatmentConcernsModel, addTreatmentDeviceNameModel,
+    getAllTreatmentsModel, getTreatmentsByTreatmentId, getSubTreatmentsByTreatmentId,
+    addTreatmentModel, addSubTreatmentModel, checkExistingConcernModel, checkExistingTreatmentModel,
+    deleteClinicTreatmentsModel, deleteConcernModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel,
+    deleteTreatmentDeviceNameModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel,
+    deleteTreatmentModel, deleteZynqUserConcernsModel, deleteZynqUserTreatmentsModel, updateConcernApprovalStatusModel,
+    updateConcernModel, updateTreatmentApprovalStatusModel, updateTreatmentModel, updateSubtreatmentModel,
+    deleteSubTreatmentModel, deleteZynqUserSubTreatmentsModel,
+    updateSubTreatmentUserMap,
+    addSubTreatmentUserMap,
+    getSubTreatmentModel
+} from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
 import { asyncHandler, handleError, handleSuccess, } from "../../utils/responseHandler.js";
-import { isEmpty } from "../../utils/user_helper.js";
+import { googleTranslator, isEmpty } from "../../utils/user_helper.js";
 import { v4 as uuidv4 } from "uuid";
 import { generateTreatmentEmbeddingsV2 } from "./embeddingsController.js";
+import db from "../../config/db.js";
 
 export const getTreatmentsByConcern = asyncHandler(async (req, res) => {
     const { concern_id } = req.params;
@@ -22,17 +37,23 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
     const isAdmin = role === "ADMIN";
 
     const dbData = { ...body };
+    dbData.swedish = await googleTranslator(dbData.name, "sv");
+    dbData.benefits_sv = await googleTranslator(dbData.benefits_en, "sv");
+    dbData.description_sv = await googleTranslator(dbData.description_en, "sv");
 
     // 🧩 Creator metadata
     if (isAdmin) {
+        dbData.created_by_zynq_user_id = null;
         dbData.is_admin_created = true;
         dbData.approval_status = "APPROVED";
     } else {
         dbData.created_by_zynq_user_id = user_id;
+        dbData.is_admin_created = false;
         dbData.approval_status = "PENDING";
     }
 
     if (Array.isArray(dbData.device_name)) dbData.device_name = dbData.device_name.join(',');
+    if (Array.isArray(dbData.like_wise_terms)) dbData.like_wise_terms = dbData.like_wise_terms.join(',');
 
     // ✳️ EDIT FLOW
     if (treatment_id) {
@@ -41,10 +62,13 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             const [existing] = await checkExistingTreatmentModel(treatment_id, user_id);
             if (!existing) return handleError(res, 403, language, "NOT_AUTHORIZED_TO_EDIT_TREATMENT");
         }
+
+
         const updateTreatment = {
             name: dbData.name,
             swedish: dbData.swedish,
             device_name: dbData.device_name,
+            like_wise_terms: dbData.like_wise_terms,
             classification_type: dbData.classification_type,
             benefits_en: dbData.benefits_en,
             benefits_sv: dbData.benefits_sv,
@@ -53,6 +77,7 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             source: dbData.source,
             is_device: dbData.is_device,
             is_admin_created: dbData.is_admin_created,
+            created_by_zynq_user_id: dbData.created_by_zynq_user_id,
             approval_status: dbData.approval_status,
         };
         // 🧹 Cleanup + reinserts only if editing
@@ -63,7 +88,7 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
         ]);
 
         if (dbData.concerns.length > 0) await addTreatmentConcernsModel(treatment_id, dbData.concerns);
-        if (dbData.device_name.length > 0) await addTreatmentDeviceNameModel(treatment_id, req.body.device_name);
+        if (dbData.device_name?.length > 0) await addTreatmentDeviceNameModel(treatment_id, req.body.device_name);
     }
 
     // ✳️ CREATE FLOW
@@ -74,6 +99,7 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             name: dbData.name,
             swedish: dbData.swedish,
             device_name: dbData.device_name,
+            like_wise_terms: dbData.like_wise_terms,
             classification_type: dbData.classification_type,
             benefits_en: dbData.benefits_en,
             benefits_sv: dbData.benefits_sv,
@@ -82,6 +108,7 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             source: dbData.source,
             is_device: dbData.is_device,
             is_admin_created: dbData.is_admin_created,
+            created_by_zynq_user_id: dbData.created_by_zynq_user_id,
             approval_status: dbData.approval_status,
         };
 
@@ -96,33 +123,96 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
         ? "TREATMENT_UPDATED_SUCCESSFULLY"
         : "TREATMENT_ADDED_SUCCESSFULLY";
 
+    // await generateTreatmentEmbeddingsV2(treatment_id ? treatment_id : dbData.treatment_id)
     handleSuccess(res, 200, language, message, { treatment_id: treatment_id ? treatment_id : dbData.treatment_id });
-    // await generateTreatmentEmbeddingsV2(treatment_id)
 });
+
+// export const addEditSubtreatment = asyncHandler(async (req, res) => {
+//     const { treatment_id, sub_treatment_id, ...body } = req.body;
+//     const role = req.user?.role;
+//     const user_id = req.user?.id;
+//     const language = req.user?.language || 'en';
+
+//     const isAdmin = role === "ADMIN";
+
+//     const dbData = { ...body };
+
+//     dbData.swedish = await googleTranslator(dbData.name, "sv");
+
+//     // 🧩 Creator metadata
+//     if (isAdmin) {
+//         dbData.is_admin_created = true;
+//         dbData.approval_status = "APPROVED";
+//     } else {
+//         dbData.created_by_zynq_user_id = user_id;
+//         dbData.approval_status = "PENDING";
+//     }
+
+//     // ✳️ EDIT FLOW
+//     if (sub_treatment_id) {
+//         // 🛡️ Non-admin ownership check
+
+//         const updateSubTreatment = {
+//             treatment_id: treatment_id,
+//             name: dbData.name,
+//             swedish: dbData.swedish,
+//             is_admin_created: dbData.is_admin_created,
+//             approval_status: dbData.approval_status,
+//         };
+//         // 🧹 Cleanup + reinserts only if editing
+//         await Promise.all([
+//             updateSubtreatmentModel(sub_treatment_id, updateSubTreatment),
+//         ]);
+//     }
+
+//     // ✳️ CREATE FLOW
+//     else {
+//         const addSubTreatment = {
+//             treatment_id: treatment_id,
+//             name: dbData.name,
+//             swedish: dbData.swedish,
+//             is_admin_created: dbData.is_admin_created,
+//             approval_status: dbData.approval_status,
+//         };
+
+//         // Insert main + related tables together
+//         await addSubTreatmentModel(addSubTreatment);
+//     }
+
+//     // ✅ Unified response
+//     const message = sub_treatment_id
+//         ? "SUBTREATMENT_UPDATED_SUCCESSFULLY"
+//         : "SUBTREATMENT_ADDED_SUCCESSFULLY";
+
+//     handleSuccess(res, 200, language, message, { sub_treatment_id: sub_treatment_id ? sub_treatment_id : dbData.sub_treatment_id });
+//     // await generateTreatmentEmbeddingsV2(treatment_id)
+// });
 
 export const addEditSubtreatment = asyncHandler(async (req, res) => {
     const { treatment_id, sub_treatment_id, ...body } = req.body;
     const role = req.user?.role;
     const user_id = req.user?.id;
-    const language = req.user?.language || 'en';
+    const language = req.user?.language || "en";
 
     const isAdmin = role === "ADMIN";
 
     const dbData = { ...body };
+    dbData.swedish = await googleTranslator(dbData.name, "sv");
 
     // 🧩 Creator metadata
     if (isAdmin) {
         dbData.is_admin_created = true;
         dbData.approval_status = "APPROVED";
     } else {
+        dbData.is_admin_created = false;
         dbData.created_by_zynq_user_id = user_id;
         dbData.approval_status = "PENDING";
     }
 
+    let newSubTreatmentId = sub_treatment_id;
+
     // ✳️ EDIT FLOW
     if (sub_treatment_id) {
-        // 🛡️ Non-admin ownership check
-      
         const updateSubTreatment = {
             treatment_id: treatment_id,
             name: dbData.name,
@@ -130,33 +220,55 @@ export const addEditSubtreatment = asyncHandler(async (req, res) => {
             is_admin_created: dbData.is_admin_created,
             approval_status: dbData.approval_status,
         };
-        // 🧹 Cleanup + reinserts only if editing
-        await Promise.all([
-            updateSubtreatmentModel(sub_treatment_id, updateSubTreatment),
-        ]);
+
+        await updateSubtreatmentModel(sub_treatment_id, updateSubTreatment);
+
+        // 👉 Update mapping if created by non-admin
+        if (!isAdmin) {
+            await updateSubTreatmentUserMap(
+                sub_treatment_id,
+                user_id,
+                {
+                    approval_status: dbData.approval_status
+                }
+            );
+        }
     }
 
     // ✳️ CREATE FLOW
     else {
+        console.log("user_id=>", user_id)
         const addSubTreatment = {
             treatment_id: treatment_id,
             name: dbData.name,
-            swedish: dbData.swedish, 
+            swedish: dbData.swedish,
             is_admin_created: dbData.is_admin_created,
             approval_status: dbData.approval_status,
+            created_by_zynq_user_id: user_id
         };
 
-        // Insert main + related tables together
-        await addSubTreatmentModel(addSubTreatment);
+        const insertResult = await addSubTreatmentModel(addSubTreatment);
+        const newData = await getSubTreatmentModel(treatment_id, dbData.name);
+        console.log("newData", newData)
+        newSubTreatmentId = newData?.sub_treatment_id;
+
+        // 👉 Insert mapping if created by non-admin
+        if (!isAdmin) {
+            await addSubTreatmentUserMap({
+                sub_treatment_id: newSubTreatmentId,
+                zynq_user_id: user_id,
+                approval_status: dbData.approval_status
+            });
+        }
     }
 
-    // ✅ Unified response
-    const message = sub_treatment_id
-        ? "SUBTREATMENT_UPDATED_SUCCESSFULLY"
-        : "SUBTREATMENT_ADDED_SUCCESSFULLY";
-
-    handleSuccess(res, 200, language, message, { sub_treatment_id: sub_treatment_id ? sub_treatment_id : dbData.sub_treatment_id });
-    // await generateTreatmentEmbeddingsV2(treatment_id)
+    // Response
+    handleSuccess(res, 200, language,
+        sub_treatment_id
+            ? "SUBTREATMENT_UPDATED_SUCCESSFULLY"
+            : "SUBTREATMENT_ADDED_SUCCESSFULLY",
+        { sub_treatment_id: newSubTreatmentId }
+    );
 });
 
 export const deleteTreatment = asyncHandler(async (req, res) => {
@@ -177,6 +289,28 @@ export const deleteTreatment = asyncHandler(async (req, res) => {
 
     return handleSuccess(res, 200, language, "TREATMENT_DELETED_SUCCESSFULLY");
 });
+
+export const deleteSubTreatment = asyncHandler(async (req, res) => {
+    const { sub_treatment_id } = req.params;
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+    console.log(user_id, '<=user_id')
+
+    const language = req.user?.language || 'en';
+    // if (role === "ADMIN") {
+    await deleteSubTreatmentModel(sub_treatment_id)
+    // } else {
+    //     const deleted = await deleteZynqUserSubTreatmentsModel(sub_treatment_id, user_id);
+    //     console.log(deleted, '<=data')
+    //     if (deleted.affectedRows === 0) {
+    //         return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_SUB_TREATMENT");
+    //     }
+    // }
+
+
+    return handleSuccess(res, 200, language, "SUB_TREATMENT_DELETED_SUCCESSFULLY");
+});
+
 
 export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
     const { approval_status, treatment_id } = req.body;
@@ -220,10 +354,63 @@ export const get_all_concerns = async (req, res) => {
     }
 };
 
+// export const getAllTreatments = asyncHandler(async (req, res) => {
+//     const language = req?.user?.language || 'en';
+//     const treatments = await getAllTreatmentsModel();
+
+//     treatments.APPROVED = [];
+//     treatments.OTHERS = [];
+//     treatments.map((treatment) => {
+//         if (treatment.approval_status === "APPROVED") {
+//             treatments.APPROVED.push(treatment);
+//         } else {
+//             treatments.OTHERS.push(treatment);
+//         }
+//     })
+
+//     return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
+// });
 export const getAllTreatments = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || "en";
+
+    const treatments = await getAllTreatmentsModel();
+
+    const approved = [];
+    const others = [];
+
+    for (const item of treatments) {
+        if (item.approval_status === "APPROVED") {
+            approved.push(item);
+        } else {
+            others.push(item);
+        }
+    }
+
+    const response = {
+        ALL: treatments,
+        APPROVED: approved,
+        OTHERS: others
+    };
+
+    return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", response);
+});
+
+
+export const getAllTreatmentById = asyncHandler(async (req, res) => {
+    const { treatment_id } = req.query;
     const language = req?.user?.language || 'en';
-    const treatments = await getAllTreatmentsModel();    
-    return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
+    const treatments = await getTreatmentsByTreatmentId(treatment_id);
+    if (treatments.length === 0) return handleError(res, 404, language, "TREATMENT_NOT_FOUND");
+    await Promise.all(
+        treatments.map(async (t) => {
+            t.sub_treatments =
+                await getSubTreatmentsByTreatmentId(
+                    t.treatment_id,
+                    language
+                );
+        })
+    );
+    return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments[0]);
 });
 
 export const addEditConcern = asyncHandler(async (req, res) => {
