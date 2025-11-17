@@ -958,7 +958,9 @@ export const getAllSurgery = async (req, res) => {
 export const getAllDevices = async (req, res) => {
   try {
     const language = "en";
-    const devices = await clinicModels.getAllDevices();
+    const {treatment_ids} = req.query;
+    const ids = treatment_ids ? treatment_ids.split(',') : [];
+    const devices = await clinicModels.getAllDevices(ids);
     if (!devices.length) {
       return handleError(res, 400, language, "NO_DEVICES_FOUND");
     }

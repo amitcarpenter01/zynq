@@ -306,29 +306,83 @@ export const insertClinicDocuments = async (clinic_id, certification_type_id, do
 //     }
 // };
 
+// export const getAllTreatments = async () => {
+//     try {
+//         const treatments = await db.query(`
+//             SELECT * 
+//             FROM tbl_treatments 
+//             WHERE is_deleted = 0 AND approval_status = 'APPROVED'
+//             ORDER BY created_at DESC
+
+//             `);
+
+//         // Remove embeddings dynamically
+//         const cleanedTreatments = treatments.map(row => {
+//             const treatmentRow = { ...row };
+//             if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+//             return treatmentRow;
+//         });
+
+//         return cleanedTreatments;
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch treatments.");
+//     }
+// };
+
 export const getAllTreatments = async () => {
     try {
         const treatments = await db.query(`
-            SELECT * 
-            FROM tbl_treatments 
-            WHERE is_deleted = 0 AND approval_status = 'APPROVED'
-            ORDER BY created_at DESC
-            
-            `);
+           SELECT
+    t.*,
+    COALESCE(
+        JSON_ARRAYAGG(
+            CASE 
+                WHEN st.sub_treatment_id IS NOT NULL THEN
+                    JSON_OBJECT(
+                        'sub_treatment_id', st.sub_treatment_id,
+                        'name', st.name,
+                        'swedish', st.swedish,
+                        'is_admin_created', st.is_admin_created,
+                        'created_by_zynq_user_id', st.created_by_zynq_user_id,
+                        'approval_status', st.approval_status,
+                        'is_deleted', st.is_deleted,
+                        'created_at', st.created_at
+                    )
+            END
+        ),
+        JSON_ARRAY()
+    ) AS sub_treatments
+FROM tbl_treatments t
+LEFT JOIN tbl_sub_treatments st
+    ON t.treatment_id = st.treatment_id
+    AND st.is_deleted = 0
+WHERE t.is_deleted = 0
+GROUP BY t.treatment_id
+ORDER BY t.created_at DESC
+        `);
 
-        // Remove embeddings dynamically
-        const cleanedTreatments = treatments.map(row => {
-            const treatmentRow = { ...row };
-            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
-            return treatmentRow;
+        // Remove embeddings if present
+        const cleaned = treatments.map(row => {
+            delete row.embeddings;
+
+            // Clean null values inside sub_treatments
+            if (Array.isArray(row.sub_treatments)) {
+                row.sub_treatments = row.sub_treatments.filter(item => item !== null);
+            }
+
+            return row;
         });
 
-        return cleanedTreatments;
+        return cleaned;
+
     } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch treatments.");
+        throw new Error("Failed to fetch treatments and sub-treatments.");
     }
 };
+
+
 
 
 // export const getClinicTreatments = async (clinic_id) => {
@@ -1462,15 +1516,22 @@ export const getAllsurgery = async () => {
     }
 }
 
-export const getAllDevices = async () => {
-    try {
-        const devices = await db.query('SELECT * FROM tbl_aesthetic_devices')
-        return devices;
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch devices.");
-    }
-}
+export const getAllDevices = async (ids) => {
+  try {
+    if (!ids.length) {
+        return await db.query('SELECT * FROM tbl_treatment_devices');
+    };
+
+    const sql = `SELECT * FROM tbl_treatment_devices WHERE treatment_id IN (?)`;
+
+    const devices = await db.query(sql, ids);
+    return devices;
+  } catch (error) {
+    console.error("Database Error:", error.message);
+    throw new Error("Failed to fetch devices.");
+  }
+};
+
 
 // export const getClinicTreatmentsBulk = async (clinicIds) => {
 //     const placeholders = clinicIds.map(() => '?').join(',');
