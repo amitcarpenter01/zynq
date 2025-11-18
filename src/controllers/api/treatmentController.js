@@ -20,6 +20,9 @@ import { googleTranslator, isEmpty } from "../../utils/user_helper.js";
 import { v4 as uuidv4 } from "uuid";
 import { generateTreatmentEmbeddingsV2 } from "./embeddingsController.js";
 import db from "../../config/db.js";
+import xlsx from 'xlsx';
+import path from 'path';
+import fs from 'fs';
 
 export const getTreatmentsByConcern = asyncHandler(async (req, res) => {
     const { concern_id } = req.params;
@@ -512,3 +515,113 @@ export const updateConcernApprovalStatus = asyncHandler(async (req, res) => {
         });
     }
 });
+
+export const import_treatments_from_CSV = async (req, res) => {
+    const role = req.user?.role;
+    const language = req.user?.language || "en";
+
+    // Admin only
+    if (role !== "ADMIN") {
+        return handleError(res, 403, language, "ONLY_ADMIN_CAN_IMPORT_TREATMENTS");
+    }
+
+    const filePath = req.file?.path;
+    if (!filePath) return handleError(res, 400, language, "CSV_REQUIRED");
+
+    try {
+        const workbook = xlsx.readFile(filePath);
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = xlsx.utils.sheet_to_json(sheet);
+
+        if (!rows.length) {
+            fs.unlinkSync(filePath);
+            return handleError(res, 400, language, "CSV_EMPTY");
+        }
+
+        // Fetch existing treatments (by name for duplicate prevention)
+        const existingRows = await db.query(
+            `SELECT name FROM tbl_treatments`
+        );
+
+        const existingList = Array.isArray(existingRows) ? existingRows : [];
+        const existingNames = new Set(existingList.map(r => (r.name || "").trim().toLowerCase()));
+
+        const seenCSV = new Set(); // for deduplication inside CSV
+        const toInsert = [];
+
+        for (const row of rows) {
+            const name = (row.name || "").trim();
+
+            if (!name) continue;
+
+            const lowerName = name.toLowerCase();
+
+            // Skip duplicates
+            if (existingNames.has(lowerName) || seenCSV.has(lowerName)) continue;
+
+            seenCSV.add(lowerName);
+
+            const treatment_id = uuidv4();
+
+            // Clean fields
+            const concernsArr = (row.concerns || "").split(",").map(c => c.trim()).filter(Boolean);
+            const deviceArr = (row.device_name || "").split(",").map(d => d.trim()).filter(Boolean);
+
+            // Prepare translated fields
+            const swedish = await googleTranslator(name, "sv");
+            const benefits_sv = await googleTranslator(row.benefits_en || "", "sv");
+            const description_sv = await googleTranslator(row.description_en || "", "sv");
+
+            const treatmentObject = {
+                treatment_id,
+                name,
+                swedish,
+                device_name: row.device_name || "",
+                like_wise_terms: row.like_wise_terms || "",
+                classification_type: row.classification_type || "",
+                benefits_en: row.benefits_en || "",
+                benefits_sv,
+                description_en: row.description_en || "",
+                description_sv,
+                source: row.source || "",
+                is_device: row.is_device === "true" || row.is_device === "1",
+                is_admin_created: true,
+                created_by_zynq_user_id: null,
+                approval_status: "APPROVED",
+                _concerns: concernsArr,
+                _devices: deviceArr
+            };
+
+            toInsert.push(treatmentObject);
+        }
+
+        if (!toInsert.length) {
+            fs.unlinkSync(filePath);
+            return handleError(res, 400, language, "NO_NEW_RECORDS");
+        }
+
+        // Insert each treatment and its related rows
+        for (const t of toInsert) {
+            await addTreatmentModel(t);
+
+            if (t._concerns.length > 0) {
+                await addTreatmentConcernsModel(t.treatment_id, t._concerns);
+            }
+
+            if (t._devices.length > 0) {
+                await addTreatmentDeviceNameModel(t.treatment_id, t._devices);
+            }
+        }
+
+        fs.unlinkSync(filePath);
+        return handleSuccess(res, 200, language, "TREATMENT_IMPORT_SUCCESS", {
+            inserted: toInsert.length,
+        });
+
+    } catch (error) {
+        console.error("Import failed:", error);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        return handleError(res, 500, language, "INTERNAL_SERVER_ERROR " + error.message);
+    }
+};
