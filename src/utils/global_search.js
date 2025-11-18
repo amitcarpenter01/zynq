@@ -6,7 +6,8 @@ import { zynqReminderEnglishTemplate, zynqReminderSwedishTemplate } from "./temp
 import { sendEmail } from "../services/send_email.js";
 import { cosineSimilarity } from "./user_helper.js";
 import axios from "axios";
-
+import OpenAI from "openai";
+const client = new OpenAI({ apiKey: process.env.OPENAI_KEY });
 // 🔹 Levenshtein distance (edit distance)
 const levenshteinDistance = (a, b) => {
   const m = a.length, n = b.length;
@@ -97,82 +98,118 @@ function getHybridScore(nameScore, fullScore) {
 
 
 
+// export const getTreatmentsVectorResult = async (
+//   rows,
+//   search,
+//   threshold = 0.4,
+//   topN = null,
+//   language = 'en',
+//   actualSearch
+// ) => {
+//   if (!search?.trim()) return rows;
+
+//   const normalized_search = search.trim().toLowerCase();
+
+//   // 1️⃣ Get embedding for the search term
+//   const queryEmbedRes = await axios.post(
+//     "http://localhost:11434/api/embeddings",
+//     {
+//       model: "nomic-embed-text",
+//       prompt: normalized_search
+//     }
+//   );
+
+//   const queryEmbedding = queryEmbedRes.data.embedding;
+
+//   let results = [];
+
+//   for (const row of rows) {
+//     if (!row.embeddings) continue;
+
+//     // ----------------------------
+//     // Full semantic embeddings
+//     // ----------------------------
+//     const fullEmbedding = Array.isArray(row.embeddings)
+//       ? row.embeddings
+//       : JSON.parse(row.embeddings);
+
+//     const fullScore = cosineSimilarity(queryEmbedding, fullEmbedding);
+
+//     // ----------------------------
+//     // Name-only embeddings (optional)
+//     // ----------------------------
+//     let nameScore = 0;
+
+//     if (row.name_embeddings) {
+//       const nameEmbedding = Array.isArray(row.name_embeddings)
+//         ? row.name_embeddings
+//         : JSON.parse(row.name_embeddings);
+
+//       nameScore = cosineSimilarity(queryEmbedding, nameEmbedding);
+//     }
+
+// const hybridScore = getHybridScore(nameScore, fullScore);
+
+//     if (hybridScore >= threshold) {
+//       const { embeddings, name_embeddings, ...rest } = row;
+
+//       results.push({
+//         ...rest,
+//         score: hybridScore,
+//         fullScore,
+//         nameScore
+//       });
+//     }
+//   }
+
+//   // Sort high → low
+//   results.sort((a, b) => b.score - a.score);
+
+//   // Translate fields
+//   results = results.map((result) => ({
+//     ...result,
+//     name: language === "en" ? result.name : result.swedish,
+//     benefits: language === "en" ? result.benefits_en : result.benefits_sv,
+//     description: language === "en" ? result.description_en : result.description_sv,
+//   }));
+
+//   return topN ? results.slice(0, topN) : results;
+// };
+
+
 export const getTreatmentsVectorResult = async (
   rows,
   search,
-  threshold = 0.4,
+  threshold = 0.40,
   topN = null,
-  language = 'en',
-  actualSearch
+  language = "en"
 ) => {
   if (!search?.trim()) return rows;
 
-  const normalized_search = search.trim().toLowerCase();
+  const normalized = search.trim().toLowerCase();
 
-  // 1️⃣ Get embedding for the search term
-  const queryEmbedRes = await axios.post(
-    "http://localhost:11434/api/embeddings",
-    {
-      model: "nomic-embed-text",
-      prompt: normalized_search
-    }
-  );
+  const scoreResults = await batchGPTSimilarity(rows, normalized);
 
-  const queryEmbedding = queryEmbedRes.data.embedding;
+  const scoreMap = new Map(scoreResults.map(r => [r.id, r.score]));
 
-  let results = [];
+  const filtered = rows
+    .map(r => ({
+      ...r,
+      score: scoreMap.get(r.treatment_id) ?? 0
+    }))
+    .filter(r => r.score >= threshold)
+    .sort((a, b) => b.score - a.score);
 
-  for (const row of rows) {
-    if (!row.embeddings) continue;
-
-    // ----------------------------
-    // Full semantic embeddings
-    // ----------------------------
-    const fullEmbedding = Array.isArray(row.embeddings)
-      ? row.embeddings
-      : JSON.parse(row.embeddings);
-
-    const fullScore = cosineSimilarity(queryEmbedding, fullEmbedding);
-
-    // ----------------------------
-    // Name-only embeddings (optional)
-    // ----------------------------
-    let nameScore = 0;
-
-    if (row.name_embeddings) {
-      const nameEmbedding = Array.isArray(row.name_embeddings)
-        ? row.name_embeddings
-        : JSON.parse(row.name_embeddings);
-
-      nameScore = cosineSimilarity(queryEmbedding, nameEmbedding);
-    }
-
-const hybridScore = getHybridScore(nameScore, fullScore);
-
-    if (hybridScore >= threshold) {
-      const { embeddings, name_embeddings, ...rest } = row;
-
-      results.push({
-        ...rest,
-        score: hybridScore,
-        fullScore,
-        nameScore
-      });
-    }
-  }
-
-  // Sort high → low
-  results.sort((a, b) => b.score - a.score);
-
-  // Translate fields
-  results = results.map((result) => ({
+  const translated = filtered.map(result => ({
     ...result,
     name: language === "en" ? result.name : result.swedish,
     benefits: language === "en" ? result.benefits_en : result.benefits_sv,
-    description: language === "en" ? result.description_en : result.description_sv,
+    description: language === "en"
+      ? result.description_en
+      : result.description_sv
   }));
 
-  return topN ? results.slice(0, topN) : results;
+  return topN ? translated.slice(0, topN) : translated;
 };
 
 
@@ -276,3 +313,89 @@ export const getClinicsVectorResult = async (rows, search, threshold = 0.4, topN
   results.sort((a, b) => b.score - a.score);
   return topN && topN > 0 ? results.slice(0, topN) : results;
 };
+
+async function batchGPTSimilarity(rows, searchQuery) {
+  const list = rows.map(r => ({
+    id: r.treatment_id,
+    text: `${safeString(r.name)} - ${safeString(r.concern_en)} ${safeString(r.description_en)}`.trim()
+  }));
+
+  const prompt = `
+You are a similarity scoring engine.
+Compare each item in the list to the search query.
+
+Search Query: "${searchQuery}"
+
+Return ONLY this exact JSON:
+{
+  "results": [
+    { "id": string, "score": number }
+  ]
+}
+
+IMPORTANT RULES ABOUT IDs:
+• You MUST ONLY return IDs from the ITEM LIST.
+• Never invent or modify an ID.
+• IDs are strings (UUIDs), NOT numbers.
+• If unsure, return lower score, not a fake ID.
+
+SCORING RULES:
+• 0.85 – 1.0 strong match
+• 0.60 – 0.85 good match
+• 0.40 – 0.60 medium match
+• Medium similarity MUST stay in 0.40–0.60
+• Understand spelling errors & Swedish–English variants
+• Never output 0 unless 100% unrelated
+
+NEGATION RULE:
+If query contains:
+  - "non laser"
+  - "not laser"
+  - "without laser"
+Then:
+  a) Exclude laser-related treatments
+  b) Still match best semantic alternatives
+
+ITEM LIST:
+${JSON.stringify(list)}
+
+ALLOWED IDs:
+${JSON.stringify(rows.map(r => r.treatment_id))}
+`;
+
+  const res = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    temperature: 0,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content: "You output ONLY valid JSON. No extra text. No markdown."
+      },
+      {
+        role: "user",
+        content: prompt
+      }
+    ]
+  });
+
+  const raw = res.choices[0].message.content;
+  console.log("raw", raw);
+
+  try {
+    const match = raw.match(/{[\s\S]*}/);
+    if (!match) return [];
+    return JSON.parse(match[0]).results || [];
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+
+function safeString(v) {
+  if (!v) return "";
+  if (typeof v === "string") return v;
+  return JSON.stringify(v);
+}
+
