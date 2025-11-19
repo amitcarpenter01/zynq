@@ -1,7 +1,7 @@
 import db from "../config/db.js";
 import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows, getTopSimilarRowsWithoutTranslate } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
-import { getTreatmentsVectorResult, getDoctorsVectorResult, getClinicsVectorResult } from "../utils/global_search.js"
+import { getTreatmentsVectorResult, getDoctorsVectorResult,getDoctorsAIResult, getClinicsAIResult, getDevicesAIResult } from "../utils/global_search.js"
 
 //======================================= Auth =========================================
 
@@ -2189,37 +2189,66 @@ export const getSingleCartByClinicId = async (clinic_id, user_id) => {
 // -------------------------------------Updated Code Okay ------------------------------------------------//
 
 export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null, limit = null }) => {
-  console.log("search", search);
+ 
     try {
         if (!search?.trim()) return [];
 
         // 1️⃣ Fetch doctors with embeddings + aggregated fields
         let results = await db.query(`
       SELECT 
-        d.doctor_id,
-        d.name,
-        TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years,
-        d.specialization,
-        ANY_VALUE(d.fee_per_session) AS fee_per_session,
-        d.profile_image,
-        dm.clinic_id,
-        c.clinic_name,
-        c.address AS clinic_address,
-        ROUND(AVG(ar.rating), 2) AS avg_rating,
-        d.embeddings
-      FROM tbl_doctors d
-      LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
-      LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
-      LEFT JOIN tbl_appointment_ratings ar 
-             ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
-      LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
-      WHERE d.embeddings IS NOT NULL
-        AND d.profile_status = 'VERIFIED'
-        AND d.name IS NOT NULL
-      GROUP BY d.doctor_id, dm.clinic_id
+  d.doctor_id,
+  d.name,
+  TIMESTAMPDIFF(
+      YEAR, 
+      MIN(de.start_date), 
+      MAX(IFNULL(de.end_date, CURDATE()))
+  ) AS experience_years,
+  d.specialization,
+  ANY_VALUE(d.fee_per_session) AS fee_per_session,
+  d.profile_image,
+
+  dm.clinic_id,
+  c.clinic_name,
+  c.address AS clinic_address,
+
+  ROUND(AVG(ar.rating), 2) AS avg_rating,
+
+  d.embeddings,
+
+  -- 🔥 NEW: Comma-separated treatments
+  (
+    SELECT GROUP_CONCAT(t.name ORDER BY t.name SEPARATOR ', ')
+    FROM tbl_doctor_treatments dt
+    JOIN tbl_treatments t ON t.treatment_id = dt.treatment_id
+    WHERE dt.doctor_id = d.doctor_id
+  ) AS treatments
+
+FROM tbl_doctors d
+
+LEFT JOIN tbl_doctor_clinic_map dm 
+       ON d.doctor_id = dm.doctor_id
+
+LEFT JOIN tbl_clinics c 
+       ON dm.clinic_id = c.clinic_id
+
+LEFT JOIN tbl_appointment_ratings ar 
+       ON d.doctor_id = ar.doctor_id 
+      AND ar.approval_status = 'APPROVED'
+
+LEFT JOIN tbl_doctor_experiences de 
+       ON d.doctor_id = de.doctor_id
+
+WHERE d.profile_status = 'VERIFIED'
+  AND d.name IS NOT NULL
+
+GROUP BY 
+  d.doctor_id, 
+  dm.clinic_id;
+
     `);
+   
         // 2️⃣ Compute top similar rows using embeddings
-        results = await getDoctorsVectorResult(results, search, 0.3);
+        results = await getDoctorsAIResult(results, search, 0.3);
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
@@ -2245,13 +2274,13 @@ export const getClinicsByNameSearchOnly = async ({ search = '', page = null, lim
       LEFT JOIN tbl_doctor_clinic_map dcm ON c.clinic_id = dcm.clinic_id
       LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
       LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id AND ar.approval_status='APPROVED'
-      WHERE c.embeddings IS NOT NULL
         AND c.profile_status = 'VERIFIED'
       GROUP BY c.clinic_id
     `);
-
+    
+return []
         // 2️⃣ Compute top similar rows using embedding
-        results = await getClinicsVectorResult(results, search, 0.3);
+        results = await getClinicsAIResult(results, search, 0.3);
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
@@ -2286,6 +2315,36 @@ export const getProductsByNameSearchOnly = async ({ search = '', page = null, li
         throw new Error('Failed to fetch products by name.');
     }
 };
+
+export const getDevicesByNameSearchOnly = async ({ search = '', page = null, limit = null }) => {
+   
+      try {
+          if (!search?.trim()) return [];
+  
+          // 1️⃣ Fetch doctors with embeddings + aggregated fields
+          let results = await db.query(`
+        SELECT 
+          d.id,
+          d.device_name,
+          d.treatment_id,
+          t.name as treatment_name
+        FROM tbl_treatment_devices d
+        LEFT JOIN tbl_treatments t ON d.treatment_id = t.treatment_id
+        WHERE t.approval_status = 'APPROVED'
+        GROUP BY d.id, d.treatment_id
+      `);
+    
+          // 2️⃣ Compute top similar rows using embeddings
+          results = await getDevicesAIResult(results, search, 0.45);
+          // 3️⃣ Apply pagination
+          results = paginateRows(results, limit, page);
+  
+          return results;
+      } catch (error) {
+          console.error('Database Error in getDoctorsByFirstNameSearchOnly:', error.message);
+          throw new Error('Failed to fetch doctors.');
+      }
+  };
 
 
 // export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', limit, offset }) => {
@@ -2365,9 +2424,10 @@ export const getTreatmentsBySearchOnly = async ({
         let results = await db.query(`
       SELECT treatment_id,name,swedish ,benefits_sv ,device_name,classification_type,benefits_en,description_en,embeddings,name_embeddings
       FROM tbl_treatments
-      WHERE is_deleted = 0 AND approval_status = 'APPROVED' AND embeddings IS NOT NULL
+      WHERE is_deleted = 0 AND approval_status = 'APPROVED'
     `);
 
+    
         // 2️⃣ Compute top similar rows using embedding
         results = await getTreatmentsVectorResult(results, search,0.4, null, language, actualSearch);
 
