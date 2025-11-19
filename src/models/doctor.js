@@ -225,17 +225,85 @@ export const update_doctor_severity_levels = async (doctorId, severityLevelIds) 
     }
 };
 
+// export const update_doctor_treatments = async (doctorId, treatments) => {
+//     try {
+//         await db.query(`DELETE FROM tbl_doctor_treatments WHERE doctor_id = ?`, [doctorId]);
+
+//         const values = treatments.map(t => [
+//             doctorId,
+//             t.treatment_id,
+//             t.price,
+//             t.add_notes || null,
+//             t.session_duration || null
+//         ]);
+
+//         if (values.length > 0) {
+//             const insertQuery = `
+//                 INSERT INTO tbl_doctor_treatments (
+//                     doctor_id,
+//                     treatment_id,
+//                     price,
+//                     add_notes,
+//                     session_duration
+//                 ) VALUES ?
+//             `;
+//             return await db.query(insertQuery, [values]);
+//         }
+
+//         return null;
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to update doctor's treatments.");
+//     }
+// };
+
 export const update_doctor_treatments = async (doctorId, treatments) => {
     try {
+        // Delete old data
         await db.query(`DELETE FROM tbl_doctor_treatments WHERE doctor_id = ?`, [doctorId]);
 
-        const values = treatments.map(t => [
-            doctorId,
-            t.treatment_id,
-            t.price,
-            t.add_notes || null,
-            t.session_duration || null
-        ]);
+        let values = [];
+
+        for (const t of treatments) {
+            const hasSub = Array.isArray(t.sub_treatments) && t.sub_treatments.length > 0;
+
+            if (hasSub) {
+                // Calculate total price
+                let totalPrice = 0;
+
+                for (const sub of t.sub_treatments) {
+                    totalPrice += Number(sub.sub_treatment_price);
+
+                    // Insert each sub treatment
+                    values.push([
+                        doctorId,
+                        t.treatment_id,
+                        null,                     // price
+                        sub.sub_treatment_id,     // sub id
+                        sub.sub_treatment_price   // sub price
+                    ]);
+                }
+
+                // Insert parent treatment row with total price
+                values.push([
+                    doctorId,
+                    t.treatment_id,
+                    totalPrice,     // price
+                    null,           // sub_treatment_id
+                    null            // sub_treatment_price
+                ]);
+
+            } else {
+                // No sub-treatment → insert single row
+                values.push([
+                    doctorId,
+                    t.treatment_id,
+                    t.price,    // price
+                    null,       // sub_treatment_id
+                    null        // sub_treatment_price
+                ]);
+            }
+        }
 
         if (values.length > 0) {
             const insertQuery = `
@@ -243,14 +311,15 @@ export const update_doctor_treatments = async (doctorId, treatments) => {
                     doctor_id,
                     treatment_id,
                     price,
-                    add_notes,
-                    session_duration
+                    sub_treatment_id,
+                    sub_treatment_price
                 ) VALUES ?
             `;
-            return await db.query(insertQuery, [values]);
+            await db.query(insertQuery, [values]);
         }
 
-        return null;
+        return true;
+
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update doctor's treatments.");
@@ -651,6 +720,37 @@ export const update_doctor_aesthetic_devices = async (doctorId, aestheticDevices
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update doctor's aesthetic devices.");
+    }
+};
+
+export const update_doctor_treatment_devices = async (zynqUserId, treatments, deviceIds) => {
+    try {
+        // Clear previous mapping for this user
+        await db.query(
+            `DELETE FROM tbl_treatment_device_user_maps WHERE zynq_user_id = ?`,
+            [zynqUserId]
+        );
+
+        let data = [];
+
+        // For each treatment, map all devices
+        treatments.forEach(t => {
+            deviceIds.forEach(deviceId => {
+                data.push([t.treatment_id, zynqUserId, deviceId]);
+            });
+        });
+
+        if (data.length > 0) {
+            await db.query(
+                `INSERT INTO tbl_treatment_device_user_maps (treatment_id, zynq_user_id, device_id) VALUES ?`,
+                [data]
+            );
+        }
+
+        return true;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update mapping in tbl_treatment_device_user_maps");
     }
 };
 

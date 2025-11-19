@@ -205,42 +205,95 @@ export const add_clinic_managment = async (req, res) => {
     }
 };
 
+// export const get_clinic_managment = async (req, res) => {
+//     try {
+
+//         const clinics = await adminModels.get_clinic_managment();
+
+//         if (!clinics || clinics.length === 0) {
+//             return handleSuccess(res, 200, 'en', "No clinics found", { clinics: [] });
+//         }
+
+//         const fullClinicData = await Promise.all(
+//             clinics.map(async (clinic) => {
+//                 clinic.clinic_logo = clinic.clinic_logo == null
+//                     ? null
+//                     : process.env.APP_URL + 'clinic/logo/' + clinic.clinic_logo;
+
+//                 const treatments = await adminModels.get_clinic_treatments(clinic.clinic_id);
+//                 const skinTypes = await adminModels.get_clinic_skintype(clinic.clinic_id);
+//                 const severityLevels = await adminModels.get_clinic_serveritylevel(clinic.clinic_id);
+//                 const skinConditionsLevel = await adminModels.get_clinic_skin_conditions(clinic.clinic_id);
+//                 const surgeriesLevel = await adminModels.get_clinic_surgeries(clinic.clinic_id);
+//                 const aestheticDevicesLevel = await adminModels.get_clinic_aesthetic_devices(clinic.clinic_id);
+
+//                 return {
+//                     ...clinic,
+//                     treatments,
+//                     skinTypes,
+//                     severityLevels,
+//                     skinConditionsLevel,
+//                     surgeriesLevel,
+//                     aestheticDevicesLevel
+//                 };
+//             })
+//         );
+//         await calculateAndUpdateBulkClinicProfileCompletion(fullClinicData);
+
+//         return handleSuccess(res, 200, 'en', "Fetch clinic management successfully", { clinics: fullClinicData });
+
+//     } catch (error) {
+//         console.error("internal E", error);
+//         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
+//     }
+// };
+
 export const get_clinic_managment = async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
 
-        const clinics = await adminModels.get_clinic_managment();
+        // Get paginated clinics
+        const clinics = await adminModels.get_clinic_managment(limit, offset);
+        const totalClinics = await adminModels.get_clinics_count();
 
         if (!clinics || clinics.length === 0) {
-            return handleSuccess(res, 200, 'en', "No clinics found", { clinics: [] });
+            return handleSuccess(res, 200, 'en', "No clinics found", {
+                clinics: [],
+                total: 0,
+                page,
+                limit,
+                totalPages: 0
+            });
         }
 
         const fullClinicData = await Promise.all(
             clinics.map(async (clinic) => {
-                clinic.clinic_logo = clinic.clinic_logo == null
-                    ? null
-                    : process.env.APP_URL + 'clinic/logo/' + clinic.clinic_logo;
-
-                const treatments = await adminModels.get_clinic_treatments(clinic.clinic_id);
-                const skinTypes = await adminModels.get_clinic_skintype(clinic.clinic_id);
-                const severityLevels = await adminModels.get_clinic_serveritylevel(clinic.clinic_id);
-                const skinConditionsLevel = await adminModels.get_clinic_skin_conditions(clinic.clinic_id);
-                const surgeriesLevel = await adminModels.get_clinic_surgeries(clinic.clinic_id);
-                const aestheticDevicesLevel = await adminModels.get_clinic_aesthetic_devices(clinic.clinic_id);
+                clinic.clinic_logo = clinic.clinic_logo
+                    ? process.env.APP_URL + 'clinic/logo/' + clinic.clinic_logo
+                    : null;
 
                 return {
                     ...clinic,
-                    treatments,
-                    skinTypes,
-                    severityLevels,
-                    skinConditionsLevel,
-                    surgeriesLevel,
-                    aestheticDevicesLevel
+                    treatments: await adminModels.get_clinic_treatments(clinic.clinic_id),
+                    skinTypes: await adminModels.get_clinic_skintype(clinic.clinic_id),
+                    severityLevels: await adminModels.get_clinic_serveritylevel(clinic.clinic_id),
+                    skinConditionsLevel: await adminModels.get_clinic_skin_conditions(clinic.clinic_id),
+                    surgeriesLevel: await adminModels.get_clinic_surgeries(clinic.clinic_id),
+                    aestheticDevicesLevel: await adminModels.get_clinic_aesthetic_devices(clinic.clinic_id)
                 };
             })
         );
         await calculateAndUpdateBulkClinicProfileCompletion(fullClinicData);
 
-        return handleSuccess(res, 200, 'en', "Fetch clinic management successfully", { clinics: fullClinicData });
+        return handleSuccess(res, 200, 'en', "Fetch clinic management successfully", {
+            clinics: fullClinicData,
+            total: totalClinics,
+            page,
+            limit,
+            totalPages: Math.ceil(totalClinics / limit)
+        });
 
     } catch (error) {
         console.error("internal E", error);

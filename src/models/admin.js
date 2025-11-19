@@ -257,7 +257,57 @@ export const insert_clinic = async (clinic) => {
 //     }
 // };
 
-export const get_clinic_managment = async () => {
+// export const get_clinic_managment = async () => {
+//     try {
+//         return await db.query(`
+//             SELECT 
+//                 c.zynq_user_id,
+//                 c.clinic_id, 
+//                 c.clinic_name, 
+//                 c.org_number, 
+//                 c.email, 
+//                 c.mobile_number, 
+//                 c.address, 
+//                 c.email_sent_count, 
+//                 c.clinic_logo, 
+//                 c.clinic_description, 
+//                 c.website_url, 
+//                 c.profile_status,
+//                 c.profile_completion_percentage AS onboarding_progress, 
+//                 cl.city, 
+//                 cl.zip_code AS postal_code,
+//                 c.ivo_registration_number, 
+//                 c.hsa_id,
+
+//                 -- Label the user type
+//                 CASE 
+//                     WHEN zu.role_id = '2fc0b43c-3196-11f0-9e07-0e8e5d906eef' THEN 'Clinic'
+//                     WHEN zu.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+//                 END AS user_type
+
+//             FROM tbl_clinics c
+
+//             LEFT JOIN tbl_clinic_locations cl 
+//                 ON cl.clinic_id = c.clinic_id
+
+//             LEFT JOIN tbl_zqnq_users zu 
+//                 ON zu.id = c.zynq_user_id
+
+//             WHERE c.is_deleted = 0
+//               AND zu.role_id IN (
+//                   '2fc0b43c-3196-11f0-9e07-0e8e5d906eef',  -- Clinic
+//                   '407595e3-3196-11f0-9e07-0e8e5d906eef'   -- Solo Doctor
+//               )
+
+//             ORDER BY c.created_at DESC
+//         `);
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to get clinic latest data.");
+//     }
+// };
+
+export const get_clinic_managment = async (limit, offset) => {
     try {
         return await db.query(`
             SELECT 
@@ -279,31 +329,49 @@ export const get_clinic_managment = async () => {
                 c.ivo_registration_number, 
                 c.hsa_id,
 
-                -- Label the user type
                 CASE 
                     WHEN zu.role_id = '2fc0b43c-3196-11f0-9e07-0e8e5d906eef' THEN 'Clinic'
                     WHEN zu.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
                 END AS user_type
 
             FROM tbl_clinics c
-
             LEFT JOIN tbl_clinic_locations cl 
                 ON cl.clinic_id = c.clinic_id
-
             LEFT JOIN tbl_zqnq_users zu 
                 ON zu.id = c.zynq_user_id
 
             WHERE c.is_deleted = 0
               AND zu.role_id IN (
-                  '2fc0b43c-3196-11f0-9e07-0e8e5d906eef',  -- Clinic
-                  '407595e3-3196-11f0-9e07-0e8e5d906eef'   -- Solo Doctor
+                    '2fc0b43c-3196-11f0-9e07-0e8e5d906eef',
+                    '407595e3-3196-11f0-9e07-0e8e5d906eef'
               )
 
             ORDER BY c.created_at DESC
-        `);
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get clinic latest data.");
+    }
+};
+
+export const get_clinics_count = async () => {
+    try {
+        const result = await db.query(`
+            SELECT COUNT(*) AS total
+            FROM tbl_clinics c
+            LEFT JOIN tbl_zqnq_users zu 
+                ON zu.id = c.zynq_user_id
+            WHERE c.is_deleted = 0
+              AND zu.role_id IN (
+                    '2fc0b43c-3196-11f0-9e07-0e8e5d906eef',
+                    '407595e3-3196-11f0-9e07-0e8e5d906eef'
+              )
+        `);
+        return result[0].total;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to count clinics.");
     }
 };
 
@@ -479,50 +547,118 @@ export const clinicUnsubscribed = async (clinic_id) => {
 
 //======================================= Doctor Managment =========================================
 
-export const get_doctors_management = async () => {
+// export const get_doctors_management = async () => {
+//     try {
+//         return await db.query(`
+//            SELECT 
+//     d.zynq_user_id,
+//     d.doctor_id, 
+//     d.name, 
+//     d.specialization, 
+//     d.fee_per_session, 
+//     d.phone, 
+//     d.profile_status,
+//     d.profile_image, 
+//     IFNULL(ROUND(AVG(ar.rating), 2), 0) AS rating, 
+//     d.age, 
+//     d.address, 
+//     d.gender, 
+//     d.experience_years, 
+//     d.biography, 
+//     d.profile_completion_percentage AS onboarding_progress, 
+//     u.email,
+
+//     CASE 
+//         WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+//         WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
+//     END AS user_type
+
+// FROM tbl_doctors d
+// LEFT JOIN tbl_zqnq_users u 
+//     ON u.id = d.zynq_user_id
+// LEFT JOIN tbl_appointment_ratings ar
+//     ON ar.doctor_id = d.doctor_id
+
+// WHERE u.role_id IN (
+//     '407595e3-3196-11f0-9e07-0e8e5d906eef',
+//     '3677a3e6-3196-11f0-9e07-0e8e5d906eef'
+// )
+
+// GROUP BY d.doctor_id
+
+// ORDER BY d.created_at DESC;
+//         `);
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to get doctor latest data.");
+//     }
+// };
+
+export const get_doctors_management = async (limit, offset) => {
     try {
-        return await db.query(`
-           SELECT 
-    d.zynq_user_id,
-    d.doctor_id, 
-    d.name, 
-    d.specialization, 
-    d.fee_per_session, 
-    d.phone, 
-    d.profile_status,
-    d.profile_image, 
-    IFNULL(ROUND(AVG(ar.rating), 2), 0) AS rating, 
-    d.age, 
-    d.address, 
-    d.gender, 
-    d.experience_years, 
-    d.biography, 
-    d.profile_completion_percentage AS onboarding_progress, 
-    u.email,
+        const sql = `
+            SELECT 
+                d.zynq_user_id,
+                d.doctor_id, 
+                d.name, 
+                d.specialization, 
+                d.fee_per_session, 
+                d.phone, 
+                d.profile_status,
+                d.profile_image, 
+                IFNULL(ROUND(AVG(ar.rating), 2), 0) AS rating, 
+                d.age, 
+                d.address, 
+                d.gender, 
+                d.experience_years, 
+                d.biography, 
+                d.profile_completion_percentage AS onboarding_progress, 
+                u.email,
+                CASE 
+                    WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+                    WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
+                END AS user_type
+            FROM tbl_doctors d
+            LEFT JOIN tbl_zqnq_users u 
+                ON u.id = d.zynq_user_id
+            LEFT JOIN tbl_appointment_ratings ar
+                ON ar.doctor_id = d.doctor_id
+            WHERE u.role_id IN (
+                '407595e3-3196-11f0-9e07-0e8e5d906eef',
+                '3677a3e6-3196-11f0-9e07-0e8e5d906eef'
+            )
+            GROUP BY d.doctor_id
+            ORDER BY d.created_at DESC
+            LIMIT ? OFFSET ?;
+        `;
 
-    CASE 
-        WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
-        WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
-    END AS user_type
+        return await db.query(sql, [limit, offset]);
 
-FROM tbl_doctors d
-LEFT JOIN tbl_zqnq_users u 
-    ON u.id = d.zynq_user_id
-LEFT JOIN tbl_appointment_ratings ar
-    ON ar.doctor_id = d.doctor_id
-
-WHERE u.role_id IN (
-    '407595e3-3196-11f0-9e07-0e8e5d906eef',
-    '3677a3e6-3196-11f0-9e07-0e8e5d906eef'
-)
-
-GROUP BY d.doctor_id
-
-ORDER BY d.created_at DESC;
-        `);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor latest data.");
+    }
+};
+
+export const get_doctors_count = async () => {
+    try {
+        const sql = `
+            SELECT COUNT(*) AS total
+            FROM tbl_doctors d
+            LEFT JOIN tbl_zqnq_users u 
+                ON u.id = d.zynq_user_id
+            WHERE u.role_id IN (
+                '407595e3-3196-11f0-9e07-0e8e5d906eef',
+                '3677a3e6-3196-11f0-9e07-0e8e5d906eef'
+            );
+        `;
+
+        const result = await db.query(sql);
+        return result[0].total;
+
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to count doctors.");
     }
 };
 
@@ -1893,14 +2029,14 @@ export const updateProductApprovalStatus = async (product_id, approval_status) =
     }
 }
 
-export const getAllTreatmentsModel = async () => {
-    try {
-        return await db.query("SELECT    t.*,    GROUP_CONCAT(        DISTINCT c.concern_id    ORDER BY        c.concern_id SEPARATOR ', '    ) AS concern_ids,    GROUP_CONCAT(        DISTINCT c.name    ORDER BY        c.name SEPARATOR ', '    ) AS concern_name,    GROUP_CONCAT(        DISTINCT d.device_name    ORDER BY        d.device_name SEPARATOR ', '    ) AS device_names FROM    tbl_treatments t LEFT JOIN tbl_treatment_concerns tc ON    tc.treatment_id = t.treatment_id LEFT JOIN tbl_concerns c ON     c.concern_id = tc.concern_id LEFT JOIN tbl_treatment_devices d ON     d.treatment_id = t.treatment_id WHERE    t.is_deleted = 0 GROUP BY    t.treatment_id ORDER BY    t.created_at DESC ");
-    } catch (error) {
-        console.error("getAllTreatmentsModel error:", error);
-        throw error;
-    }
-};
+// export const getAllTreatmentsModel = async () => {
+//     try {
+//         return await db.query("SELECT    t.*,    GROUP_CONCAT(        DISTINCT c.concern_id    ORDER BY        c.concern_id SEPARATOR ', '    ) AS concern_ids,    GROUP_CONCAT(        DISTINCT c.name    ORDER BY        c.name SEPARATOR ', '    ) AS concern_name,    GROUP_CONCAT(        DISTINCT d.device_name    ORDER BY        d.device_name SEPARATOR ', '    ) AS device_names FROM    tbl_treatments t LEFT JOIN tbl_treatment_concerns tc ON    tc.treatment_id = t.treatment_id LEFT JOIN tbl_concerns c ON     c.concern_id = tc.concern_id LEFT JOIN tbl_treatment_devices d ON     d.treatment_id = t.treatment_id WHERE    t.is_deleted = 0 GROUP BY    t.treatment_id ORDER BY    t.created_at DESC ");
+//     } catch (error) {
+//         console.error("getAllTreatmentsModel error:", error);
+//         throw error;
+//     }
+// };
 
 // export const getTreatmentsByTreatmentId = async (treatment_id) => {
 //     try {
@@ -1913,6 +2049,65 @@ export const getAllTreatmentsModel = async () => {
 //         throw error;
 //     }
 // };
+
+export const getAllTreatmentsModel = async () => {
+    try {
+        const query = `
+            SELECT 
+                t.treatment_id,
+                t.name,
+                t.swedish,
+                t.classification_type,
+                t.benefits_en,
+                t.benefits_sv,
+                t.concern_en,
+                t.concern_sv,
+                t.description_en,
+                t.description_sv,
+                t.technology,
+                t.type,
+                t.source,
+                t.application,
+                t.is_device,
+                t.is_admin_created,
+                t.created_by_zynq_user_id,
+                t.approval_status,
+                t.is_deleted,
+                t.created_at,
+
+                -- Concerns
+                GROUP_CONCAT(DISTINCT c.concern_id ORDER BY c.concern_id SEPARATOR ',') AS concern_ids,
+                GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ',') AS concern_name,
+
+                -- Devices
+                GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ',') AS device_name
+
+            FROM 
+                tbl_treatments t
+            LEFT JOIN tbl_treatment_concerns tc 
+                ON tc.treatment_id = t.treatment_id
+            LEFT JOIN tbl_concerns c 
+                ON c.concern_id = tc.concern_id
+            LEFT JOIN tbl_treatment_devices d 
+                ON d.treatment_id = t.treatment_id
+
+            WHERE 
+                t.is_deleted = 0
+
+            GROUP BY 
+                t.treatment_id
+
+            ORDER BY 
+                t.created_at DESC
+        `;
+
+        return await db.query(query);
+
+    } catch (error) {
+        console.error("getAllTreatmentsModel error:", error);
+        throw error;
+    }
+};
 
 export const getTreatmentsByTreatmentId = async (treatment_id) => {
     try {
