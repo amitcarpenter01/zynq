@@ -2278,9 +2278,9 @@ export const getClinicsByNameSearchOnly = async ({ search = '', page = null, lim
       GROUP BY c.clinic_id
     `);
     
-return []
+
         // 2️⃣ Compute top similar rows using embedding
-        results = await getClinicsAIResult(results, search, 0.3);
+        results = await getClinicsAIResult(results, search, 0.4);
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
