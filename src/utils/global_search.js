@@ -263,6 +263,111 @@ export const getDoctorsVectorResult = async (rows, search, threshold = 0.4, topN
   results.sort((a, b) => b.score - a.score);
   return topN && topN > 0 ? results.slice(0, topN) : results;
 };
+export const getDoctorsAIResult = async (rows, search, language = "en") => {
+  const rowsWithText = rows.map(r => ({
+    ...r,
+    combined_text: `
+      Doctor ${r.name || ''} 
+      treats ${r.treatments || ''} 
+      and practices at ${r.clinic_address || ''}.
+    `.trim()
+  }));
+
+  const scoreResults = await runGPTSimilarity(rowsWithText, search, {
+    idField: "doctor_id",
+    textFields: ["combined_text"]
+  });
+
+  // ⛔ GPT returned no matches → return empty array
+  if (!scoreResults || scoreResults.length === 0) {
+    console.warn("⚠️ GPT returned no similarity matches");
+    return [];
+  }
+
+  // Apply similarity threshold
+  let results = applyAISimilarity(rows, scoreResults, {
+    idField: "doctor_id",
+    threshold: 0.40,
+  });
+
+  // ⛔ After threshold filtering, no results → return empty array
+  if (!results || results.length === 0) {
+    console.warn("⚠️ Similarity threshold removed all results");
+    return [];
+  }
+
+  return results;
+};
+export const getClinicsAIResult = async (rows, search, language = "en") => {
+  const rowsWithText = rows.map(r => ({
+    ...r,
+    combined_text: `
+      Clinic ${r.clinic_name || ''} 
+      located at ${r.address || ''}.
+    `.trim()
+  }));
+
+  const scoreResults = await runGPTSimilarity(rowsWithText, search, {
+    idField: "clinic_id",
+    textFields: ["combined_text"],
+    batchSize: 500
+  });
+
+  // ⛔ GPT returned no matches → return empty array
+  if (!scoreResults || scoreResults.length === 0) {
+    console.warn("⚠️ GPT returned no similarity matches");
+    return [];
+  }
+
+  // Apply similarity threshold
+  let results = applyAISimilarity(rows, scoreResults, {
+    idField: "clinic_id",
+    threshold: 0.40,
+  });
+
+  // ⛔ After threshold filtering, no results → return empty array
+  if (!results || results.length === 0) {
+    console.warn("⚠️ Similarity threshold removed all results");
+    return [];
+  }
+
+  return results;
+};
+
+
+export const getDevicesAIResult = async (
+  rows,
+  search,
+  threshold = 0.40,
+  topN = null,
+  language = "en"
+) => {
+  if (!search?.trim()) return rows;
+
+  const normalized = search.trim().toLowerCase();
+
+  const scoreResults = await batchDeviceGPTSimilarity(rows, normalized);
+console.log("scoreResults device", scoreResults);
+  const scoreMap = new Map(scoreResults.map(r => [r.id, r.score]));
+
+  const filtered = rows
+    .map(r => ({
+      ...r,
+      score: scoreMap.get(r.id) ?? 0
+    }))
+    .filter(r => r.score >= threshold)
+    .sort((a, b) => b.score - a.score);
+
+  const translated = filtered.map(result => ({
+    ...result,
+    device_name: result.device_name,
+    treatment_name: result.treatment_name
+  }));
+
+  return topN ? translated.slice(0, topN) : translated;
+};
+
+
 export const getClinicsVectorResult = async (rows, search, threshold = 0.4, topN = null) => {
   if (!search?.trim()) return rows;
 
@@ -380,7 +485,7 @@ ${JSON.stringify(rows.map(r => r.treatment_id))}
   });
 
   const raw = res.choices[0].message.content;
-  console.log("raw", raw);
+  
 
   try {
     const match = raw.match(/{[\s\S]*}/);
@@ -391,6 +496,227 @@ ${JSON.stringify(rows.map(r => r.treatment_id))}
     return [];
   }
 }
+/**
+ * 🔥 Main Function — Handles batching automatically
+ */
+export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 400) {
+  const batches = [];
+  for (let i = 0; i < rows.length; i += batchSize) {
+    batches.push(rows.slice(i, i + batchSize));
+  }
+
+  console.log(`Processing ${batches.length} batches in parallel...`);
+
+  // Process all batches in parallel
+  const batchPromises = batches.map(batch => 
+    runDeviceSimilarityBatch(batch, searchQuery)
+  );
+
+  const results = await Promise.all(batchPromises);
+  
+  // Log each partial result
+  results.forEach(partial => {
+    console.log("partial device", partial);
+  });
+
+  return results.flat();
+}
+
+
+
+/**
+ * 🧠 Runs GPT similarity on a *single batch*
+ */
+async function runDeviceSimilarityBatch(rows, searchQuery) {
+  if (!rows || rows.length === 0) return [];
+
+  const list = rows.map(r =>
+    `${r.id}|${safeString(r.device_name)} ${safeString(r.treatment_name)}`
+  );
+
+  const prompt = `
+You are a STRICT JSON similarity scoring engine.
+You MUST return ONLY valid JSON. No markdown. No comments.
+
+Search Query: "${searchQuery}"
+
+Return EXACTLY this:
+{
+  "results": [
+    { "id": string, "score": number }
+  ]
+}
+
+SCORING:
+• 0.85–1.0 strong
+• 0.60–0.85 good
+• 0.40–0.60 medium
+• Never output 0 unless fully unrelated
+
+ITEM LIST (id|text):
+${list.join("\n")}
+`;
+
+  const res = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    temperature: 0,
+    max_tokens: 4096,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: "Return ONLY pure JSON. No markdown." },
+      { role: "user", content: prompt }
+    ]
+  });
+
+  const raw = res.choices[0].message.content;
+
+  try {
+    // 👉 Catch broken JSON by extracting the first {...}
+    const match = raw.match(/{[\s\S]*}/);
+    if (!match) {
+      console.error("NO JSON RETURNED:", raw);
+      return [];
+    }
+
+    return JSON.parse(match[0]).results || [];
+
+  } catch (err) {
+    console.error("JSON Parse Error:", err);
+    console.log("RAW OUTPUT:", raw);
+    return [];
+  }
+}
+
+
+/**
+ * 🔥 Universal GPT Similarity Engine
+ * Works for doctors, clinics, devices, treatments, anything.
+ */
+export async function runGPTSimilarity(rows, searchQuery, options = {}) {
+  const {
+    idField = "id",
+    textFields = [],
+    batchSize = 200,
+  } = options;
+
+  if (!rows || rows.length === 0) return [];
+  if (!searchQuery?.trim()) return [];
+
+  // Split into batches
+  const batches = [];
+  for (let i = 0; i < rows.length; i += batchSize) {
+    batches.push(rows.slice(i, i + batchSize));
+  }
+
+  // ------------------------------
+  // RUN ALL BATCHES IN PARALLEL
+  // ------------------------------
+  const results = await Promise.all(
+    batches.map(batch =>
+      runSingleBatch(batch, searchQuery, idField, textFields)
+        .catch(err => {
+          console.error("Batch failed:", err);
+          return []; // return empty so other batches still succeed
+        })
+    )
+  );
+
+  // Flatten result arrays
+  return results.flat();
+}
+
+
+
+/**
+ * 🧠 Runs GPT similarity on a single batch
+ */
+async function runSingleBatch(batch, searchQuery, idField, textFields) {
+ 
+  // compact "id|text" format
+  const list = batch.map((row) => {
+    const id = row[idField];
+    const combinedText = textFields
+      .map(f => safeString(row[f]))
+      .filter(Boolean)
+      .join(" ");
+
+    return `${id}|${combinedText}`;
+  });
+ 
+  const prompt = `
+You are a similarity scoring engine.
+Compare each item with the search query.
+
+Search Query: "${searchQuery}"
+
+Return ONLY:
+{
+  "results": [
+    { "id": string, "score": number }
+  ]
+}
+
+SCORING:
+• 0.85 – 1.0 strong  
+• 0.60 – 0.85 good  
+• 0.40 – 0.60 medium  
+• Understand Swedish/English errors  
+• Never output 0 unless fully unrelated  
+
+NEGATION RULE:
+If query contains:
+ - "non laser"
+ - "not laser"
+ - "without laser"
+then downscore items related to "laser".
+
+ITEM LIST (id|text):
+${list.join("\n")}
+`;
+
+  const res = await client.chat.completions.create({
+    model: "gpt-4.1-nano",
+    temperature: 0,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: "Output ONLY JSON. No markdown." },
+      { role: "user", content: prompt }
+    ]
+  });
+
+  const raw = res.choices[0].message.content;
+
+  try {
+    return JSON.parse(raw).results || [];
+  } catch (err) {
+    console.error("JSON parse failed:", raw);
+    return [];
+  }
+}
+
+export function applyAISimilarity(rows, scoreResults, {
+  idField = "id",
+  threshold = 0.40,
+  topN = null
+}) {
+
+  const scoreMap = new Map(scoreResults.map(r => [r.id, r.score]));
+
+  const filtered = rows
+    .map(r => ({ ...r, score: scoreMap.get(r[idField]) ?? 0 }))
+    .filter(r => r.score >= threshold)
+    .sort((a, b) => b.score - a.score);
+
+  return topN ? filtered.slice(0, topN) : filtered;
+}
+
+
+
+
+
+
+
+
 
 
 function safeString(v) {

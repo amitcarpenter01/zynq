@@ -504,8 +504,10 @@ export const search_home_entities = asyncHandler(async (req, res) => {
     try {
         var normalized_search;
         if (search.length <= 3) {
+            console.log("Short query, returning default valid_medical");
             normalized_search = search
         } else {
+            console.log("Long query, translating to english");
             normalized_search = await translator(search, 'en');
         }
         // 🧠 Detect if the translated text is gibberish
@@ -523,11 +525,12 @@ export const search_home_entities = asyncHandler(async (req, res) => {
         console.log("Search Intent Ranking:", intentRanking);
 
         // 2️⃣ Run all searches (as you already do)
-        const [doctors, clinics, products, treatments] = await Promise.all([
+        const [doctors, clinics, devices, treatments] = await Promise.all([
 
             userModels.getDoctorsByFirstNameSearchOnly({ search: normalized_search, page, limit }),
             userModels.getClinicsByNameSearchOnly({ search: normalized_search, page, limit }),
-            userModels.getProductsByNameSearchOnly({ search: normalized_search, page, limit }),
+            userModels.getDevicesByNameSearchOnly({ search: normalized_search, page, limit }),
+            // userModels.getProductsByNameSearchOnly({ search: normalized_search, page, limit }),
             userModels.getTreatmentsBySearchOnly({ search: normalized_search, language, page, limit, actualSearch: search })
         ]);
 
@@ -543,27 +546,27 @@ export const search_home_entities = asyncHandler(async (req, res) => {
             clinic_logo: formatImagePath(clinic.clinic_logo, 'clinic/logo')
         }));
 
-        let enrichedProducts = [];
-        if (products?.length) {
-            const productIds = products.map(p => p.product_id);
-            const imageRows = await userModels.get_product_images_by_product_ids(productIds);
+    let enrichedProducts = [];
+        // if (products?.length) {
+        //     const productIds = products.map(p => p.product_id);
+        //     const imageRows = await userModels.get_product_images_by_product_ids(productIds);
 
-            const imagesMap = {};
-            for (const row of imageRows) {
-                if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
-                imagesMap[row.product_id].push(
-                    row.image.startsWith('http')
-                        ? row.image
-                        : `${APP_URL}clinic/product_image/${row.image}`
-                );
-            }
+        //     const imagesMap = {};
+        //     for (const row of imageRows) {
+        //         if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
+        //         imagesMap[row.product_id].push(
+        //             row.image.startsWith('http')
+        //                 ? row.image
+        //                 : `${APP_URL}clinic/product_image/${row.image}`
+        //         );
+        //     }
 
-            enrichedProducts = products.map(product => ({
-                ...product,
-                product_images: imagesMap[product.product_id] || [],
-                image: formatImagePath(product.image, 'clinic/product_image')
-            }));
-        }
+        //     enrichedProducts = products.map(product => ({
+        //         ...product,
+        //         product_images: imagesMap[product.product_id] || [],
+        //         image: formatImagePath(product.image, 'clinic/product_image')
+        //     }));
+        // }
 
         // 4️⃣ Reorder results based on AI ranking
         const rankedResults = {};
@@ -571,7 +574,8 @@ export const search_home_entities = asyncHandler(async (req, res) => {
             const key = entity.toLowerCase();
             if (key === "doctor") rankedResults.doctors = enrichedDoctors;
             if (key === "clinic") rankedResults.clinics = enrichedClinics;
-            if (key === "product") rankedResults.products = enrichedProducts;
+            if (key === "devices") rankedResults.devices = devices;
+            // if (key === "product") rankedResults.products = enrichedProducts;
             if (key === "treatment") rankedResults.treatments = treatments;
         }
 
@@ -594,7 +598,7 @@ async function detectSearchIntent(searchQuery) {
         console.log("⚙️ Detected doctor keyword — prioritizing Doctor ranking");
         return {
             type: "valid_medical",
-            ranking: ["Doctor", "Clinic", "Treatment", "Devices"]
+            ranking: ["Doctor", "Clinic", "Treatment", "Devices","Sub Treatment"]
         };
     }
 
@@ -603,7 +607,7 @@ async function detectSearchIntent(searchQuery) {
         console.log("⚙️ Skipping AI — short query, returning default valid_medical");
         return {
             type: "valid_medical",
-            ranking: ["Treatment", "Devices", "Doctor", "Clinic"]
+            ranking: ["Treatment", "Devices", "Doctor", "Clinic","Sub Treatment"]
         };
     }
 
@@ -613,7 +617,7 @@ async function detectSearchIntent(searchQuery) {
     Your goal is to analyze the query and always output a pure JSON object with exactly these two fields:
     {
       "type": "valid_medical" | "non_medical",
-      "ranking": ["Doctor","Clinic","Treatment","Devices"] (in the most contextually correct order)
+      "ranking": ["Doctor","Clinic","Treatment","Devices","Sub Treatment"] (in the most contextually correct order)
     }
     
     ---
@@ -624,7 +628,7 @@ async function detectSearchIntent(searchQuery) {
     - Always return a valid JSON object — no markdown or explanations.
     - Case-insensitive and tolerant of spelling errors (“wrinckle”, “daktar”, etc.).
     - Use fuzzy understanding to infer intent.
-    - Always keep **"Treatment"** and **"Devices"** next to each other (either order).
+    - Always keep **"Treatment"** next to **"Sub Treatment"** and **"Devices"**.
     
     ---
     
@@ -646,12 +650,13 @@ async function detectSearchIntent(searchQuery) {
     
     | Query Type | Ranking |
     |-------------|----------|
-    | Mentions “dr”, “doctor”, “daktar” | ["Doctor","Clinic","Treatment","Devices"] |
-    | Mentions clinic/hospital name | ["Clinic","Doctor","Treatment","Devices"] |
-    | Refers to **treatment, symptom, condition, or therapy** (e.g., “laser”, “botox”, “IPL”, “peel”, “scar removal”, “acne”) | ["Treatment","Devices","Doctor","Clinic"] |
-    | Refers to **medical device, machine, or equipment** (e.g., “RF device”, “IPL machine”, “laser machine”) | ["Devices","Treatment","Doctor","Clinic"] |
-    | General health or beauty-related phrases (e.g., “skin glow”, “rejuvenation”) | ["Treatment","Clinic","Doctor","Devices"] |
-    | Unclear but still medical | ["Treatment","Devices","Doctor","Clinic"] |
+    | Mentions “dr”, “doctor”, “daktar” | ["Doctor","Clinic","Treatment","Devices","Sub Treatment"] |
+    | Mentions clinic/hospital name | ["Clinic","Doctor","Treatment","Devices","Sub Treatment"] |
+    | Refers to **treatment, symptom, condition, or therapy** (e.g., “laser”, “botox”, “IPL”, “peel”, “scar removal”, “acne”) | ["Treatment", "Sub Treatment","Devices","Doctor","Clinic"] |
+    | Refers to **medical device, machine, or equipment** (e.g., “RF device”, “IPL machine”, “laser machine”) | ["Devices","Treatment", "Sub Treatment","Doctor","Clinic"] |
+    | General health or beauty-related phrases (e.g., “skin glow”, “rejuvenation”) | ["Treatment","Sub Treatment","Clinic","Doctor","Devices"] |
+    | Refers to **sub treatment, symptom, condition, or therapy** (e.g., “laser”, “botox”, “IPL”, “peel”, “scar removal”, “acne”) | ["Sub Treatment","Treatment","Devices","Doctor","Clinic"] |
+    | Unclear but still medical | ["Treatment","Sub Treatment","Devices","Doctor","Clinic"] |
     
     ---
     
@@ -675,25 +680,25 @@ async function detectSearchIntent(searchQuery) {
     ### ✅ Examples
     
     Input: "dr harshit"  
-    → {"type":"valid_medical","ranking":["Doctor","Clinic","Treatment","Devices"]}
+    → {"type":"valid_medical","ranking":["Doctor","Clinic","Treatment","Devices","Sub Treatment"]}
     
     Input: "apollo clinic"  
-    → {"type":"valid_medical","ranking":["Clinic","Doctor","Treatment","Devices"]}
+    → {"type":"valid_medical","ranking":["Clinic","Doctor","Treatment","Devices","Sub Treatment"]}
     
     Input: "wrinkle"  
-    → {"type":"valid_medical","ranking":["Treatment","Devices","Doctor","Clinic"]}
+    → {"type":"valid_medical","ranking":["Treatment","Sub Treatment","Devices","Doctor","Clinic"]}
     
     Input: "laser"  
-    → {"type":"valid_medical","ranking":["Treatment","Devices","Doctor","Clinic"]}
+    → {"type":"valid_medical","ranking":["Treatment","Sub Treatment","Devices","Doctor","Clinic"]}
     
     Input: "IPL machine"  
-    → {"type":"valid_medical","ranking":["Devices","Treatment","Doctor","Clinic"]}
+    → {"type":"valid_medical","ranking":["Devices","Treatment","Sub Treatment","Doctor","Clinic"]}
     
     Input: "skin rejuvenation"  
-    → {"type":"valid_medical","ranking":["Treatment","Clinic","Doctor","Devices"]}
+    → {"type":"valid_medical","ranking":["Treatment","Sub Treatment","Clinic","Doctor","Devices"]}
     
     Input: "hello world"  
-    → {"type":"non_medical","ranking":["Clinic","Doctor","Treatment","Devices"]}
+    → {"type":"non_medical","ranking":["Clinic","Doctor","Treatment","Devices","Sub Treatment"]}
     
     ---
     
@@ -726,7 +731,7 @@ async function detectSearchIntent(searchQuery) {
             parsed &&
             typeof parsed === "object" &&
             Array.isArray(parsed.ranking) &&
-            parsed.ranking.length === 4
+            parsed.ranking.length === 5
         ) {
             parsed.ranking = parsed.ranking.map(
                 (p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()
@@ -735,10 +740,10 @@ async function detectSearchIntent(searchQuery) {
         }
 
         console.warn("⚠️ Unexpected JSON structure, using fallback");
-        return { type: "valid_medical", ranking: ["Treatment", "Devices", "Doctor", "Clinic"] };
+        return { type: "valid_medical", ranking: ["Treatment", "Sub Treatment", "Devices", "Doctor", "Clinic"] };
     } catch (e) {
         console.error("❌ JSON parse error:", e.message, "\nRaw content:", content);
-        return { type: "valid_medical", ranking: ["Treatment", "Devices", "Doctor", "Clinic"] };
+        return { type: "valid_medical", ranking: ["Treatment", "Sub Treatment", "Devices", "Doctor", "Clinic"] };
     }
 }
 
