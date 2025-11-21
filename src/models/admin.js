@@ -724,7 +724,7 @@ export const delete_product_by_id = async (product_id) => {
 export const get_doctor_treatments = async (doctorId) => {
     try {
         return await db.query(`
-          SELECT 
+            SELECT 
                 dt.*,
                 tt.*
             FROM 
@@ -743,7 +743,8 @@ export const get_doctor_treatments = async (doctorId) => {
 
 export const get_doctor_skin_types = async (doctorId) => {
     try {
-        return await db.query(` SELECT 
+        return await db.query(`
+            SELECT 
                 dst.*,
                 tst.*
             FROM 
@@ -762,7 +763,8 @@ export const get_doctor_skin_types = async (doctorId) => {
 
 export const get_doctor_severity_levels = async (doctorId) => {
     try {
-        return await db.query(`SELECT 
+        return await db.query(`
+            SELECT 
                 dsl.*,
                 tsl.*
             FROM 
@@ -904,30 +906,28 @@ export const get_support_ticket_by_id = async (support_ticket_id) => {
 export const get_support_ticket_by_id_v2 = async (support_ticket_id) => {
     try {
         return await db.query(`
-      SELECT 
-        st.*,
-        r.role,
-        COALESCE(st.doctor_id, d_from_clinic.doctor_id) AS doctor_id,
-        c.clinic_id
-      FROM tbl_support_tickets st
+            SELECT
+                st.*,
+                r.role,
+                COALESCE(st.doctor_id, d_from_clinic.doctor_id) AS doctor_id,
+                c.clinic_id
+            FROM tbl_support_tickets st
 
-      LEFT JOIN tbl_clinics c 
-        ON st.clinic_id = c.clinic_id
-      LEFT JOIN tbl_zqnq_users zu_clinic 
-        ON c.zynq_user_id = zu_clinic.id
-      LEFT JOIN tbl_doctors d_from_clinic 
-        ON zu_clinic.id = d_from_clinic.zynq_user_id
+            LEFT JOIN tbl_clinics c 
+                ON st.clinic_id = c.clinic_id
+            LEFT JOIN tbl_zqnq_users zu_clinic 
+                ON c.zynq_user_id = zu_clinic.id
+            LEFT JOIN tbl_doctors d_from_clinic 
+                ON zu_clinic.id = d_from_clinic.zynq_user_id
 
-      LEFT JOIN tbl_roles r 
-        ON r.id = COALESCE(zu_clinic.role_id, (
-            SELECT zu2.role_id
-            FROM tbl_doctors d2
-            JOIN tbl_zqnq_users zu2 ON d2.zynq_user_id = zu2.id
-            WHERE d2.doctor_id = st.doctor_id
-        ))
-
-      WHERE st.support_ticket_id = ?
-    `, [support_ticket_id]);
+            LEFT JOIN tbl_roles r 
+                ON r.id = COALESCE(zu_clinic.role_id, (
+                    SELECT zu2.role_id
+                    FROM tbl_doctors d2
+                    JOIN tbl_zqnq_users zu2 ON d2.zynq_user_id = zu2.id
+                    WHERE d2.doctor_id = st.doctor_id
+                ))
+            WHERE st.support_ticket_id = ?`, [support_ticket_id]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get support ticket by id.");
@@ -1020,29 +1020,29 @@ export const getAdminBookedAppointmentsModel = async ({ page, limit } = {}) => {
 
 export const getAdminReviewsModel = async () => {
     let query = `
- SELECT 
-                ar.appointment_rating_id,
-                ar.appointment_id,
-                c.clinic_name,
-                d.name as doctor_name,
-                c.clinic_id,
-                d.doctor_id,
-                ar.rating,
-                ar.review,
-                ar.created_at,
-                ar.approval_status,
-                u.user_id,
-                u.full_name,
-                u.profile_image,
-                u.age,
-                u.gender
-            FROM tbl_appointment_ratings AS ar
-            LEFT JOIN tbl_appointments AS a ON ar.appointment_id = a.appointment_id
-            LEFT JOIN tbl_doctors AS d ON a.doctor_id = d.doctor_id
-            LEFT JOIN tbl_clinics AS c ON a.clinic_id = c.clinic_id
-            LEFT JOIN tbl_users AS u ON ar.user_id = u.user_id
-            ORDER BY ar.created_at DESC
-    `
+        SELECT 
+            ar.appointment_rating_id,
+            ar.appointment_id,
+            c.clinic_name,
+            d.name as doctor_name,
+            c.clinic_id,
+            d.doctor_id,
+            ar.rating,
+            ar.review,
+            ar.created_at,
+            ar.approval_status,
+            u.user_id,
+            u.full_name,
+            u.profile_image,
+            u.age,
+            u.gender
+        FROM tbl_appointment_ratings AS ar
+        LEFT JOIN tbl_appointments AS a ON ar.appointment_id = a.appointment_id
+        LEFT JOIN tbl_doctors AS d ON a.doctor_id = d.doctor_id
+        LEFT JOIN tbl_clinics AS c ON a.clinic_id = c.clinic_id
+        LEFT JOIN tbl_users AS u ON ar.user_id = u.user_id
+        ORDER BY ar.created_at DESC
+    `;
 
     return await db.query(query);
 }
@@ -1210,8 +1210,8 @@ export const getAdminPurchasedProductModel = async ({ page, limit } = {}) => {
 export const getAdminCartProductModel = async () => {
     try {
         const query = `
-      SELECT * FROM tbl_product_purchase ORDER BY created_at DESC
-    `;
+            SELECT * FROM tbl_product_purchase ORDER BY created_at DESC
+        `;
         const results = await db.query(query);
         return results;
     } catch (error) {
@@ -1223,37 +1223,37 @@ export const getAdminCartProductModel = async () => {
 export const getSingleAdminPurchasedProductModel = async (purchase_id) => {
     try {
         const baseQuery = `
-      SELECT
-          pp.purchase_id,
-          pp.cart_id,
-          pp.product_details,
-          pp.wallet_paid,
-          pp.total_price,
-          pp.admin_earnings,
-          pp.clinic_earnings,
-          pp.subtotal,
-          pp.vat_amount,
-          pp.created_at AS purchase_date,
-          pp.shipped_date,
-          pp.delivered_date,
-          pp.shipment_status,
-          u.user_id,
-          u.full_name AS user_name,
-          u.email AS user_email,
-          u.mobile_number,
-          a.address,
-          r.role,
-          d.doctor_id
-      FROM tbl_product_purchase pp
-      LEFT JOIN tbl_users u       ON pp.user_id = u.user_id
-      LEFT JOIN tbl_address a     ON pp.address_id = a.address_id
-      LEFT JOIN tbl_carts c       ON pp.cart_id = c.cart_id
-      LEFT JOIN tbl_clinics cl    ON c.clinic_id = cl.clinic_id
-      LEFT JOIN tbl_zqnq_users zu ON cl.zynq_user_id = zu.id
-      LEFT JOIN tbl_doctors d     ON d.zynq_user_id = zu.id
-      LEFT JOIN tbl_roles r       ON zu.role_id = r.id
-      WHERE pp.purchase_id = ?
-      LIMIT 1
+        SELECT
+            pp.purchase_id,
+            pp.cart_id,
+            pp.product_details,
+            pp.wallet_paid,
+            pp.total_price,
+            pp.admin_earnings,
+            pp.clinic_earnings,
+            pp.subtotal,
+            pp.vat_amount,
+            pp.created_at AS purchase_date,
+            pp.shipped_date,
+            pp.delivered_date,
+            pp.shipment_status,
+            u.user_id,
+            u.full_name AS user_name,
+            u.email AS user_email,
+            u.mobile_number,
+            a.address,
+            r.role,
+            d.doctor_id
+        FROM tbl_product_purchase pp
+        LEFT JOIN tbl_users u       ON pp.user_id = u.user_id
+        LEFT JOIN tbl_address a     ON pp.address_id = a.address_id
+        LEFT JOIN tbl_carts c       ON pp.cart_id = c.cart_id
+        LEFT JOIN tbl_clinics cl    ON c.clinic_id = cl.clinic_id
+        LEFT JOIN tbl_zqnq_users zu ON cl.zynq_user_id = zu.id
+        LEFT JOIN tbl_doctors d     ON d.zynq_user_id = zu.id
+        LEFT JOIN tbl_roles r       ON zu.role_id = r.id
+        WHERE pp.purchase_id = ?
+        LIMIT 1
     `;
 
         const [row] = await db.query(baseQuery, [purchase_id]);
@@ -1374,11 +1374,11 @@ export const getSingleAdminPurchasedProductModel = async (purchase_id) => {
 export const getSingleAdminCartProductModel = async (purchase_id) => {
     try {
         const query = `
-      SELECT * 
-      FROM tbl_product_purchase 
-      WHERE purchase_id = ?
-      ORDER BY created_at DESC
-    `;
+            SELECT * 
+            FROM tbl_product_purchase 
+            WHERE purchase_id = ?
+            ORDER BY created_at DESC
+        `;
         const results = await db.query(query, [purchase_id]);
         return results;
     } catch (error) {
