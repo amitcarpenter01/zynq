@@ -334,32 +334,48 @@ export const getAllTreatments = async () => {
     try {
         const treatments = await db.query(`
            SELECT
-    t.*,
-    COALESCE(
-        JSON_ARRAYAGG(
-            CASE 
-                WHEN st.sub_treatment_id IS NOT NULL THEN
-                    JSON_OBJECT(
-                        'sub_treatment_id', st.sub_treatment_id,
-                        'name', st.name,
-                        'swedish', st.swedish,
-                        'is_admin_created', st.is_admin_created,
-                        'created_by_zynq_user_id', st.created_by_zynq_user_id,
-                        'approval_status', st.approval_status,
-                        'is_deleted', st.is_deleted,
-                        'created_at', st.created_at
-                    )
-            END
-        ),
-        JSON_ARRAY()
-    ) AS sub_treatments
-FROM tbl_treatments t
-LEFT JOIN tbl_sub_treatments st
-    ON t.treatment_id = st.treatment_id
-    AND st.is_deleted = 0
-WHERE t.is_deleted = 0
-GROUP BY t.treatment_id
-ORDER BY t.created_at DESC
+                t.approval_status,
+                t.classification_type,
+                t.concern_en,
+                t.concern_sv,
+                t.created_at,
+                t.created_by_zynq_user_id,
+                t.description_en,
+                t.description_sv,
+                t.device_name,
+                t.is_admin_created,
+                t.is_deleted,
+                t.is_device,
+                t.name,
+                t.source,
+                t.swedish,
+                t.technology,
+                t.treatment_id,
+                COALESCE(
+                    JSON_ARRAYAGG(
+                        CASE 
+                            WHEN st.sub_treatment_id IS NOT NULL THEN
+                                JSON_OBJECT(
+                                    'sub_treatment_id', st.sub_treatment_id,
+                                    'name', st.name,
+                                    'swedish', st.swedish,
+                                    'is_admin_created', st.is_admin_created,
+                                    'created_by_zynq_user_id', st.created_by_zynq_user_id,
+                                    'approval_status', st.approval_status,
+                                    'is_deleted', st.is_deleted,
+                                    'created_at', st.created_at
+                                )
+                        END
+                    ),
+                    JSON_ARRAY()
+                ) AS sub_treatments
+            FROM tbl_treatments t
+            LEFT JOIN tbl_sub_treatments st
+                ON t.treatment_id = st.treatment_id
+                AND st.is_deleted = 0
+            WHERE t.is_deleted = 0
+            GROUP BY t.treatment_id
+            ORDER BY t.created_at DESC
         `);
 
         // Remove embeddings if present
@@ -1517,19 +1533,19 @@ export const getAllsurgery = async () => {
 }
 
 export const getAllDevices = async (ids) => {
-  try {
-    if (!ids.length) {
-        return await db.query('SELECT * FROM tbl_treatment_devices');
-    };
+    try {
+        if (!ids.length) {
+            return await db.query('SELECT * FROM tbl_treatment_devices');
+        };
 
-    const sql = `SELECT * FROM tbl_treatment_devices WHERE treatment_id IN (?)`;
+        const sql = `SELECT * FROM tbl_treatment_devices WHERE treatment_id IN (?)`;
 
-    const devices = await db.query(sql, ids);
-    return devices;
-  } catch (error) {
-    console.error("Database Error:", error.message);
-    throw new Error("Failed to fetch devices.");
-  }
+        const devices = await db.query(sql, ids);
+        return devices;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch devices.");
+    }
 };
 
 
@@ -2156,11 +2172,11 @@ export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
 export const getDoctorRatings = async (doctorId) => {
     try {
         const query = `
-    SELECT ar.*, u.full_name, u.profile_image
-    FROM tbl_appointment_ratings ar
-    LEFT JOIN tbl_users u ON ar.user_id = u.user_id
-    WHERE ar.doctor_id = ? AND ar.approval_status = 'APPROVED'
-    ORDER BY ar.created_at DESC`;
+        SELECT ar.*, u.full_name, u.profile_image
+        FROM tbl_appointment_ratings ar
+        LEFT JOIN tbl_users u ON ar.user_id = u.user_id
+        WHERE ar.doctor_id = ? AND ar.approval_status = 'APPROVED'
+        ORDER BY ar.created_at DESC`;
         const results = await db.query(query, [doctorId]);
         return results.map(row => ({
             ...row,

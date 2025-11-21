@@ -199,13 +199,63 @@ export const addEducationAndExperienceInformation = async (req, res) => {
 //     }
 // };
 
+// export const addExpertise = async (req, res) => {
+//     try {
+//         const schema = Joi.object({
+//             treatments: Joi.array().items(
+//                 Joi.object({
+//                     treatment_id: Joi.string().required(),
+//                     price: Joi.number().optional(),  // only used when NO sub treatments
+//                     sub_treatments: Joi.array().items(
+//                         Joi.object({
+//                             sub_treatment_id: Joi.string().required(),
+//                             sub_treatment_price: Joi.number().required()
+//                         })
+//                     ).optional()
+//                 })
+//             ).min(1).required(),
+
+//             skin_type_ids: Joi.string().required(),
+//             skin_condition_ids: Joi.string().required(),
+//             surgery_ids: Joi.string().required(),
+//             aesthetic_devices_ids: Joi.string().required(),
+//         });
+
+//         let language = req?.user?.language || 'en';
+//         const { error, value } = schema.validate(req.body);
+//         if (error) return joiErrorHandle(res, error);
+
+//         const doctorId = req.user.doctorData.doctor_id;
+
+//         // Convert CSV string lists into arrays
+//         const skinTypeIds = value.skin_type_ids.split(',').map(id => id.trim());
+//         const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
+//         const surgeryIds = value.surgery_ids.split(',').map(id => id.trim());
+//         const aestheticDevicesIds = value.aesthetic_devices_ids.split(',').map(id => id.trim());
+
+//         // Save expertise
+//         await doctorModels.update_doctor_treatments(doctorId, value.treatments);
+//         await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
+//         await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
+//         await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
+//         await doctorModels.update_doctor_aesthetic_devices(doctorId, aestheticDevicesIds);
+
+//         const zynqUserId = req.user.id;
+//         await update_onboarding_status(3, zynqUserId);
+//         return handleSuccess(res, 200, language, "EXPERTISE_UPDATED", {});
+//     } catch (error) {
+//         console.error(error);
+//         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+//     }
+// };
+
 export const addExpertise = async (req, res) => {
     try {
         const schema = Joi.object({
             treatments: Joi.array().items(
                 Joi.object({
                     treatment_id: Joi.string().required(),
-                    price: Joi.number().optional(),  // only used when NO sub treatments
+                    price: Joi.number().optional(),
                     sub_treatments: Joi.array().items(
                         Joi.object({
                             sub_treatment_id: Joi.string().required(),
@@ -218,7 +268,9 @@ export const addExpertise = async (req, res) => {
             skin_type_ids: Joi.string().required(),
             skin_condition_ids: Joi.string().required(),
             surgery_ids: Joi.string().required(),
-            aesthetic_devices_ids: Joi.string().required(),
+
+            // UPDATED: device ids instead of aesthetic devices
+            device_ids: Joi.string().required()
         });
 
         let language = req?.user?.language || 'en';
@@ -226,21 +278,27 @@ export const addExpertise = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
 
         const doctorId = req.user.doctorData.doctor_id;
+        const zynqUserId = req.user.id;
 
-        // Convert CSV string lists into arrays
+        // Convert CSV strings into arrays
         const skinTypeIds = value.skin_type_ids.split(',').map(id => id.trim());
         const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
         const surgeryIds = value.surgery_ids.split(',').map(id => id.trim());
-        const aestheticDevicesIds = value.aesthetic_devices_ids.split(',').map(id => id.trim());
+        const deviceIds = value.device_ids.split(',').map(id => id.trim());
 
         // Save expertise
         await doctorModels.update_doctor_treatments(doctorId, value.treatments);
         await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
         await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
         await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
-        await doctorModels.update_doctor_aesthetic_devices(doctorId, aestheticDevicesIds);
 
-        const zynqUserId = req.user.id;
+        // NEW: Save treatment → user → device mapping
+        await doctorModels.update_doctor_treatment_devices(
+            zynqUserId,       // zynq_user_id
+            value.treatments, // treatments array
+            deviceIds         // device ids
+        );
+
         await update_onboarding_status(3, zynqUserId);
         return handleSuccess(res, 200, language, "EXPERTISE_UPDATED", {});
     } catch (error) {
