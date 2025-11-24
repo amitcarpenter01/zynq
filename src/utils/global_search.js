@@ -177,7 +177,7 @@ function getHybridScore(nameScore, fullScore) {
 // };
 
 
-export const getTreatmentsVectorResult = async (
+export const getTreatmentsAIResult = async (
   rows,
   search,
   threshold = 0.40,
@@ -347,7 +347,7 @@ export const getDevicesAIResult = async (
   const normalized = search.trim().toLowerCase();
 
   const scoreResults = await batchDeviceGPTSimilarity(rows, normalized);
-console.log("scoreResults device", scoreResults);
+  console.log("scoreResults device", scoreResults);
   const scoreMap = new Map(scoreResults.map(r => [r.id, r.score]));
 
   const filtered = rows
@@ -420,10 +420,20 @@ export const getClinicsVectorResult = async (rows, search, threshold = 0.4, topN
 };
 
 async function batchGPTSimilarity(rows, searchQuery) {
+  // const list = rows.map(r => ({
+  //   id: r.treatment_id,
+  //   text: `${safeString(r.name)} - ${safeString(r.concern_en)} ${safeString(r.description_en)} ${safeString(r.like_wise_terms)}`.trim() 
+  // }));
   const list = rows.map(r => ({
     id: r.treatment_id,
-    text: `${safeString(r.name)} - ${safeString(r.concern_en)} ${safeString(r.description_en)}`.trim()
+    text: `
+Treatment Name: ${safeString(r.name)}
+Primary Concern: ${safeString(r.concern_en)}
+Description: ${safeString(r.description_en)}
+Related Terms: ${safeString(r.like_wise_terms)}
+  `.trim()
   }));
+
 
   const prompt = `
 You are a similarity scoring engine.
@@ -485,7 +495,7 @@ ${JSON.stringify(rows.map(r => r.treatment_id))}
   });
 
   const raw = res.choices[0].message.content;
-  
+
 
   try {
     const match = raw.match(/{[\s\S]*}/);
@@ -508,12 +518,12 @@ export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 10
   console.log(`Processing ${batches.length} batches in parallel...`);
 
   // Process all batches in parallel
-  const batchPromises = batches.map(batch => 
+  const batchPromises = batches.map(batch =>
     runDeviceSimilarityBatch(batch, searchQuery)
   );
 
   const results = await Promise.all(batchPromises);
-  
+
   // Log each partial result
   results.forEach(partial => {
     console.log("partial device", partial);
@@ -660,7 +670,7 @@ export async function runGPTSimilarity(rows, searchQuery, options = {}) {
  * 🧠 Runs GPT similarity on a single batch
  */
 async function runSingleBatch(batch, searchQuery, idField, textFields) {
- 
+
   // compact "id|text" format
   const list = batch.map((row) => {
     const id = row[idField];
@@ -671,7 +681,7 @@ async function runSingleBatch(batch, searchQuery, idField, textFields) {
 
     return `${id}|${combinedText}`;
   });
- 
+
   const prompt = `
 You are a similarity scoring engine.
 Compare each item with the search query.
