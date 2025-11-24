@@ -259,6 +259,7 @@ router.post("/detect-search-intent",authenticateUser, validate(getAllDoctorsSche
 router.post("/get-doctor-by-first-name",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.getDoctorsByFirstNameSearchOnlyController);
 router.post("/get-clinic-by-name",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.getClinicsByNameSearchOnlyController);
 router.post("/get-devices-by-name",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.getDevicesByNameSearchOnlyController);
+router.post("/get-treatments-by-search",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.gettreatmentsBySearchOnlyController);
 
 
 
