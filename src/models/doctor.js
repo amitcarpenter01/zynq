@@ -107,18 +107,60 @@ export const get_doctor_experience = async (doctorId) => {
 
 export const get_doctor_treatments = async (doctorId) => {
     try {
-        return await db.query(`
-          SELECT 
-                dt.*,
-                tt.*
+        const rows = await db.query(`
+            SELECT 
+                dt.doctor_id,
+                dt.treatment_id,
+                dt.price,
+                dt.sub_treatment_id,
+                dt.sub_treatment_price,
+                
+                tt.name AS treatment_name_en,
+                tt.swedish AS treatment_name_sv,
+
+                st.name AS sub_treatment_name_en,
+                st.swedish AS sub_treatment_name_sv
+
             FROM 
                 tbl_doctor_treatments dt
-            INNER JOIN 
+            INNER JOIN
                 tbl_treatments tt 
-            ON 
-                dt.treatment_id = tt.treatment_id 
+                ON dt.treatment_id = tt.treatment_id
+            LEFT JOIN 
+                tbl_sub_treatments st
+                ON dt.sub_treatment_id = st.sub_treatment_id
+
             WHERE 
-                dt.doctor_id = ?`, [doctorId]);
+                dt.doctor_id = ?
+            ORDER BY tt.name, st.name
+        `, [doctorId]);
+
+        // Group by treatment
+        const grouped = {};
+
+        for (const row of rows) {
+            if (!grouped[row.treatment_id]) {
+                grouped[row.treatment_id] = {
+                    treatment_id: row.treatment_id,
+                    treatment_name_en: row.treatment_name_en,
+                    treatment_name_sv: row.treatment_name_sv,
+                    price: row.price,  // total parent price
+                    sub_treatments: []
+                };
+            }
+
+            if (row.sub_treatment_id) {
+                grouped[row.treatment_id].sub_treatments.push({
+                    sub_treatment_id: row.sub_treatment_id,
+                    sub_treatment_name_en: row.sub_treatment_name_en,
+                    sub_treatment_name_sv: row.sub_treatment_name_sv,
+                    sub_treatment_price: row.sub_treatment_price
+                });
+            }
+        }
+
+        return Object.values(grouped);
+
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor's treatments.");
@@ -259,48 +301,41 @@ export const update_doctor_severity_levels = async (doctorId, severityLevelIds) 
 
 export const update_doctor_treatments = async (doctorId, treatments) => {
     try {
-        // Delete old data
+        // Delete existing rows
         await db.query(`DELETE FROM tbl_doctor_treatments WHERE doctor_id = ?`, [doctorId]);
 
         let values = [];
 
         for (const t of treatments) {
-            const hasSub = Array.isArray(t.sub_treatments) && t.sub_treatments.length > 0;
+            const subs = Array.isArray(t.sub_treatments) ? t.sub_treatments : [];
 
-            if (hasSub) {
-                // Calculate total price
-                let totalPrice = 0;
+            if (subs.length > 0) {
 
-                for (const sub of t.sub_treatments) {
-                    totalPrice += Number(sub.sub_treatment_price);
+                // Calculate total once
+                const totalPrice = subs.reduce(
+                    (sum, item) => sum + Number(item.sub_treatment_price || 0), 
+                    0
+                );
 
-                    // Insert each sub treatment
+                // Insert only sub-treatment rows
+                for (const sub of subs) {
                     values.push([
                         doctorId,
                         t.treatment_id,
-                        null,                     // price
-                        sub.sub_treatment_id,     // sub id
-                        sub.sub_treatment_price   // sub price
+                        totalPrice,                 // same total price in all rows
+                        sub.sub_treatment_id,
+                        sub.sub_treatment_price
                     ]);
                 }
-
-                // Insert parent treatment row with total price
-                values.push([
-                    doctorId,
-                    t.treatment_id,
-                    totalPrice,     // price
-                    null,           // sub_treatment_id
-                    null            // sub_treatment_price
-                ]);
 
             } else {
                 // No sub-treatment → insert single row
                 values.push([
                     doctorId,
                     t.treatment_id,
-                    t.price,    // price
-                    null,       // sub_treatment_id
-                    null        // sub_treatment_price
+                    t.price || 0,
+                    null,
+                    null
                 ]);
             }
         }
@@ -431,24 +466,98 @@ export const get_all_certification_types = async () => {
     }
 };
 
+// export const get_doctor_profile = async (doctorId) => {
+//     try {
+//         const [doctor] = await db.query(`
+//             SELECT d.*, c.profile_status 
+//             FROM tbl_doctors d
+//             LEFT JOIN tbl_clinics c ON d.zynq_user_id = c.zynq_user_id 
+//             WHERE d.doctor_id = ?`, [doctorId]);
+//         const [mainUser] = await get_web_user_by_id(doctor.zynq_user_id);
+//         const education = await get_doctor_education(doctorId);
+//         const experience = await get_doctor_experience(doctorId);
+//         const treatments = await get_doctor_treatments(doctorId)
+//         const skinTypes = await get_doctor_skin_types(doctorId);
+//         const severityLevels = await get_doctor_severity_levels(doctorId);
+//         const availability = await get_doctor_availability(doctorId);
+//         const certifications = await get_doctor_certifications(doctorId);
+//         const skinCondition = await get_doctor_skin_condition(doctorId);
+//         const surgery = await get_doctor_surgeries(doctorId);
+//         const aestheticDevices = await get_doctor_aesthetic_devices(doctorId)
+
+//         // Add sub-treatments under each treatment
+//         for (const t of treatments) {
+//             const subTreatments = await get_doctor_sub_treatments(doctorId, t.treatment_id);
+//             t.sub_treatments = subTreatments || [];
+//         }
+
+//         return {
+//             ...mainUser,
+//             ...doctor,
+//             education,
+//             experience,
+//             treatments,
+//             skinTypes,
+//             severityLevels,
+//             availability,
+//             certifications,
+//             skinCondition,
+//             surgery,
+//             aestheticDevices
+//         };
+
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to get doctor's complete profile.");
+//     }
+// };
+
 export const get_doctor_profile = async (doctorId) => {
     try {
         const [doctor] = await db.query(`
-            SELECT d.*, c.profile_status 
+            SELECT d.doctor_id,
+                d.zynq_user_id, 
+                d.name, 
+                d.profile_status, 
+                d.invited_date, 
+                d.invitation_email_count, 
+                d.email_sent_count, 
+                d.specialization, 
+                d.employee_id, 
+                d.experience_years, 
+                d.rating, 
+                d.fee_per_session, 
+                d.session_duration, 
+                d.currency, 
+                d.phone, 
+                d.age, 
+                d.address, 
+                d.biography, 
+                d.gender, 
+                d.profile_image, 
+                d.created_at, 
+                d.updated_at, 
+                d.profile_completion_percentage,
+                d.isOnline,
+                d.zynq_user_id,
+                d.zynq_user_id,
+                
+                c.profile_status 
             FROM tbl_doctors d
             LEFT JOIN tbl_clinics c ON d.zynq_user_id = c.zynq_user_id 
             WHERE d.doctor_id = ?`, [doctorId]);
         const [mainUser] = await get_web_user_by_id(doctor.zynq_user_id);
         const education = await get_doctor_education(doctorId);
         const experience = await get_doctor_experience(doctorId);
-        const treatments = await get_doctor_treatments(doctorId)
+        const treatments = await get_doctor_treatments(doctorId);
         const skinTypes = await get_doctor_skin_types(doctorId);
         const severityLevels = await get_doctor_severity_levels(doctorId);
         const availability = await get_doctor_availability(doctorId);
         const certifications = await get_doctor_certifications(doctorId);
         const skinCondition = await get_doctor_skin_condition(doctorId);
         const surgery = await get_doctor_surgeries(doctorId);
-        const aestheticDevices = await get_doctor_aesthetic_devices(doctorId)
+        // const aestheticDevices = await get_doctor_aesthetic_devices(doctorId);
+        const devices = await get_doctor_devices(doctor.zynq_user_id);
 
         return {
             ...mainUser,
@@ -462,7 +571,8 @@ export const get_doctor_profile = async (doctorId) => {
             certifications,
             skinCondition,
             surgery,
-            aestheticDevices
+            // aestheticDevices,
+            devices
         };
 
     } catch (error) {
@@ -723,9 +833,43 @@ export const update_doctor_aesthetic_devices = async (doctorId, aestheticDevices
     }
 };
 
+// export const update_doctor_treatment_devices = async (zynqUserId, treatments, deviceIds) => {
+//     try {
+//         await db.query(
+//             `DELETE FROM tbl_treatment_device_user_maps WHERE zynq_user_id = ?`,
+//             [zynqUserId]
+//         );
+
+//         let data = [];
+//         let uniqueMap = new Set();
+
+//         treatments.forEach(t => {
+//             deviceIds.forEach(deviceId => {
+//                 const key = `${t.treatment_id}-${deviceId}`;
+//                 if (!uniqueMap.has(key)) {
+//                     uniqueMap.add(key);
+//                     data.push([t.treatment_id, zynqUserId, deviceId]);
+//                 }
+//             });
+//         });
+
+//         if (data.length > 0) {
+//             await db.query(
+//                 `INSERT INTO tbl_treatment_device_user_maps (treatment_id, zynq_user_id, device_id) VALUES ?`,
+//                 [data]
+//             );
+//         }
+
+//         return true;
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to update mapping in tbl_treatment_device_user_maps");
+//     }
+// };
+
 export const update_doctor_treatment_devices = async (zynqUserId, treatments, deviceIds) => {
     try {
-        // Clear previous mapping for this user
+        // Remove previous mappings
         await db.query(
             `DELETE FROM tbl_treatment_device_user_maps WHERE zynq_user_id = ?`,
             [zynqUserId]
@@ -733,11 +877,16 @@ export const update_doctor_treatment_devices = async (zynqUserId, treatments, de
 
         let data = [];
 
-        // For each treatment, map all devices
-        treatments.forEach(t => {
-            deviceIds.forEach(deviceId => {
-                data.push([t.treatment_id, zynqUserId, deviceId]);
-            });
+        // Expecting only one treatment_id OR using the first one
+        const treatmentId = treatments?.[0]?.treatment_id;
+
+        if (!treatmentId) {
+            throw new Error("No treatment_id found in treatments array");
+        }
+
+        // Insert one row per device_id
+        deviceIds.forEach(deviceId => {
+            data.push([treatmentId, zynqUserId, deviceId]);
         });
 
         if (data.length > 0) {
@@ -804,6 +953,24 @@ export const get_doctor_aesthetic_devices = async (doctorId) => {
                 tbl_aesthetic_devices ad ON dad.aesthetic_devices_id  = ad.aesthetic_device_id
             WHERE 
                 dad.doctor_id = ?`, [doctorId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's aesthetic devices.");
+    }
+};
+
+export const get_doctor_devices = async (zynqUserId) => {
+    try {
+        return await db.query(`
+            SELECT 
+                ttdum.*, 
+                ttd.*
+            FROM 
+                tbl_treatment_device_user_maps ttdum
+            LEFT JOIN 
+                tbl_treatment_devices ttd ON ttdum.device_id  = ttd.id
+            WHERE 
+                ttdum.zynq_user_id = ?`, [zynqUserId]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor's aesthetic devices.");
@@ -1178,11 +1345,11 @@ export const getDashboardData = async (userData) => {
 };
 
 export const getWalletHistoryModel = async (userData) => {
-  try {
-    const { user_id, role: user_type } = extractUserData(userData);
+    try {
+        const { user_id, role: user_type } = extractUserData(userData);
 
-    // 1️⃣ Get raw wallet history
-    const query = `
+        // 1️⃣ Get raw wallet history
+        const query = `
         SELECT h.*
         FROM zynq_users_wallets AS w
         LEFT JOIN zynq_user_wallet_history AS h
@@ -1191,60 +1358,60 @@ export const getWalletHistoryModel = async (userData) => {
           AND w.user_type = ?
         ORDER BY h.created_at DESC
     `;
-    const history = await db.query(query, [user_id, user_type]);
-    if (!history.length) return [];
+        const history = await db.query(query, [user_id, user_type]);
+        if (!history.length) return [];
 
-    // 2️⃣ Collect ids by type
-    const appointmentIds = [];
-    const purchaseIds = [];
+        // 2️⃣ Collect ids by type
+        const appointmentIds = [];
+        const purchaseIds = [];
 
-    history.forEach((item) => {
-      if (item.order_type === "APPOINTMENT" && item.order_id) {
-        appointmentIds.push(item.order_id);
-      } else if (item.order_type === "PURCHASE" && item.order_id) {
-        purchaseIds.push(item.order_id);
-      }
-    });
+        history.forEach((item) => {
+            if (item.order_type === "APPOINTMENT" && item.order_id) {
+                appointmentIds.push(item.order_id);
+            } else if (item.order_type === "PURCHASE" && item.order_id) {
+                purchaseIds.push(item.order_id);
+            }
+        });
 
-    // 3️⃣ Fetch details only if we have ids
-    const [appointments, purchases] = await Promise.all([
-      appointmentIds.length
-        ? getBookedAppointmentsModelForIds({ appointmentIds })
-        : [],
-      purchaseIds.length
-        ? getPurchasedProductModelForIds({ purchaseIds })
-        : [],
-    ]);
+        // 3️⃣ Fetch details only if we have ids
+        const [appointments, purchases] = await Promise.all([
+            appointmentIds.length
+                ? getBookedAppointmentsModelForIds({ appointmentIds })
+                : [],
+            purchaseIds.length
+                ? getPurchasedProductModelForIds({ purchaseIds })
+                : [],
+        ]);
 
-    // 4️⃣ Map for fast lookup
-    const appointmentMap = appointments.reduce((acc, appt) => {
-      acc[appt.appointment_id] = appt;
-      return acc;
-    }, {});
-    const purchaseMap = purchases.reduce((acc, pur) => {
-      acc[pur.purchase_id] = pur;
-      return acc;
-    }, {});
+        // 4️⃣ Map for fast lookup
+        const appointmentMap = appointments.reduce((acc, appt) => {
+            acc[appt.appointment_id] = appt;
+            return acc;
+        }, {});
+        const purchaseMap = purchases.reduce((acc, pur) => {
+            acc[pur.purchase_id] = pur;
+            return acc;
+        }, {});
 
-    // 5️⃣ Enrich history
-    const enrichedHistory = history.map((item) => {
-      let details = null;
-      if (item.order_type === "APPOINTMENT") {
-        details = appointmentMap[item.order_id] || null;
-      } else if (item.order_type === "PURCHASE") {
-        details = purchaseMap[item.order_id] || null;
-      }
-      return {
-        ...item,
-        details, // unified key for either appointment or purchase
-      };
-    });
+        // 5️⃣ Enrich history
+        const enrichedHistory = history.map((item) => {
+            let details = null;
+            if (item.order_type === "APPOINTMENT") {
+                details = appointmentMap[item.order_id] || null;
+            } else if (item.order_type === "PURCHASE") {
+                details = purchaseMap[item.order_id] || null;
+            }
+            return {
+                ...item,
+                details, // unified key for either appointment or purchase
+            };
+        });
 
-    return enrichedHistory;
-  } catch (error) {
-    console.error("Database Error (getWalletHistoryModel):", error.message);
-    throw new Error("Failed to fetch wallet history.");
-  }
+        return enrichedHistory;
+    } catch (error) {
+        console.error("Database Error (getWalletHistoryModel):", error.message);
+        throw new Error("Failed to fetch wallet history.");
+    }
 };
 
 
@@ -1517,7 +1684,7 @@ export const getSingleClinicCartProductModel = async (clinic_id, purchase_id) =>
 
 export const updateDoctorAdmindetails = async (zynqUserId, name, phone, age, address, gender, profile_image, biography) => {
     try {
-        return await db.query(`UPDATE tbl_doctors SET  name = ?, phone=? , age=?, address=?, gender=?, profile_image=?,biography=? where zynq_user_id = ? `, [ name, phone, age, address, gender, profile_image, biography, zynqUserId]);
+        return await db.query(`UPDATE tbl_doctors SET  name = ?, phone=? , age=?, address=?, gender=?, profile_image=?,biography=? where zynq_user_id = ? `, [name, phone, age, address, gender, profile_image, biography, zynqUserId]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to add doctor personal details.");
