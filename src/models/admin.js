@@ -2074,6 +2074,7 @@ export const getAllTreatmentsModel = async () => {
                 t.approval_status,
                 t.is_deleted,
                 t.created_at,
+                t.like_wise_terms
 
                 -- Concerns
                 GROUP_CONCAT(DISTINCT c.concern_id ORDER BY c.concern_id SEPARATOR ',') AS concern_ids,
