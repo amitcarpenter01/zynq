@@ -983,3 +983,48 @@ export const gettreatmentsBySearchOnlyController = asyncHandler(async (req, res)
         return handleError(res, 500, language, "INTERNAL_SERVER_ERROR");
     }
 });
+
+export const getSubtreatmentsBySearchOnlyController = asyncHandler(async (req, res) => {
+    const { language = 'en' } = req.user || {};
+
+    let { filters = {}, page, limit } = req.body || {};
+
+    const search = filters.search?.trim() || "";
+
+    if (!search) {
+        return handleError(res, 400, language, "EMPTY_SEARCH_QUERY");
+    }
+
+    try {
+        var normalized_search;
+        if (search.length <= 3) {
+            console.log("Short query, returning default valid_medical");
+            normalized_search = search
+        } else {
+            console.log("Long query, translating to english");
+            normalized_search = await translator(search, 'en');
+        }
+        // 🧠 Detect if the translated text is gibberish
+        const gibberish = isGibberishText(normalized_search);
+
+        if (gibberish) {
+            return handleError(res, 200, language, "Invalid Search", []);
+        }
+
+
+        // 2️⃣ Run all searches (as you already do)
+        const [subtreatments] = await Promise.all([
+
+              userModels.getSubTreatmentsBySearchOnly({ search: normalized_search, language, page, limit, actualSearch: search })
+        ]);
+
+
+
+        // 5️⃣ Return ranked response
+        return handleSuccess(res, 200, language, 'SEARCH_RESULTS_FETCHED', subtreatments);
+
+    } catch (error) {
+        console.error("Search Home Error:", error);
+        return handleError(res, 500, language, "INTERNAL_SERVER_ERROR");
+    }
+});

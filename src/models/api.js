@@ -1,7 +1,7 @@
 import db from "../config/db.js";
 import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows, getTopSimilarRowsWithoutTranslate } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
-import { getTreatmentsAIResult, getDoctorsVectorResult,getDoctorsAIResult, getClinicsAIResult, getDevicesAIResult } from "../utils/global_search.js"
+import { getTreatmentsAIResult, getDoctorsVectorResult,getDoctorsAIResult, getClinicsAIResult, getDevicesAIResult, getSubTreatmentsAIResult } from "../utils/global_search.js"
 
 //======================================= Auth =========================================
 
@@ -2453,14 +2453,15 @@ export const getSubTreatmentsBySearchOnly = async ({
 
         // 1️⃣ Fetch all treatments that have embeddings
         let results = await db.query(`
-      SELECT 
-      FROM tbl_treatments
-      WHERE is_deleted = 0 AND approval_status = 'APPROVED'
+      SELECT s.sub_treatment_id,s.treatment_id,s.name,s.swedish,t.name as treatment_name,t.swedish as treatment_swedish
+      FROM tbl_sub_treatments s
+      LEFT JOIN tbl_treatments t ON s.treatment_id = t.treatment_id
+      WHERE s.is_deleted = 0 AND s.approval_status = 'APPROVED' AND t.approval_status = 'APPROVED' AND t.is_deleted = 0
     `);
 
     
         // 2️⃣ Compute top similar rows using embedding
-        results = await getTreatmentsAIResult(results, search,0.4, null, language, actualSearch);
+        results = await getSubTreatmentsAIResult(results, search,0.4, null, language, actualSearch);
 
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
