@@ -212,6 +212,38 @@ export const getTreatmentsAIResult = async (
   return topN ? translated.slice(0, topN) : translated;
 };
 
+export const getSubTreatmentsAIResult = async (
+  rows,
+  search,
+  threshold = 0.40,
+  topN = null,
+  language = "en"
+) => {
+  if (!search?.trim()) return rows;
+
+  const normalized = search.trim().toLowerCase();
+
+  const scoreResults = await batchGPTSimilaritySubTreatments(rows, normalized);
+
+  const scoreMap = new Map(scoreResults.map(r => [r.id, r.score]));
+
+  const filtered = rows
+    .map(r => ({
+      ...r,
+      score: scoreMap.get(r.treatment_id) ?? 0
+    }))
+    .filter(r => r.score >= threshold)
+    .sort((a, b) => b.score - a.score);
+
+  const translated = filtered.map(result => ({
+    ...result,
+    name: language === "en" ? result.name : result.swedish,
+    treatment_name: language === "en" ? result.treatment_name : result.treatment_swedish
+  }));
+
+  return topN ? translated.slice(0, topN) : translated;
+};
+
 
 export const getDoctorsVectorResult = async (rows, search, threshold = 0.4, topN = null) => {
   if (!search?.trim()) return rows;
@@ -424,6 +456,8 @@ async function batchGPTSimilarity(rows, searchQuery) {
   //   id: r.treatment_id,
   //   text: `${safeString(r.name)} - ${safeString(r.concern_en)} ${safeString(r.description_en)} ${safeString(r.like_wise_terms)}`.trim() 
   // }));
+
+  console.log("rows", rows);
   const list = rows.map(r => ({
     id: r.treatment_id,
     text: `
@@ -433,7 +467,6 @@ Description: ${safeString(r.description_en)}
 Related Terms: ${safeString(r.like_wise_terms)}
   `.trim()
   }));
-
 
   const prompt = `
 You are a similarity scoring engine.
@@ -506,9 +539,105 @@ ${JSON.stringify(rows.map(r => r.treatment_id))}
     return [];
   }
 }
-/**
- * 🔥 Main Function — Handles batching automatically
- */
+
+async function runSubTreatmentSimilarityBatch(batch, searchQuery) {
+  const list = batch.map(r => ({
+    id: r.treatment_id,
+    text: `
+Sub Treatment Name: ${safeString(r.name)}
+Treatment Name: ${safeString(r.treatment_name)}
+    `.trim()
+  }));
+
+  const prompt = `
+You are a similarity scoring engine.
+Compare each item in the list to the search query.
+
+Search Query: "${searchQuery}"
+
+Return ONLY this exact JSON:
+{
+  "results": [
+    { "id": string, "score": number }
+  ]
+}
+
+IMPORTANT RULES ABOUT IDs:
+• You MUST ONLY return IDs from the ITEM LIST.
+• Never invent or modify an ID.
+• IDs are strings (UUIDs), NOT numbers.
+• If unsure, return lower score, not a fake ID.
+
+SCORING RULES:
+• 0.85 – 1.0 strong match
+• 0.60 – 0.85 good match
+• 0.40 – 0.60 medium match
+• Medium similarity MUST stay in 0.40–0.60
+• Understand spelling errors & Swedish–English variants
+• Never output 0 unless 100% unrelated
+
+NEGATION RULE:
+If query contains:
+  - "non laser"
+  - "not laser"
+  - "without laser"
+Then:
+  a) Exclude laser-related treatments
+  b) Still match best semantic alternatives
+
+ITEM LIST:
+${JSON.stringify(list)}
+
+ALLOWED IDs:
+${JSON.stringify(batch.map(r => r.treatment_id))}
+`;
+
+  const res = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    temperature: 0,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: "You output ONLY valid JSON. No extra text. No markdown." },
+      { role: "user", content: prompt }
+    ]
+  });
+
+  const raw = res.choices[0].message.content;
+
+  try {
+    const match = raw.match(/{[\s\S]*}/);
+    if (!match) return [];
+    return JSON.parse(match[0]).results || [];
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+export async function batchGPTSimilaritySubTreatments(rows, searchQuery, batchSize = 100) {
+  const batches = [];
+  for (let i = 0; i < rows.length; i += batchSize) {
+    batches.push(rows.slice(i, i + batchSize));
+  }
+
+  console.log(`Processing ${batches.length} batches in parallel...`);
+
+  // Run all batches in parallel
+  const batchPromises = batches.map(batch =>
+    runSubTreatmentSimilarityBatch(batch, searchQuery)
+  );
+
+  const results = await Promise.all(batchPromises);
+
+  // Optional debugging
+  results.forEach((partial, idx) => {
+    console.log(`partial sub-treatment batch ${idx + 1}:`, partial);
+  });
+
+  return results.flat();
+}
+
+
 export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 100) {
   const batches = [];
   for (let i = 0; i < rows.length; i += batchSize) {
