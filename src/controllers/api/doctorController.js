@@ -598,7 +598,7 @@ async function detectSearchIntent(searchQuery) {
         console.log("⚙️ Detected doctor keyword — prioritizing Doctor ranking");
         return {
             type: "valid_medical",
-            ranking: ["Doctor", "Clinic", "Treatment", "Devices","Sub Treatment"]
+            ranking: ["Doctor", "Clinic", "Treatment", "Sub Treatment","Devices",]
         };
     }
 
@@ -607,7 +607,7 @@ async function detectSearchIntent(searchQuery) {
         console.log("⚙️ Skipping AI — short query, returning default valid_medical");
         return {
             type: "valid_medical",
-            ranking: ["Treatment", "Devices", "Doctor", "Clinic","Sub Treatment"]
+            ranking: ["Treatment", "Sub Treatment", "Doctor", "Clinic","Devices"]
         };
     }
 
@@ -617,7 +617,7 @@ async function detectSearchIntent(searchQuery) {
     Your goal is to analyze the query and always output a pure JSON object with exactly these two fields:
     {
       "type": "valid_medical" | "non_medical",
-      "ranking": ["Doctor","Clinic","Treatment","Devices","Sub Treatment"] (in the most contextually correct order)
+      "ranking": ["Doctor","Clinic","Treatment","Sub Treatment","Devices"] (in the most contextually correct order)
     }
     
     ---
@@ -628,7 +628,8 @@ async function detectSearchIntent(searchQuery) {
     - Always return a valid JSON object — no markdown or explanations.
     - Case-insensitive and tolerant of spelling errors (“wrinckle”, “daktar”, etc.).
     - Use fuzzy understanding to infer intent.
-    - Always keep **"Treatment"** next to **"Sub Treatment"** and **"Devices"**.
+    - Always keep **"Treatment"** next to **"Sub Treatment"**.
+    - Always keep **"Devices"** in the last position.
     
     ---
     
@@ -650,13 +651,12 @@ async function detectSearchIntent(searchQuery) {
     
     | Query Type | Ranking |
     |-------------|----------|
-    | Mentions “dr”, “doctor”, “daktar” | ["Doctor","Clinic","Treatment","Devices","Sub Treatment"] |
-    | Mentions clinic/hospital name | ["Clinic","Doctor","Treatment","Devices","Sub Treatment"] |
-    | Refers to **treatment, symptom, condition, or therapy** (e.g., “laser”, “botox”, “IPL”, “peel”, “scar removal”, “acne”) | ["Treatment", "Sub Treatment","Devices","Doctor","Clinic"] |
-    | Refers to **medical device, machine, or equipment** (e.g., “RF device”, “IPL machine”, “laser machine”) | ["Devices","Treatment", "Sub Treatment","Doctor","Clinic"] |
-    | General health or beauty-related phrases (e.g., “skin glow”, “rejuvenation”) | ["Treatment","Sub Treatment","Clinic","Doctor","Devices"] |
-    | Refers to **sub treatment, symptom, condition, or therapy** (e.g., “laser”, “botox”, “IPL”, “peel”, “scar removal”, “acne”) | ["Sub Treatment","Treatment","Devices","Doctor","Clinic"] |
-    | Unclear but still medical | ["Treatment","Sub Treatment","Devices","Doctor","Clinic"] |
+    | Mentions “dr”, “doctor”, “daktar” | ["Doctor","Clinic","Treatment","Sub Treatment","Devices"] |
+    | Mentions clinic/hospital name | ["Clinic","Doctor","Treatment","Sub Treatment","Devices"] |
+    | Refers to **treatment, symptom, condition, or therapy** (e.g., “laser”, “botox”, “IPL”, “peel”, “scar removal”, “acne”) | ["Treatment", "Sub Treatment","Doctor","Clinic","Devices",] |
+    | General health or beauty-related phrases (e.g., “skin glow”, “rejuvenation”) | ["Treatment","Sub Treatment","Doctor","Clinic","Devices"] |
+    | Refers to **sub treatment, symptom, condition, or therapy** (e.g., “laser”, “botox”, “IPL”, “peel”, “scar removal”, “acne”) | ["Sub Treatment","Treatment","Doctor","Clinic","Devices"] |
+    | Unclear but still medical | ["Treatment","Sub Treatment","Doctor","Clinic","Devices"] |
     
     ---
     
@@ -680,25 +680,25 @@ async function detectSearchIntent(searchQuery) {
     ### ✅ Examples
     
     Input: "dr harshit"  
-    → {"type":"valid_medical","ranking":["Doctor","Clinic","Treatment","Devices","Sub Treatment"]}
+    → {"type":"valid_medical","ranking":["Doctor","Clinic","Treatment","Sub Treatment","Devices"]}
     
     Input: "apollo clinic"  
-    → {"type":"valid_medical","ranking":["Clinic","Doctor","Treatment","Devices","Sub Treatment"]}
+    → {"type":"valid_medical","ranking":["Clinic","Doctor","Treatment","Sub Treatment","Devices"]}
     
     Input: "wrinkle"  
-    → {"type":"valid_medical","ranking":["Treatment","Sub Treatment","Devices","Doctor","Clinic"]}
+    → {"type":"valid_medical","ranking":["Treatment","Sub Treatment","Doctor","Clinic","Devices"]}  
     
     Input: "laser"  
-    → {"type":"valid_medical","ranking":["Treatment","Sub Treatment","Devices","Doctor","Clinic"]}
+    → {"type":"valid_medical","ranking":["Treatment","Sub Treatment","Doctor","Clinic","Devices"]}
     
     Input: "IPL machine"  
-    → {"type":"valid_medical","ranking":["Devices","Treatment","Sub Treatment","Doctor","Clinic"]}
+    → {"type":"valid_medical","ranking":["Treatment","Sub Treatment","Doctor","Clinic","Devices"]}
     
     Input: "skin rejuvenation"  
-    → {"type":"valid_medical","ranking":["Treatment","Sub Treatment","Clinic","Doctor","Devices"]}
+    → {"type":"valid_medical","ranking":["Treatment","Sub Treatment","Doctor","Clinic","Devices"]}
     
     Input: "hello world"  
-    → {"type":"non_medical","ranking":["Clinic","Doctor","Treatment","Devices","Sub Treatment"]}
+    → {"type":"non_medical","ranking":["Treatment","Sub Treatment","Doctor","Clinic","Devices"]}
     
     ---
     
@@ -740,10 +740,10 @@ async function detectSearchIntent(searchQuery) {
         }
 
         console.warn("⚠️ Unexpected JSON structure, using fallback");
-        return { type: "valid_medical", ranking: ["Treatment", "Sub Treatment", "Devices", "Doctor", "Clinic"] };
+        return { type: "valid_medical", ranking: ["Treatment", "Sub Treatment", "Doctor", "Clinic", "Devices"] };
     } catch (e) {
         console.error("❌ JSON parse error:", e.message, "\nRaw content:", content);
-        return { type: "valid_medical", ranking: ["Treatment", "Sub Treatment", "Devices", "Doctor", "Clinic"] };
+        return { type: "valid_medical", ranking: ["Treatment", "Sub Treatment", "Doctor", "Clinic", "Devices"] };
     }
 }
 
