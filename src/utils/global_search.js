@@ -322,7 +322,7 @@ export const getClinicsAIResult = async (rows, search, language = "en") => {
   // Apply similarity threshold
   let results = applyAISimilarity(rows, scoreResults, {
     idField: "clinic_id",
-    threshold: 0.40,
+    threshold: 0.45,
   });
 
   // ⛔ After threshold filtering, no results → return empty array
@@ -499,7 +499,7 @@ ${JSON.stringify(rows.map(r => r.treatment_id))}
 /**
  * 🔥 Main Function — Handles batching automatically
  */
-export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 400) {
+export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 100) {
   const batches = [];
   for (let i = 0; i < rows.length; i += batchSize) {
     batches.push(rows.slice(i, i + batchSize));
@@ -528,6 +528,7 @@ export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 40
  * 🧠 Runs GPT similarity on a *single batch*
  */
 async function runDeviceSimilarityBatch(rows, searchQuery) {
+  console.log("fetching device results");
   if (!rows || rows.length === 0) return [];
 
   const list = rows.map(r =>
@@ -535,27 +536,55 @@ async function runDeviceSimilarityBatch(rows, searchQuery) {
   );
 
   const prompt = `
-You are a STRICT JSON similarity scoring engine.
-You MUST return ONLY valid JSON. No markdown. No comments.
+You are a STRICT JSON similarity scoring engine for DEVICES ONLY.
 
 Search Query: "${searchQuery}"
 
-Return EXACTLY this:
+Return ONLY this JSON:
 {
   "results": [
-    { "id": string, "score": number }
+    { "id": "string", "score": number }
   ]
 }
 
-SCORING:
-• 0.85–1.0 strong
-• 0.60–0.85 good
-• 0.40–0.60 medium
-• Never output 0 unless fully unrelated
+GENERAL RULES:
+1. If the search query is NOT about a device → all scores = 0.0
+2. If the query refers to clinics, doctors, people, cities, symptoms, body parts → all scores = 0.0
+3. Only compare DEVICE NAME + TREATMENT NAME.
+4. Never force a match if uncertain.
+5. Never hallucinate IDs. Only return IDs from the item list.
+
+DEVICE CATEGORY RULE (MANDATORY):
+If the search query implies a device category (e.g., “laser”, “IPL”, “RF”, “radiofrequency”, “ultrasound”, “HIFU”, “LED”, “injectable”):
+
+  A. Only items whose DEVICE NAME belongs to the SAME CATEGORY
+     are allowed to score ABOVE 0.50.
+
+  B. Treatment name similarity CANNOT raise a score above 0.30
+     if the device category does not match.
+
+  C. If device category does NOT match the query:
+        Score MUST be 0.0–0.30.
+
+NEGATION RULE:
+If query contains:
+  • "non laser"
+  • "not laser"
+  • "without laser"
+
+  Then:
+    • All LASER devices MUST be scored 0.0–0.20
+    • Non-laser devices may score normally
+
+SCORING SCALE:
+• 0.85–1.0 strong match (same device)
+• 0.60–0.85 good match (same category)
+• 0.40–0.60 weak match (same category, but further)
+• 0.0–0.30 category mismatch or unrelated
 
 ITEM LIST (id|text):
 ${list.join("\n")}
-`;
+  `;
 
   const res = await client.chat.completions.create({
     model: "gpt-4o-mini",
@@ -571,7 +600,6 @@ ${list.join("\n")}
   const raw = res.choices[0].message.content;
 
   try {
-    // 👉 Catch broken JSON by extracting the first {...}
     const match = raw.match(/{[\s\S]*}/);
     if (!match) {
       console.error("NO JSON RETURNED:", raw);
@@ -586,6 +614,7 @@ ${list.join("\n")}
     return [];
   }
 }
+
 
 
 /**
@@ -659,8 +688,8 @@ Return ONLY:
 SCORING:
 • 0.85 – 1.0 strong  
 • 0.60 – 0.85 good  
-• 0.40 – 0.60 medium  
-• Understand Swedish/English errors  
+• 0.40 – 0.60 medium   
+• 0.0–0.30 category mismatch or unrelated
 • Never output 0 unless fully unrelated  
 
 NEGATION RULE:
