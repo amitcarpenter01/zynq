@@ -1,7 +1,7 @@
 import db from "../config/db.js";
 import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows, getTopSimilarRowsWithoutTranslate } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
-import { getTreatmentsVectorResult, getDoctorsVectorResult,getDoctorsAIResult, getClinicsAIResult, getDevicesAIResult } from "../utils/global_search.js"
+import { getTreatmentsAIResult, getDoctorsVectorResult,getDoctorsAIResult, getClinicsAIResult, getDevicesAIResult } from "../utils/global_search.js"
 
 //======================================= Auth =========================================
 
@@ -2422,14 +2422,45 @@ export const getTreatmentsBySearchOnly = async ({
 
         // 1️⃣ Fetch all treatments that have embeddings
         let results = await db.query(`
-      SELECT treatment_id,name,swedish ,benefits_sv ,device_name,classification_type,benefits_en,description_en,embeddings,name_embeddings
+      SELECT treatment_id,name,swedish ,benefits_sv ,device_name,classification_type,benefits_en,description_en,embeddings,name_embeddings,like_wise_terms
       FROM tbl_treatments
       WHERE is_deleted = 0 AND approval_status = 'APPROVED'
     `);
 
     
         // 2️⃣ Compute top similar rows using embedding
-        results = await getTreatmentsVectorResult(results, search,0.4, null, language, actualSearch);
+        results = await getTreatmentsAIResult(results, search,0.4, null, language, actualSearch);
+
+        // 3️⃣ Apply pagination
+        results = paginateRows(results, limit, page);
+
+        return results;
+    } catch (error) {
+        console.error('Database Error in getTreatmentsBySearch:', error.message);
+        throw new Error('Failed to fetch treatments.');
+    }
+};
+
+export const getSubTreatmentsBySearchOnly = async ({
+    search = '',
+    language = 'en',
+    page = null,
+    limit = null,
+    actualSearch
+}) => {
+    try {
+        if (!search?.trim()) return [];
+
+        // 1️⃣ Fetch all treatments that have embeddings
+        let results = await db.query(`
+      SELECT 
+      FROM tbl_treatments
+      WHERE is_deleted = 0 AND approval_status = 'APPROVED'
+    `);
+
+    
+        // 2️⃣ Compute top similar rows using embedding
+        results = await getTreatmentsAIResult(results, search,0.4, null, language, actualSearch);
 
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
