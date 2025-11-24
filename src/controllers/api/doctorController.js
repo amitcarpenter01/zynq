@@ -748,5 +748,46 @@ async function detectSearchIntent(searchQuery) {
 }
 
 
+export const detectSearchIntentController = asyncHandler(async (req, res) => {
+    const { language = 'en' } = req.user || {};
 
+    let { filters = {}, page, limit } = req.body || {};
+
+    const search = filters.search?.trim() || "";
+
+    if (!search) {
+        return handleError(res, 400, language, "EMPTY_SEARCH_QUERY");
+    }
+
+    try {
+        var normalized_search;
+        if (search.length <= 3) {
+            // console.log("Short query, returning default valid_medical");
+            normalized_search = search
+        } else {
+            // console.log("Long query, translating to english");
+            normalized_search = await translator(search, 'en');
+        }
+        // 🧠 Detect if the translated text is gibberish
+        const gibberish = isGibberishText(normalized_search);
+
+        if (gibberish) {
+            return handleError(res, 200, language, "Invalid Search", []);
+        }
+
+        // 1️⃣ Detect search intent ranking
+        const intentRanking = await detectSearchIntent(normalized_search);
+        if (intentRanking.type === "gibberish") {
+            return handleSuccess(res, 200, "en", "No Data Found", []);
+        }
+
+
+        // 5️⃣ Return ranked response
+        return handleSuccess(res, 200, language, 'SEARCH_RESULTS_FETCHED', intentRanking);
+
+    } catch (error) {
+        console.error("Search Home Error:", error);
+        return handleError(res, 500, language, "INTERNAL_SERVER_ERROR");
+    }
+});
 

@@ -252,4 +252,11 @@ router.post('/face',
 
 router.delete('/draft-appointment/:appointment_id', authenticateUser, validate(deleteDraftAppointmentSchema, "params"), appointmentController.deleteDraftAppointment);
 
+
+
+
+router.post("/detect-search-intent",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.detectSearchIntentController);
+
+
+
 export default router;
