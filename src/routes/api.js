@@ -257,6 +257,7 @@ router.delete('/draft-appointment/:appointment_id', authenticateUser, validate(d
 
 router.post("/detect-search-intent",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.detectSearchIntentController);
 router.post("/get-doctor-by-first-name",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.getDoctorsByFirstNameSearchOnlyController);
+router.post("/get-clinic-by-name",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.getClinicsByNameSearchOnlyController);
 
 
 
