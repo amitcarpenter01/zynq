@@ -457,7 +457,6 @@ async function batchGPTSimilarity(rows, searchQuery) {
   //   text: `${safeString(r.name)} - ${safeString(r.concern_en)} ${safeString(r.description_en)} ${safeString(r.like_wise_terms)}`.trim() 
   // }));
 
-  console.log("rows", rows);
   const list = rows.map(r => ({
     id: r.treatment_id,
     text: `

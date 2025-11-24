@@ -546,7 +546,7 @@ export const search_home_entities = asyncHandler(async (req, res) => {
             clinic_logo: formatImagePath(clinic.clinic_logo, 'clinic/logo')
         }));
 
-    let enrichedProducts = [];
+        let enrichedProducts = [];
         // if (products?.length) {
         //     const productIds = products.map(p => p.product_id);
         //     const imageRows = await userModels.get_product_images_by_product_ids(productIds);
@@ -598,16 +598,26 @@ async function detectSearchIntent(searchQuery) {
         console.log("⚙️ Detected doctor keyword — prioritizing Doctor ranking");
         return {
             type: "valid_medical",
-            ranking: ["Doctor", "Clinic", "Treatment", "Sub Treatment","Devices",]
+            ranking: ["Doctor", "Clinic", "Treatment", "Sub Treatment", "Devices",]
         };
     }
+
+    // ✅ Special handling for queries implying expert → prioritize doctors
+    if (["expert", "skin expert", "hair expert", "face expert", "derma expert"].includes(trimmed)) {
+        console.log("⚙️ Detected expert keyword — prioritizing Doctor ranking");
+        return {
+            type: "valid_medical",
+            ranking: ["Doctor", "Clinic", "Treatment", "Sub Treatment", "Devices"]
+        };
+    }
+
 
     // 🛑 Short queries fallback
     if (trimmed.length <= 3) {
         console.log("⚙️ Skipping AI — short query, returning default valid_medical");
         return {
             type: "valid_medical",
-            ranking: ["Treatment", "Sub Treatment", "Doctor", "Clinic","Devices"]
+            ranking: ["Treatment", "Sub Treatment", "Doctor", "Clinic", "Devices"]
         };
     }
 
@@ -878,7 +888,7 @@ export const getClinicsByNameSearchOnlyController = asyncHandler(async (req, res
 
 
         // 3️⃣ Enrich images (same as your code)
-         const enrichedClinics = clinics.map(clinic => ({
+        const enrichedClinics = clinics.map(clinic => ({
             ...clinic,
             clinic_logo: formatImagePath(clinic.clinic_logo, 'clinic/logo')
         }));
@@ -925,7 +935,7 @@ export const getDevicesByNameSearchOnlyController = asyncHandler(async (req, res
         // 2️⃣ Run all searches (as you already do)
         const [devices] = await Promise.all([
 
-              userModels.getDevicesByNameSearchOnly({ search: normalized_search, page, limit }),
+            userModels.getDevicesByNameSearchOnly({ search: normalized_search, page, limit }),
         ]);
 
 
@@ -970,7 +980,7 @@ export const gettreatmentsBySearchOnlyController = asyncHandler(async (req, res)
         // 2️⃣ Run all searches (as you already do)
         const [treatments] = await Promise.all([
 
-              userModels.getTreatmentsBySearchOnly({ search: normalized_search, language, page, limit, actualSearch: search })
+            userModels.getTreatmentsBySearchOnly({ search: normalized_search, language, page, limit, actualSearch: search })
         ]);
 
 
@@ -1015,7 +1025,7 @@ export const getSubtreatmentsBySearchOnlyController = asyncHandler(async (req, r
         // 2️⃣ Run all searches (as you already do)
         const [subtreatments] = await Promise.all([
 
-              userModels.getSubTreatmentsBySearchOnly({ search: normalized_search, language, page, limit, actualSearch: search })
+            userModels.getSubTreatmentsBySearchOnly({ search: normalized_search, language, page, limit, actualSearch: search })
         ]);
 
 
