@@ -791,3 +791,54 @@ export const detectSearchIntentController = asyncHandler(async (req, res) => {
     }
 });
 
+export const getDoctorsByFirstNameSearchOnlyController = asyncHandler(async (req, res) => {
+    const { language = 'en' } = req.user || {};
+
+    let { filters = {}, page, limit } = req.body || {};
+
+    const search = filters.search?.trim() || "";
+
+    if (!search) {
+        return handleError(res, 400, language, "EMPTY_SEARCH_QUERY");
+    }
+
+    try {
+        var normalized_search;
+        if (search.length <= 3) {
+            console.log("Short query, returning default valid_medical");
+            normalized_search = search
+        } else {
+            console.log("Long query, translating to english");
+            normalized_search = await translator(search, 'en');
+        }
+        // 🧠 Detect if the translated text is gibberish
+        const gibberish = isGibberishText(normalized_search);
+
+        if (gibberish) {
+            return handleError(res, 200, language, "Invalid Search", []);
+        }
+
+
+        // 2️⃣ Run all searches (as you already do)
+        const [doctors] = await Promise.all([
+
+            userModels.getDoctorsByFirstNameSearchOnly({ search: normalized_search, page, limit }),
+        ]);
+
+
+        // 3️⃣ Enrich images (same as your code)
+        const enrichedDoctors = doctors.map(({ embeddings, ...doctor }) => ({
+            ...doctor,
+            profile_image: formatImagePath(doctor.profile_image, 'doctor/profile_images')
+        }));
+
+
+        // 5️⃣ Return ranked response
+        return handleSuccess(res, 200, language, 'SEARCH_RESULTS_FETCHED', enrichedDoctors);
+
+    } catch (error) {
+        console.error("Search Home Error:", error);
+        return handleError(res, 500, language, "INTERNAL_SERVER_ERROR");
+    }
+});
+
