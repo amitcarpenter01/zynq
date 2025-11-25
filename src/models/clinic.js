@@ -11,7 +11,40 @@ const __dirname = path.dirname(__filename);
 
 export const get_clinic_by_zynq_user_id = async (zynq_user_id) => {
     try {
-        return await db.query(`SELECT * FROM tbl_clinics WHERE zynq_user_id = ?`, [zynq_user_id]);
+        return await db.query(`
+            SELECT 
+                tc.clinic_id,
+                tc.zynq_user_id,
+                tc.clinic_name,
+                tc.profile_status,
+                tc.invited_date,
+                tc.invitation_email_count,
+                tc.org_number,
+                tc.email,
+                tc.mobile_number,
+                tc.address,
+                tc.is_invited,
+                tc.is_active,
+                tc.is_deleted,
+                tc.onboarding_token,
+                tc.profile_completion_percentage,
+                tc.created_at,
+                tc.updated_at,
+                tc.email_sent_at,
+                tc.email_sent_count,
+                tc.fee_range,
+                tc.website_url,
+                tc.clinic_description,
+                tc.clinic_logo,
+                tc.language,
+                tc.form_stage,
+                tc.ivo_registration_number,
+                tc.hsa_id,
+                tc.is_onboarded,
+                tc.is_unsubscribed 
+            FROM tbl_clinics tc
+            WHERE zynq_user_id = ?`, [zynq_user_id]
+        );
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch clinic data.");

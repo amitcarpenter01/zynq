@@ -466,52 +466,6 @@ export const get_all_certification_types = async () => {
     }
 };
 
-// export const get_doctor_profile = async (doctorId) => {
-//     try {
-//         const [doctor] = await db.query(`
-//             SELECT d.*, c.profile_status 
-//             FROM tbl_doctors d
-//             LEFT JOIN tbl_clinics c ON d.zynq_user_id = c.zynq_user_id 
-//             WHERE d.doctor_id = ?`, [doctorId]);
-//         const [mainUser] = await get_web_user_by_id(doctor.zynq_user_id);
-//         const education = await get_doctor_education(doctorId);
-//         const experience = await get_doctor_experience(doctorId);
-//         const treatments = await get_doctor_treatments(doctorId)
-//         const skinTypes = await get_doctor_skin_types(doctorId);
-//         const severityLevels = await get_doctor_severity_levels(doctorId);
-//         const availability = await get_doctor_availability(doctorId);
-//         const certifications = await get_doctor_certifications(doctorId);
-//         const skinCondition = await get_doctor_skin_condition(doctorId);
-//         const surgery = await get_doctor_surgeries(doctorId);
-//         const aestheticDevices = await get_doctor_aesthetic_devices(doctorId)
-
-//         // Add sub-treatments under each treatment
-//         for (const t of treatments) {
-//             const subTreatments = await get_doctor_sub_treatments(doctorId, t.treatment_id);
-//             t.sub_treatments = subTreatments || [];
-//         }
-
-//         return {
-//             ...mainUser,
-//             ...doctor,
-//             education,
-//             experience,
-//             treatments,
-//             skinTypes,
-//             severityLevels,
-//             availability,
-//             certifications,
-//             skinCondition,
-//             surgery,
-//             aestheticDevices
-//         };
-
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to get doctor's complete profile.");
-//     }
-// };
-
 export const get_doctor_profile = async (doctorId) => {
     try {
         const [doctor] = await db.query(`
