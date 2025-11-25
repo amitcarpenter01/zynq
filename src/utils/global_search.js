@@ -177,7 +177,7 @@ function getHybridScore(nameScore, fullScore) {
 // };
 
 
-export const getTreatmentsVectorResult = async (
+export const getTreatmentsAIResult = async (
   rows,
   search,
   threshold = 0.40,
@@ -207,6 +207,38 @@ export const getTreatmentsVectorResult = async (
     description: language === "en"
       ? result.description_en
       : result.description_sv
+  }));
+
+  return topN ? translated.slice(0, topN) : translated;
+};
+
+export const getSubTreatmentsAIResult = async (
+  rows,
+  search,
+  threshold = 0.40,
+  topN = null,
+  language = "en"
+) => {
+  if (!search?.trim()) return rows;
+
+  const normalized = search.trim().toLowerCase();
+
+  const scoreResults = await batchGPTSimilaritySubTreatments(rows, normalized);
+
+  const scoreMap = new Map(scoreResults.map(r => [r.id, r.score]));
+
+  const filtered = rows
+    .map(r => ({
+      ...r,
+      score: scoreMap.get(r.treatment_id) ?? 0
+    }))
+    .filter(r => r.score >= threshold)
+    .sort((a, b) => b.score - a.score);
+
+  const translated = filtered.map(result => ({
+    ...result,
+    name: language === "en" ? result.name : result.swedish,
+    treatment_name: language === "en" ? result.treatment_name : result.treatment_swedish
   }));
 
   return topN ? translated.slice(0, topN) : translated;
@@ -322,7 +354,7 @@ export const getClinicsAIResult = async (rows, search, language = "en") => {
   // Apply similarity threshold
   let results = applyAISimilarity(rows, scoreResults, {
     idField: "clinic_id",
-    threshold: 0.40,
+    threshold: 0.45,
   });
 
   // ⛔ After threshold filtering, no results → return empty array
@@ -347,7 +379,7 @@ export const getDevicesAIResult = async (
   const normalized = search.trim().toLowerCase();
 
   const scoreResults = await batchDeviceGPTSimilarity(rows, normalized);
-console.log("scoreResults device", scoreResults);
+  console.log("scoreResults device", scoreResults);
   const scoreMap = new Map(scoreResults.map(r => [r.id, r.score]));
 
   const filtered = rows
@@ -420,9 +452,19 @@ export const getClinicsVectorResult = async (rows, search, threshold = 0.4, topN
 };
 
 async function batchGPTSimilarity(rows, searchQuery) {
+  // const list = rows.map(r => ({
+  //   id: r.treatment_id,
+  //   text: `${safeString(r.name)} - ${safeString(r.concern_en)} ${safeString(r.description_en)} ${safeString(r.like_wise_terms)}`.trim() 
+  // }));
+
   const list = rows.map(r => ({
     id: r.treatment_id,
-    text: `${safeString(r.name)} - ${safeString(r.concern_en)} ${safeString(r.description_en)}`.trim()
+    text: `
+Treatment Name: ${safeString(r.name)}
+Primary Concern: ${safeString(r.concern_en)}
+Description: ${safeString(r.description_en)}
+Related Terms: ${safeString(r.like_wise_terms)}
+  `.trim()
   }));
 
   const prompt = `
@@ -485,7 +527,7 @@ ${JSON.stringify(rows.map(r => r.treatment_id))}
   });
 
   const raw = res.choices[0].message.content;
-  
+
 
   try {
     const match = raw.match(/{[\s\S]*}/);
@@ -496,10 +538,106 @@ ${JSON.stringify(rows.map(r => r.treatment_id))}
     return [];
   }
 }
-/**
- * 🔥 Main Function — Handles batching automatically
- */
-export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 400) {
+
+async function runSubTreatmentSimilarityBatch(batch, searchQuery) {
+  const list = batch.map(r => ({
+    id: r.treatment_id,
+    text: `
+Sub Treatment Name: ${safeString(r.name)}
+Treatment Name: ${safeString(r.treatment_name)}
+    `.trim()
+  }));
+
+  const prompt = `
+You are a similarity scoring engine.
+Compare each item in the list to the search query.
+
+Search Query: "${searchQuery}"
+
+Return ONLY this exact JSON:
+{
+  "results": [
+    { "id": string, "score": number }
+  ]
+}
+
+IMPORTANT RULES ABOUT IDs:
+• You MUST ONLY return IDs from the ITEM LIST.
+• Never invent or modify an ID.
+• IDs are strings (UUIDs), NOT numbers.
+• If unsure, return lower score, not a fake ID.
+
+SCORING RULES:
+• 0.85 – 1.0 strong match
+• 0.60 – 0.85 good match
+• 0.40 – 0.60 medium match
+• Medium similarity MUST stay in 0.40–0.60
+• Understand spelling errors & Swedish–English variants
+• Never output 0 unless 100% unrelated
+
+NEGATION RULE:
+If query contains:
+  - "non laser"
+  - "not laser"
+  - "without laser"
+Then:
+  a) Exclude laser-related treatments
+  b) Still match best semantic alternatives
+
+ITEM LIST:
+${JSON.stringify(list)}
+
+ALLOWED IDs:
+${JSON.stringify(batch.map(r => r.treatment_id))}
+`;
+
+  const res = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    temperature: 0,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: "You output ONLY valid JSON. No extra text. No markdown." },
+      { role: "user", content: prompt }
+    ]
+  });
+
+  const raw = res.choices[0].message.content;
+
+  try {
+    const match = raw.match(/{[\s\S]*}/);
+    if (!match) return [];
+    return JSON.parse(match[0]).results || [];
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+export async function batchGPTSimilaritySubTreatments(rows, searchQuery, batchSize = 100) {
+  const batches = [];
+  for (let i = 0; i < rows.length; i += batchSize) {
+    batches.push(rows.slice(i, i + batchSize));
+  }
+
+  console.log(`Processing ${batches.length} batches in parallel...`);
+
+  // Run all batches in parallel
+  const batchPromises = batches.map(batch =>
+    runSubTreatmentSimilarityBatch(batch, searchQuery)
+  );
+
+  const results = await Promise.all(batchPromises);
+
+  // Optional debugging
+  results.forEach((partial, idx) => {
+    console.log(`partial sub-treatment batch ${idx + 1}:`, partial);
+  });
+
+  return results.flat();
+}
+
+
+export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 100) {
   const batches = [];
   for (let i = 0; i < rows.length; i += batchSize) {
     batches.push(rows.slice(i, i + batchSize));
@@ -508,12 +646,12 @@ export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 40
   console.log(`Processing ${batches.length} batches in parallel...`);
 
   // Process all batches in parallel
-  const batchPromises = batches.map(batch => 
+  const batchPromises = batches.map(batch =>
     runDeviceSimilarityBatch(batch, searchQuery)
   );
 
   const results = await Promise.all(batchPromises);
-  
+
   // Log each partial result
   results.forEach(partial => {
     console.log("partial device", partial);
@@ -528,6 +666,7 @@ export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 40
  * 🧠 Runs GPT similarity on a *single batch*
  */
 async function runDeviceSimilarityBatch(rows, searchQuery) {
+  console.log("fetching device results");
   if (!rows || rows.length === 0) return [];
 
   const list = rows.map(r =>
@@ -535,27 +674,55 @@ async function runDeviceSimilarityBatch(rows, searchQuery) {
   );
 
   const prompt = `
-You are a STRICT JSON similarity scoring engine.
-You MUST return ONLY valid JSON. No markdown. No comments.
+You are a STRICT JSON similarity scoring engine for DEVICES ONLY.
 
 Search Query: "${searchQuery}"
 
-Return EXACTLY this:
+Return ONLY this JSON:
 {
   "results": [
-    { "id": string, "score": number }
+    { "id": "string", "score": number }
   ]
 }
 
-SCORING:
-• 0.85–1.0 strong
-• 0.60–0.85 good
-• 0.40–0.60 medium
-• Never output 0 unless fully unrelated
+GENERAL RULES:
+1. If the search query is NOT about a device → all scores = 0.0
+2. If the query refers to clinics, doctors, people, cities, symptoms, body parts → all scores = 0.0
+3. Only compare DEVICE NAME + TREATMENT NAME.
+4. Never force a match if uncertain.
+5. Never hallucinate IDs. Only return IDs from the item list.
+
+DEVICE CATEGORY RULE (MANDATORY):
+If the search query implies a device category (e.g., “laser”, “IPL”, “RF”, “radiofrequency”, “ultrasound”, “HIFU”, “LED”, “injectable”):
+
+  A. Only items whose DEVICE NAME belongs to the SAME CATEGORY
+     are allowed to score ABOVE 0.50.
+
+  B. Treatment name similarity CANNOT raise a score above 0.30
+     if the device category does not match.
+
+  C. If device category does NOT match the query:
+        Score MUST be 0.0–0.30.
+
+NEGATION RULE:
+If query contains:
+  • "non laser"
+  • "not laser"
+  • "without laser"
+
+  Then:
+    • All LASER devices MUST be scored 0.0–0.20
+    • Non-laser devices may score normally
+
+SCORING SCALE:
+• 0.85–1.0 strong match (same device)
+• 0.60–0.85 good match (same category)
+• 0.40–0.60 weak match (same category, but further)
+• 0.0–0.30 category mismatch or unrelated
 
 ITEM LIST (id|text):
 ${list.join("\n")}
-`;
+  `;
 
   const res = await client.chat.completions.create({
     model: "gpt-4o-mini",
@@ -571,7 +738,6 @@ ${list.join("\n")}
   const raw = res.choices[0].message.content;
 
   try {
-    // 👉 Catch broken JSON by extracting the first {...}
     const match = raw.match(/{[\s\S]*}/);
     if (!match) {
       console.error("NO JSON RETURNED:", raw);
@@ -586,6 +752,7 @@ ${list.join("\n")}
     return [];
   }
 }
+
 
 
 /**
@@ -631,7 +798,7 @@ export async function runGPTSimilarity(rows, searchQuery, options = {}) {
  * 🧠 Runs GPT similarity on a single batch
  */
 async function runSingleBatch(batch, searchQuery, idField, textFields) {
- 
+
   // compact "id|text" format
   const list = batch.map((row) => {
     const id = row[idField];
@@ -642,7 +809,7 @@ async function runSingleBatch(batch, searchQuery, idField, textFields) {
 
     return `${id}|${combinedText}`;
   });
- 
+
   const prompt = `
 You are a similarity scoring engine.
 Compare each item with the search query.
@@ -659,8 +826,8 @@ Return ONLY:
 SCORING:
 • 0.85 – 1.0 strong  
 • 0.60 – 0.85 good  
-• 0.40 – 0.60 medium  
-• Understand Swedish/English errors  
+• 0.40 – 0.60 medium   
+• 0.0–0.30 category mismatch or unrelated
 • Never output 0 unless fully unrelated  
 
 NEGATION RULE:
