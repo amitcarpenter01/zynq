@@ -2110,6 +2110,38 @@ export const getAllTreatmentsModel = async () => {
     }
 };
 
+export const getAllSubTreatmentsMasterModel = async () => {
+    try {
+        const query = `
+            SELECT 
+                sub_treatment_id,
+                name,
+                swedish,
+                approval_status,
+                is_deleted,
+                created_by,
+                is_admin_created,
+                created_at,
+                updated_at
+
+            FROM 
+                tbl_sub_treatment_master
+
+            WHERE 
+                is_deleted = 0
+
+            ORDER BY 
+                created_at DESC
+        `;
+
+        return await db.query(query);
+
+    } catch (error) {
+        console.error("getAllSubTreatmentsMasterModel error:", error);
+        throw error;
+    }
+};
+
 export const getTreatmentsByTreatmentId = async (treatment_id) => {
     try {
         const result = await db.query(
@@ -2177,6 +2209,18 @@ export const addSubTreatmentModel = async (data) => {
     }
 };
 
+export const addSubTreatmentMasterModel = async (data) => {
+    try {
+        return await db.query(
+            `INSERT INTO tbl_sub_treatment_master SET ?`,
+            [data]
+        );
+    } catch (error) {
+        console.error("addSubTreatmentMasterModel error:", error);
+        throw error;
+    }
+};
+
 export const getSubTreatmentModel = async (treatment_id, name) => {
     try {
         const [rows] = await db.query(
@@ -2190,6 +2234,22 @@ export const getSubTreatmentModel = async (treatment_id, name) => {
         return rows; // return only array of results
     } catch (error) {
         console.error("getSubTreatmentModel error:", error);
+        throw error;
+    }
+};
+
+export const getSubTreatmentMasterByName = async (name) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT * FROM tbl_sub_treatment_master 
+             WHERE name = ? 
+               ORDER BY created_at desc`,
+            [name,]
+        );
+
+        return rows; // return only array of results
+    } catch (error) {
+        console.error("getSubTreatmentMasterModel error:", error);
         throw error;
     }
 };
@@ -2215,6 +2275,17 @@ export const updateSubtreatmentModel = async (sub_treatment_id, data) => {
         );
     } catch (error) {
         console.error("updateTreatmentModel error:", error);
+        throw error;
+    }
+};
+export const updateSubtreatmentMasterModel = async (sub_treatment_id, data) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_sub_treatment_master SET ? WHERE sub_treatment_id = ?`,
+            [data, sub_treatment_id]
+        );
+    } catch (error) {
+        console.error("updateTreatmentMasterModel error:", error);
         throw error;
     }
 };
@@ -2385,6 +2456,20 @@ export const deleteSubTreatmentModel = async (sub_treatment_id) => {
     try {
         return await db.query(
             `UPDATE tbl_sub_treatments 
+            SET is_deleted = 1
+            WHERE sub_treatment_id  = ?`,
+            [sub_treatment_id]
+        );
+    } catch (error) {
+        console.error("deleteSubTreatmentModel error:", error);
+        throw error;
+    }
+}
+
+export const deleteSubTreatmentMasterModel = async (sub_treatment_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_sub_treatment_master 
             SET is_deleted = 1
             WHERE sub_treatment_id  = ?`,
             [sub_treatment_id]

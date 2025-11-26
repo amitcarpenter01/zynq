@@ -1,17 +1,22 @@
 import {
     getAllConcerns,
-    addConcernModel, addSubTreatmentsModel,
+    addConcernModel,
     addTreatmentConcernsModel, addTreatmentDeviceNameModel,
     getAllTreatmentsModel, getTreatmentsByTreatmentId, getSubTreatmentsByTreatmentId,
     addTreatmentModel, addSubTreatmentModel, checkExistingConcernModel, checkExistingTreatmentModel,
-    deleteClinicTreatmentsModel, deleteConcernModel, deleteDoctorTreatmentsModel, deleteExistingConcernsModel,
-    deleteTreatmentDeviceNameModel, deleteExistingParentTreatmentsModel, deleteExistingSubTreatmentsModel,
+    deleteConcernModel, deleteExistingConcernsModel,
+    deleteTreatmentDeviceNameModel,
     deleteTreatmentModel, deleteZynqUserConcernsModel, deleteZynqUserTreatmentsModel, updateConcernApprovalStatusModel,
     updateConcernModel, updateTreatmentApprovalStatusModel, updateTreatmentModel, updateSubtreatmentModel,
-    deleteSubTreatmentModel, deleteZynqUserSubTreatmentsModel,
+    deleteSubTreatmentModel,
     updateSubTreatmentUserMap,
     addSubTreatmentUserMap,
-    getSubTreatmentModel
+    getSubTreatmentModel,
+    updateSubtreatmentMasterModel,
+    addSubTreatmentMasterModel,
+    getSubTreatmentMasterByName,
+    deleteSubTreatmentMasterModel,
+    getAllSubTreatmentsMasterModel
 } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
@@ -274,6 +279,83 @@ export const addEditSubtreatment = asyncHandler(async (req, res) => {
     );
 });
 
+export const addEditSubTreatmentMaster = asyncHandler(async (req, res) => {
+    const { sub_treatment_id, ...body } = req.body;
+
+    const user_id = req.user?.id;
+    const role = req.user?.role;
+    const language = req.user?.language || "en";
+
+    const isAdmin = role === "ADMIN";
+
+    let dbData = { ...body };
+
+    // 🌍 Auto translate name → Swedish
+    dbData.swedish = await googleTranslator(dbData.name, "sv");
+
+    // 🔐 Set creator & approval logic
+    if (isAdmin) {
+        dbData.approval_status = "APPROVED";
+        dbData.is_admin_created = 1;
+        dbData.created_by = null;
+    } else {
+        dbData.approval_status = "PENDING";
+        dbData.is_admin_created = 0;
+        dbData.created_by = user_id;
+    }
+
+    let newId = sub_treatment_id;
+
+    /*
+    |--------------------------------------------------------------------------
+    | ✳️ UPDATE FLOW
+    |--------------------------------------------------------------------------
+    */
+    if (sub_treatment_id) {
+        const updateData = {
+            name: dbData.name,
+            swedish: dbData.swedish,
+            approval_status: dbData.approval_status,
+            is_admin_created: dbData.is_admin_created,
+            created_by: dbData.created_by
+        };
+
+        await updateSubtreatmentMasterModel(sub_treatment_id, updateData);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ✳️ CREATE FLOW
+    |--------------------------------------------------------------------------
+    */
+    else {
+        const insertData = {
+            name: dbData.name,
+            swedish: dbData.swedish,
+            approval_status: dbData.approval_status,
+            is_admin_created: dbData.is_admin_created,
+            created_by: dbData.created_by
+        };
+
+        await addSubTreatmentMasterModel(insertData);
+
+        // Fetch newly created ID using name (assuming unique name)
+        const newRow = await getSubTreatmentMasterByName(dbData.name);
+        newId = newRow?.sub_treatment_id;
+    }
+
+    // Response
+    handleSuccess(
+        res,
+        200,
+        language,
+        sub_treatment_id
+            ? "SUB_TREATMENT_MASTER_UPDATED_SUCCESSFULLY"
+            : "SUB_TREATMENT_MASTER_ADDED_SUCCESSFULLY",
+        { sub_treatment_id: newId }
+    );
+});
+
 export const deleteTreatment = asyncHandler(async (req, res) => {
     const { treatment_id } = req.params;
     const role = req.user?.role;
@@ -310,6 +392,19 @@ export const deleteSubTreatment = asyncHandler(async (req, res) => {
     //     }
     // }
 
+
+    return handleSuccess(res, 200, language, "SUB_TREATMENT_DELETED_SUCCESSFULLY");
+});
+
+export const deleteSubTreatmentMaster = asyncHandler(async (req, res) => {
+    const { sub_treatment_id } = req.params;
+    // const role = req.user?.role;
+    // const user_id = req.user?.id;
+    // console.log(user_id, '<=user_id')
+
+    const language = req.user?.language || 'en';
+
+    await deleteSubTreatmentMasterModel(sub_treatment_id)
 
     return handleSuccess(res, 200, language, "SUB_TREATMENT_DELETED_SUCCESSFULLY");
 });
@@ -396,6 +491,31 @@ export const getAllTreatments = asyncHandler(async (req, res) => {
     };
 
     return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", response);
+});
+
+export const getAllSubTreatmentMasters = asyncHandler(async (req, res) => {
+    const language = req?.user?.language || "en";
+
+    const subTreatments = await getAllSubTreatmentsMasterModel();
+
+    const approved = [];
+    const others = [];
+
+    for (const item of subTreatments) {
+        if (item.approval_status === "APPROVED") {
+            approved.push(item);
+        } else {
+            others.push(item);
+        }
+    }
+
+    const response = {
+        ALL: subTreatments,
+        APPROVED: approved,
+        OTHERS: others
+    };
+
+    return handleSuccess(res, 200, language, "SUB_TREATMENTS_FETCHED", response);
 });
 
 

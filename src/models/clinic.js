@@ -1649,6 +1649,7 @@ export const getClinicTreatmentsBulkV2 = async (clinicIds, lang = 'en') => {
 
             // Remove embeddings from treatment
             if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            if ('name_embeddings' in treatmentRow) delete treatmentRow.name_embeddings;
 
             // Replace name based on language
             treatmentRow.name = lang === 'sv' ? row.swedish : row.name;
@@ -2046,6 +2047,52 @@ export const getDoctorTreatmentsBulk = async (doctorIds) => {
 //     }
 // };
 
+// export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en', search = null) => {
+//     if (!Array.isArray(doctorIds) || doctorIds.length === 0) return {};
+
+//     try {
+//         const placeholders = doctorIds.map(() => '?').join(',');
+
+//         const query = `
+//             SELECT dt.*, t.*
+//             FROM tbl_doctor_treatments dt
+//             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+//             WHERE dt.doctor_id IN (${placeholders})
+//             ORDER BY dt.created_at DESC
+//         `;
+
+//         let results = await db.query(query, doctorIds);
+
+//         // Apply search if provided
+//         if (search !== null && search !== '') {
+//             results = await getTopSimilarRows(results, search);
+//         } else {
+//             // No search: remove embeddings
+//             results = results.map(({ embeddings, ...rest }) => rest);
+//         }
+
+//         const grouped = {};
+//         results.forEach(row => {
+//             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+
+//             const treatmentRow = { ...row };
+
+//             // Ensure no embeddings remain
+//             // if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+
+//             // Set treatment name based on language
+//             treatmentRow.name = lang === 'sv' ? row.swedish : row.name;
+
+//             grouped[row.doctor_id].push(treatmentRow);
+//         });
+
+//         return grouped;
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch doctor treatments.");
+//     }
+// };
+
 export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en', search = null) => {
     if (!Array.isArray(doctorIds) || doctorIds.length === 0) return {};
 
@@ -2060,29 +2107,38 @@ export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en', search =
             ORDER BY dt.created_at DESC
         `;
 
+        // const query = `
+        //     SELECT dt.doctor_id, t.*
+        //     FROM tbl_doctor_treatments dt
+        //     LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+        //     WHERE dt.doctor_id IN (${placeholders})
+        //     GROUP BY dt.doctor_id, dt.treatment_id
+        //     ORDER BY dt.created_at DESC
+        // `;
+
         let results = await db.query(query, doctorIds);
 
         // Apply search if provided
         if (search !== null && search !== '') {
             results = await getTopSimilarRows(results, search);
         } else {
-            // No search: remove embeddings
-            results = results.map(({ embeddings, ...rest }) => rest);
+            // Remove embeddings and name_embeddings from all rows before grouping
+            results = results.map(row => {
+                const cleaned = { ...row };
+                delete cleaned.embeddings;  // remove embeddings from both tables
+                delete cleaned.name_embeddings;  // remove name_embeddings from both tables
+                return cleaned;
+            });
         }
 
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
 
-            const treatmentRow = { ...row };
+            // Set translated treatment name
+            row.name = lang === 'sv' ? row.swedish : row.name;
 
-            // Ensure no embeddings remain
-            // if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
-
-            // Set treatment name based on language
-            treatmentRow.name = lang === 'sv' ? row.swedish : row.name;
-
-            grouped[row.doctor_id].push(treatmentRow);
+            grouped[row.doctor_id].push(row);
         });
 
         return grouped;
@@ -2200,6 +2256,34 @@ export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
         grouped[row.doctor_id].push(row);
     });
     return grouped;
+};
+
+export const getDoctorDevicesBulk = async (zynqUserId) => {
+    try {
+        return await db.query(`
+        SELECT 
+            ttdum.*, 
+            ttd.*
+        FROM 
+            tbl_treatment_device_user_maps ttdum
+        LEFT JOIN 
+            tbl_treatment_devices ttd ON ttdum.device_id  = ttd.id
+        WHERE 
+            ttdum.zynq_user_id = ?`, [zynqUserId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's aesthetic devices.");
+    }
+    // const placeholders = doctorIds.map(() => '?').join(',');
+    // const query = `SELECT ad.*, dad.* FROM tbl_aesthetic_devices ad INNER JOIN  tbl_doctor_aesthetic_devices dad ON ad.aesthetic_device_id = dad.aesthetic_devices_id    WHERE dad.doctor_id IN (${placeholders})`;
+    // const results = await db.query(query, doctorIds);
+
+    // const grouped = {};
+    // results.forEach(row => {
+    //     if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+    //     grouped[row.doctor_id].push(row);
+    // });
+    // return grouped;
 };
 
 export const getDoctorRatings = async (doctorId) => {

@@ -310,5 +310,8 @@
   "CONCERN_APPROVED_SUCCESSFULLY": "Concern Approved Successfully",
   "CONCERN_REJECTED_SUCCESSFULLY": "Concern Rejected Successfully",
   "SUBTREATMENT_ADDED_SUCCESSFULLY": "Sub Treatment Added Successfully",
-  "SUBTREATMENT_UPDATED_SUCCESSFULLY": "Sub Treatment Updated Successfully"
+  "SUB_TREATMENTS_FETCHED": "Sub Treatments Fetched Successfully",
+  "SUB_TREATMENT_MASTER_UPDATED_SUCCESSFULLY": "Sub Treatment Master Updated Successfully",
+  "SUB_TREATMENT_MASTER_ADDED_SUCCESSFULLY": "Sub Treatment Master Added Successfully",
+  "SUB_TREATMENT_MASTER_DELETED_SUCCESSFULLY": "Sub Treatment Master Deleted Successfully"
 }
