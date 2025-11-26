@@ -446,14 +446,21 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         }));
 
     const treatments = allTreatments[doctor_id] || [];
-    await Promise.all(
-        treatments.map(async (t) => {
-            t.sub_treatments = await apiModels.getSubTreatmentsByTreatmentId(
-                t.treatment_id,
-                language
-            );
-        })
-    );
+    // await Promise.all(
+    //     treatments.map(async (t) => {
+    //         t.sub_treatments = await apiModels.getSubTreatmentsByTreatmentId(
+    //             t.treatment_id,
+    //             language
+    //         );
+    //     })
+    // );
+    
+    // for (const t of treatments) {
+    //     t.sub_treatments = await apiModels.getSubTreatmentsByTreatmentId(
+    //         t.treatment_id,
+    //         language
+    //     );
+    // }
 
     const processedDoctor = {
         ...doctor,
