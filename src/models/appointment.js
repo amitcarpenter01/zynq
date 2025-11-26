@@ -960,15 +960,75 @@ export const deleteAppointmentTreatments = async (appointment_id) => {
     return await db.query(`DELETE FROM tbl_appointment_treatments WHERE appointment_id = ?`, [appointment_id]);
 };
 
+// export const insertAppointmentTreatments = async (appointment_id, treatments) => {
+//     if (!Array.isArray(treatments) || treatments.length === 0) return;
+//     const values = treatments.map(t => [appointment_id, t.treatment_id, t.price]);
+//     const query = `
+//     INSERT INTO tbl_appointment_treatments (appointment_id, treatment_id, price)
+//     VALUES ?
+//   `;
+//     return await db.query(query, [values]);
+// };
+
 export const insertAppointmentTreatments = async (appointment_id, treatments) => {
-    if (!Array.isArray(treatments) || treatments.length === 0) return;
-    const values = treatments.map(t => [appointment_id, t.treatment_id, t.price]);
-    const query = `
-    INSERT INTO tbl_appointment_treatments (appointment_id, treatment_id, price)
-    VALUES ?
-  `;
-    return await db.query(query, [values]);
+    try {
+        if (!Array.isArray(treatments) || treatments.length === 0) return;
+
+        let values = [];
+
+        for (const t of treatments) {
+            const subs = Array.isArray(t.sub_treatments) ? t.sub_treatments : [];
+
+            if (subs.length > 0) {
+
+                const totalPrice = subs.reduce(
+                    (sum, item) => sum + Number(item.sub_treatment_price || 0),
+                    0
+                );
+
+                for (const sub of subs) {
+                    values.push([
+                        appointment_id,
+                        t.treatment_id,
+                        totalPrice,
+                        sub.sub_treatment_id,
+                        Number(sub.sub_treatment_price || 0) // never null
+                    ]);
+                }
+
+            } else {
+
+                values.push([
+                    appointment_id,
+                    t.treatment_id,
+                    Number(t.price || 0),
+                    null,               // allowed
+                    0                   // MUST be 0 (NOT NULL)
+                ]);
+            }
+        }
+
+        if (values.length > 0) {
+            const query = `
+                INSERT INTO tbl_appointment_treatments (
+                    appointment_id,
+                    treatment_id,
+                    price,
+                    sub_treatment_id,
+                    sub_treatment_price
+                ) VALUES ?
+            `;
+            await db.query(query, [values]);
+        }
+
+        return true;
+
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to insert appointment treatments.");
+    }
 };
+
 
 // export const getAppointmentTreatments = async (appointment_id) => {
 //     const query = `
@@ -977,21 +1037,78 @@ export const insertAppointmentTreatments = async (appointment_id, treatments) =>
 //     return await db.query(query, [appointment_id]);
 // };
 
-export const getAppointmentTreatments = async (appointment_id) => {
+// export const getAppointmentTreatments = async (appointment_id) => {
+//     const query = `
+//         SELECT t.*, ap.*
+//         FROM tbl_appointment_treatments ap
+//         INNER JOIN tbl_treatments t ON ap.treatment_id = t.treatment_id
+//         WHERE appointment_id = ?
+//     `;
+
+//     let results = await db.query(query, [appointment_id]);
+
+//     return results.map(row => {
+//         const cleanRow = { ...row };
+//         if ('embeddings' in cleanRow) delete cleanRow.embeddings;
+//         if ('name_embeddings' in cleanRow) delete cleanRow.name_embeddings;
+//         return cleanRow;
+//     });
+// };
+
+export const getAppointmentTreatments = async (appointment_id, language) => {
     const query = `
-        SELECT t.*, ap.*
+        SELECT 
+            ap.*,
+
+            t.name AS treatment_name,
+            t.swedish AS treatment_swedish,
+
+            st.sub_treatment_id,
+            st.name AS sub_treatment_name,
+            st.swedish AS sub_treatment_swedish
+
         FROM tbl_appointment_treatments ap
-        INNER JOIN tbl_treatments t ON ap.treatment_id = t.treatment_id
-        WHERE appointment_id = ?
+        INNER JOIN tbl_treatments t 
+            ON ap.treatment_id = t.treatment_id
+        LEFT JOIN tbl_sub_treatments st 
+            ON ap.sub_treatment_id = st.sub_treatment_id
+        WHERE ap.appointment_id = ?
+        ORDER BY t.name, st.name
     `;
 
-    let results = await db.query(query, [appointment_id]);
+    const rows = await db.query(query, [appointment_id]);
 
-    return results.map(row => {
-        const cleanRow = { ...row };
-        if ('embeddings' in cleanRow) delete cleanRow.embeddings;
-        return cleanRow;
+    const grouped = {};
+
+    for (const row of rows) {
+
+        if (!grouped[row.treatment_id]) {
+            grouped[row.treatment_id] = {
+                treatment_id: row.treatment_id,
+                name: language == 'sv' ? row.treatment_swedish : row.treatment_name,
+                swedish: row.treatment_swedish,
+                price: row.price,
+                sub_treatments: []
+            };
+        }
+
+        if (row.sub_treatment_id) {
+            grouped[row.treatment_id].sub_treatments.push({
+                sub_treatment_id: row.sub_treatment_id,
+                name: language == 'sv' ? row.sub_treatment_swedish : row.subtreatment_name,
+                swedish: row.sub_treatment_swedish,
+                price: row.sub_treatment_price
+            });
+        }
+    }
+
+    // Remove embeddings safely
+    const result = Object.values(grouped).map(item => {
+        delete item.embeddings;
+        delete item.name_embeddings;
+        return item;
     });
+    return result;
 };
 
 export const getDoctorBookedAppointmentsModel = async (role, user_id) => {

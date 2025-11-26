@@ -74,6 +74,12 @@ export const addEditSubtreatmentSchema = joi.object({
   swedish: stringValidation.optional()
 })
 
+export const addEditSubtreatmentMasterSchema = joi.object({
+  sub_treatment_id: stringValidation.optional(),
+  name: stringValidation,
+  swedish: stringValidation.optional()
+})
+
 export const deleteTreatmentSchema = joi.object({
   treatment_id: stringValidation,
 })

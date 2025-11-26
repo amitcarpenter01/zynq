@@ -252,7 +252,7 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
         allSkinTypes,
         allSkinCondition,
         allSurgery,
-        allAstheticDevices,
+        // allAstheticDevices,
         allLocations,
         allDoctors
     ] = await Promise.all([
@@ -261,7 +261,7 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
         clinicModels.getClinicSkinTypesBulk(clinicIds),
         clinicModels.getClinicSkinConditionBulk(clinicIds),
         clinicModels.getClinicSurgeryBulk(clinicIds),
-        clinicModels.getClinicAstheticDevicesBulk(clinicIds),
+        // clinicModels.getClinicAstheticDevicesBulk(clinicIds),
         clinicModels.getClinicLocationsBulk(clinicIds),
         clinicModels.getClinicDoctorsBulk(clinicIds)
     ]);
@@ -293,7 +293,7 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
         skin_types: allSkinTypes[clinic.clinic_id] || [],
         allSkinCondition: allSkinCondition[clinic.clinic_id] || [],
         allSurgery: allSurgery[clinic.clinic_id] || [],
-        allAstheticDevices: allAstheticDevices[clinic.clinic_id] || [],
+        // allAstheticDevices: allAstheticDevices[clinic.clinic_id] || [],
         allDoctors: allDoctors[clinic.clinic_id] || [],
         clinic_logo: clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")
             ? `${APP_URL}clinic/logo/${clinic.clinic_logo}`

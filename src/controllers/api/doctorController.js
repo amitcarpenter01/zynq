@@ -413,9 +413,16 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
     }
 
     const [
-        allCertificates, allEducation, allExperience,
-        allSkinTypes, allTreatments, allSkinCondition,
-        allSurgery, allAstheticDevices, allRatings
+        allCertificates,
+        allEducation,
+        allExperience,
+        allSkinTypes,
+        allTreatments,
+        allSkinCondition,
+        allSurgery,
+        // allAstheticDevices,
+        allDevices,
+        allRatings
     ] = await Promise.all([
         clinicModels.getDoctorCertificationsBulkV2([doctor_id], language),
         clinicModels.getDoctorEducationBulk([doctor_id]),
@@ -424,7 +431,8 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         clinicModels.getDoctorTreatmentsBulkV2([doctor_id], language, treatment_search),
         clinicModels.getDoctorSkinConditionBulkV2([doctor_id], language),
         clinicModels.getDoctorSurgeryBulkV2([doctor_id], language),
-        clinicModels.getDoctorAstheticDevicesBulk([doctor_id]),
+        // clinicModels.getDoctorAstheticDevicesBulk([doctor_id]),
+        clinicModels.getDoctorDevicesBulk(doctor.zynq_user_id),
         clinicModels.getDoctorRatings([doctor_id])
     ]);
 
@@ -455,7 +463,8 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         skin_types: allSkinTypes[doctor_id] || [],
         allSkinCondition: allSkinCondition[doctor_id] || [],
         allSurgery: allSurgery[doctor_id] || [],
-        allAstheticDevices: allAstheticDevices[doctor_id] || [],
+        // allAstheticDevices: allAstheticDevices[doctor_id] || [],
+        allDevices: allDevices || [],
         allEducation: allEducation[doctor_id] || [],
         allExperience: allExperience[doctor_id] || [],
         allCertificates: (allCertificates[doctor_id] || []).map(cert => ({
