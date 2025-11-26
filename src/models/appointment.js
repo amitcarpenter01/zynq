@@ -1085,7 +1085,7 @@ export const getAppointmentTreatments = async (appointment_id, language) => {
         if (!grouped[row.treatment_id]) {
             grouped[row.treatment_id] = {
                 treatment_id: row.treatment_id,
-                name: language == 'sv' ? row.treatment_swedish : row.treatment_name,
+                name: language === 'sv' ? row.treatment_swedish : row.treatment_name,
                 swedish: row.treatment_swedish,
                 price: row.price,
                 sub_treatments: []
@@ -1095,7 +1095,7 @@ export const getAppointmentTreatments = async (appointment_id, language) => {
         if (row.sub_treatment_id) {
             grouped[row.treatment_id].sub_treatments.push({
                 sub_treatment_id: row.sub_treatment_id,
-                name: language == 'sv' ? row.sub_treatment_swedish : row.subtreatment_name,
+                name: language === 'sv' ? row.sub_treatment_swedish : row.sub_treatment_name,
                 swedish: row.sub_treatment_swedish,
                 price: row.sub_treatment_price
             });

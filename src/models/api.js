@@ -1751,12 +1751,32 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
     }
 };
 
-export const getSubTreatmentsByTreatmentId = async (treatment_id) => {
-    try {        
-        return await db.query(`SELECT * FROM tbl_sub_treatments WHERE treatment_id = ? AND is_deleted = 0 AND approval_status = 'APPROVED'`, [treatment_id]);
-    }catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch sub-treatments.");
+// export const getSubTreatmentsByTreatmentId = async (treatment_id) => {
+//     try {        
+//         return await db.query(`SELECT * FROM tbl_sub_treatments WHERE treatment_id = ? AND is_deleted = 0 AND approval_status = 'APPROVED'`, [treatment_id]);
+//     }catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch sub-treatments.");
+//     }
+// };
+
+export const getSubTreatmentsByTreatmentId = async (treatment_id, lang = 'en') => {
+    try {
+        const rows = await db.query(
+            `SELECT * FROM tbl_sub_treatments 
+             WHERE treatment_id = ? AND is_deleted = 0 
+             AND approval_status = 'APPROVED'`,
+            [treatment_id]
+        );
+
+        return rows.map(r => ({
+            ...r,
+            name: lang === "sv" ? r.swedish : r.name
+        }));
+
+    } catch (error) {
+        console.error("DB Error:", error.message);
+        throw new Error("Failed to fetch sub treatments.");
     }
 };
 
