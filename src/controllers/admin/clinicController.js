@@ -195,7 +195,25 @@ export const add_clinic_managment = async (req, res) => {
             }
         }));
 
-        return handleSuccess(res, 200, 'en', "Clinic imported completed.", {
+        // Final response logic
+        if (insertedClinics.length === 0 && skippedClinics.length > 0) {
+            // All failed
+            return handleError(res, 409, 'en', "No clinics were imported. All entries failed.", {
+                inserted: insertedClinics,
+                skipped: skippedClinics
+            });
+        }
+
+        if (insertedClinics.length > 0 && skippedClinics.length > 0) {
+            // Partial success
+            return handleSuccess(res, 207, 'en', "Some clinics were imported. Some were skipped.", {
+                inserted: insertedClinics,
+                skipped: skippedClinics
+            });
+        }
+
+        // All inserted successfully
+        return handleSuccess(res, 200, 'en', "All clinics imported successfully.", {
             inserted: insertedClinics,
             skipped: skippedClinics
         });

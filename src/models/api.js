@@ -2,6 +2,7 @@ import db from "../config/db.js";
 import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows, getTopSimilarRowsWithoutTranslate } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
 import { getTreatmentsAIResult, getDoctorsVectorResult, getDoctorsAIResult, getClinicsAIResult, getDevicesAIResult, getSubTreatmentsAIResult } from "../utils/global_search.js"
+import { name } from "ejs";
 
 //======================================= Auth =========================================
 
@@ -1755,12 +1756,14 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
     try {
         const nameColumn = lang === 'sv' ? 't.swedish' : 't.name';
         const concernNameColumn = lang === 'sv' ? 'c.swedish' : 'c.name';
+        const descriptionColumn = lang === 'sv' ? 't.description_sv' : 't.description_en';
 
         // ---------- BASE QUERY (keeps 1 WHERE only) ----------
         let query = `
             SELECT
                 t.*,
                 ${nameColumn} AS name,
+                ${descriptionColumn} AS description,
                 IFNULL(MIN(dt.price), 0) AS min_price,
                 IFNULL(MAX(dt.price), 0) AS max_price,
                 JSON_ARRAYAGG(
@@ -1846,6 +1849,10 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         } else {
             results = results.map(row => {
                 delete row.embeddings;
+                delete row.swedish;
+                delete row.description_sv;
+                delete row.description_en;
+                delete row.embeddings;
                 delete row.name_embeddings;
                 return row;
             });
@@ -1923,19 +1930,74 @@ export const getSubTreatmentsByTreatmentId = async (treatment_id, lang = 'en') =
 //     }
 // };
 
+// export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang, doctor_id = null) => {
+//     try {
+//         let query = `
+//       SELECT
+//           t.*,
+//           ANY_VALUE(c.name) AS concern_name,
+//           IFNULL(MIN(dt.price), 0) AS min_price,
+//           IFNULL(MAX(dt.price), 0) AS max_price
+//       FROM tbl_treatments t
+//       LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
+//       LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+//       LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+//     `;
+
+//         const whereClauses = [];
+//         const params = [];
+
+//         if (Array.isArray(treatment_ids) && treatment_ids.length > 0) {
+//             const placeholders = treatment_ids.map(() => '?').join(', ');
+//             whereClauses.push(`t.treatment_id IN (${placeholders})`);
+//             params.push(...treatment_ids);
+//         }
+
+//         if (doctor_id) {
+//             whereClauses.push(`dt.doctor_id = ?`);
+//             params.push(doctor_id);
+//         }
+
+//         if (whereClauses.length > 0) {
+//             query += ` WHERE ${whereClauses.join(' AND ')}`;
+//         }
+
+//         query += ` GROUP BY t.treatment_id`;
+
+//         let results = await db.query(query, params);
+
+//         // Remove embeddings if present
+//         results = results.map(row => {
+//             const treatmentRow = { ...row };
+//             delete treatmentRow.embeddings;
+//             delete treatmentRow.name_embeddings
+//             return treatmentRow;
+//         });
+
+//         return formatBenefitsUnified(results, lang);
+//     } catch (error) {
+//         console.error("Database Error in getTreatmentsByTreatmentIds:", error.message);
+//         throw new Error("Failed to fetch treatments.");
+//     }
+// };
+
 export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang, doctor_id = null) => {
     try {
         let query = `
-      SELECT
-          t.*,
-          ANY_VALUE(c.name) AS concern_name,
-          IFNULL(MIN(dt.price), 0) AS min_price,
-          IFNULL(MAX(dt.price), 0) AS max_price
-      FROM tbl_treatments t
-      LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
-      LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
-      LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
-    `;
+        SELECT 
+            t.*,
+            ANY_VALUE(c.name) AS concern_name,
+            dt.price AS doctor_price,
+            dt.sub_treatment_id,
+            dt.sub_treatment_price,
+            st.name AS sub_treatment_name,
+            st.swedish AS sub_treatment_swedish
+        FROM tbl_treatments t
+        LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
+        LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+        LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+        LEFT JOIN tbl_sub_treatments st ON dt.sub_treatment_id = st.sub_treatment_id
+        `;
 
         const whereClauses = [];
         const params = [];
@@ -1952,21 +2014,58 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang, doct
         }
 
         if (whereClauses.length > 0) {
-            query += ` WHERE ${whereClauses.join(' AND ')}`;
+            query += ` WHERE ${whereClauses.join(" AND ")}`;
         }
 
-        query += ` GROUP BY t.treatment_id`;
+        const rawRows = await db.query(query, params);
 
-        let results = await db.query(query, params);
+        // Group results by treatment
+        const treatmentMap = {};
 
-        // Remove embeddings if present
-        results = results.map(row => {
-            const treatmentRow = { ...row };
-            delete treatmentRow.embeddings;
-            return treatmentRow;
+        for (const row of rawRows) {
+            const id = row.treatment_id;
+
+            if (!treatmentMap[id]) {
+                treatmentMap[id] = {
+                    ...row,
+                    min_price: row.doctor_price || 0,
+                    max_price: row.doctor_price || 0,
+                    sub_treatments: [],
+                    sub_treatment_set: new Set() // <---- to prevent duplicates
+                };
+            }
+
+            // Update min/max price
+            if (row.doctor_price) {
+                treatmentMap[id].min_price = Math.min(treatmentMap[id].min_price, row.doctor_price);
+                treatmentMap[id].max_price = Math.max(treatmentMap[id].max_price, row.doctor_price);
+            }
+
+            // Add sub-treatment if exists & not duplicate
+            if (row.sub_treatment_id && !treatmentMap[id].sub_treatment_set.has(row.sub_treatment_id)) {
+
+                treatmentMap[id].sub_treatment_set.add(row.sub_treatment_id); // save unique ID
+
+                treatmentMap[id].sub_treatments.push({
+                    sub_treatment_id: row.sub_treatment_id,
+                    name: lang === "swedish" ? row.sub_treatment_swedish : row.sub_treatment_name,
+                    price: row.sub_treatment_price || 0
+                });
+            }
+        }
+
+        let results = Object.values(treatmentMap);
+
+        // cleanup temp set and embeddings
+        results = results.map(r => {
+            delete r.embeddings;
+            delete r.name_embeddings;
+            delete r.sub_treatment_set;   // remove tracking Set
+            return r;
         });
 
         return formatBenefitsUnified(results, lang);
+
     } catch (error) {
         console.error("Database Error in getTreatmentsByTreatmentIds:", error.message);
         throw new Error("Failed to fetch treatments.");
