@@ -2493,23 +2493,33 @@ export const getClinicsByNameSearchOnly = async ({ search = '', page = null, lim
 
         // 1️⃣ Fetch clinics with embeddings + aggregated fields
         let results = await db.query(`
-      SELECT 
-        c.*,
-        MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range,
-        MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range,
-        ROUND(AVG(ar.rating), 2) AS avg_rating
-      FROM tbl_clinics c
-      LEFT JOIN tbl_doctor_clinic_map dcm ON c.clinic_id = dcm.clinic_id
-      LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
-      LEFT JOIN tbl_appointment_ratings ar ON c.clinic_id = ar.clinic_id AND ar.approval_status='APPROVED'
-        AND c.profile_status = 'VERIFIED'
-      GROUP BY c.clinic_id
-    `);
+            SELECT 
+                c.*,
+                MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range,
+                MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range,
+                ROUND(AVG(ar.rating), 2) AS avg_rating
+            FROM tbl_clinics c
+            LEFT JOIN tbl_doctor_clinic_map dcm ON c.clinic_id = dcm.clinic_id
+            LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
+            LEFT JOIN tbl_appointment_ratings ar 
+                ON c.clinic_id = ar.clinic_id 
+                AND ar.approval_status = 'APPROVED'
+            WHERE 
+                c.profile_status = 'VERIFIED'
+            GROUP BY 
+                c.clinic_id;
+        `);
 
+        // 2️⃣ REMOVE embeddings before AI filtering
+        results = results.map(row => {
+            delete row.embeddings;
+            return row;
+        });
 
-        // 2️⃣ Compute top similar rows using embedding
+        // 3️⃣ Compute top similar rows using embedding stored in DB_sync table
         results = await getClinicsAIResult(results, search, 0.4);
-        // 3️⃣ Apply pagination
+
+        // 4️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 
         return results;
