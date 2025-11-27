@@ -170,7 +170,7 @@ export const addExpertise = async (req, res) => {
             surgery_ids: Joi.string().required(),
 
             // UPDATED: device ids instead of aesthetic devices
-            device_ids: Joi.string().optional()
+            device_ids: Joi.string().allow("", null).optional()
         });
 
         let language = req?.user?.language || 'en';
@@ -563,7 +563,7 @@ export const editExpertise = async (req, res) => {
             surgery_ids: Joi.string().optional(),
 
             // NEW FIELD FOR DEVICES
-            device_ids: Joi.string().optional()
+            device_ids: Joi.string().allow("", null).optional()
         });
 
         let language = req?.user?.language || 'en';
