@@ -1096,17 +1096,28 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         }
 
         // ---------------- PRICE CALCULATION ----------------
+        // let total_price = 0;
+        // for (const t of treatments) {
+        //     total_price += +t.price || 0;
+
+        //     if (Array.isArray(t.sub_treatments)) {
+        //         for (const st of t.sub_treatments) {
+        //             total_price += +st.sub_treatment_price || 0;
+        //         }
+        //     }
+        // }
         let total_price = 0;
         for (const t of treatments) {
-            total_price += +t.price || 0;
-
-            if (Array.isArray(t.sub_treatments)) {
+            if (Array.isArray(t.sub_treatments) && t.sub_treatments.length > 0) {
                 for (const st of t.sub_treatments) {
                     total_price += +st.sub_treatment_price || 0;
                 }
             }
+            else {
+                // No sub-treatments → use main treatment price
+                total_price += +t.price || 0;
+            }
         }
-
         // ---------------- Normalize Times ----------------
         const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
         const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
