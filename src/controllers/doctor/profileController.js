@@ -170,7 +170,7 @@ export const addExpertise = async (req, res) => {
             surgery_ids: Joi.string().required(),
 
             // UPDATED: device ids instead of aesthetic devices
-            device_ids: Joi.string().required()
+            device_ids: Joi.string().optional()
         });
 
         let language = req?.user?.language || 'en';

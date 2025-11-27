@@ -1207,17 +1207,60 @@ export const getAppointmentsByUserIdAndDoctorId = async (user_id, doctor_id, sta
     return results;
 };
 
+// export const getDraftAppointmentsModel = async (user_id, doctor_id) => {
+//     return await db.query(`
+//     SELECT at.treatment_id, at.appointment_id
+//     FROM tbl_appointments a
+//     INNER JOIN tbl_appointment_treatments at 
+//     ON a.appointment_id = at.appointment_id
+//     WHERE a.user_id = ? 
+//     AND a.doctor_id = ? 
+//     AND a.save_type = 'draft'
+//   `, [user_id, doctor_id]);
+// }
+
 export const getDraftAppointmentsModel = async (user_id, doctor_id) => {
-    return await db.query(`
-    SELECT at.treatment_id, at.appointment_id
-    FROM tbl_appointments a
-    INNER JOIN tbl_appointment_treatments at 
-    ON a.appointment_id = at.appointment_id
-    WHERE a.user_id = ? 
-    AND a.doctor_id = ? 
-    AND a.save_type = 'draft'
-  `, [user_id, doctor_id]);
-}
+    const rows = await db.query(`
+        SELECT 
+            at.appointment_id,
+            at.treatment_id,
+            at.sub_treatment_id
+
+        FROM tbl_appointments a
+        INNER JOIN tbl_appointment_treatments at 
+            ON a.appointment_id = at.appointment_id
+        INNER JOIN tbl_treatments t
+            ON at.treatment_id = t.treatment_id
+        LEFT JOIN tbl_sub_treatments st
+            ON at.sub_treatment_id = st.sub_treatment_id
+
+        WHERE 
+            a.user_id = ?
+            AND a.doctor_id = ?
+            AND a.save_type = 'draft'
+        ORDER BY t.name, st.name
+    `, [user_id, doctor_id]);
+
+    // ---- Group by treatment ----
+    const grouped = {};
+
+    for (const row of rows) {
+        if (!grouped[row.treatment_id]) {
+            grouped[row.treatment_id] = {
+                treatment_id: row.treatment_id,
+                sub_treatments: []
+            };
+        }
+
+        if (row.sub_treatment_id) {
+            grouped[row.treatment_id].sub_treatments.push({
+                sub_treatment_id: row.sub_treatment_id,
+            });
+        }
+    }
+
+    return Object.values(grouped);
+};
 
 export const insertDraftTreatmentsModel = async (appointment_id, treatments) => {
     if (!treatments || !treatments.length) return;
