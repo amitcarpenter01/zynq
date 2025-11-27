@@ -177,6 +177,7 @@ export const get_treatments = asyncHandler(async (req, res) => {
 
     const { filters } = req.body;
     const treatments = await apiModels.getAllTreatmentsV2(filters, language, user_id);
+    console.log("first==>", treatments)
     await Promise.all(
         treatments.map(async (treatment) => {
             treatment.sub_treatments =

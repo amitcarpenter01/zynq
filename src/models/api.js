@@ -1,7 +1,7 @@
 import db from "../config/db.js";
 import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows, getTopSimilarRowsWithoutTranslate } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
-import { getTreatmentsAIResult, getDoctorsVectorResult,getDoctorsAIResult, getClinicsAIResult, getDevicesAIResult, getSubTreatmentsAIResult } from "../utils/global_search.js"
+import { getTreatmentsAIResult, getDoctorsVectorResult, getDoctorsAIResult, getClinicsAIResult, getDevicesAIResult, getSubTreatmentsAIResult } from "../utils/global_search.js"
 
 //======================================= Auth =========================================
 
@@ -1646,66 +1646,172 @@ export const getAllTreatments = async (lang) => {
 //     }
 // };
 
+// export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = null) => {
+//     try {
+//         const nameColumn = lang === 'sv' ? 't.swedish' : 't.name';
+//         const concernNameColumn = lang === 'sv' ? 'c.swedish' : 'c.name';
+
+//         let query = `
+//       SELECT
+//         t.*,
+//         ${nameColumn} AS name,
+//         IFNULL(MIN(dt.price), 0) AS min_price,
+//         IFNULL(MAX(dt.price), 0) AS max_price,
+//         JSON_ARRAYAGG(
+//           JSON_OBJECT(
+//             'concern_id', c.concern_id,
+//             'name', ${concernNameColumn}
+//           )
+//         ) AS concerns
+//       FROM tbl_treatments t
+//       LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
+//       LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+//       LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+//       WHERE t.is_deleted = 0 AND t.approval_status = 'APPROVED'
+//     `;
+
+//         const queryParams = [];
+//         const whereConditions = [];
+
+//         // ---------- Recommended Filter ----------
+//         if (filters.recommended === true && user_id) {
+//             const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
+//             if (!fallbackTreatmentIds?.length) return [];
+//             const placeholders = fallbackTreatmentIds.map(() => '?').join(',');
+//             whereConditions.push(`t.treatment_id IN (${placeholders})`);
+//             queryParams.push(...fallbackTreatmentIds);
+//         }
+
+//         // ---------- Treatment IDs Filter ----------
+//         if (Array.isArray(filters.treatment_ids) && filters.treatment_ids.length) {
+//             const placeholders = filters.treatment_ids.map(() => '?').join(',');
+//             whereConditions.push(`t.treatment_id IN (${placeholders})`);
+//             queryParams.push(...filters.treatment_ids);
+//         }
+
+//         // ---------- Combine WHERE conditions ----------
+//         if (whereConditions.length) {
+//             query += ' WHERE ' + whereConditions.join(' AND ');
+//         }
+
+//         // ---------- Grouping ----------
+//         query += ` GROUP BY t.treatment_id`;
+
+//         // ---------- Execute Query ----------
+//         let results = await db.query(query, queryParams);
+
+//         // ---------- Parse + Deduplicate concerns ----------
+//         results = results.map(row => {
+//             let concerns = [];
+
+//             if (Array.isArray(row.concerns)) {
+//                 // Deduplicate using a Set based on concern_id
+//                 const seen = new Set();
+//                 concerns = row.concerns.filter(c => {
+//                     if (!c?.concern_id) return false;
+//                     if (seen.has(c.concern_id)) return false;
+//                     seen.add(c.concern_id);
+//                     return true;
+//                 });
+//             } else if (typeof row.concerns === 'string') {
+//                 // Fallback if MySQL returns JSON string instead of array
+//                 try {
+//                     const parsed = JSON.parse(row.concerns);
+//                     const seen = new Set();
+//                     concerns = parsed.filter(c => {
+//                         if (!c?.concern_id) return false;
+//                         if (seen.has(c.concern_id)) return false;
+//                         seen.add(c.concern_id);
+//                         return true;
+//                     });
+//                 } catch {
+//                     concerns = [];
+//                 }
+//             }
+
+//             return {
+//                 ...row,
+//                 concerns,
+//             };
+//         });
+
+
+//         // ---------- Apply cosine similarity ----------
+//         if (filters.search?.trim()) {
+//             results = await getTopSimilarRows(results, filters.search);
+//         } else {
+//             results = results.map(({ embeddings, ...rest }) => rest);
+//         }
+
+//         // ---------- Format Benefits ----------
+//         return formatBenefitsUnified(results, lang);
+//     } catch (error) {
+//         console.error("Database Error in getAllTreatmentsV2:", error.message);
+//         throw new Error("Failed to fetch treatments.");
+//     }
+// };
+
 export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = null) => {
     try {
         const nameColumn = lang === 'sv' ? 't.swedish' : 't.name';
         const concernNameColumn = lang === 'sv' ? 'c.swedish' : 'c.name';
 
+        // ---------- BASE QUERY (keeps 1 WHERE only) ----------
         let query = `
-      SELECT
-        t.*,
-        ${nameColumn} AS name,
-        IFNULL(MIN(dt.price), 0) AS min_price,
-        IFNULL(MAX(dt.price), 0) AS max_price,
-        JSON_ARRAYAGG(
-          JSON_OBJECT(
-            'concern_id', c.concern_id,
-            'name', ${concernNameColumn}
-          )
-        ) AS concerns
-      FROM tbl_treatments t
-      LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
-      LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
-      LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
-      WHERE t.is_deleted = 0 AND t.approval_status = 'APPROVED'
-    `;
+            SELECT
+                t.*,
+                ${nameColumn} AS name,
+                IFNULL(MIN(dt.price), 0) AS min_price,
+                IFNULL(MAX(dt.price), 0) AS max_price,
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'concern_id', c.concern_id,
+                        'name', ${concernNameColumn}
+                    )
+                ) AS concerns
+            FROM tbl_treatments t
+            LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
+            LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
+            LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
+            WHERE t.is_deleted = 0 AND t.approval_status = 'APPROVED'
+        `;
 
         const queryParams = [];
         const whereConditions = [];
 
-        // ---------- Recommended Filter ----------
+        // ---------- Filter: Recommended ----------
         if (filters.recommended === true && user_id) {
             const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
             if (!fallbackTreatmentIds?.length) return [];
+
             const placeholders = fallbackTreatmentIds.map(() => '?').join(',');
             whereConditions.push(`t.treatment_id IN (${placeholders})`);
             queryParams.push(...fallbackTreatmentIds);
         }
 
-        // ---------- Treatment IDs Filter ----------
+        // ---------- Filter: treatment_ids ----------
         if (Array.isArray(filters.treatment_ids) && filters.treatment_ids.length) {
             const placeholders = filters.treatment_ids.map(() => '?').join(',');
             whereConditions.push(`t.treatment_id IN (${placeholders})`);
             queryParams.push(...filters.treatment_ids);
         }
 
-        // ---------- Combine WHERE conditions ----------
+        // ---------- Append dynamic filters (FIXED: AND not WHERE) ----------
         if (whereConditions.length) {
-            query += ' WHERE ' + whereConditions.join(' AND ');
+            query += ' AND ' + whereConditions.join(' AND ');
         }
 
-        // ---------- Grouping ----------
+        // ---------- Group By ----------
         query += ` GROUP BY t.treatment_id`;
 
         // ---------- Execute Query ----------
         let results = await db.query(query, queryParams);
 
-        // ---------- Parse + Deduplicate concerns ----------
+        // ---------- Parse & Deduplicate Concerns ----------
         results = results.map(row => {
             let concerns = [];
 
             if (Array.isArray(row.concerns)) {
-                // Deduplicate using a Set based on concern_id
                 const seen = new Set();
                 concerns = row.concerns.filter(c => {
                     if (!c?.concern_id) return false;
@@ -1714,7 +1820,6 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
                     return true;
                 });
             } else if (typeof row.concerns === 'string') {
-                // Fallback if MySQL returns JSON string instead of array
                 try {
                     const parsed = JSON.parse(row.concerns);
                     const seen = new Set();
@@ -1735,16 +1840,20 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
             };
         });
 
-
-        // ---------- Apply cosine similarity ----------
+        // ---------- Apply Search Similarity (Embeddings) ----------
         if (filters.search?.trim()) {
             results = await getTopSimilarRows(results, filters.search);
         } else {
-            results = results.map(({ embeddings, ...rest }) => rest);
+            results = results.map(row => {
+                delete row.embeddings;
+                delete row.name_embeddings;
+                return row;
+            });
         }
 
         // ---------- Format Benefits ----------
         return formatBenefitsUnified(results, lang);
+
     } catch (error) {
         console.error("Database Error in getAllTreatmentsV2:", error.message);
         throw new Error("Failed to fetch treatments.");
@@ -2209,7 +2318,7 @@ export const getSingleCartByClinicId = async (clinic_id, user_id) => {
 // -------------------------------------Updated Code Okay ------------------------------------------------//
 
 export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null, limit = null }) => {
- 
+
     try {
         if (!search?.trim()) return [];
 
@@ -2266,7 +2375,7 @@ GROUP BY
   dm.clinic_id;
 
     `);
-   
+
         // 2️⃣ Compute top similar rows using embeddings
         results = await getDoctorsAIResult(results, search, 0.3);
         // 3️⃣ Apply pagination
@@ -2297,7 +2406,7 @@ export const getClinicsByNameSearchOnly = async ({ search = '', page = null, lim
         AND c.profile_status = 'VERIFIED'
       GROUP BY c.clinic_id
     `);
-    
+
 
         // 2️⃣ Compute top similar rows using embedding
         results = await getClinicsAIResult(results, search, 0.4);
@@ -2337,12 +2446,12 @@ export const getProductsByNameSearchOnly = async ({ search = '', page = null, li
 };
 
 export const getDevicesByNameSearchOnly = async ({ search = '', page = null, limit = null }) => {
-   
-      try {
-          if (!search?.trim()) return [];
-  
-          // 1️⃣ Fetch doctors with embeddings + aggregated fields
-          let results = await db.query(`
+
+    try {
+        if (!search?.trim()) return [];
+
+        // 1️⃣ Fetch doctors with embeddings + aggregated fields
+        let results = await db.query(`
         SELECT 
           d.id,
           d.device_name,
@@ -2353,18 +2462,18 @@ export const getDevicesByNameSearchOnly = async ({ search = '', page = null, lim
         WHERE t.approval_status = 'APPROVED'
         GROUP BY d.id, d.treatment_id
       `);
-    
-          // 2️⃣ Compute top similar rows using embeddings
-          results = await getDevicesAIResult(results, search, 0.45);
-          // 3️⃣ Apply pagination
-          results = paginateRows(results, limit, page);
-  
-          return results;
-      } catch (error) {
-          console.error('Database Error in getDoctorsByFirstNameSearchOnly:', error.message);
-          throw new Error('Failed to fetch doctors.');
-      }
-  };
+
+        // 2️⃣ Compute top similar rows using embeddings
+        results = await getDevicesAIResult(results, search, 0.45);
+        // 3️⃣ Apply pagination
+        results = paginateRows(results, limit, page);
+
+        return results;
+    } catch (error) {
+        console.error('Database Error in getDoctorsByFirstNameSearchOnly:', error.message);
+        throw new Error('Failed to fetch doctors.');
+    }
+};
 
 
 // export const getTreatmentsBySearchOnly = async ({ search = '', language = 'en', limit, offset }) => {
@@ -2447,9 +2556,9 @@ export const getTreatmentsBySearchOnly = async ({
       WHERE is_deleted = 0 AND approval_status = 'APPROVED'
     `);
 
-    
+
         // 2️⃣ Compute top similar rows using embedding
-        results = await getTreatmentsAIResult(results, search,0.4, null, language, actualSearch);
+        results = await getTreatmentsAIResult(results, search, 0.4, null, language, actualSearch);
 
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
@@ -2479,9 +2588,9 @@ export const getSubTreatmentsBySearchOnly = async ({
       WHERE s.is_deleted = 0 AND s.approval_status = 'APPROVED' AND t.approval_status = 'APPROVED' AND t.is_deleted = 0
     `);
 
-    
+
         // 2️⃣ Compute top similar rows using embedding
-        results = await getSubTreatmentsAIResult(results, search,0.4, null, language, actualSearch);
+        results = await getSubTreatmentsAIResult(results, search, 0.4, null, language, actualSearch);
 
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
