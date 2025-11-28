@@ -272,9 +272,15 @@ export const get_clinic_managment = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const offset = (page - 1) * limit;
 
-        // Get paginated clinics
-        const clinics = await adminModels.get_clinic_managment(limit, offset);
-        const totalClinics = await adminModels.get_clinics_count();
+        const search = req.query.search || "";
+        const status = req.query.status || "";  // NEW
+        const type = req.query.type || "";      // NEW
+
+        // Fetch filtered clinics
+        const clinics = await adminModels.get_clinic_managment(limit, offset, search, status, type);
+
+        // Total count with filters
+        const totalClinics = await adminModels.get_clinics_count(search, status, type);
 
         if (!clinics || clinics.length === 0) {
             return handleSuccess(res, 200, 'en', "No clinics found", {
@@ -303,6 +309,7 @@ export const get_clinic_managment = async (req, res) => {
                 };
             })
         );
+
         await calculateAndUpdateBulkClinicProfileCompletion(fullClinicData);
 
         return handleSuccess(res, 200, 'en', "Fetch clinic management successfully", {
