@@ -16,7 +16,9 @@ import {
     addSubTreatmentMasterModel,
     getSubTreatmentMasterByName,
     deleteSubTreatmentMasterModel,
-    getAllSubTreatmentsMasterModel
+    getAllSubTreatmentsMasterModel,
+    deleteTreatmentSubTreatmentsModel,
+    addTreatmentSubTreatmentModel
 } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
@@ -60,17 +62,18 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
         dbData.approval_status = "PENDING";
     }
 
+    // Convert arrays → comma-separated for DB fields
     if (Array.isArray(dbData.device_name)) dbData.device_name = dbData.device_name.join(',');
     if (Array.isArray(dbData.like_wise_terms)) dbData.like_wise_terms = dbData.like_wise_terms.join(',');
 
     // ✳️ EDIT FLOW
     if (treatment_id) {
+
         // 🛡️ Non-admin ownership check
         if (!isAdmin) {
             const [existing] = await checkExistingTreatmentModel(treatment_id, user_id);
             if (!existing) return handleError(res, 403, language, "NOT_AUTHORIZED_TO_EDIT_TREATMENT");
         }
-
 
         const updateTreatment = {
             name: dbData.name,
@@ -88,20 +91,32 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             created_by_zynq_user_id: dbData.created_by_zynq_user_id,
             approval_status: dbData.approval_status,
         };
-        // 🧹 Cleanup + reinserts only if editing
+
+        // 🧹 Cleanup & reinsert in EDIT mode
         await Promise.all([
             updateTreatmentModel(treatment_id, updateTreatment),
+
             deleteExistingConcernsModel(treatment_id),
             deleteTreatmentDeviceNameModel(treatment_id),
+            deleteTreatmentSubTreatmentsModel(treatment_id) // 🆕 NEW
         ]);
 
-        if (dbData.concerns.length > 0) await addTreatmentConcernsModel(treatment_id, dbData.concerns);
-        if (dbData.device_name?.length > 0) await addTreatmentDeviceNameModel(treatment_id, req.body.device_name);
+        // Insert fresh mappings
+        if (dbData.concerns?.length > 0)
+            await addTreatmentConcernsModel(treatment_id, dbData.concerns);
+
+        if (req.body.device_name?.length > 0)
+            await addTreatmentDeviceNameModel(treatment_id, req.body.device_name);
+
+        if (req.body.sub_treatments?.length > 0)
+            await addTreatmentSubTreatmentModel(treatment_id, req.body.sub_treatments);
+
     }
 
     // ✳️ CREATE FLOW
     else {
         dbData.treatment_id = uuidv4();
+
         const addTreatment = {
             treatment_id: dbData.treatment_id,
             name: dbData.name,
@@ -120,19 +135,26 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             approval_status: dbData.approval_status,
         };
 
-        // Insert main + related tables together
         await addTreatmentModel(addTreatment);
-        if (dbData.concerns.length > 0) await addTreatmentConcernsModel(dbData.treatment_id, dbData.concerns);
-        if (dbData.device_name.length > 0) await addTreatmentDeviceNameModel(dbData.treatment_id, req.body.device_name);
+
+        if (dbData.concerns?.length > 0)
+            await addTreatmentConcernsModel(dbData.treatment_id, dbData.concerns);
+
+        if (req.body.device_name?.length > 0)
+            await addTreatmentDeviceNameModel(dbData.treatment_id, req.body.device_name);
+
+        if (req.body.sub_treatments?.length > 0)
+            await addTreatmentSubTreatmentModel(dbData.treatment_id, req.body.sub_treatments);
     }
 
-    // ✅ Unified response
+    // FINAL RESPONSE
     const message = treatment_id
         ? "TREATMENT_UPDATED_SUCCESSFULLY"
         : "TREATMENT_ADDED_SUCCESSFULLY";
 
-    // await generateTreatmentEmbeddingsV2(treatment_id ? treatment_id : dbData.treatment_id)
-    handleSuccess(res, 200, language, message, { treatment_id: treatment_id ? treatment_id : dbData.treatment_id });
+    handleSuccess(res, 200, language, message, {
+        treatment_id: treatment_id || dbData.treatment_id
+    });
 });
 
 // export const addEditSubtreatment = asyncHandler(async (req, res) => {

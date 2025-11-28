@@ -307,9 +307,91 @@ export const insert_clinic = async (clinic) => {
 //     }
 // };
 
-export const get_clinic_managment = async (limit, offset) => {
+// export const get_clinic_managment = async (limit, offset) => {
+//     try {
+//         return await db.query(`
+//             SELECT 
+//                 c.zynq_user_id,
+//                 c.clinic_id, 
+//                 c.clinic_name, 
+//                 c.org_number, 
+//                 c.email, 
+//                 c.mobile_number, 
+//                 c.address, 
+//                 c.email_sent_count, 
+//                 c.clinic_logo, 
+//                 c.clinic_description, 
+//                 c.website_url, 
+//                 c.profile_status,
+//                 c.profile_completion_percentage AS onboarding_progress, 
+//                 cl.city, 
+//                 cl.zip_code AS postal_code,
+//                 c.ivo_registration_number, 
+//                 c.hsa_id,
+
+//                 CASE 
+//                     WHEN zu.role_id = '2fc0b43c-3196-11f0-9e07-0e8e5d906eef' THEN 'Clinic'
+//                     WHEN zu.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+//                 END AS user_type
+
+//             FROM tbl_clinics c
+//             LEFT JOIN tbl_clinic_locations cl 
+//                 ON cl.clinic_id = c.clinic_id
+//             LEFT JOIN tbl_zqnq_users zu 
+//                 ON zu.id = c.zynq_user_id
+
+//             WHERE c.is_deleted = 0
+//               AND zu.role_id IN (
+//                     '2fc0b43c-3196-11f0-9e07-0e8e5d906eef',
+//                     '407595e3-3196-11f0-9e07-0e8e5d906eef'
+//               )
+
+//             ORDER BY c.created_at DESC
+//             LIMIT ? OFFSET ?
+//         `, [limit, offset]);
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to get clinic latest data.");
+//     }
+// };
+
+export const get_clinic_managment = async (limit, offset, search = "", status = "", type = "") => {
     try {
-        return await db.query(`
+        const searchQuery = `%${search}%`;
+
+        let conditions = `
+            c.is_deleted = 0
+            AND zu.role_id IN (
+                '2fc0b43c-3196-11f0-9e07-0e8e5d906eef',
+                '407595e3-3196-11f0-9e07-0e8e5d906eef'
+            )
+            AND (
+                c.clinic_name LIKE ?
+                OR c.email LIKE ?
+                OR c.mobile_number LIKE ?
+            )
+        `;
+
+        // ⭐ Add Status Filter
+        const params = [searchQuery, searchQuery, searchQuery];
+
+        if (status) {
+            conditions += ` AND c.profile_status = ?`;
+            params.push(status);
+        }
+
+        // ⭐ Add Type Filter (mapping Clinic / Solo Doctor)
+        if (type) {
+            if (type === "Clinic") {
+                conditions += ` AND zu.role_id = '2fc0b43c-3196-11f0-9e07-0e8e5d906eef'`;
+            } else if (type === "Solo Doctor") {
+                conditions += ` AND zu.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef'`;
+            }
+        }
+
+        params.push(limit, offset);
+
+        const query = `
             SELECT 
                 c.zynq_user_id,
                 c.clinic_id, 
@@ -340,23 +422,24 @@ export const get_clinic_managment = async (limit, offset) => {
             LEFT JOIN tbl_zqnq_users zu 
                 ON zu.id = c.zynq_user_id
 
-            WHERE c.is_deleted = 0
-              AND zu.role_id IN (
-                    '2fc0b43c-3196-11f0-9e07-0e8e5d906eef',
-                    '407595e3-3196-11f0-9e07-0e8e5d906eef'
-              )
+            WHERE ${conditions}
 
             ORDER BY c.created_at DESC
             LIMIT ? OFFSET ?
-        `, [limit, offset]);
+        `;
+
+        return await db.query(query, params);
+
     } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to get clinic latest data.");
+        throw new Error("Failed to get clinic management data.");
     }
 };
 
-export const get_clinics_count = async () => {
+export const get_clinics_count = async (search = "") => {
     try {
+        const searchQuery = `%${search}%`;
+
         const result = await db.query(`
             SELECT COUNT(*) AS total
             FROM tbl_clinics c
@@ -367,10 +450,17 @@ export const get_clinics_count = async () => {
                     '2fc0b43c-3196-11f0-9e07-0e8e5d906eef',
                     '407595e3-3196-11f0-9e07-0e8e5d906eef'
               )
-        `);
-        return result[0].total;
+              AND (
+                    c.clinic_name LIKE ?
+                    OR c.email LIKE ?
+                    OR c.mobile_number LIKE ?
+                )
+        `, [searchQuery, searchQuery, searchQuery]);
+
+        return result[0]?.total || 0;
+
     } catch (error) {
-        console.error("Database Error:", error.message);
+        console.error("Count Error:", error.message);
         throw new Error("Failed to count clinics.");
     }
 };
@@ -2340,6 +2430,19 @@ export const deleteTreatmentDeviceNameModel = async (treatment_id) => {
     }
 };
 
+export const deleteTreatmentSubTreatmentsModel = async (treatment_id) => {
+    try {
+        return await db.query(
+            `DELETE FROM tbl_treatment_sub_treatments WHERE treatment_id = ?`,
+            [treatment_id]
+        );
+    } catch (error) {
+        console.error("deleteTreatmentSubTreatmentsModel error:", error);
+        throw error;
+    }
+};
+
+
 export const addTreatmentConcernsModel = async (treatment_id, concerns) => {
     try {
         const values = concerns.map(concern => [treatment_id, concern]);
@@ -2362,6 +2465,20 @@ export const addTreatmentDeviceNameModel = async (treatment_id, devices) => {
         );
     } catch (error) {
         console.error("addTreatmentDeviceNameModel error:", error);
+        throw error;
+    }
+};
+
+export const addTreatmentSubTreatmentModel = async (treatment_id, subTreatments) => {
+    try {
+        const values = subTreatments.map(sub => [treatment_id, sub]);
+
+        return await db.query(
+            `INSERT INTO tbl_treatment_sub_treatments (treatment_id, sub_treatment_id) VALUES ?`,
+            [values]
+        );
+    } catch (error) {
+        console.error("addTreatmentSubTreatmentModel error:", error);
         throw error;
     }
 };
