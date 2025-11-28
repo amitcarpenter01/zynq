@@ -63,6 +63,7 @@ export const addEditTreatmentSchema = joi.object({
   embeddings: joi.array().items(numberValidation).min(1),
   is_device: booleanValidation,
   concerns: idArrayValidation,
+  sub_treatments: idArrayValidation,
   device_name: joi.array().items(joi.string()).allow(null).optional(),
   like_wise_terms: joi.array().items(joi.string()).allow(null).optional(),
 })

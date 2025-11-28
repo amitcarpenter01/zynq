@@ -2140,6 +2140,68 @@ export const updateProductApprovalStatus = async (product_id, approval_status) =
 //     }
 // };
 
+// export const getAllTreatmentsModel = async () => {
+//     try {
+//         const query = `
+//             SELECT 
+//                 t.treatment_id,
+//                 t.name,
+//                 t.swedish,
+//                 t.classification_type,
+//                 t.benefits_en,
+//                 t.benefits_sv,
+//                 t.concern_en,
+//                 t.concern_sv,
+//                 t.description_en,
+//                 t.description_sv,
+//                 t.technology,
+//                 t.type,
+//                 t.source,
+//                 t.application,
+//                 t.is_device,
+//                 t.is_admin_created,
+//                 t.created_by_zynq_user_id,
+//                 t.approval_status,
+//                 t.is_deleted,
+//                 t.created_at,
+//                 t.like_wise_terms,
+
+//                 -- Concerns
+//                 GROUP_CONCAT(DISTINCT c.concern_id ORDER BY c.concern_id SEPARATOR ',') AS concern_ids,
+//                 GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ',') AS concern_name,
+
+//                 -- Devices
+//                 GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ',') AS device_name
+
+//             FROM 
+//                 tbl_treatments t
+//             LEFT JOIN tbl_treatment_concerns tc 
+//                 ON tc.treatment_id = t.treatment_id
+//             LEFT JOIN tbl_concerns c 
+//                 ON c.concern_id = tc.concern_id
+//             LEFT JOIN tbl_treatment_devices d 
+//                 ON d.treatment_id = t.treatment_id
+//             LEFT JOIN tbl_treatment_sub_treatments ttst 
+//                 ON ttst.treatment_id = t.treatment_id
+
+//             WHERE 
+//                 t.is_deleted = 0
+
+//             GROUP BY 
+//                 t.treatment_id
+
+//             ORDER BY 
+//                 t.created_at DESC
+//         `;
+
+//         return await db.query(query);
+
+//     } catch (error) {
+//         console.error("getAllTreatmentsModel error:", error);
+//         throw error;
+//     }
+// };
+
 export const getAllTreatmentsModel = async () => {
     try {
         const query = `
@@ -2171,7 +2233,10 @@ export const getAllTreatmentsModel = async () => {
                 GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ',') AS concern_name,
 
                 -- Devices
-                GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ',') AS device_name
+                GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ',') AS device_name,
+
+                -- Sub-Treatment IDs
+                GROUP_CONCAT(DISTINCT ttst.sub_treatment_id ORDER BY ttst.sub_treatment_id SEPARATOR ',') AS sub_treatment_ids
 
             FROM 
                 tbl_treatments t
@@ -2181,7 +2246,8 @@ export const getAllTreatmentsModel = async () => {
                 ON c.concern_id = tc.concern_id
             LEFT JOIN tbl_treatment_devices d 
                 ON d.treatment_id = t.treatment_id
-
+            LEFT JOIN tbl_treatment_sub_treatments ttst 
+                ON ttst.treatment_id = t.treatment_id
             WHERE 
                 t.is_deleted = 0
 
@@ -2263,10 +2329,33 @@ export const getTreatmentsByTreatmentId = async (treatment_id) => {
     }
 };
 
+// export const getSubTreatmentsByTreatmentId = async (treatment_id) => {
+//     try {
+//         return await db.query(
+//             `SELECT * FROM tbl_sub_treatments WHERE treatment_id = ? AND is_deleted = 0`,
+//             [treatment_id]
+//         );
+//     } catch (error) {
+//         console.error("getSubTreatmentsByTreatmentId error:", error);
+//         throw error;
+//     }
+// };
+
 export const getSubTreatmentsByTreatmentId = async (treatment_id) => {
     try {
         return await db.query(
-            `SELECT * FROM tbl_sub_treatments WHERE treatment_id = ? AND is_deleted = 0`,
+            `SELECT 
+                ttst.id,
+                ttst.treatment_id,
+                ttst.sub_treatment_id,
+                tstm.name,
+                tstm.swedish,
+                tstm.approval_status
+             FROM tbl_treatment_sub_treatments ttst
+             JOIN tbl_sub_treatment_master tstm
+                ON ttst.sub_treatment_id = tstm.sub_treatment_id
+             WHERE ttst.treatment_id = ? 
+               AND tstm.is_deleted = 0`,
             [treatment_id]
         );
     } catch (error) {
@@ -2274,6 +2363,7 @@ export const getSubTreatmentsByTreatmentId = async (treatment_id) => {
         throw error;
     }
 };
+
 
 export const addTreatmentModel = async (data) => {
     try {
