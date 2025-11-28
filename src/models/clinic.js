@@ -2248,6 +2248,97 @@ export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en', search =
     }
 };
 
+export const getDoctorTreatmentsBulkV3 = async (doctorId, lang = 'en', search = null) => {
+    try {
+        const query = `
+            SELECT 
+                dt.doctor_id,
+                dt.treatment_id,
+                dt.price,
+                dt.sub_treatment_id,
+                dt.sub_treatment_price,
+
+                t.name AS treatment_name_en,
+                t.swedish AS treatment_name_sv,
+                t.classification_type,
+                t.description_en,
+                t.description_sv,
+                t.benefits_en,
+                t.benefits_sv,
+                t.is_device,
+                t.is_admin_created,
+
+                st.name AS sub_treatment_name_en,
+                st.swedish AS sub_treatment_name_sv
+
+            FROM tbl_doctor_treatments dt
+            INNER JOIN tbl_treatments t 
+                ON dt.treatment_id = t.treatment_id
+            LEFT JOIN tbl_sub_treatments st
+                ON dt.sub_treatment_id = st.sub_treatment_id
+
+            WHERE 
+                dt.doctor_id = ?
+                AND t.is_deleted = 0
+                AND t.approval_status = 'APPROVED'
+
+            ORDER BY t.name, st.name
+        `;
+
+        // SAFE QUERY
+        let results = await db.query(query, [doctorId]);
+
+        // APPLY SEARCH (if needed)
+        if (search) {
+            results = await getTopSimilarRows(results, search);
+        }
+
+        // TRANSLATE FIELDS
+        results = results.map(row => ({
+            ...row,
+            treatment_name: lang === 'sv' ? row.treatment_name_sv : row.treatment_name_en,
+            sub_treatment_name: lang === 'sv' ? row.sub_treatment_name_sv : row.sub_treatment_name_en
+        }));
+        
+        // GROUP DATA: treatment → sub_treatments
+        const grouped = {};
+
+        for (const row of results) {
+            if (!grouped[row.treatment_id]) {
+                grouped[row.treatment_id] = {
+                    treatment_id: row.treatment_id,
+                    name: row.treatment_name,
+                    price: row.price,
+                    classification_type: row.classification_type,
+                    description_en: row.description_en,
+                    description_sv: row.description_sv,
+                    benefits_en: row.benefits_en,
+                    benefits_sv: row.benefits_sv,
+                    is_device: row.is_device,
+                    is_admin_created: row.is_admin_created,
+                    sub_treatments: []
+                };
+            }
+
+            // Add sub treatment
+            if (row.sub_treatment_id) {
+                grouped[row.treatment_id].sub_treatments.push({
+                    sub_treatment_id: row.sub_treatment_id,
+                    name: row.sub_treatment_name,
+                    price: row.sub_treatment_price
+                });
+            }
+        }
+
+        // Convert to array
+        return Object.values(grouped);
+
+    } catch (error) {
+        console.error("DB Error:", error.message);
+        throw new Error("Failed to fetch doctor treatments.");
+    }
+};
+
 
 export const getDoctorSkinConditionBulk = async (doctorIds) => {
     const placeholders = doctorIds.map(() => '?').join(',');

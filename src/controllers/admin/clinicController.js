@@ -198,7 +198,7 @@ export const add_clinic_managment = async (req, res) => {
         // Final response logic
         if (insertedClinics.length === 0 && skippedClinics.length > 0) {
             // All failed
-            return handleError(res, 409, 'en', "No clinics were imported. All entries failed.", {
+            return handleError(res, 409, 'en', "Email already exists", {
                 inserted: insertedClinics,
                 skipped: skippedClinics
             });

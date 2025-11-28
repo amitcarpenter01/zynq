@@ -122,9 +122,7 @@ const calculateProfileCompletion = (data) => {
     "mobile_number",
     "address",
     "fee_range",
-    "website_url",
     "clinic_description",
-    "form_stage",
   ];
   const percentPerField = 100 / fields.length;
   return fields.reduce(
