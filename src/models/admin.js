@@ -2355,7 +2355,8 @@ export const getSubTreatmentsByTreatmentId = async (treatment_id) => {
              JOIN tbl_sub_treatment_master tstm
                 ON ttst.sub_treatment_id = tstm.sub_treatment_id
              WHERE ttst.treatment_id = ? 
-               AND tstm.is_deleted = 0`,
+               AND tstm.is_deleted = 0
+               AND tstm.approval_status = 'APPROVED'`,
             [treatment_id]
         );
     } catch (error) {
