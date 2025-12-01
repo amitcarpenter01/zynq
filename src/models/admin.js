@@ -203,8 +203,8 @@ export const findClinicByClinicUserId = async (id) => {
 export const addClinicLocationAddress = async (data) => {
     try {
         return await db.query(
-            'INSERT INTO `tbl_clinic_locations`(`clinic_id`, `city`, `zip_code`) VALUES (?, ?, ?)',
-            [data.clinic_id, data.city, data.zip_code]
+            'INSERT INTO `tbl_clinic_locations`(`clinic_id`, `city`, `zip_code`, `latitude`, `longitude`) VALUES (?, ?, ?, ?, ?)',
+            [data.clinic_id, data.city, data.zip_code, data.latitude, data.longitude]
         );
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -408,6 +408,8 @@ export const get_clinic_managment = async (limit, offset, search = "", status = 
                 c.profile_completion_percentage AS onboarding_progress, 
                 cl.city, 
                 cl.zip_code AS postal_code,
+                cl.latitude,
+                cl.longitude,
                 c.ivo_registration_number, 
                 c.hsa_id,
 

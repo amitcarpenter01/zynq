@@ -43,6 +43,10 @@ router.get('/get-profile', authenticateAdmin, authControllers.profile);
 router.post('/update-profile', authenticateAdmin, upload.single('file'), authControllers.updateProfile);
 router.post('/change-password', authenticateAdmin, authControllers.changePassword);
 
+//==================================== Location ==============================
+router.get('/search-location', authenticateAdmin, authControllers.searchLocation);
+router.get("/get-lat-long", authenticateAdmin, authControllers.getLatLong);
+
 //==================================== Dashboard ==============================
 router.get('/get-dashboard', authenticateAdmin, dashboardControllers.get_dashboard);
 

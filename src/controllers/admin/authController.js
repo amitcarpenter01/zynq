@@ -5,6 +5,7 @@ import ejs from "ejs";
 import path from "path";
 import { fileURLToPath } from "url";
 import dayjs from 'dayjs';
+import axios from "axios";
 
 import * as apiModels from "../../models/api.js";
 import * as adminModels from "../../models/admin.js";
@@ -627,4 +628,67 @@ export const getUserAppointmentOfUser = async (req, res) => {
         console.error("Error fetching user appointments:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
+};
+
+export const searchLocation = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            input: Joi.string().required(),
+        });
+
+        const { error, value } = schema.validate(req.query);
+        if (error) return joiErrorHandle(res, error);
+
+        const { input } = value;
+        const googleApiKey = process.env.GOOGLE_API_KEY;
+        const apiUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?key=${googleApiKey}&input=${input}`;
+
+        const response = await axios.get(apiUrl);
+        return handleSuccess(
+            res,
+            200,
+            "en",
+            "LOCATION_SEARCH_SUCCESS",
+            response.data.predictions
+        );
+    } catch (error) {
+        console.error("Error in searchLocationRequest:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const getLatLong = (req, res) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const { address } = req.query;
+            const googleApiKey = process.env.GOOGLE_API_KEY;
+            const apiUrl = "https://maps.googleapis.com/maps/api/geocode/json";
+            const response = await axios.get(apiUrl, {
+                params: {
+                    address,
+                    key: googleApiKey,
+                },
+            });
+            const { results } = response.data;
+            if (results && results.length > 0) {
+                const { lat, lng } = results[0].geometry.location;
+                let data = {
+                    lat,
+                    lng,
+                };
+                return handleSuccess(
+                    res,
+                    200,
+                    "en",
+                    "LAT_LONG_FETCHED_SUCCESSFULLY",
+                    data
+                );
+            } else {
+                return handleError(res, 404, "en", "NO_RESULT_FOUND");
+            }
+        } catch (error) {
+            handleError(res, 500, "en", error.message);
+            reject(error);
+        }
+    });
 };
