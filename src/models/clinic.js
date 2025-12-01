@@ -41,11 +41,8 @@ export const get_clinic_by_zynq_user_id = async (zynq_user_id) => {
                 tc.ivo_registration_number,
                 tc.hsa_id,
                 tc.is_onboarded,
-                tc.is_unsubscribed,
-                cl.city,
-                cl.state
+                tc.is_unsubscribed 
             FROM tbl_clinics tc
-            LEFT JOIN tbl_clinic_locations cl ON tc.clinic_id = cl.clinic_id
             WHERE zynq_user_id = ?`, [zynq_user_id]
         );
     } catch (error) {
