@@ -1,5 +1,5 @@
 import db from "../config/db.js";
-import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows, getTopSimilarRowsWithoutTranslate } from "../utils/misc.util.js";
+import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows, getTopSimilarRowsWithoutTranslate, translator } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
 import { getTreatmentsAIResult, getDoctorsVectorResult, getDoctorsAIResult, getClinicsAIResult, getDevicesAIResult, getSubTreatmentsAIResult } from "../utils/global_search.js"
 import { name } from "ejs";
@@ -372,7 +372,6 @@ export const getAllRecommendedDoctors = async ({
         const selectFields = [
             'd.doctor_id',
             'd.name',
-            'd.embeddings',
             'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
             'd.specialization',
             'ANY_VALUE(d.fee_per_session) AS fee_per_session',
@@ -473,6 +472,7 @@ export const getAllRecommendedDoctors = async ({
 
         // ---------- Embedding search ----------
         const trimmedSearch = (search || '').trim();
+     
         if (!trimmedSearch) {
             return rows
                 .slice(offset, offset + limit)
@@ -483,8 +483,12 @@ export const getAllRecommendedDoctors = async ({
                 });
         }
 
-        const ranked = await getTopSimilarRows(rows, trimmedSearch, 0.3);
-        return ranked.slice(offset, offset + limit);
+      // 2️⃣ Compute top similar rows using embeddings
+       const aiRows = await getDoctorsAIResult(rows, trimmedSearch);
+      // 3️⃣ Apply pagination
+      const paginatedRows = paginateRows(aiRows, limit, offset);
+
+      return paginatedRows;
 
     } catch (error) {
         console.error('Database Error in getAllRecommendedDoctors:', error.message);
@@ -904,6 +908,14 @@ export const getAllClinicsForUser = async ({
         const rows = await db.query(query, params);
 
         if (!rows?.length) return [];
+
+        // 3️⃣ Compute top similar rows using embedding stored in DB_sync table
+        const aiRows = await getClinicsAIResult(rows, search);
+        console.log(" search aiRows", aiRows);
+        // 4️⃣ Apply pagination
+        const paginatedRows = paginateRows(aiRows, limit, offset);
+
+        return paginatedRows;
 
         // Apply vector-based semantic ranking
         const ranked = await getTopSimilarRows(rows, trimmedSearch, 0.3);
@@ -1762,8 +1774,6 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         let query = `
             SELECT
                 t.*,
-                ${nameColumn} AS name,
-                ${descriptionColumn} AS description,
                 IFNULL(MIN(dt.price), 0) AS min_price,
                 IFNULL(MAX(dt.price), 0) AS max_price,
                 JSON_ARRAYAGG(
@@ -1845,7 +1855,23 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
 
         // ---------- Apply Search Similarity (Embeddings) ----------
         if (filters.search?.trim()) {
-            results = await getTopSimilarRows(results, filters.search);
+            var normalized_search;
+            if (filters.search.length <= 3) {
+                console.log("Short query, returning default valid_medical");
+                normalized_search = filters.search
+            } else {
+                console.log("Long query, translating to english");
+                normalized_search = await translator(filters.search, 'en');
+            }
+            // 2️⃣ Compute top similar rows using embedding
+            results = await getTreatmentsAIResult(results, normalized_search, 0.4, null, lang);
+
+            // 3️⃣ Apply pagination
+            results = paginateRows(results, filters.limit, filters.page);
+
+            return results;
+
+            // results = await getTopSimilarRows(results, normalized_search);
         } else {
             results = results.map(row => {
                 delete row.embeddings;
@@ -2684,7 +2710,7 @@ export const getTreatmentsBySearchOnly = async ({
 
         // 1️⃣ Fetch all treatments that have embeddings
         let results = await db.query(`
-      SELECT treatment_id,name,swedish ,benefits_sv ,device_name,classification_type,benefits_en,description_en,like_wise_terms
+      SELECT treatment_id,name,swedish ,benefits_sv ,device_name,classification_type,benefits_en,description_en,description_sv ,like_wise_terms
       FROM tbl_treatments
       WHERE is_deleted = 0 AND approval_status = 'APPROVED'
     `);

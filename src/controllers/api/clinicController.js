@@ -89,7 +89,7 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         limit,
         offset
     }
-
+console.log('queryFilters=>',queryFilters);
     const clinics = await apiModels.getAllClinicsForUser(queryFilters);
 
     if (!clinics || clinics.length === 0) {
