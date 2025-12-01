@@ -3,7 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { formatImagePath } from "../utils/user_helper.js";
-import { getTopSimilarRows } from "../utils/misc.util.js";
+import { getTopSimilarRows ,translator } from "../utils/misc.util.js";
+import { getTreatmentsAIResult } from "../utils/global_search.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -2258,8 +2259,8 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, lang = 'en', search = 
                 dt.sub_treatment_id,
                 dt.sub_treatment_price,
 
-                t.name AS treatment_name_en,
-                t.swedish AS treatment_name_sv,
+                t.name,
+                t.swedish,
                 t.classification_type,
                 t.description_en,
                 t.description_sv,
@@ -2290,13 +2291,23 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, lang = 'en', search = 
 
         // APPLY SEARCH (if needed)
         if (search) {
-            results = await getTopSimilarRows(results, search);
-        }
+            var normalized_search;
+            if (search.length <= 3) {
+                console.log("Short query, returning default valid_medical");
+                normalized_search = search
+            } else {
+                console.log("Long query, translating to english");
+                normalized_search = await translator(search, 'en');
+            }
+            results = await getTreatmentsAIResult(results, normalized_search, 0.4, null, lang);
 
+            // results = await getTopSimilarRows(results, search);
+        }
+console.log(results);
         // TRANSLATE FIELDS
         results = results.map(row => ({
             ...row,
-            treatment_name: lang === 'sv' ? row.treatment_name_sv : row.treatment_name_en,
+            treatment_name: lang === 'sv' ? row.swedish : row.name,
             sub_treatment_name: lang === 'sv' ? row.sub_treatment_name_sv : row.sub_treatment_name_en
         }));
         
