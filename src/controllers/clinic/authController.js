@@ -202,7 +202,7 @@ export const onboardClinic = async (req, res) => {
       zip_code: Joi.string().optional().allow("", null),
       latitude: Joi.number().optional().allow("", null),
       longitude: Joi.number().optional().allow("", null),
-      website_url: Joi.string().uri().optional().allow("", null),
+      website_url: Joi.string().optional().allow("", null),
       fee_range: Joi.string().optional().allow("", null),
       treatments: Joi.array().items(Joi.string()).optional().allow("", null),
       clinic_timing: Joi.object({
@@ -377,8 +377,8 @@ export const onboardClinic = async (req, res) => {
       hsa_id: hsa_id === "" ? null : hsa_id || clinic_data.hsa_id,
       is_onboarded:
         is_onboarded === "" ? null : is_onboarded || clinic_data.is_onboarded,
-        city: city === "" ? null : city || clinic_data.city,
-        state: state === "" ? null : state || clinic_data.state,
+      city: city || clinic_data.city,
+      state: state || clinic_data.state,
     };
 
     let profile_status = "ONBOARDING";
@@ -388,6 +388,10 @@ export const onboardClinic = async (req, res) => {
     }
 
     const clinicDataV2 = buildClinicData(clinicData);
+
+    // REMOVE city/state before update or insert
+    delete clinicDataV2.city;
+    delete clinicDataV2.state;
 
     if (clinic_data) {
       await clinicModels.updateClinicData(clinicDataV2, clinic_data.clinic_id);
@@ -677,7 +681,7 @@ export const updateClinic = async (req, res) => {
       clinic_logo,
       ivo_registration_number,
       hsa_id,
-      is_onboarded: true, // ✅ Add this line
+      is_onboarded: true,
     });
 
     await clinicModels.updateClinicData(clinicData, clinic_id);
@@ -963,7 +967,7 @@ export const getAllSurgery = async (req, res) => {
 export const getAllDevices = async (req, res) => {
   try {
     const language = "en";
-    const {treatment_ids} = req.query;
+    const { treatment_ids } = req.query;
     const ids = treatment_ids ? treatment_ids.split(',') : [];
     const devices = await clinicModels.getAllDevices(ids);
     if (!devices.length) {
