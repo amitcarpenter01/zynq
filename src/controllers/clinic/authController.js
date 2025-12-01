@@ -117,12 +117,14 @@ const calculateProfileCompletion = (data) => {
   const fields = [
     "zynq_user_id",
     "clinic_name",
-    "org_number",
+    // "org_number",
     "email",
     "mobile_number",
-    "address",
-    "fee_range",
+    // "address",
+    // "fee_range",
     "clinic_description",
+    "city",
+    "state",
   ];
   const percentPerField = 100 / fields.length;
   return fields.reduce(
@@ -147,6 +149,8 @@ const buildClinicData = ({
   hsa_id,
   is_onboarded,
   profile_status,
+  city,
+  state
 }) => {
   const data = {
     zynq_user_id,
@@ -167,6 +171,8 @@ const buildClinicData = ({
     ivo_registration_number,
     hsa_id,
     is_onboarded,
+    city,
+    state
   };
 
   if (!isEmpty(profile_status)) {
@@ -371,6 +377,8 @@ export const onboardClinic = async (req, res) => {
       hsa_id: hsa_id === "" ? null : hsa_id || clinic_data.hsa_id,
       is_onboarded:
         is_onboarded === "" ? null : is_onboarded || clinic_data.is_onboarded,
+        city: city === "" ? null : city || clinic_data.city,
+        state: state === "" ? null : state || clinic_data.state,
     };
 
     let profile_status = "ONBOARDING";
@@ -993,6 +1001,8 @@ export const updateClinicAdmin = async (req, res) => {
       address: Joi.string().required(),
       city: Joi.string().required(),
       zip_code: Joi.string().required(),
+      latitude: Joi.number().optional(),
+      longitude: Joi.number().optional(),
       zynq_user_id: Joi.string().required(),
     });
 
@@ -1006,6 +1016,8 @@ export const updateClinicAdmin = async (req, res) => {
       address,
       city,
       zip_code,
+      latitude,
+      longitude,
       zynq_user_id,
     } = value;
 
@@ -1030,7 +1042,7 @@ export const updateClinicAdmin = async (req, res) => {
     // ✅ Update clinic record
     await clinicModels.updateClinicData(clinicData, clinic_id);
     // Update clinic location
-    await clinicModels.updateClinicLocation({ city, zip_code }, clinic_id);
+    await clinicModels.updateClinicLocation({ city, zip_code, latitude, longitude }, clinic_id);
 
     // ✅ Regenerate embeddings
     await generateClinicsEmbeddingsV2(zynq_user_id);

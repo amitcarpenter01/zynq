@@ -182,6 +182,8 @@ export const add_clinic_managment = async (req, res) => {
                 const clinicLocation = {
                     clinic_id: createdClinic.clinic_id,
                     city: ele['City'],
+                    latitude: ele['Latitude'],
+                    longitude: ele['Longitude'],
                     zip_code: ele['Postal Code']
                 };
                 await adminModels.addClinicLocationAddress(clinicLocation);
@@ -273,8 +275,8 @@ export const get_clinic_managment = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const search = req.query.search || "";
-        const status = req.query.status || "";  // NEW
-        const type = req.query.type || "";      // NEW
+        const status = req.query.status || "";
+        const type = req.query.type || "";
 
         // Fetch filtered clinics
         const clinics = await adminModels.get_clinic_managment(limit, offset, search, status, type);

@@ -42,8 +42,11 @@ export const get_clinic_by_zynq_user_id = async (zynq_user_id) => {
                 tc.ivo_registration_number,
                 tc.hsa_id,
                 tc.is_onboarded,
-                tc.is_unsubscribed 
+                tc.is_unsubscribed,
+                cl.city,
+                cl.state
             FROM tbl_clinics tc
+            LEFT JOIN tbl_clinic_locations cl ON tc.clinic_id = cl.clinic_id
             WHERE zynq_user_id = ?`, [zynq_user_id]
         );
     } catch (error) {
@@ -364,7 +367,7 @@ export const insertClinicDocuments = async (clinic_id, certification_type_id, do
 //     }
 // };
 
-export const getAllTreatments = async () => {
+export const getAllTreatments_old = async () => {
     try {
         const treatments = await db.query(`
            SELECT
@@ -432,6 +435,82 @@ export const getAllTreatments = async () => {
     }
 };
 
+export const getAllTreatments = async () => {
+    try {
+        const treatments = await db.query(`
+           SELECT
+                t.treatment_id,
+                t.name,
+                t.swedish,
+                t.classification_type,
+                t.concern_en,
+                t.concern_sv,
+                t.created_at,
+                t.created_by_zynq_user_id,
+                t.description_en,
+                t.description_sv,
+                t.device_name,
+                t.is_admin_created,
+                t.is_deleted,
+                t.is_device,
+                t.source,
+                t.technology,
+                t.approval_status,
+
+                COALESCE(
+                    JSON_ARRAYAGG(
+                        CASE 
+                            WHEN tstm.sub_treatment_id IS NOT NULL THEN
+                                JSON_OBJECT(
+                                    'id', ttst.id,
+                                    'sub_treatment_id', tstm.sub_treatment_id,
+                                    'name', tstm.name,
+                                    'swedish', tstm.swedish,
+                                    'is_admin_created', tstm.is_admin_created,
+                                    'created_by_zynq_user_id', tstm.created_by,
+                                    'approval_status', tstm.approval_status,
+                                    'is_deleted', tstm.is_deleted,
+                                    'created_at', tstm.created_at
+                                )
+                        END
+                    ),
+                    JSON_ARRAY()
+                ) AS sub_treatments
+
+            FROM tbl_treatments t
+
+            LEFT JOIN tbl_treatment_sub_treatments ttst
+                ON t.treatment_id = ttst.treatment_id
+
+            LEFT JOIN tbl_sub_treatment_master tstm
+                ON ttst.sub_treatment_id = tstm.sub_treatment_id
+                AND tstm.is_deleted = 0
+                AND tstm.approval_status = 'APPROVED'
+
+            WHERE 
+                t.is_deleted = 0 AND t.approval_status = 'APPROVED'
+
+            GROUP BY t.treatment_id
+            ORDER BY t.created_at DESC
+        `);
+
+        const cleaned = treatments.map(row => {
+            delete row.embeddings;
+
+            if (Array.isArray(row.sub_treatments)) {
+                row.sub_treatments = row.sub_treatments.filter(item => item !== null);
+            }
+
+            return row;
+        });
+
+        return cleaned;
+
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch treatments and sub-treatments.");
+    }
+};
 
 
 
