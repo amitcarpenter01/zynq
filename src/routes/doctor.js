@@ -12,7 +12,7 @@ import { getSinglePurchasedProductSchema } from '../validations/payment.validati
 import { getAllFAQSchema } from '../validations/faq.validation.js';
 import { getAllFAQCategories, getAllFAQs } from '../controllers/api/FAQController.js';
 import { addAppointmentDraftSchema, addEditConcernSchema, addEditSubtreatmentSchema, addEditTreatmentSchema, deleteConcernSchema, deleteTreatmentSchema } from '../validations/treatment.validation.js';
-import { get_all_concerns, addEditConcern, addEditSubtreatment, getAllTreatments, getAllTreatmentById, addEditTreatment, deleteConcern, deleteTreatment } from '../controllers/api/treatmentController.js';
+import { get_all_concerns, addEditConcern, addEditSubtreatment, getAllTreatments, getAllTreatmentById, addEditTreatment, deleteConcern, deleteTreatment, getAllSubTreatmentMasters } from '../controllers/api/treatmentController.js';
 
 
 router.get("/get_profile", authenticate(['DOCTOR']), doctorController.getDoctorProfile);
@@ -138,6 +138,7 @@ router.post('/appointment-draft', authenticate(['DOCTOR', 'SOLO_DOCTOR']),valida
 router.get('/get-recommended-treatments/:user_id', authenticate(['DOCTOR', 'SOLO_DOCTOR']), appointmentControllers.getRecommendedTreatmentsForUser);
 
 router.get('/get-all-treatments', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getAllTreatments);
+router.get('/get-all-sub-treatments', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getAllSubTreatmentMasters);
 
 router.get('/get-treatment-by-id', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getAllTreatmentById);
 
