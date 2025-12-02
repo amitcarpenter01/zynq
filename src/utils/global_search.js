@@ -466,9 +466,10 @@ async function batchGPTSimilarity(rows, searchQuery) {
     id: r.treatment_id,
     text: `
 Treatment Name: ${safeString(r.name)}
-Primary Concern: ${safeString(r.concern_en)}
-Description: ${safeString(r.description_en)}
-Related Terms: ${safeString(r.like_wise_terms)}
+Sub Treatment Name : ${safeString(r.sub_treatment_name_en) || ''}
+Primary Concern: ${safeString(r.concern_en) || ''}
+Description: ${safeString(r.description_en) || ''}
+Related Terms: ${safeString(r.like_wise_terms) || ''}
   `.trim()
   }));
  
