@@ -520,7 +520,7 @@ export const getDoctorProfile = async (req, res) => {
         let totalFieldsCount = 0;
 
         // Personal Details
-        const personalFields = ['name', 'phone', 'age', 'address', 'gender'];
+        const personalFields = ['name', 'phone', 'age', 'gender'];
         totalFieldsCount += personalFields.length;
         personalFields.forEach(field => {
             if (profileData[field]) filledFieldsCount++;
