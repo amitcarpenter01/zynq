@@ -372,6 +372,8 @@ export const getAllRecommendedDoctors = async ({
         const selectFields = [
             'd.doctor_id',
             'd.name',
+            `GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', ') AS treatment_names`,
+            `GROUP_CONCAT(DISTINCT st.name ORDER BY st.name SEPARATOR ', ') AS sub_treatment_names`,
             'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
             'd.specialization',
             'ANY_VALUE(d.fee_per_session) AS fee_per_session',
@@ -396,6 +398,12 @@ export const getAllRecommendedDoctors = async ({
       LEFT JOIN tbl_appointment_ratings ar
              ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
       LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
+      LEFT JOIN tbl_doctor_treatments dt ON d.doctor_id = dt.doctor_id
+      LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+      LEFT JOIN tbl_doctor_treatments dt2 ON d.doctor_id = dt2.doctor_id
+      LEFT JOIN tbl_sub_treatment_master st ON dt2.sub_treatment_id = st.sub_treatment_id
+
+      
     `;
 
         // ---------- Joins & filters ----------
@@ -404,7 +412,6 @@ export const getAllRecommendedDoctors = async ({
 
         const addJoinAndFilter = (ids, table, alias, field) => {
             if (Array.isArray(ids) && ids.length) {
-                joins.push(`LEFT JOIN ${table} ${alias} ON d.doctor_id = ${alias}.doctor_id`);
                 filters.push(`${alias}.${field} IN (${ids.map(() => '?').join(', ')})`);
                 params.push(...ids);
             }
@@ -465,9 +472,12 @@ export const getAllRecommendedDoctors = async ({
         } else {
             query += ` ORDER BY d.created_at DESC`;
         }
-
+       
+        console.log("query",query);
+        console.log("params",params);
         // ---------- Fetch all filtered rows ----------
         const rows = await db.query(query, params);
+      
         if (!rows?.length) return [];
 
         // ---------- Embedding search ----------
@@ -1795,6 +1805,7 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         // ---------- Filter: Recommended ----------
         if (filters.recommended === true && user_id) {
             const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
+            console.log("fallbackTreatmentIds", fallbackTreatmentIds);
             if (!fallbackTreatmentIds?.length) return [];
 
             const placeholders = fallbackTreatmentIds.map(() => '?').join(',');

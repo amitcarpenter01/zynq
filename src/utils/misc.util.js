@@ -39,13 +39,17 @@ export const getTreatmentIDsByUserID = async (userID) => {
 
     if (!result?.length) return [];
 
+    
+
     const { aiAnalysisResult, scoreInfo } = result[0];
     const { skinConcernMap, mapping } = configs;
     const SCORE_THRESHOLD = 25;
 
     // STEP 1: SCORE INFO (PRIMARY PRIORITY)
     const parsedScoreInfo = safeJSONParse(scoreInfo);
+    // console.log("parsedScoreInfo", parsedScoreInfo);
     if (parsedScoreInfo && mapping && skinConcernMap) {
+     
         const concernIDs = [];
 
         for (const key in mapping) {
