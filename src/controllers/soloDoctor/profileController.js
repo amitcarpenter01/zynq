@@ -252,13 +252,115 @@ export const addEducationAndExperienceInformation = async (req, res) => {
         }
         const zynqUserId = req.user.id
         await update_onboarding_status(3, zynqUserId)
-        await generateDoctorsEmbeddingsV2(zynqUserId)
+        // await generateDoctorsEmbeddingsV2(zynqUserId)
         return handleSuccess(res, 201, language, "DOCTOR_PROFILE_INFO_ADDED", {});
     } catch (error) {
         console.error(error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 };
+
+// export const addExpertise = async (req, res) => {
+//     try {
+//         const schema = Joi.object({
+//             treatments: Joi.array().items(
+//                 Joi.object({
+//                     treatment_id: Joi.string().required(),
+//                     price: Joi.number().optional(),
+//                     sub_treatments: Joi.array().items(
+//                         Joi.object({
+//                             sub_treatment_id: Joi.string().required(),
+//                             sub_treatment_price: Joi.number().required()
+//                         })
+//                     ).optional()
+//                 })
+//             ).min(1).required(),
+//             skin_type_ids: Joi.string().allow("", null).optional(),
+//             skin_condition_ids: Joi.string().allow("", null).optional(),
+//             surgery_ids: Joi.string().allow("", null).optional(),
+//             //severity_levels_ids: Joi.string().required(),
+//             device_ids: Joi.string().allow("", null).optional()
+//         });
+//         // aesthetic_devices_ids
+//         let language = 'en';
+//         const { error, value } = schema.validate(req.body);
+//         if (error) return joiErrorHandle(res, error);
+
+//         const doctorId = req.user.doctorData.doctor_id;
+//         const clinic_id = req.user.clinicData.clinic_id;
+//         const zynqUserId = req.user.id;
+
+//         // const treatmentIds = value.treatment_ids.split(',').map(id => id.trim());
+//         const skinTypeIds = value.skin_type_ids.split(',').map(id => id.trim());
+//         const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
+//         const surgeryIds = value.surgery_ids.split(',').map(id => id.trim());
+//         const deviceIds = value.device_ids.split(',').map(id => id.trim());
+//         //const severityLevelIds = value.severity_levels_ids.split(',').map(id => id.trim());
+
+//         // Call model functions to update each expertise
+//         await doctorModels.update_doctor_treatments(doctorId, value.treatments);
+//         await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
+//         //await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
+//         await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
+//         await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
+//         await doctorModels.update_doctor_treatment_devices(zynqUserId, value.treatments,
+//             deviceIds
+//         );
+//         const treatmentIds = value.treatments.map(item => item.treatment_id);
+//         if (treatmentIds.length > 0) {
+//             const treatmentsData = await clinicModels.getClinicTreatments(clinic_id);
+//             if (treatmentsData) {
+//                 await clinicModels.updateClinicTreatments(treatmentIds, clinic_id);
+//             } else {
+//                 await clinicModels.insertClinicTreatments(treatmentIds, clinic_id);
+//             }
+
+//         }
+
+//         if (surgeryIds.length > 0) {
+//             const surgeriesData = await clinicModels.getClinicSurgeries(clinic_id);
+//             if (surgeriesData && surgeriesData.length > 0) {
+//                 await clinicModels.updateClinicSurgeries(surgeryIds, clinic_id);
+//             } else {
+//                 await clinicModels.insertClinicSurgeries(surgeryIds, clinic_id);
+//             }
+//         }
+
+//         if (skinConditionIds.length > 0) {
+//             const skinConditionData = await clinicModels.getClinicSkinConditions(clinic_id);
+//             if (skinConditionData && skinConditionData.length > 0) {
+//                 await clinicModels.updateClinicSkinConditions(skinConditionIds, clinic_id);
+//             } else {
+//                 await clinicModels.insertClinicSkinConditions(skinConditionIds, clinic_id);
+//             }
+//         }
+
+//         // if (aestheticDevicesIds.length > 0) {
+//         //     const devicesData = await clinicModels.getClinicAestheticDevices(clinic_id);
+//         //     if (devicesData && devicesData.length > 0) {
+//         //         await clinicModels.updateClinicAestheticDevices(aestheticDevicesIds, clinic_id);
+//         //     } else {
+//         //         await clinicModels.insertClinicAestheticDevices(aestheticDevicesIds, clinic_id);
+//         //     }
+//         // }
+
+//         if (skinTypeIds.length > 0) {
+//             const skinTypesData = await clinicModels.getClinicSkinTypes(clinic_id);
+//             if (skinTypesData) {
+//                 await clinicModels.updateClinicSkinTypes(skinTypeIds, clinic_id);
+//             } else {
+//                 await clinicModels.insertClinicSkinTypes(skinTypeIds, clinic_id);
+//             }
+//         }
+
+//         await update_onboarding_status(4, zynqUserId);
+//         await generateDoctorsEmbeddingsV2(zynqUserId);
+//         return handleSuccess(res, 200, language, "EXPERTISE_UPDATED", {});
+//     } catch (error) {
+//         console.error(error);
+//         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+//     }
+// };
 
 export const addExpertise = async (req, res) => {
     try {
@@ -275,14 +377,14 @@ export const addExpertise = async (req, res) => {
                     ).optional()
                 })
             ).min(1).required(),
-            skin_type_ids: Joi.string().required(),
-            skin_condition_ids: Joi.string().required(),
-            surgery_ids: Joi.string().required(),
-            //severity_levels_ids: Joi.string().required(),
+
+            skin_type_ids: Joi.string().allow("", null).optional(),
+            skin_condition_ids: Joi.string().allow("", null).optional(),
+            surgery_ids: Joi.string().allow("", null).optional(),
             device_ids: Joi.string().allow("", null).optional()
         });
-        // aesthetic_devices_ids
-        let language = 'en';
+
+        let language = "en";
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
@@ -290,77 +392,83 @@ export const addExpertise = async (req, res) => {
         const clinic_id = req.user.clinicData.clinic_id;
         const zynqUserId = req.user.id;
 
-        // const treatmentIds = value.treatment_ids.split(',').map(id => id.trim());
-        const skinTypeIds = value.skin_type_ids.split(',').map(id => id.trim());
-        const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
-        const surgeryIds = value.surgery_ids.split(',').map(id => id.trim());
-        const deviceIds = value.device_ids.split(',').map(id => id.trim());
-        //const severityLevelIds = value.severity_levels_ids.split(',').map(id => id.trim());
+        // ---------- SAFE PARSE HELPER ----------
+        const parseIDs = (str) =>
+            typeof str === "string" && str.trim() !== ""
+                ? str.split(",").map((id) => id.trim())
+                : [];
 
-        // Call model functions to update each expertise
+        const skinTypeIds = parseIDs(value.skin_type_ids);
+        const skinConditionIds = parseIDs(value.skin_condition_ids);
+        const surgeryIds = parseIDs(value.surgery_ids);
+        const deviceIds = parseIDs(value.device_ids);
+
+        // ---------- UPDATE DOCTOR EXPERTISE ----------
         await doctorModels.update_doctor_treatments(doctorId, value.treatments);
         await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
-        //await doctorModels.update_doctor_severity_levels(doctorId, severityLevelIds);
         await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
         await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
+
         await doctorModels.update_doctor_treatment_devices(
-            zynqUserId,       // zynq_user_id
-            value.treatments, // treatments array
-            deviceIds         // device ids
+            zynqUserId,
+            value.treatments,
+            deviceIds
         );
-        const treatmentIds = value.treatments.map(item => item.treatment_id);
+
+        // ---------- UPDATE CLINIC TREATMENTS ----------
+        const treatmentIds = value.treatments.map((item) => item.treatment_id);
+
         if (treatmentIds.length > 0) {
-            const treatmentsData = await clinicModels.getClinicTreatments(clinic_id);
-            if (treatmentsData) {
+            const clinicTreatments = await clinicModels.getClinicTreatments(clinic_id);
+
+            if (clinicTreatments && clinicTreatments.length > 0) {
                 await clinicModels.updateClinicTreatments(treatmentIds, clinic_id);
             } else {
                 await clinicModels.insertClinicTreatments(treatmentIds, clinic_id);
             }
-
         }
 
+        // ---------- UPDATE CLINIC SURGERIES ----------
         if (surgeryIds.length > 0) {
-            const surgeriesData = await clinicModels.getClinicSurgeries(clinic_id);
-            if (surgeriesData && surgeriesData.length > 0) {
+            const clinicSurgeries = await clinicModels.getClinicSurgeries(clinic_id);
+
+            if (clinicSurgeries && clinicSurgeries.length > 0) {
                 await clinicModels.updateClinicSurgeries(surgeryIds, clinic_id);
             } else {
                 await clinicModels.insertClinicSurgeries(surgeryIds, clinic_id);
             }
         }
 
+        // ---------- UPDATE CLINIC SKIN CONDITIONS ----------
         if (skinConditionIds.length > 0) {
-            const skinConditionData = await clinicModels.getClinicSkinConditions(clinic_id);
-            if (skinConditionData && skinConditionData.length > 0) {
+            const clinicSkinConditions = await clinicModels.getClinicSkinConditions(clinic_id);
+
+            if (clinicSkinConditions && clinicSkinConditions.length > 0) {
                 await clinicModels.updateClinicSkinConditions(skinConditionIds, clinic_id);
             } else {
                 await clinicModels.insertClinicSkinConditions(skinConditionIds, clinic_id);
             }
         }
 
-        // if (aestheticDevicesIds.length > 0) {
-        //     const devicesData = await clinicModels.getClinicAestheticDevices(clinic_id);
-        //     if (devicesData && devicesData.length > 0) {
-        //         await clinicModels.updateClinicAestheticDevices(aestheticDevicesIds, clinic_id);
-        //     } else {
-        //         await clinicModels.insertClinicAestheticDevices(aestheticDevicesIds, clinic_id);
-        //     }
-        // }
-
+        // ---------- UPDATE CLINIC SKIN TYPES ----------
         if (skinTypeIds.length > 0) {
-            const skinTypesData = await clinicModels.getClinicSkinTypes(clinic_id);
-            if (skinTypesData) {
+            const clinicSkinTypes = await clinicModels.getClinicSkinTypes(clinic_id);
+
+            if (clinicSkinTypes && clinicSkinTypes.length > 0) {
                 await clinicModels.updateClinicSkinTypes(skinTypeIds, clinic_id);
             } else {
                 await clinicModels.insertClinicSkinTypes(skinTypeIds, clinic_id);
             }
         }
 
+        // ---------- ONBOARDING ----------
         await update_onboarding_status(4, zynqUserId);
-        await generateDoctorsEmbeddingsV2(zynqUserId);
+
         return handleSuccess(res, 200, language, "EXPERTISE_UPDATED", {});
+
     } catch (error) {
         console.error(error);
-        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
 
@@ -391,7 +499,7 @@ export const addConsultationFeeAndAvailability = async (req, res) => {
         const zynqUserId = req.user.id
         await update_onboarding_status(5, zynqUserId)
         await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
-        await generateDoctorsEmbeddingsV2(zynqUserId)
+        // await generateDoctorsEmbeddingsV2(zynqUserId)
         return handleSuccess(res, 200, language, "FEE_AVAILABILITY_ADDED", {});
     } catch (error) {
         console.error(error);
