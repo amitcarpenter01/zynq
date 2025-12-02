@@ -473,7 +473,7 @@ export const deleteSubTreatmentMaster = asyncHandler(async (req, res) => {
 
 export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
     const { approval_status, treatment_id } = req.body;
-    const { language = "en", id: zynq_user_id } = req.user;
+    const { language = "en" } = req.user;
 
     const statusMessages = {
         APPROVED: "TREATMENT_APPROVED_SUCCESSFULLY",
@@ -486,10 +486,9 @@ export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
     };
 
     const [treatmentData] = await updateTreatmentApprovalStatusModel(treatment_id, approval_status);
-    console.log("first=", approval_status)
     // NEW FEATURE: Auto-add user sub-treatments to admin table
     if (approval_status === "APPROVED") {
-        await addUserMappedSubTreatmentsToMaster(treatment_id, zynq_user_id);
+        await addUserMappedSubTreatmentsToMaster(treatment_id, treatmentData.created_by_zynq_user_id);
     }
 
     handleSuccess(res, 200, language, statusMessages[approval_status]);
