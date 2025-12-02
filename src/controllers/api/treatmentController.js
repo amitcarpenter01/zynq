@@ -18,7 +18,12 @@ import {
     deleteSubTreatmentMasterModel,
     getAllSubTreatmentsMasterModel,
     deleteTreatmentSubTreatmentsModel,
-    addTreatmentSubTreatmentModel
+    addTreatmentSubTreatmentModel,
+    deleteZynqUserSubTreatmentsModel,
+    addTreatmentSubTreatmentUserModel,
+    getUserSubTreatmentsByTreatmentId,
+    getTreatmentsByZynqUserId,
+    addUserMappedSubTreatmentsToMaster
 } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
@@ -95,10 +100,11 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
         // 🧹 Cleanup & reinsert in EDIT mode
         await Promise.all([
             updateTreatmentModel(treatment_id, updateTreatment),
-
             deleteExistingConcernsModel(treatment_id),
             deleteTreatmentDeviceNameModel(treatment_id),
-            deleteTreatmentSubTreatmentsModel(treatment_id) // 🆕 NEW
+            !isAdmin
+                ? deleteZynqUserSubTreatmentsModel(treatment_id)
+                : deleteTreatmentSubTreatmentsModel(treatment_id)
         ]);
 
         // Insert fresh mappings
@@ -109,7 +115,8 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             await addTreatmentDeviceNameModel(treatment_id, req.body.device_name);
 
         if (req.body.sub_treatments?.length > 0)
-            await addTreatmentSubTreatmentModel(treatment_id, req.body.sub_treatments);
+            if (!isAdmin) await addTreatmentSubTreatmentUserModel(treatment_id, req.body.sub_treatments, user_id);
+        if (isAdmin) await addTreatmentSubTreatmentModel(treatment_id, req.body.sub_treatments);
 
     }
 
@@ -144,7 +151,8 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             await addTreatmentDeviceNameModel(dbData.treatment_id, req.body.device_name);
 
         if (req.body.sub_treatments?.length > 0)
-            await addTreatmentSubTreatmentModel(dbData.treatment_id, req.body.sub_treatments);
+            if (!isAdmin) await addTreatmentSubTreatmentUserModel(dbData.treatment_id, req.body.sub_treatments, user_id);
+        if (isAdmin) await addTreatmentSubTreatmentModel(dbData.treatment_id, req.body.sub_treatments);
     }
 
     // FINAL RESPONSE
@@ -404,15 +412,15 @@ export const deleteSubTreatment = asyncHandler(async (req, res) => {
     console.log(user_id, '<=user_id')
 
     const language = req.user?.language || 'en';
-    // if (role === "ADMIN") {
-    await deleteSubTreatmentModel(sub_treatment_id)
-    // } else {
-    //     const deleted = await deleteZynqUserSubTreatmentsModel(sub_treatment_id, user_id);
-    //     console.log(deleted, '<=data')
-    //     if (deleted.affectedRows === 0) {
-    //         return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_SUB_TREATMENT");
-    //     }
-    // }
+    if (role === "ADMIN") {
+        await deleteSubTreatmentModel(sub_treatment_id)
+    } else {
+        const deleted = await deleteZynqUserSubTreatmentsModel(sub_treatment_id, user_id);
+        console.log(deleted, '<=data')
+        if (deleted.affectedRows === 0) {
+            return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_SUB_TREATMENT");
+        }
+    }
 
 
     return handleSuccess(res, 200, language, "SUB_TREATMENT_DELETED_SUCCESSFULLY");
@@ -432,9 +440,40 @@ export const deleteSubTreatmentMaster = asyncHandler(async (req, res) => {
 });
 
 
+// export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
+//     const { approval_status, treatment_id } = req.body;
+//     const { language = "en" } = req.user;
+
+//     const statusMessages = {
+//         APPROVED: "TREATMENT_APPROVED_SUCCESSFULLY",
+//         REJECTED: "TREATMENT_REJECTED_SUCCESSFULLY",
+//     };
+
+//     const notificationUpdates = {
+//         APPROVED: "treatment_approved",
+//         REJECTED: "treatment_rejected",
+//     };
+
+//     const [treatmentData] = await updateTreatmentApprovalStatusModel(treatment_id, approval_status)
+
+//     handleSuccess(res, 200, language, statusMessages[approval_status],)
+
+//     if (treatmentData) {
+//         await sendNotification({
+//             userData: req.user,
+//             type: "TREATMENT",
+//             type_id: treatment_id,
+//             notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
+//             receiver_id: treatmentData.role === "CLINIC" ? treatmentData.clinic_id : treatmentData.doctor_id,
+//             receiver_type: treatmentData.role === "CLINIC" ? "CLINIC" : "DOCTOR",
+//         })
+//     }
+// })
+
+
 export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
     const { approval_status, treatment_id } = req.body;
-    const { language = "en" } = req.user;
+    const { language = "en", id: zynq_user_id } = req.user;
 
     const statusMessages = {
         APPROVED: "TREATMENT_APPROVED_SUCCESSFULLY",
@@ -446,10 +485,16 @@ export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
         REJECTED: "treatment_rejected",
     };
 
-    const [treatmentData] = await updateTreatmentApprovalStatusModel(treatment_id, approval_status)
+    const [treatmentData] = await updateTreatmentApprovalStatusModel(treatment_id, approval_status);
+    console.log("first=", approval_status)
+    // NEW FEATURE: Auto-add user sub-treatments to admin table
+    if (approval_status === "APPROVED") {
+        await addUserMappedSubTreatmentsToMaster(treatment_id, zynq_user_id);
+    }
 
-    handleSuccess(res, 200, language, statusMessages[approval_status],)
+    handleSuccess(res, 200, language, statusMessages[approval_status]);
 
+    // Send Notification
     if (treatmentData) {
         await sendNotification({
             userData: req.user,
@@ -458,9 +503,9 @@ export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
             notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
             receiver_id: treatmentData.role === "CLINIC" ? treatmentData.clinic_id : treatmentData.doctor_id,
             receiver_type: treatmentData.role === "CLINIC" ? "CLINIC" : "DOCTOR",
-        })
+        });
     }
-})
+});
 
 export const get_all_concerns = async (req, res) => {
     try {
@@ -491,9 +536,18 @@ export const get_all_concerns = async (req, res) => {
 //     return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
 // });
 export const getAllTreatments = asyncHandler(async (req, res) => {
-    const language = req?.user?.language || "en";
+    const role = req.user?.role;
+    const zynq_user_id = req.user?.id;
+    const language = req.user?.language || 'en';
 
-    const treatments = await getAllTreatmentsModel();
+    const isAdmin = role === "ADMIN";
+
+    let treatments = [];
+    if (!isAdmin) {
+        treatments = await getTreatmentsByZynqUserId(zynq_user_id);
+    } else {
+        treatments = await getAllTreatmentsModel();
+    }
 
     const approved = [];
     const others = [];
@@ -543,19 +597,46 @@ export const getAllSubTreatmentMasters = asyncHandler(async (req, res) => {
 
 export const getAllTreatmentById = asyncHandler(async (req, res) => {
     const { treatment_id } = req.query;
-    const language = req?.user?.language || 'en';
-    const treatments = await getTreatmentsByTreatmentId(treatment_id);
-    if (treatments.length === 0) return handleError(res, 404, language, "TREATMENT_NOT_FOUND");
+    const role = req.user?.role;
+    const zynq_user_id = req.user?.id;
+    const language = req.user?.language || 'en';
+
+    const isAdmin = role === "ADMIN";
+
+    let treatments = [];
+
+    // Different fetch logic for admin vs user
+    if (!isAdmin) {
+        treatments = await getTreatmentsByTreatmentId(treatment_id);
+    } else {
+        treatments = await getTreatmentsByTreatmentId(treatment_id, zynq_user_id);
+    }
+
+    if (treatments.length === 0) {
+        return handleError(res, 404, language, "TREATMENT_NOT_FOUND");
+    }
+
+    // Add sub-treatments for each treatment
     await Promise.all(
         treatments.map(async (t) => {
-            t.sub_treatments =
-                await getSubTreatmentsByTreatmentId(
+            if (!isAdmin) {
+                // Non-admin: fetch user-based sub-treatments
+                t.sub_treatments = await getUserSubTreatmentsByTreatmentId(
+                    t.treatment_id,
+                    zynq_user_id,
+                    language
+                );
+            } else {
+                // Admin: fetch all approved sub-treatments
+                t.sub_treatments = await getSubTreatmentsByTreatmentId(
                     t.treatment_id,
                     language
                 );
+            }
         })
     );
-    return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments[0]);
+
+    return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", treatments[0]);
 });
 
 export const addEditConcern = asyncHandler(async (req, res) => {
