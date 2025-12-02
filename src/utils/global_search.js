@@ -297,11 +297,13 @@ export const getDoctorsVectorResult = async (rows, search, threshold = 0.4, topN
   return topN && topN > 0 ? results.slice(0, topN) : results;
 };
 export const getDoctorsAIResult = async (rows, search, language = "en") => {
+
   const rowsWithText = rows.map(r => ({
     ...r,
     combined_text: `
       Doctor ${r.name || ''} 
-      treats ${r.treatments || ''} 
+      treats ${r.treatments || r.treatment_names || ''} 
+      and sub treatments ${r.sub_treatments || r.sub_treatment_names || ''} 
       and practices at ${r.clinic_address || ''}.
     `.trim()
   }));
