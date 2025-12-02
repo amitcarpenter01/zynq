@@ -2811,8 +2811,8 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
                     // "org_number",
                     "email",
                     "mobile_number",
-                    "address",
-                    "website_url",
+                    // "address",
+                    // "website_url",
                     "clinic_description",
                     // "clinic_logo",
                 ];
@@ -2828,19 +2828,19 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
                 if (clinic.treatments?.length > 0) filledFieldsCount++;
                 else missingFields.push("treatments");
 
-                // 3️⃣ Expertise Categories
-                const expertiseCategories = {
-                    skinTypes: "skinTypes",
-                    surgeriesLevel: "surgeriesLevel",
-                    aestheticDevicesLevel: "aestheticDevicesLevel",
-                    skinConditionsLevel: "skinConditionsLevel"
-                };
+                // // 3️⃣ Expertise Categories
+                // const expertiseCategories = {
+                //     skinTypes: "skinTypes",
+                //     surgeriesLevel: "surgeriesLevel",
+                //     aestheticDevicesLevel: "aestheticDevicesLevel",
+                //     skinConditionsLevel: "skinConditionsLevel"
+                // };
 
-                totalFieldsCount += Object.keys(expertiseCategories).length;
-                Object.entries(expertiseCategories).forEach(([key, label]) => {
-                    if (clinic[key]?.length > 0) filledFieldsCount++;
-                    else missingFields.push(label);
-                });
+                // totalFieldsCount += Object.keys(expertiseCategories).length;
+                // Object.entries(expertiseCategories).forEach(([key, label]) => {
+                //     if (clinic[key]?.length > 0) filledFieldsCount++;
+                //     else missingFields.push(label);
+                // });
 
                 // 🧮 Final %
                 const completionPercentage =
