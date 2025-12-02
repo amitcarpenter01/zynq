@@ -2375,11 +2375,12 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, lang = 'en', search = 
                 console.log("Long query, translating to english");
                 normalized_search = await translator(search, 'en');
             }
+            
             results = await getTreatmentsAIResult(results, normalized_search, 0.4, null, lang);
 
             // results = await getTopSimilarRows(results, search);
         }
-console.log(results);
+
         // TRANSLATE FIELDS
         results = results.map(row => ({
             ...row,
