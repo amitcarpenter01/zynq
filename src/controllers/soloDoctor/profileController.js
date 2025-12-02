@@ -412,7 +412,7 @@ export const getDoctorProfile = async (req, res) => {
         let totalFieldsCount = 0;
 
         // Personal Details
-        const personalFields = ['name', 'phone', 'age', 'address', 'gender', 'profile_image', 'biography'];
+        const personalFields = ['name', 'phone', 'age', 'address', 'gender'];
         totalFieldsCount += personalFields.length;
         personalFields.forEach(field => {
             if (profileData[field]) filledFieldsCount++;
@@ -427,7 +427,7 @@ export const getDoctorProfile = async (req, res) => {
         if (profileData.experience && profileData.experience.length > 0) filledFieldsCount++;
 
         // Expertise
-        const expertiseCategories = ['treatments', 'skinTypes', 'severityLevels'];
+        const expertiseCategories = ['treatments'];
         totalFieldsCount += expertiseCategories.length;
         expertiseCategories.forEach(category => {
             if (profileData[category] && profileData[category].length > 0) filledFieldsCount++;

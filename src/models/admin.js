@@ -2267,6 +2267,71 @@ export const getAllTreatmentsModel = async () => {
         throw error;
     }
 };
+export const getTreatmentsByZynqUserId = async (zynq_user_id) => {
+    try {
+        const query = `
+            SELECT 
+                t.treatment_id,
+                t.name,
+                t.swedish,
+                t.classification_type,
+                t.benefits_en,
+                t.benefits_sv,
+                t.concern_en,
+                t.concern_sv,
+                t.description_en,
+                t.description_sv,
+                t.technology,
+                t.type,
+                t.source,
+                t.application,
+                t.is_device,
+                t.is_admin_created,
+                t.created_by_zynq_user_id,
+                t.approval_status,
+                t.is_deleted,
+                t.created_at,
+                t.like_wise_terms,
+
+                -- Concerns
+                GROUP_CONCAT(DISTINCT c.concern_id ORDER BY c.concern_id SEPARATOR ',') AS concern_ids,
+                GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ',') AS concern_name,
+
+                -- Devices
+                GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ',') AS device_name,
+
+                -- Sub-Treatment IDs
+                GROUP_CONCAT(DISTINCT ttstum.sub_treatment_id ORDER BY ttstum.sub_treatment_id SEPARATOR ',') AS sub_treatment_ids
+
+            FROM 
+                tbl_treatments t
+            LEFT JOIN tbl_treatment_concerns tc 
+                ON tc.treatment_id = t.treatment_id
+            LEFT JOIN tbl_concerns c 
+                ON c.concern_id = tc.concern_id
+            LEFT JOIN tbl_treatment_devices d 
+                ON d.treatment_id = t.treatment_id
+            LEFT JOIN tbl_treatment_sub_treatment_user_maps ttstum 
+                ON ttstum.treatment_id = t.treatment_id
+            WHERE 
+                t.is_deleted = 0
+                AND t.created_by_zynq_user_id = ?
+                AND ttstum.zynq_user_id = ?
+
+            GROUP BY 
+                t.treatment_id
+
+            ORDER BY 
+                t.created_at DESC
+        `;
+
+        return await db.query(query, [zynq_user_id, zynq_user_id]);
+
+    } catch (error) {
+        console.error("getAllUsersTreatmentsModel error:", error);
+        throw error;
+    }
+};
 
 export const getAllSubTreatmentsMasterModel = async () => {
     try {
@@ -2300,10 +2365,41 @@ export const getAllSubTreatmentsMasterModel = async () => {
     }
 };
 
-export const getTreatmentsByTreatmentId = async (treatment_id) => {
+// export const getTreatmentsByTreatmentId = async (treatment_id, zync_user_id = null) => {
+//     try {
+//         const result = await db.query(
+//             `
+//             SELECT 
+//                 t.*,
+//                 JSON_ARRAYAGG(
+//                     JSON_OBJECT(
+//                         'concern_id', c.concern_id,
+//                         'concern_name', c.name
+//                     )
+//                 ) AS concerns
+//             FROM tbl_treatments t
+//             LEFT JOIN tbl_treatment_concerns tc 
+//                 ON tc.treatment_id = t.treatment_id
+//             LEFT JOIN tbl_concerns c 
+//                 ON c.concern_id = tc.concern_id
+//             WHERE t.treatment_id = ? 
+//               AND t.created_by_zynq_user_id = ?
+//               AND t.is_deleted = 0
+//             GROUP BY t.treatment_id
+//             `,
+//             [treatment_id]
+//         );
+
+//         return result;
+//     } catch (error) {
+//         console.error("getTreatmentsByTreatmentId error:", error);
+//         throw error;
+//     }
+// };
+
+export const getTreatmentsByTreatmentId = async (treatment_id, zynq_user_id = null) => {
     try {
-        const result = await db.query(
-            `
+        let query = `
             SELECT 
                 t.*,
                 JSON_ARRAYAGG(
@@ -2317,14 +2413,22 @@ export const getTreatmentsByTreatmentId = async (treatment_id) => {
                 ON tc.treatment_id = t.treatment_id
             LEFT JOIN tbl_concerns c 
                 ON c.concern_id = tc.concern_id
-            WHERE t.treatment_id = ? 
+            WHERE t.treatment_id = ?
               AND t.is_deleted = 0
-            GROUP BY t.treatment_id
-            `,
-            [treatment_id]
-        );
+        `;
 
-        return result;
+        const params = [treatment_id];
+
+        // If user (NOT admin), add user filter
+        if (zynq_user_id) {
+            query += ` AND t.created_by_zynq_user_id = ? `;
+            params.push(zynq_user_id);
+        }
+
+        query += ` GROUP BY t.treatment_id `;
+
+        return await db.query(query, params);
+
     } catch (error) {
         console.error("getTreatmentsByTreatmentId error:", error);
         throw error;
@@ -2363,6 +2467,31 @@ export const getSubTreatmentsByTreatmentId = async (treatment_id) => {
         );
     } catch (error) {
         console.error("getSubTreatmentsByTreatmentId error:", error);
+        throw error;
+    }
+};
+
+export const getUserSubTreatmentsByTreatmentId = async (treatment_id, zynq_user_id) => {
+    try {
+        return await db.query(
+            `SELECT 
+                ttstum.id,
+                ttstum.treatment_id,
+                ttstum.sub_treatment_id,
+                tstm.name,
+                tstm.swedish,
+                tstm.approval_status
+             FROM tbl_treatment_sub_treatment_user_maps ttstum
+             JOIN tbl_sub_treatment_master tstm
+                ON ttstum.sub_treatment_id = tstm.sub_treatment_id
+             WHERE ttstum.treatment_id = ?
+               AND ttstum.zynq_user_id = ?
+               AND tstm.is_deleted = 0
+               AND tstm.approval_status = 'APPROVED'`,
+            [treatment_id, zynq_user_id]
+        );
+    } catch (error) {
+        console.error("getUserSubTreatmentsByTreatmentId error:", error);
         throw error;
     }
 };
@@ -2576,6 +2705,20 @@ export const addTreatmentSubTreatmentModel = async (treatment_id, subTreatments)
     }
 };
 
+export const addTreatmentSubTreatmentUserModel = async (treatment_id, subTreatments, zynq_user_id) => {
+    try {
+        const values = subTreatments.map(sub => [treatment_id, sub, zynq_user_id]);
+
+        return await db.query(
+            `INSERT INTO tbl_treatment_sub_treatment_user_maps (treatment_id, sub_treatment_id, zynq_user_id) VALUES ?`,
+            [values]
+        );
+    } catch (error) {
+        console.error("addTreatmentSubTreatmentModel error:", error);
+        throw error;
+    }
+};
+
 export const addSubTreatmentsModel = async (treatment_id, sub_treatments) => {
     try {
         return await db.query(
@@ -2709,7 +2852,7 @@ export const deleteZynqUserSubTreatmentsModel = async (sub_treatment_id, zynq_us
     try {
         return await db.query(
             `
-            UPDATE tbl_sub_treatments SET
+            UPDATE tbl_treatment_sub_treatment_user_maps SET
             is_deleted = 1
             WHERE sub_treatment_id LIKE ? AND created_by_zynq_user_id = ?`,
             [sub_treatment_id, zynq_user_id]
@@ -2719,6 +2862,21 @@ export const deleteZynqUserSubTreatmentsModel = async (sub_treatment_id, zynq_us
         throw error;
     }
 }
+
+// export const deleteZynqUserSubTreatmentsModel = async (sub_treatment_id, zynq_user_id) => {
+//     try {
+//         return await db.query(
+//             `
+//             UPDATE tbl_sub_treatments SET
+//             is_deleted = 1
+//             WHERE sub_treatment_id LIKE ? AND created_by_zynq_user_id = ?`,
+//             [sub_treatment_id, zynq_user_id]
+//         );
+//     } catch (error) {
+//         console.error("deleteZynqUserSubTreatmentsModel error:", error);
+//         throw error;
+//     }
+// }
 
 export const updateTreatmentApprovalStatusModel = async (treatment_id, approval_status) => {
     try {
@@ -2748,6 +2906,33 @@ export const updateTreatmentApprovalStatusModel = async (treatment_id, approval_
 
     } catch (error) {
         console.error("updateTreatmentApprovalStatus error:", error);
+        throw error;
+    }
+};
+
+export const addUserMappedSubTreatmentsToMaster = async (treatment_id, zynq_user_id) => {
+    try {
+        // Insert only missing items (avoid duplicates)
+        const query = `
+            INSERT INTO tbl_treatment_sub_treatments (treatment_id, sub_treatment_id)
+            SELECT 
+                ttstum.treatment_id,
+                ttstum.sub_treatment_id
+            FROM tbl_treatment_sub_treatment_user_maps ttstum
+            WHERE ttstum.treatment_id = ?
+              AND ttstum.zynq_user_id = ?
+              AND NOT EXISTS (
+                    SELECT 1 
+                    FROM tbl_treatment_sub_treatments tts 
+                    WHERE tts.treatment_id = ttstum.treatment_id
+                    AND tts.sub_treatment_id = ttstum.sub_treatment_id
+              )
+        `;
+
+        return await db.query(query, [treatment_id, zynq_user_id]);
+
+    } catch (error) {
+        console.error("addUserMappedSubTreatmentsToMaster ERROR:", error);
         throw error;
     }
 };
