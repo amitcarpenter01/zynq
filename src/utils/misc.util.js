@@ -17,6 +17,47 @@ const isEmpty = (value) => {
     return false;
 };
 
+// export const getTreatmentIDsByUserID = async (userID) => {
+//     if (!userID) return [];
+
+//     // Safe JSON parser
+//     const safeJSONParse = (data) => {
+//         try {
+//             return JSON.parse(data);
+//         } catch (err) {
+//             console.error("JSON Parse Error:", err);
+//             return null;
+//         }
+//     };
+
+//     // Fetch the latest scan result
+//     const result = await db.query(
+//         `SELECT aiAnalysisResult 
+//          FROM tbl_face_scan_results 
+//          WHERE user_id = ? 
+//          ORDER BY created_at DESC 
+//          LIMIT 1`,
+//         [userID]
+//     );
+
+//     if (!result || result.length === 0) return [];
+
+//     const parsed = safeJSONParse(result[0].aiAnalysisResult);
+//     if (!parsed || !Array.isArray(parsed.skinIssues)) return [];
+
+//     let treatmentIDs = [];
+//     // Loop all skinIssues and select IDs with % > 20
+//     parsed.skinIssues.forEach(issue => {
+//         if (issue.percentage && issue.percentage > 20 && Array.isArray(issue.recommendedTreatmentsIds)) {
+//             treatmentIDs.push(...issue.recommendedTreatmentsIds);
+//         }
+//     });
+
+//     // Unique IDs
+//     treatmentIDs = [...new Set(treatmentIDs)];
+//     return treatmentIDs;
+// };
+
 export const getTreatmentIDsByUserID = async (userID) => {
     if (!userID) return [];
 
@@ -39,7 +80,7 @@ export const getTreatmentIDsByUserID = async (userID) => {
 
     if (!result?.length) return [];
 
-    
+
 
     const { aiAnalysisResult, scoreInfo } = result[0];
     const { skinConcernMap, mapping } = configs;
@@ -48,13 +89,15 @@ export const getTreatmentIDsByUserID = async (userID) => {
     // STEP 1: SCORE INFO (PRIMARY PRIORITY)
     const parsedScoreInfo = safeJSONParse(scoreInfo);
     // console.log("parsedScoreInfo", parsedScoreInfo);
+    // console.log("parsedScoreInfo", parsedScoreInfo);
     if (parsedScoreInfo && mapping && skinConcernMap) {
-     
+
         const concernIDs = [];
 
         for (const key in mapping) {
-            const value = parsedScoreInfo[key];
-            if (typeof value === "number" && value > SCORE_THRESHOLD) {
+            const value = parseFloat(parsedScoreInfo[key]);
+            console.log(typeof value)
+            if (value > SCORE_THRESHOLD) {
                 const concernName = mapping[key];
                 const concernID = skinConcernMap[concernName];
                 if (concernID) concernIDs.push(concernID);
@@ -464,7 +507,7 @@ export const getTopSimilarRowsWithoutTranslate = async (rows, search, threshold 
 
     const normalized_search = search;
 
-   
+
     // 1️⃣ Get embedding for the search term
     const response = await axios.post("http://localhost:11434/api/embeddings", {
         model: "nomic-embed-text",
@@ -556,63 +599,63 @@ export const rankSimilarRows = async (rows, search, threshold = 0, topN = null) 
 
 // Common medical/brand words you don't want translated
 const SAFE_TERMS = [
-  "Fotona", "Hydrafacial", "Lumenis", "Candela", "Cynosure", "Restylane",
-  "Juvederm", "Botox", "Belotero", "Dysport", "Allergan", "HIFU", "Laser", "Clinic"
+    "Fotona", "Hydrafacial", "Lumenis", "Candela", "Cynosure", "Restylane",
+    "Juvederm", "Botox", "Belotero", "Dysport", "Allergan", "HIFU", "Laser", "Clinic"
 ];
 
 function containsSafeTerm(text) {
-  return SAFE_TERMS.some(term => text.toLowerCase().includes(term.toLowerCase()));
+    return SAFE_TERMS.some(term => text.toLowerCase().includes(term.toLowerCase()));
 }
 
 export async function translator(question, targetLang = "en") {
     try {
-      if (!question || !question.trim()) return question;
-  
-      // 🧩 Step 1: Detect language first
-      const detectUrl = `https://translation.googleapis.com/language/translate/v2/detect?key=${GOOGLE_TRANSLATE_KEY}`;
-      const detectResp = await axios.post(detectUrl, { q: question });
-      const detectedLang = detectResp.data?.data?.detections?.[0]?.[0]?.language || "en";
-  
-      console.log("Detected language:", detectedLang);
-  
-    //   // ✅ Step 2: Skip translation if English or already known term
-    //   if (detectedLang === "en" || shouldSkipTranslation(question)) {
-    //     console.log("Skipping translation: English or known brand term");
-    //     return question;
-    //   }
-  
-      // 🌍 Step 3: Only translate if it’s Swedish or other non-English
-      if (["sv", "da", "no", "de", "fr", "it", "es"].includes(detectedLang)) {
-        const translateUrl = `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_TRANSLATE_KEY}`;
-        const resp = await axios.post(translateUrl, {
-          q: question,
-          target: targetLang,
-          format: "text"
-        });
-  
-        const translated = resp.data.data.translations[0].translatedText;
-        console.log(`Translated (${detectedLang} → ${targetLang}): '${question}' → '${translated}'`);
-        return translated;
-      }
-  
-      // Otherwise, return unchanged
-      return question;
+        if (!question || !question.trim()) return question;
+
+        // 🧩 Step 1: Detect language first
+        const detectUrl = `https://translation.googleapis.com/language/translate/v2/detect?key=${GOOGLE_TRANSLATE_KEY}`;
+        const detectResp = await axios.post(detectUrl, { q: question });
+        const detectedLang = detectResp.data?.data?.detections?.[0]?.[0]?.language || "en";
+
+        console.log("Detected language:", detectedLang);
+
+        //   // ✅ Step 2: Skip translation if English or already known term
+        //   if (detectedLang === "en" || shouldSkipTranslation(question)) {
+        //     console.log("Skipping translation: English or known brand term");
+        //     return question;
+        //   }
+
+        // 🌍 Step 3: Only translate if it’s Swedish or other non-English
+        if (["sv", "da", "no", "de", "fr", "it", "es"].includes(detectedLang)) {
+            const translateUrl = `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_TRANSLATE_KEY}`;
+            const resp = await axios.post(translateUrl, {
+                q: question,
+                target: targetLang,
+                format: "text"
+            });
+
+            const translated = resp.data.data.translations[0].translatedText;
+            console.log(`Translated (${detectedLang} → ${targetLang}): '${question}' → '${translated}'`);
+            return translated;
+        }
+
+        // Otherwise, return unchanged
+        return question;
     } catch (err) {
-      console.error("Translate error:", err.response?.data || err.message);
-      return question;
+        console.error("Translate error:", err.response?.data || err.message);
+        return question;
     }
-  }
+}
 
 // 🧠 Only skip if text *is exactly or mostly* a brand name, not if it just contains one
 function shouldSkipTranslation(text) {
-  const lowerText = text.toLowerCase().trim();
-  return SAFE_TERMS.some(term => {
-    const lowerTerm = term.toLowerCase();
-    return (
-      lowerText === lowerTerm || // exact match
-      lowerText.split(/\s+/).includes(lowerTerm) // appears as separate word
-    );
-  });
+    const lowerText = text.toLowerCase().trim();
+    return SAFE_TERMS.some(term => {
+        const lowerTerm = term.toLowerCase();
+        return (
+            lowerText === lowerTerm || // exact match
+            lowerText.split(/\s+/).includes(lowerTerm) // appears as separate word
+        );
+    });
 }
 
 

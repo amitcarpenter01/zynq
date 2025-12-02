@@ -472,17 +472,17 @@ export const getAllRecommendedDoctors = async ({
         } else {
             query += ` ORDER BY d.created_at DESC`;
         }
-       
-        console.log("query",query);
-        console.log("params",params);
+
+        console.log("query", query);
+        console.log("params", params);
         // ---------- Fetch all filtered rows ----------
         const rows = await db.query(query, params);
-      
+
         if (!rows?.length) return [];
 
         // ---------- Embedding search ----------
         const trimmedSearch = (search || '').trim();
-     
+
         if (!trimmedSearch) {
             return rows
                 .slice(offset, offset + limit)
@@ -493,12 +493,12 @@ export const getAllRecommendedDoctors = async ({
                 });
         }
 
-      // 2️⃣ Compute top similar rows using embeddings
-       const aiRows = await getDoctorsAIResult(rows, trimmedSearch);
-      // 3️⃣ Apply pagination
-      const paginatedRows = paginateRows(aiRows, limit, offset);
+        // 2️⃣ Compute top similar rows using embeddings
+        const aiRows = await getDoctorsAIResult(rows, trimmedSearch);
+        // 3️⃣ Apply pagination
+        const paginatedRows = paginateRows(aiRows, limit, offset);
 
-      return paginatedRows;
+        return paginatedRows;
 
     } catch (error) {
         console.error('Database Error in getAllRecommendedDoctors:', error.message);
@@ -1484,6 +1484,7 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
         results = results.map(row => {
             const treatmentRow = { ...row };
             if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            if ('name_embeddings' in treatmentRow) delete treatmentRow.name_embeddings;
             return treatmentRow;
         });
 
@@ -1895,8 +1896,12 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
             });
         }
 
-        // ---------- Format Benefits ----------
-        return formatBenefitsUnified(results, lang);
+        results = results.map(row => ({
+            ...row,
+            benefits: lang === "sv" ? row.benefits_sv : row.benefits_en
+        }));
+
+        return results;
 
     } catch (error) {
         console.error("Database Error in getAllTreatmentsV2:", error.message);

@@ -165,9 +165,9 @@ export const addExpertise = async (req, res) => {
                 })
             ).min(1).required(),
 
-            skin_type_ids: Joi.string().required(),
-            skin_condition_ids: Joi.string().required(),
-            surgery_ids: Joi.string().required(),
+            skin_type_ids: Joi.string().allow("", null).optional(),
+            skin_condition_ids: Joi.string().allow("", null).optional(),
+            surgery_ids: Joi.string().allow("", null).optional(),
 
             // UPDATED: device ids instead of aesthetic devices
             device_ids: Joi.string().allow("", null).optional()
@@ -235,7 +235,7 @@ export const addConsultationFeeAndAvailability = async (req, res) => {
 
         const zynqUserId = req.user.id
         await update_onboarding_status(4, zynqUserId)
-        await generateDoctorsEmbeddingsV2(zynqUserId)
+        // await generateDoctorsEmbeddingsV2(zynqUserId)
         return handleSuccess(res, 200, language, "FEE_AVAILABILITY_ADDED", {});
     } catch (error) {
         console.error(error);
@@ -334,9 +334,9 @@ export const editPersonalInformation = async (req, res) => {
         if (req.file) {
             filename = req.file.filename
         }
-        await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
+        // await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
         const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography);
-        await generateDoctorsEmbeddingsV2(zynqUserId)
+        // await generateDoctorsEmbeddingsV2(zynqUserId)
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", result.affectedRows);
         } else if (result.affectedRows === 0) {
@@ -412,7 +412,7 @@ export const editEducation = async (req, res) => {
             value.end_year
         );
 
-        await generateDoctorsEmbeddingsV2(zynqUserId)
+        // await generateDoctorsEmbeddingsV2(zynqUserId)
 
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "EDUCATION_UPDATED_SUCCESSFULLY", result.affectedRows);
@@ -509,7 +509,7 @@ export const editExperience = async (req, res) => {
         let language = req?.user?.language || 'en';
 
         if (result.affectedRows > 0) {
-            await generateDoctorsEmbeddingsV2(zynqUserId)
+            // await generateDoctorsEmbeddingsV2(zynqUserId)
             return handleSuccess(res, 200, language, "EXPERIENCE_UPDATED", result.affectedRows);
         } else {
             return handleSuccess(res, 200, language, "NO_CHANGES_MADE", {});
@@ -557,12 +557,11 @@ export const editExpertise = async (req, res) => {
                     ).optional()
                 })
             ).optional(),
-            skin_type_ids: Joi.string().optional(),
-            severity_levels_ids: Joi.string().optional(),
-            skin_condition_ids: Joi.string().optional(),
-            surgery_ids: Joi.string().optional(),
 
-            // NEW FIELD FOR DEVICES
+            skin_type_ids: Joi.string().allow("", null).optional(),
+            severity_levels_ids: Joi.string().allow("", null).optional(),
+            skin_condition_ids: Joi.string().allow("", null).optional(),
+            surgery_ids: Joi.string().allow("", null).optional(),
             device_ids: Joi.string().allow("", null).optional()
         });
 
@@ -573,38 +572,48 @@ export const editExpertise = async (req, res) => {
         const doctorId = req.user.doctorData.doctor_id;
         const zynqUserId = req.user.id;
 
+        // --------- HELPER: SAFE PARSE CSV ----------
+        const parseIds = (ids) => {
+            if (ids === undefined) return undefined; // means do not update this field
+            if (ids === "" || ids === null) return []; // empty → clear records
+            return ids.split(",").map(id => id.trim());
+        };
+
+        // --------- TREATMENTS ----------
         if (value.treatments !== undefined) {
             await doctorModels.update_doctor_treatments(doctorId, value.treatments);
         }
-        if (value.skin_type_ids !== undefined) {
-            const ids = value.skin_type_ids.split(',').map(id => id.trim());
-            await doctorModels.update_doctor_skin_types(doctorId, ids);
-        }
-        if (value.severity_levels_ids !== undefined) {
-            const ids = value.severity_levels_ids.split(',').map(id => id.trim());
-            await doctorModels.update_doctor_severity_levels(doctorId, ids);
-        }
-        if (value.skin_condition_ids !== undefined) {
-            const ids = value.skin_condition_ids.split(',').map(id => id.trim());
-            await doctorModels.update_doctor_skin_conditions(doctorId, ids);
-        }
-        if (value.surgery_ids !== undefined) {
-            const ids = value.surgery_ids.split(',').map(id => id.trim());
-            await doctorModels.update_doctor_surgery(doctorId, ids);
+
+        // --------- OTHER FIELDS ----------
+        const skinTypeIds = parseIds(value.skin_type_ids);
+        if (skinTypeIds !== undefined) {
+            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
         }
 
-        // NEW: DEVICE IDS → treatment-user-device mapping
-        if (value.device_ids !== undefined) {
-            const deviceIds = value.device_ids.split(',').map(id => id.trim());
+        const severityIds = parseIds(value.severity_levels_ids);
+        if (severityIds !== undefined) {
+            await doctorModels.update_doctor_severity_levels(doctorId, severityIds);
+        }
 
+        const skinConditionIds = parseIds(value.skin_condition_ids);
+        if (skinConditionIds !== undefined) {
+            await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
+        }
+
+        const surgeryIds = parseIds(value.surgery_ids);
+        if (surgeryIds !== undefined) {
+            await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
+        }
+
+        // --------- DEVICE IDS ----------
+        const deviceIds = parseIds(value.device_ids);
+        if (deviceIds !== undefined) {
             await doctorModels.update_doctor_treatment_devices(
-                zynqUserId,      // zynq_user_id
-                value.treatments, // array of treatment objects
-                deviceIds        // array of device IDs
+                zynqUserId,
+                value.treatments,
+                deviceIds
             );
         }
-
-        await generateDoctorsEmbeddingsV2(zynqUserId);
 
         return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", {});
 
@@ -655,7 +664,7 @@ export const editCertification = async (req, res) => {
         const result = await doctorModels.update_certification(req.file.filename, value.doctor_certification_id);
 
         if (result.affectedRows > 0) {
-            await generateDoctorsEmbeddingsV2(zynqUserId)
+            // await generateDoctorsEmbeddingsV2(zynqUserId)
             return handleSuccess(res, 200, language, "CERTIFICATION_UPDATED", result.affectedRows);
         } else {
             return handleSuccess(res, 200, language, "NO_CHANGES_MADE", {});
@@ -710,7 +719,7 @@ export const editConsultationFeeAndAvailability = async (req, res) => {
         // const doctorId = req.user.doctorData.doctor_id;
         let { doctor_availability_id } = req.params;
         const zynqUserId = req?.user?.id;
-        await generateDoctorsEmbeddingsV2(zynqUserId);
+        // await generateDoctorsEmbeddingsV2(zynqUserId);
         // await doctorModels.update_consultation_fee(doctorId, value.fee_per_session, "USD", value.session_duration);
         // await doctorModels.update_docter_availability(doctorId, value.availability);
         await doctorModels.update_docter_availability(req.body, doctor_availability_id);
@@ -881,7 +890,7 @@ export const editEducationAndExperienceInformation = async (req, res) => {
                 exp.end_date
             );
         }
-        await generateDoctorsEmbeddingsV2(zynqUserId)
+        // await generateDoctorsEmbeddingsV2(zynqUserId)
         return handleSuccess(res, 201, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", {});
     } catch (error) {
         console.error(error);
@@ -1317,7 +1326,7 @@ export const updateDoctorAdminController = asyncHandler(async (req, res) => {
                 value.biography,
             );
 
-            await generateDoctorsEmbeddingsV2(zynq_user_id);
+            // await generateDoctorsEmbeddingsV2(zynq_user_id);
         }
 
 
