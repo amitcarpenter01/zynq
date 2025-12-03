@@ -2351,7 +2351,7 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, lang = 'en', search = 
             FROM tbl_doctor_treatments dt
             INNER JOIN tbl_treatments t 
                 ON dt.treatment_id = t.treatment_id
-            LEFT JOIN tbl_sub_treatments st
+            LEFT JOIN tbl_sub_treatment_master st
                 ON dt.sub_treatment_id = st.sub_treatment_id
 
             WHERE 
@@ -2375,12 +2375,11 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, lang = 'en', search = 
                 console.log("Long query, translating to english");
                 normalized_search = await translator(search, 'en');
             }
-            
             results = await getTreatmentsAIResult(results, normalized_search, 0.4, null, lang);
 
             // results = await getTopSimilarRows(results, search);
         }
-
+console.log(results);
         // TRANSLATE FIELDS
         results = results.map(row => ({
             ...row,
