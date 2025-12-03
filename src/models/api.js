@@ -2086,13 +2086,14 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang, doct
             dt.price AS doctor_price,
             dt.sub_treatment_id,
             dt.sub_treatment_price,
-            st.name AS sub_treatment_name,
-            st.swedish AS sub_treatment_swedish
+            tstm.name AS sub_treatment_name,
+            tstm.swedish AS sub_treatment_swedish
         FROM tbl_treatments t
         LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
         LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
         LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
-        LEFT JOIN tbl_sub_treatments st ON dt.sub_treatment_id = st.sub_treatment_id
+        LEFT JOIN tbl_treatment_sub_treatments ttst ON dt.sub_treatment_id = ttst.sub_treatment_id
+        LEFT JOIN tbl_sub_treatment_master tstm ON ttst.sub_treatment_id = tstm.sub_treatment_id
         `;
 
         const whereClauses = [];
