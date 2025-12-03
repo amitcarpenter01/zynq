@@ -14,6 +14,11 @@ export const getTreatmentsByConcernSchema = joi.object({
 
 export const getTreatmentsByConcersSchema = joi.object({
   concern_ids: idArrayValidation,
+  filters: joi.object({
+    search: stringValidation.optional(),
+    treatment_ids: idArrayValidation.optional(),
+    recommended: booleanValidation.optional()
+  }).optional()
 })
 export const getTipsByConcernsSchema = joi.object({
   concern_ids: idArrayValidation,
