@@ -1497,7 +1497,38 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
     }
 };
 
+//AIshwarya Holkar changes 
+export const getTreatmentsByIds = async (concern_ids = [], lang) => {
+    if (!Array.isArray(concern_ids) || concern_ids.length === 0) return [];
 
+    try {
+        const placeholders = concern_ids.map(() => '?').join(', ');
+
+        const query = `
+            SELECT
+                t.*
+            FROM tbl_treatments t
+            WHERE t.treatment_id  IN (${placeholders})
+        `;
+
+        let results = await db.query(query, concern_ids);
+
+        // Remove embeddings dynamically
+        results = results.map(row => {
+            const treatmentRow = { ...row };
+            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            if ('name_embeddings' in treatmentRow) delete treatmentRow.name_embeddings;
+            return treatmentRow;
+        });
+
+        // Format benefits based on language
+        return formatBenefitsUnified(results, lang);
+
+    } catch (error) {
+        console.error("Database Error in getTreatmentsByConcernIds:", error.message);
+        throw new Error("Failed to fetch treatments by concern IDs.");
+    }
+};
 // export const getAllTreatments = async (lang) => {
 //     try {
 //         const query = `
@@ -1944,10 +1975,9 @@ export const getSubTreatmentsByTreatmentId = async (treatment_id, lang = 'en') =
              FROM tbl_treatment_sub_treatments ttst
              JOIN tbl_sub_treatment_master tstm
                 ON ttst.sub_treatment_id = tstm.sub_treatment_id
-             WHERE ttst.treatment_id = ?
+             WHERE ttst.treatment_id = '${treatment_id}'
                AND tstm.is_deleted = 0
                AND tstm.approval_status = 'APPROVED'`,
-            [treatment_id]
         );
 
         // ⛔ DO NOT CHANGE RESPONSE FORMAT
