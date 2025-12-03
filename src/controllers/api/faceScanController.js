@@ -167,7 +167,7 @@ export const get_treatments_by_concerns = async (req, res) => {
     try {
         const { concern_ids, filters } = req?.body;
         const language = req?.user?.language || 'en';
-        if (filters.treatment_ids.length > 0) {
+        if (filters?.treatment_ids?.length > 0) {
             const treatments = await apiModels.getTreatmentsByIds(filters.treatment_ids, language);
             const newTreatments = await getTreatmentsAIResult(treatments, filters?.search);
             for (var treatment of newTreatments) {
@@ -175,7 +175,7 @@ export const get_treatments_by_concerns = async (req, res) => {
                     treatment.treatment_id,
                     language
                 );
-                console.log(treatment.sub_treatments);
+                console.log("sub_treatments",treatment.sub_treatments);
             }
             return handleSuccess(res, 200, 'en', 'TREATMENTS_FETCHED', newTreatments);
         } else {
