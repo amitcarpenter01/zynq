@@ -1547,30 +1547,99 @@ export const getAppointmentsById = async (appointment_id) => {
 //     }
 // };
 
+// export const getTreatmentsOfProducts = async (product_id) => {
+//     try {
+//         const query = `
+//             SELECT t.* 
+//             FROM tbl_product_treatments pt
+//             JOIN tbl_treatments t ON t.treatment_id = pt.treatment_id
+//             WHERE pt.product_id = ?;
+//         `;
+//         const results = await db.query(query, [product_id]);
+
+//         // Remove embeddings from each treatment dynamically
+//         const cleanedResults = results.map(row => {
+//             const treatmentRow = { ...row };
+//             if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+//             return treatmentRow;
+//         });
+
+//         return cleanedResults;
+//     } catch (error) {
+//         console.error("Failed to fetch product treatments:", error);
+//         throw error;
+//     }
+// };
+
+
 export const getTreatmentsOfProducts = async (product_id) => {
     try {
         const query = `
-            SELECT t.* 
+            SELECT 
+                t.treatment_id,
+                t.name,
+                t.swedish,
+                t.classification_type,
+                t.created_at,
+                t.benefits_en,
+                t.benefits_sv,
+                t.description_en,
+                t.description_sv,
+                t.source,
+                t.is_device,
+                t.is_admin_created,
+                t.approval_status,
+                t.is_deleted,
+
+                st.sub_treatment_id,
+                stm.name AS sub_treatment_name_en,
+                stm.swedish AS sub_treatment_name_sv
+
             FROM tbl_product_treatments pt
-            JOIN tbl_treatments t ON t.treatment_id = pt.treatment_id
+            LEFT JOIN tbl_treatments t 
+                ON t.treatment_id = pt.treatment_id
+            LEFT JOIN tbl_treatment_sub_treatments st 
+                ON st.treatment_id = t.treatment_id
+            LEFT JOIN tbl_sub_treatment_master stm
+                ON stm.sub_treatment_id = st.sub_treatment_id
             WHERE pt.product_id = ?;
         `;
-        const results = await db.query(query, [product_id]);
 
-        // Remove embeddings from each treatment dynamically
-        const cleanedResults = results.map(row => {
-            const treatmentRow = { ...row };
-            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
-            return treatmentRow;
-        });
+        const rows = await db.query(query, [product_id]);
 
-        return cleanedResults;
+        const treatmentMap = {};
+
+        for (const row of rows) {
+            const treatmentId = row.treatment_id;
+
+            // Create parent treatment object once
+            if (!treatmentMap[treatmentId]) {
+                treatmentMap[treatmentId] = {
+                    ...row,
+                    sub_treatments: []
+                };
+
+                delete treatmentMap[treatmentId].embeddings;
+                delete treatmentMap[treatmentId].name_embeddings;
+            }
+
+            // Add sub-treatment (if exists)
+            if (row.sub_treatment_id) {
+                treatmentMap[treatmentId].sub_treatments.push({
+                    sub_treatment_id: row.sub_treatment_id,
+                    sub_treatment_name_en: row.sub_treatment_name_en,
+                    sub_treatment_name_sv: row.sub_treatment_name_sv
+                });
+            }
+        }
+
+        return Object.values(treatmentMap);
+
     } catch (error) {
         console.error("Failed to fetch product treatments:", error);
         throw error;
     }
 };
-
 
 // export const getTreatmentsOfProductsBulk = async (productIds) => {
 //     try {
