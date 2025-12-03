@@ -2351,8 +2351,10 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, lang = 'en', search = 
             FROM tbl_doctor_treatments dt
             INNER JOIN tbl_treatments t 
                 ON dt.treatment_id = t.treatment_id
-            LEFT JOIN tbl_sub_treatment_master st
-                ON dt.sub_treatment_id = st.sub_treatment_id
+            LEFT JOIN tbl_treatment_sub_treatments ttst
+                ON dt.treatment_id = ttst.treatment_id
+            JOIN tbl_sub_treatment_master st
+                ON ttst.sub_treatment_id = st.sub_treatment_id
 
             WHERE 
                 dt.doctor_id = ?
