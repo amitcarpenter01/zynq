@@ -88,15 +88,14 @@ export const getTreatmentIDsByUserID = async (userID) => {
 
     // STEP 1: SCORE INFO (PRIMARY PRIORITY)
     const parsedScoreInfo = safeJSONParse(scoreInfo);
-    // console.log("parsedScoreInfo", parsedScoreInfo);
-    // console.log("parsedScoreInfo", parsedScoreInfo);
+    
     if (parsedScoreInfo && mapping && skinConcernMap) {
 
         const concernIDs = [];
 
         for (const key in mapping) {
             const value = parseFloat(parsedScoreInfo[key]);
-            console.log(typeof value)
+            
             if (value > SCORE_THRESHOLD) {
                 const concernName = mapping[key];
                 const concernID = skinConcernMap[concernName];
