@@ -3326,7 +3326,7 @@ FROM tbl_appointment_treatments tat
 LEFT JOIN tbl_treatments tt 
     ON tt.treatment_id = tat.treatment_id
 
-LEFT JOIN tbl_sub_treatments st 
+LEFT JOIN tbl_sub_treatment_master st 
     ON st.sub_treatment_id = tat.sub_treatment_id
 
 LEFT JOIN tbl_appointments a
@@ -3338,9 +3338,9 @@ ORDER BY tat.treatment_id
         `, [appointment_id]);
 
         // Ensure rows is always an array
-        const rows = Array.isArray(result[0]) ? result[0] : [];
+        const rows = Array.isArray(result) ? result : [];
 
-        if (rows.length === 0) {
+        if (!rows || rows.length === 0) {
             return {
                 appointment_id,
                 discount_type: null,
