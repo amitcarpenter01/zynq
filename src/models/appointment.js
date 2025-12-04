@@ -1300,6 +1300,9 @@ export const insertDraftTreatmentsModel = async (appointment_id, treatments) => 
       VALUES ?
     `;
 
+    console.log("query", query);
+    console.log("params", params);
+
     return await db.query(query, [params]);
 
   } catch (error) {
