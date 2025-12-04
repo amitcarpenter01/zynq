@@ -51,7 +51,10 @@ export const addAppointmentDraftSchema = joi.object({
   treatments: joi.array().items(joi.object({
     treatment_id: stringValidation,
     price: numberValidation.min(0),
-
+    sub_treatments: joi.array().items(joi.object({
+      sub_treatment_id: stringValidation,
+      price: numberValidation.min(0)
+    }))
   }))
 })
 
