@@ -262,15 +262,16 @@ export const sendDoctorInvitation = async (req, res) => {
                     const emailHtml = await ejs.renderFile(emailTemplatePath2,
                         {
                             clinic_name: req.user.clinicData.clinic_name,
-                            clinic_city: get_location.city,
-                            clinic_street_address: get_location.street_address,
-                            clinic_state: get_location.state,
-                            clinic_zip: get_location.zip_code,
-                            clinic_phone: req.user.clinicData.mobile_number,
-                            clinic_email: req.user.clinicData.email,
-                            email,
-                            image_logo,
-                            invitation_link: `${APP_URL}clinic/accept-invitation?invitation_id=${invitation_id}`,
+                    clinic_org_number: req.user.clinicData.org_number,
+                    clinic_city: get_location.city,
+                    clinic_street_address: get_location.street_address,
+                    clinic_state: get_location.state,
+                    clinic_zip: get_location.zip_code,
+                    clinic_phone: req.user.clinicData.mobile_number,
+                    clinic_email: req.user.clinicData.email,
+                    image_logo,
+                    invitation_id,
+                    invitation_link: `${APP_URL}clinic/accept-invitation?invitation_id=${invitation_id}`,
                         }
                     );
 
