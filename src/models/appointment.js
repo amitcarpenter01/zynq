@@ -1263,27 +1263,74 @@ export const getDraftAppointmentsModel = async (user_id, doctor_id) => {
 };
 
 export const insertDraftTreatmentsModel = async (appointment_id, treatments) => {
-    if (!treatments || !treatments.length) return;
-    try {
+  if (!treatments || !treatments.length) return;
 
-        const params = treatments.map(t => [
+  try {
+    const params = [];
+
+    for (const treatment of treatments) {
+      const mainPrice = treatment.price;
+
+      // If sub-treatments exist → create row for each sub
+      if (treatment.sub_treatments?.length) {
+        treatment.sub_treatments.forEach(sub => {
+          params.push([
             appointment_id,
-            t.treatment_id,
-            t.price,
+            treatment.treatment_id,
+            mainPrice,                // always main treatment price
+            sub.sub_treatment_id,
+            sub.price                 // sub treatment price
+          ]);
+        });
+      } else {
+        // If NO sub-treatments → insert single row
+        params.push([
+          appointment_id,
+          treatment.treatment_id,
+          mainPrice,
+          null,                       // no sub
+          null
         ]);
-
-        const query = `
-        INSERT INTO tbl_appointment_treatments
-        (appointment_id, treatment_id, price)
-        VALUES ?
-      `;
-
-        return await db.query(query, [params]);
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to insert draft treatments.");
+      }
     }
-}
+
+    const query = `
+      INSERT INTO tbl_appointment_treatments
+      (appointment_id, treatment_id, price, sub_treatment_id, sub_treatment_price)
+      VALUES ?
+    `;
+
+    return await db.query(query, [params]);
+
+  } catch (error) {
+    console.error("Database Error:", error.message);
+    throw new Error("Failed to insert draft treatments.");
+  }
+};
+
+
+// export const insertDraftTreatmentsModel = async (appointment_id, treatments) => {
+//     if (!treatments || !treatments.length) return;
+//     try {
+
+//         const params = treatments.map(t => [
+//             appointment_id,
+//             t.treatment_id,
+//             t.price,
+//         ]);
+
+//         const query = `
+//         INSERT INTO tbl_appointment_treatments
+//         (appointment_id, treatment_id, price)
+//         VALUES ?
+//       `;
+
+//         return await db.query(query, [params]);
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to insert draft treatments.");
+//     }
+// }
 
 export const insertDraftAppointmentModel = async (appointment_id, doctor_id, clinic_id, user_id, report_id, discount_type, discount_value) => {
     try {
