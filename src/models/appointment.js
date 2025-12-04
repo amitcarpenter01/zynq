@@ -1269,7 +1269,7 @@ export const insertDraftTreatmentsModel = async (appointment_id, treatments) => 
     const params = [];
 
     for (const treatment of treatments) {
-      const mainPrice = treatment.price;
+      const mainPrice = treatment.price ? treatment.price : 0;
 
       // If sub-treatments exist → create row for each sub
       if (treatment.sub_treatments?.length) {
@@ -1289,7 +1289,7 @@ export const insertDraftTreatmentsModel = async (appointment_id, treatments) => 
           treatment.treatment_id,
           mainPrice,
           null,                       // no sub
-          null
+          0
         ]);
       }
     }
@@ -1299,6 +1299,9 @@ export const insertDraftTreatmentsModel = async (appointment_id, treatments) => 
       (appointment_id, treatment_id, price, sub_treatment_id, sub_treatment_price)
       VALUES ?
     `;
+
+    console.log("query", query);
+    console.log("params", params);
 
     return await db.query(query, [params]);
 

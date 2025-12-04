@@ -3307,44 +3307,54 @@ export const getTreatmentsByAppointmentId = async (appointment_id, language = 'e
         const nameCol = language === 'sv' ? 'tt.swedish' : 'tt.name';
         const subNameCol = language === 'sv' ? 'st.swedish' : 'st.name';
 
-        const [rows] = await db.query(`
+        const result = await db.query(`
             SELECT 
-                a.appointment_id,
-                a.discount_type,
-                a.discount_value,
-                
-                tat.treatment_id,
-                ${nameCol} AS treatment_name,
-                tat.price AS treatment_price,
+    a.appointment_id,
+    a.discount_type,
+    a.discount_value,
+    
+    tat.treatment_id,
+    ${nameCol} AS treatment_name,
+    tat.price AS treatment_price,
 
-                tat.sub_treatment_id,
-                ${subNameCol} AS sub_treatment_name,
-                tat.sub_treatment_price
+    tat.sub_treatment_id,
+    ${subNameCol} AS sub_treatment_name,
+    tat.sub_treatment_price
 
-            FROM tbl_appointment_treatments tat
-            INNER JOIN tbl_treatments tt 
-                ON tt.treatment_id = tat.treatment_id
+FROM tbl_appointment_treatments tat
 
-            LEFT JOIN tbl_sub_treatments st 
-                ON st.sub_treatment_id = tat.sub_treatment_id
+LEFT JOIN tbl_treatments tt 
+    ON tt.treatment_id = tat.treatment_id
 
-            INNER JOIN tbl_appointments a
-                ON a.appointment_id = tat.appointment_id
+LEFT JOIN tbl_sub_treatments st 
+    ON st.sub_treatment_id = tat.sub_treatment_id
 
-            WHERE tat.appointment_id = ?
-            ORDER BY tat.treatment_id
+LEFT JOIN tbl_appointments a
+    ON a.appointment_id = tat.appointment_id
+
+WHERE tat.appointment_id = ?
+ORDER BY tat.treatment_id
+
         `, [appointment_id]);
 
-        if (!rows.length) {
+        // Ensure rows is always an array
+        const rows = Array.isArray(result[0]) ? result[0] : [];
+
+        if (rows.length === 0) {
             return {
                 appointment_id,
                 discount_type: null,
                 discount_value: null,
-                treatments: []
+                treatments: [],
+                total_price: 0,
+                discount_amount: 0,
+                total_price_with_discount: 0
             };
         }
 
-        // Group by treatment_id
+        // ==============================
+        // Group treatments
+        // ==============================
         const treatmentMap = new Map();
 
         for (const r of rows) {
@@ -3352,43 +3362,44 @@ export const getTreatmentsByAppointmentId = async (appointment_id, language = 'e
                 treatmentMap.set(r.treatment_id, {
                     treatment_id: r.treatment_id,
                     name: r.treatment_name,
-                    price: Number(r.treatment_price),
+                    price: Number(r.treatment_price) || 0,
                     sub_treatments: []
                 });
             }
 
-            // If row has sub-treatment, push it
             if (r.sub_treatment_id) {
                 treatmentMap.get(r.treatment_id).sub_treatments.push({
                     sub_treatment_id: r.sub_treatment_id,
                     name: r.sub_treatment_name,
-                    price: Number(r.sub_treatment_price)
+                    price: Number(r.sub_treatment_price) || 0
                 });
             }
         }
 
         const treatments = [...treatmentMap.values()];
 
-        // Calculate prices
+        // ==============================
+        // Pricing Logic
+        // ==============================
         let total_price = 0;
 
         treatments.forEach(t => {
-            total_price += t.price; // main price
+            total_price += t.price;
             t.sub_treatments.forEach(st => {
                 total_price += st.price;
             });
         });
 
         const discount_type = rows[0].discount_type;
-        const discount_value = Number(rows[0].discount_value);
+        const discount_value = Number(rows[0].discount_value || 0);
 
         const discount_amount = Number(
             (
                 discount_type === 'PERCENTAGE'
-                ? total_price * (discount_value / 100)
-                : discount_type === 'SEK'
-                    ? discount_value
-                    : 0
+                    ? total_price * (discount_value / 100)
+                    : discount_type === 'SEK'
+                        ? discount_value
+                        : 0
             ).toFixed(2)
         );
 
@@ -3409,6 +3420,7 @@ export const getTreatmentsByAppointmentId = async (appointment_id, language = 'e
         throw new Error("Failed to fetch treatments for appointment.");
     }
 };
+
 
 
 // export const getTreatmentsByAppointmentId = async (appointment_id, language = 'en') => {
