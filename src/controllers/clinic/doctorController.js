@@ -160,7 +160,8 @@ export const sendDoctorInvitation = async (req, res) => {
     try {
 
         const schema = Joi.object({
-            emails: Joi.array().items(Joi.string().email().required()).min(1) .required() });
+            emails: Joi.array().items(Joi.string().email().required()).min(1).required()
+        });
 
 
         if (typeof req.body.emails === 'string') {
@@ -184,28 +185,56 @@ export const sendDoctorInvitation = async (req, res) => {
             let doctor, doctor_id, password, newWebUser;
 
             if (existingUser) {
-                const [existingDoctor] = await clinicModels.get_doctor_by_zynq_user_id(existingUser.id);
-                if (!existingDoctor) {
-                    doctor_id = uuidv4();
-                    const doctorData = {
-                        doctor_id,
-                        zynq_user_id: existingUser.id,
-                        created_at: new Date(),
-                    };
-                    await clinicModels.create_doctor(doctorData);
-                } else {
-                    doctor_id = existingDoctor.doctor_id;
-                }
-                const [existingMap] = await clinicModels.get_doctor_clinic_map_by_both(doctor_id, req.user.clinicData.clinic_id);
-                if (existingMap) {
-                    continue;
-                } else {
-                    const clinicMapData = {
-                        doctor_id,
-                        clinic_id: req.user.clinicData.clinic_id,
-                        assigned_at: new Date(),
-                    };
-                    await clinicModels.create_doctor_clinic_map(clinicMapData);
+                // const [existingDoctor] = await clinicModels.get_doctor_by_zynq_user_id(existingUser.id);
+                // if (!existingDoctor) {
+                //     doctor_id = uuidv4();
+                //     const doctorData = {
+                //         doctor_id,
+                //         zynq_user_id: existingUser.id,
+                //         created_at: new Date(),
+                //     };
+                //     await clinicModels.create_doctor(doctorData);
+                // } else {
+                //     doctor_id = existingDoctor.doctor_id;
+                // }
+                // const [existingMap] = await clinicModels.get_doctor_clinic_map_by_both(doctor_id, req.user.clinicData.clinic_id);
+                // if (existingMap) {
+                //     continue;
+                // } else {
+                //     const clinicMapData = {
+                //         doctor_id,
+                //         clinic_id: req.user.clinicData.clinic_id,
+                //         assigned_at: new Date(),
+                //     };
+                //     await clinicModels.create_doctor_clinic_map(clinicMapData);
+                // }
+                const roles = await clinicModels.getAllRoles();
+                const userRole = roles.find(role => role.id === existingUser.role_id);
+                const roleLabelMap = {
+                    CLINIC: "Clinic",
+                    DOCTOR: "Doctor",
+                    SOLO_DOCTOR: "Solo Doctor"
+                };
+
+
+                if (userRole) {
+
+                    // Map role to readable label
+                    const readableRole = roleLabelMap[userRole.role] || userRole.role;
+
+                    return handleError(
+                        res,
+                        400,
+                        "en",
+                        `This user is already registered as ${readableRole}.`
+                    );
+                }else{
+                     return handleError(
+                        res,
+                        400,
+                        "en",
+                        `This user is already registered as Doctor.`
+                    );
                 }
             } else {
                 const roles = await clinicModels.getAllRoles();
