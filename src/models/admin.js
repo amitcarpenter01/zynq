@@ -686,8 +686,35 @@ export const clinicUnsubscribed = async (clinic_id) => {
 //     }
 // };
 
-export const get_doctors_management = async (limit, offset) => {
+export const get_doctors_management = async (limit, offset, search = "", type = "") => {
     try {
+        const searchQuery = `%${search}%`;
+
+        let conditions = `
+            u.role_id IN (
+                '407595e3-3196-11f0-9e07-0e8e5d906eef',  -- Solo Doctor
+                '3677a3e6-3196-11f0-9e07-0e8e5d906eef'   -- Doctor
+            )
+            AND (
+                d.name LIKE ?
+                OR u.email LIKE ?
+                OR d.phone LIKE ?
+            )
+        `;
+
+        const params = [searchQuery, searchQuery, searchQuery];
+
+        // TYPE FILTER
+        if (type) {
+            if (type === "Solo Doctor") {
+                conditions += ` AND u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef'`;
+            } else if (type === "Doctor") {
+                conditions += ` AND u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef'`;
+            }
+        }
+
+        params.push(limit, offset);
+
         const sql = `
             SELECT 
                 d.zynq_user_id,
@@ -715,37 +742,58 @@ export const get_doctors_management = async (limit, offset) => {
                 ON u.id = d.zynq_user_id
             LEFT JOIN tbl_appointment_ratings ar
                 ON ar.doctor_id = d.doctor_id
-            WHERE u.role_id IN (
-                '407595e3-3196-11f0-9e07-0e8e5d906eef',
-                '3677a3e6-3196-11f0-9e07-0e8e5d906eef'
-            )
+
+            WHERE ${conditions}
+
             GROUP BY d.doctor_id
             ORDER BY d.created_at DESC
             LIMIT ? OFFSET ?;
         `;
 
-        return await db.query(sql, [limit, offset]);
+        return await db.query(sql, params);
 
     } catch (error) {
         console.error("Database Error:", error.message);
-        throw new Error("Failed to get doctor latest data.");
+        throw new Error("Failed to get doctor management data.");
     }
 };
 
-export const get_doctors_count = async () => {
+export const get_doctors_count = async (search = "", type = "") => {
     try {
+        const searchQuery = `%${search}%`;
+
+        let conditions = `
+            u.role_id IN (
+                '407595e3-3196-11f0-9e07-0e8e5d906eef',  -- Solo Doctor
+                '3677a3e6-3196-11f0-9e07-0e8e5d906eef'   -- Doctor
+            )
+            AND (
+                d.name LIKE ?
+                OR u.email LIKE ?
+                OR d.phone LIKE ?
+            )
+        `;
+
+        const params = [searchQuery, searchQuery, searchQuery];
+
+        // TYPE FILTER
+        if (type) {
+            if (type === "Solo Doctor") {
+                conditions += ` AND u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef'`;
+            } else if (type === "Doctor") {
+                conditions += ` AND u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef'`;
+            }
+        }
+
         const sql = `
             SELECT COUNT(*) AS total
             FROM tbl_doctors d
             LEFT JOIN tbl_zqnq_users u 
                 ON u.id = d.zynq_user_id
-            WHERE u.role_id IN (
-                '407595e3-3196-11f0-9e07-0e8e5d906eef',
-                '3677a3e6-3196-11f0-9e07-0e8e5d906eef'
-            );
+            WHERE ${conditions};
         `;
 
-        const result = await db.query(sql);
+        const result = await db.query(sql, params);
         return result[0].total;
 
     } catch (error) {
@@ -815,18 +863,62 @@ export const delete_product_by_id = async (product_id) => {
 //yashraj 
 export const get_doctor_treatments = async (doctorId) => {
     try {
-        return await db.query(`
+        const rows = await db.query(`
             SELECT 
-                dt.*,
-                tt.*
+                dt.doctor_id,
+                dt.treatment_id,
+                dt.price,
+                dt.sub_treatment_id,
+                dt.sub_treatment_price,
+                
+                tt.name AS treatment_name_en,
+                tt.swedish AS treatment_name_sv,
+
+                st.name AS sub_treatment_name_en,
+                st.swedish AS sub_treatment_name_sv
+
             FROM 
                 tbl_doctor_treatments dt
-            INNER JOIN 
+            INNER JOIN
                 tbl_treatments tt 
-            ON 
-                dt.treatment_id = tt.treatment_id 
+                ON dt.treatment_id = tt.treatment_id
+            LEFT JOIN 
+                tbl_sub_treatment_master st
+                ON dt.sub_treatment_id = st.sub_treatment_id
+
             WHERE 
-                dt.doctor_id = ?`, [doctorId]);
+                dt.doctor_id = ?
+            ORDER BY tt.name, st.name
+        `, [doctorId]);
+
+        // ---- GROUPING LOGIC ----
+        const grouped = {};
+
+        rows.forEach(row => {
+            if (!grouped[row.treatment_id]) {
+                grouped[row.treatment_id] = {
+                    doctor_id: row.doctor_id,
+                    treatment_id: row.treatment_id,
+                    name: row.treatment_name_en,
+                    swedish: row.treatment_name_sv,
+                    price: row.price,
+                    sub_treatments: []
+                };
+            }
+
+            // Add sub-treatment only if exists
+            if (row.sub_treatment_id) {
+                grouped[row.treatment_id].sub_treatments.push({
+                    sub_treatment_id: row.sub_treatment_id,
+                    sub_treatment_price: row.sub_treatment_price,
+                    sub_treatment_name_en: row.sub_treatment_name_en,
+                    sub_treatment_name_sv: row.sub_treatment_name_sv
+                });
+            }
+        });
+
+        return Object.values(grouped);
+
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor's treatments.");
