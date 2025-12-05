@@ -29,16 +29,17 @@ export const login_web_user = async (req, res) => {
         const schema = Joi.object({
             email: Joi.string().min(5).max(255).email({ tlds: { allow: false } }).lowercase().required(),
             password: Joi.string().min(8).max(15).required(),
-            fcm_token: Joi.string().optional().allow("", null)
+            fcm_token: Joi.string().optional().allow("", null),
+            language : Joi.string().valid('en', 'sv').required()
         });
 
-        let language = 'en';
+        // let language = 'en';
 
         const { error, value } = schema.validate(req.body);
 
         if (error) return joiErrorHandle(res, error);
 
-        const { email, password, fcm_token } = value;
+        const { email, password, fcm_token, language } = value;
 
         const roleSelectedStatus = await dbOperations.getSelectedColumn('role_selected, role_id', 'tbl_zqnq_users', `WHERE email = '${email}'`); (email);
         if (roleSelectedStatus.length > 0) {
@@ -51,7 +52,7 @@ export const login_web_user = async (req, res) => {
         if (!existingWebUser) {
             return handleError(res, 400, language, "CLINIC_NOT_FOUND");
         }
-        language = existingWebUser.language;
+        // language = existingWebUser.language;
 
         const isPasswordValid = await bcrypt.compare(password, existingWebUser.password);
         if (!isPasswordValid) {
@@ -62,7 +63,7 @@ export const login_web_user = async (req, res) => {
             expiresIn: JWT_EXPIRY
         });
 
-        await webModels.update_jwt_fcm_token(token, fcm_token, existingWebUser.id);
+        await webModels.update_jwt_fcm_token(token, fcm_token, existingWebUser.id, language);
         const [user_data] = await webModels.get_web_user_by_id(existingWebUser.id);
         const [get_clinic] = await clinicModels.get_clinic_by_zynq_user_id(existingWebUser.id);
         const [get_doctor] = await get_doctor_by_zynq_user_id(existingWebUser.id);
@@ -88,29 +89,30 @@ export const login_web_user = async (req, res) => {
 export const forgot_password = async (req, res) => {
     try {
         const schema = Joi.object({
-            email: Joi.string().email().required()
+            email: Joi.string().email().required(),
+            language: Joi.string().valid('en', 'sv').required()
         });
 
-        let language = 'en';
+        // let language = 'en';
 
         const { error, value } = schema.validate(req.body);
         if (error) {
             return joiErrorHandle(res, error);
         }
 
-        const { email } = value;
+        const { email, language } = value;
 
         const [webUser] = await webModels.get_web_user_by_email(email);
         if (!webUser) {
             return handleError(res, 404, language, "USER_NOT_FOUND");
         }
 
-        language = webUser.language;
+        // language = webUser.language;
 
         const resetToken = crypto.randomBytes(32).toString("hex");
         const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
 
-        await webModels.update_reset_token(resetToken, resetTokenExpiry, email);
+        await webModels.update_reset_token(resetToken, resetTokenExpiry, email, language);
 
         const resetLink = `${APP_URL}webuser/reset-password?token=${resetToken}`;
         let emailTemplatePath;
@@ -203,19 +205,20 @@ export const set_password = async (req, res) => {
     try {
         const schema = Joi.object({
             new_password: Joi.string().required(),
+            language: Joi.string().valid('en', 'sv').required()
         });
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
-        const { new_password } = value;
+        const { new_password, language } = value;
 
         const [user] = await webModels.get_web_user_by_id(req.user.id);
         if (!user) return handleError(res, 404, 'en', "USER_NOT_FOUND");
         const hashedPassword = await bcrypt.hash(new_password, 10);
-        await webModels.update_web_user_password_set(hashedPassword, new_password, user.id);
-        return handleSuccess(res, 200, 'en', "PASSWORD_SET_SUCCESSFULLY");
+        await webModels.update_web_user_password_set(hashedPassword, new_password, user.id,language);
+        return handleSuccess(res, 200, language, "PASSWORD_SET_SUCCESSFULLY");
     } catch (error) {
         console.error("Error setting password:", error);
-        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
 
