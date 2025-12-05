@@ -512,7 +512,7 @@ export const get_all_concerns = async (req, res) => {
         const language = req?.user?.language || 'en';
         const concerns = await getAllConcerns(language);
 
-        return handleSuccess(res, 200, "en", "CONCERNS_FETCHED", concerns);
+        return handleSuccess(res, 200, "en", "CONCERNS_FETCHED",applyLanguageOverwrite(concerns,language) );
     } catch (error) {
         console.error("Error fetching concerns:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
