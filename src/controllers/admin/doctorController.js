@@ -49,18 +49,18 @@ import { calculateProfileCompletionPercentageByDoctorId } from "../doctor/profil
 
 export const get_doctors_management = async (req, res) => {
     try {
-        let { page = 1, limit = 10 } = req.query;
-
-        page = parseInt(page);
-        limit = parseInt(limit);
-
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
         const offset = (page - 1) * limit;
 
+        const search = req.query.search || "";
+        const type = req.query.type || "";
+
         // 1. Get total doctor count
-        const totalRecords = await adminModels.get_doctors_count();
+        const totalRecords = await adminModels.get_doctors_count(search, type);
 
         // 2. Fetch doctors with LIMIT & OFFSET
-        const doctors = await adminModels.get_doctors_management(limit, offset);
+        const doctors = await adminModels.get_doctors_management(limit, offset, search, type)
 
         if (!doctors || doctors.length === 0) {
             return handleSuccess(res, 200, 'en', "No doctors found", {
