@@ -299,8 +299,8 @@ export const getDoctorProfile = async (req, res) => {
                 }
             });
         }
-
-        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", applyLanguageOverwrite({ ...profileData, completionPercentage }, language));
+// applyLanguageOverwrite({ ...profileData, completionPercentage }, language)
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, completionPercentage });
     } catch (error) {
         console.error(error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");

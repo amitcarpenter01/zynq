@@ -511,7 +511,7 @@ export const addConsultationFeeAndAvailability = async (req, res) => {
 export const getDoctorProfile = async (req, res) => {
     try {
 
-        const language = 'en';
+        const language = req?.user?.language || "en";
         const doctorId = req.user.doctorData.doctor_id;
 
         const profileData = await doctorModels.get_doctor_profile(doctorId);
@@ -623,7 +623,9 @@ export const getDoctorProfile = async (req, res) => {
                     : `${APP_URL}clinic/files/${img.image_url}`,
             }));
 
-        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED",applyLanguageOverwrite({ ...profileData, clinic, completionPercentage }, language));
+            // applyLanguageOverwrite({ ...profileData, clinic, completionPercentage }, language)
+
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED",{ ...profileData, clinic, completionPercentage });
     } catch (error) {
         console.error(error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
