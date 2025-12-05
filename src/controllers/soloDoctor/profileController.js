@@ -8,6 +8,7 @@ import { update_onboarding_status } from "../../models/web_user.js";
 import dbOperations from '../../models/common.js';
 import { fetchZynqUserByUserId } from "../../models/api.js";
 import { generateDoctorsEmbeddingsV2 } from "../api/embeddingsController.js";
+import { applyLanguageOverwrite } from "../../utils/misc.util.js";
 
 dotenv.config();
 
@@ -622,7 +623,7 @@ export const getDoctorProfile = async (req, res) => {
                     : `${APP_URL}clinic/files/${img.image_url}`,
             }));
 
-        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, clinic, completionPercentage });
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED",applyLanguageOverwrite({ ...profileData, clinic, completionPercentage }, language));
     } catch (error) {
         console.error(error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");

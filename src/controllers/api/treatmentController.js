@@ -35,6 +35,7 @@ import db from "../../config/db.js";
 import xlsx from 'xlsx';
 import path from 'path';
 import fs from 'fs';
+import { applyLanguageOverwrite } from "../../utils/misc.util.js";
 
 export const getTreatmentsByConcern = asyncHandler(async (req, res) => {
     const { concern_id } = req.params;
@@ -565,7 +566,7 @@ export const getAllTreatments = asyncHandler(async (req, res) => {
         OTHERS: others
     };
 
-    return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", response);
+    return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", applyLanguageOverwrite(response, language));
 });
 
 export const getAllSubTreatmentMasters = asyncHandler(async (req, res) => {
@@ -590,7 +591,7 @@ export const getAllSubTreatmentMasters = asyncHandler(async (req, res) => {
         OTHERS: others
     };
 
-    return handleSuccess(res, 200, language, "SUB_TREATMENTS_FETCHED", response);
+    return handleSuccess(res, 200, language, "SUB_TREATMENTS_FETCHED", applyLanguageOverwrite(response, language));
 });
 
 

@@ -657,47 +657,136 @@ function shouldSkipTranslation(text) {
     });
 }
 
-
 export const applyLanguageOverwrite = (data, lang = "en") => {
-    if (!data) return data;
+  // recursive function
+  const transform = (obj) => {
+    if (Array.isArray(obj)) {
+      return obj.map(transform);
+    }
 
-    const pairs = [
-        { target: "name", en: "name", sv: "swedish" },
-        { target: "description_en", en: "description_en", sv: "description_sv" },
-        { target: "concern_en", en: "concern_en", sv: "concern_sv" }
-    ];
+    if (obj && typeof obj === "object") {
+      const newObj = { ...obj };
 
-    const processObject = (obj) => {
-        let newObj = { ...obj };
+      for (const key in newObj) {
+        const value = newObj[key];
 
-        // overwrite target fields based on language
-        pairs.forEach(pair => {
-            if (lang === "sv" && obj[pair.sv] !== undefined) {
-                newObj[pair.target] = obj[pair.sv];
-            } else if (lang === "en" && obj[pair.en] !== undefined) {
-                newObj[pair.target] = obj[pair.en];
-            }
-        });
+        // Recurse deeper
+        if (typeof value === "object" && value !== null) {
+          newObj[key] = transform(value);
+        }
+      }
 
-        // recursively apply for nested arrays & objects
-        Object.keys(newObj).forEach(key => {
-            const val = newObj[key];
+      // Auto-detect language key pairs inside this object
+      const pairs = findLanguagePairs(newObj);
 
-            if (Array.isArray(val)) {
-                newObj[key] = val.map(item =>
-                    typeof item === "object" && item !== null
-                        ? processObject(item)
-                        : item
-                );
-            } else if (typeof val === "object" && val !== null) {
-                newObj[key] = processObject(val);
-            }
-        });
+      // Apply overwrite for each pair
+      pairs.forEach(({ keyBase, enKey, svKey }) => {
+        if (lang === "en" && enKey in newObj) {
+          newObj[keyBase] = newObj[enKey];
+        }
+        if (lang === "sv" && svKey in newObj) {
+          newObj[keyBase] = newObj[svKey];
+        }
+      });
 
-        return newObj;
-    };
+      return newObj;
+    }
 
-    return Array.isArray(data)
-        ? data.map(item => processObject(item))
-        : processObject(data);
+    return obj;
+  };
+
+  return transform(data);
 };
+
+// Detect matching language pairs automatically
+const findLanguagePairs = (obj) => {
+  const keys = Object.keys(obj);
+  const pairs = [];
+
+  keys.forEach((key) => {
+    // Pattern 1: base + _en / _sv
+    if (key.endsWith("_en")) {
+      const base = key.replace("_en", "");
+      const svKey = base + "_sv";
+      if (obj.hasOwnProperty(svKey)) {
+        pairs.push({ keyBase: base, enKey: key, svKey });
+      }
+    }
+
+    // Pattern 2: english / swedish
+    if (key.toLowerCase() === "english") {
+      if (obj.hasOwnProperty("swedish")) {
+        pairs.push({
+          keyBase: "name", // output field name
+          enKey: key,
+          svKey: "swedish",
+        });
+      }
+    }
+
+    // Pattern 3: name + swedish
+    if (key === "name" && obj.hasOwnProperty("swedish")) {
+      pairs.push({
+        keyBase: "name",
+        enKey: "name",
+        svKey: "swedish",
+      });
+    }
+
+    // Pattern 4: description_en / desc_sv
+    if (key.endsWith("_en")) {
+      const svKey = key.replace("_en", "_sv");
+      if (obj.hasOwnProperty(svKey)) {
+        const base = key.replace("_en", "");
+        pairs.push({ keyBase: base, enKey: key, svKey });
+      }
+    }
+  });
+
+  return pairs;
+};
+
+
+// export const applyLanguageOverwrite = (data, lang = "en") => {
+//     if (!data) return data;
+
+//     const pairs = [
+//         { target: "name", en: "name", sv: "swedish" },
+//         { target: "description_en", en: "description_en", sv: "description_sv" },
+//         { target: "concern_en", en: "concern_en", sv: "concern_sv" }
+//     ];
+
+//     const processObject = (obj) => {
+//         let newObj = { ...obj };
+
+//         // overwrite target fields based on language
+//         pairs.forEach(pair => {
+//             if (lang === "sv" && obj[pair.sv] !== undefined) {
+//                 newObj[pair.target] = obj[pair.sv];
+//             } else if (lang === "en" && obj[pair.en] !== undefined) {
+//                 newObj[pair.target] = obj[pair.en];
+//             }
+//         });
+
+//         // recursively apply for nested arrays & objects
+//         Object.keys(newObj).forEach(key => {
+//             const val = newObj[key];
+
+//             if (Array.isArray(val)) {
+//                 newObj[key] = val.map(item =>
+//                     typeof item === "object" && item !== null
+//                         ? processObject(item)
+//                         : item
+//                 );
+//             } else if (typeof val === "object" && val !== null) {
+//                 newObj[key] = processObject(val);
+//             }
+//         });
+
+//         return newObj;
+//     };
+
+//     return Array.isArray(data)
+//         ? data.map(item => processObject(item))
+//         : processObject(data);
+// };
