@@ -1272,7 +1272,7 @@ export const updateDoctorAdminController = asyncHandler(async (req, res) => {
     const body = req.body;
 
     try {
-        // 🧩 Validate top-level payload (flattened structure)
+        // 🧩 Validate request
         const schema = Joi.object({
             zynq_user_id: Joi.string().required(),
 
@@ -1283,11 +1283,10 @@ export const updateDoctorAdminController = asyncHandler(async (req, res) => {
             address: Joi.string().max(255).required(),
             gender: Joi.string().max(255).required(),
             biography: Joi.string().optional().allow(''),
-            // fee_per_session: Joi.number().positive().required(),
 
-            // Education & Experience
-            // education: Joi.string().optional(), // JSON
-            // experience: Joi.string().optional(), // JSON
+            // New fields
+            latitude: Joi.number().optional().allow(null),
+            longitude: Joi.number().optional().allow(null),
         });
 
         const { error, value } = schema.validate(body);
@@ -1295,42 +1294,28 @@ export const updateDoctorAdminController = asyncHandler(async (req, res) => {
 
         const { zynq_user_id } = value;
 
-        // 🧠 Fetch doctor
+        // Fetch doctor
         const [doctorData] = await doctorModels.get_doctor_by_zynquser_id(zynq_user_id);
         if (!doctorData) return handleError(res, 404, language, "DOCTOR_NOT_FOUND");
 
-        const doctor_id = doctorData.doctor_id;
+        // Prepare profile image
+        let filename = doctorData.profile_image;
+        if (req.file) filename = req.file.filename;
 
-        // =====================================================
-        // 1️⃣ PERSONAL INFORMATION UPDATE
-        // =====================================================
-        if (
-            value.name ||
-            value.phone ||
-            value.age ||
-            value.address ||
-            value.gender ||
-            value.biography
-        ) {
-            let filename = doctorData.profile_image;
-            if (req.file) filename = req.file.filename;
+        // Update
+        await doctorModels.updateDoctorAdmindetails(
+            zynq_user_id,
+            value.name,
+            value.phone,
+            value.age,
+            value.address,
+            value.gender,
+            filename,
+            value.biography,
+            value.latitude ?? null,
+            value.longitude ?? null
+        );
 
-            await doctorModels.updateDoctorAdmindetails(
-                zynq_user_id,
-                value.name,
-                value.phone,
-                value.age,
-                value.address,
-                value.gender,
-                filename,
-                value.biography,
-            );
-
-            // await generateDoctorsEmbeddingsV2(zynq_user_id);
-        }
-
-
-        // ✅ Final success response
         return handleSuccess(res, 200, language, "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY", {});
     } catch (error) {
         console.error("updateDoctorProfile error:", error);
