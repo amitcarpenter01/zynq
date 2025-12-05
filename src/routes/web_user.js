@@ -6,6 +6,7 @@ import { authenticate } from '../middleware/web_user_auth.js';;
 import { authenticateUser } from '../middleware/auth.js'; import { deleteNotifications, deleteSingleNotification, getNotifications } from '../controllers/api/notificationController.js';
 import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
 import { validate } from '../middleware/validation.middleware.js';
+import { add_clinic_managment } from '../controllers/admin/clinicController.js';
 ;
 // router.get("/get_profile", authenticate(['CLINIC','DOCTOR']), webControllers.getProfile);
 
@@ -45,6 +46,11 @@ router.delete('/notifications', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']
 
 //=======================================Language=============================
 router.patch('/toggle-language', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), webControllers.toggleLanguage);
+
+
+
+router.post('/add-clinic-managment',add_clinic_managment);
+
 
 
 export default router;  
