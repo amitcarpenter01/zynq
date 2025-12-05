@@ -8,7 +8,7 @@ import { getIO, getUserSockets } from '../../utils/socketManager.js';
 import dbOperations from '../../models/common.js';
 import { get_product_images_by_product_ids } from "../../models/api.js";
 import { getDoctorBookedAppointmentsModel } from "../../models/appointment.js";
-import { extractUserData } from "../../utils/misc.util.js";
+import { applyLanguageOverwrite, extractUserData } from "../../utils/misc.util.js";
 import { generateDoctorsEmbeddingsV2 } from "../api/embeddingsController.js";
 import { addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingTreatmentModel, deleteExistingConcernsModel, deleteExistingSubTreatmentsModel, updateTreatmentModel } from "../../models/admin.js";
 dotenv.config();
@@ -245,7 +245,7 @@ export const addConsultationFeeAndAvailability = async (req, res) => {
 
 export const getDoctorProfile = async (req, res) => {
     try {
-        const language = 'en';
+        const language = req?.user?.language || "en";
         const doctorId = req.user.doctorData.doctor_id;
 
         const profileData = await doctorModels.get_doctor_profile(doctorId);
@@ -300,7 +300,7 @@ export const getDoctorProfile = async (req, res) => {
             });
         }
 
-        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, completionPercentage });
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", applyLanguageOverwrite({ ...profileData, completionPercentage }, language));
     } catch (error) {
         console.error(error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
