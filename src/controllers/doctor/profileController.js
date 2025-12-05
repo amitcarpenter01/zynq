@@ -248,7 +248,7 @@ export const getDoctorProfile = async (req, res) => {
         const language = req?.user?.language || "en";
         const doctorId = req.user.doctorData.doctor_id;
 
-        const profileData = await doctorModels.get_doctor_profile(doctorId);
+        const profileData = await doctorModels.get_doctor_profile(doctorId, language);
 
         let completionPercentage = 0;
         let filledFieldsCount = 0;
