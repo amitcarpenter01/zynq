@@ -73,10 +73,10 @@ export const get_doctors_management = async (req, res) => {
 
         const fullDoctorData = await Promise.all(
             doctors.map(async (doctor) => {
-                doctor.profile_image = doctor.profile_image == null
-                    ? null
-                    : process.env.APP_URL + 'doctor/profile_images/' + doctor.profile_image;
-
+                doctor.profile_image = doctor.profile_image == null || doctor.profile_image == ''
+                ? null
+                : process.env.APP_URL + 'doctor/profile_images/' + doctor.profile_image;
+                
                 const experince = await adminModels.get_doctor_experience(doctor.doctor_id);
                 const education = await adminModels.get_doctor_education(doctor.doctor_id);
                 const treatments = await adminModels.get_doctor_treatments(doctor.doctor_id);
