@@ -195,7 +195,8 @@ export const updateAppointmentStatus = async (req, res) => {
                             toUser: appointment.doctor_id,
                             user_id  : appointment.user_id,
                             clinic_id  : appointment.clinic_id,
-                            report_id  : appointment.report_id
+                            report_id  : appointment.report_id,
+                            doctor_id  : appointment.doctor_id
                         });
                         console.log(`Socket event sent to user ${receiver_id} for appointment ${appointment_id}`);
                     } else {
