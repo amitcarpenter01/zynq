@@ -658,3 +658,46 @@ function shouldSkipTranslation(text) {
 }
 
 
+export const applyLanguageOverwrite = (data, lang = "en") => {
+    if (!data) return data;
+
+    const pairs = [
+        { target: "name", en: "name", sv: "swedish" },
+        { target: "description_en", en: "description_en", sv: "description_sv" },
+        { target: "concern_en", en: "concern_en", sv: "concern_sv" }
+    ];
+
+    const processObject = (obj) => {
+        let newObj = { ...obj };
+
+        // overwrite target fields based on language
+        pairs.forEach(pair => {
+            if (lang === "sv" && obj[pair.sv] !== undefined) {
+                newObj[pair.target] = obj[pair.sv];
+            } else if (lang === "en" && obj[pair.en] !== undefined) {
+                newObj[pair.target] = obj[pair.en];
+            }
+        });
+
+        // recursively apply for nested arrays & objects
+        Object.keys(newObj).forEach(key => {
+            const val = newObj[key];
+
+            if (Array.isArray(val)) {
+                newObj[key] = val.map(item =>
+                    typeof item === "object" && item !== null
+                        ? processObject(item)
+                        : item
+                );
+            } else if (typeof val === "object" && val !== null) {
+                newObj[key] = processObject(val);
+            }
+        });
+
+        return newObj;
+    };
+
+    return Array.isArray(data)
+        ? data.map(item => processObject(item))
+        : processObject(data);
+};

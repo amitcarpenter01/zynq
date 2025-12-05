@@ -21,6 +21,7 @@ import {
 } from "../../utils/responseHandler.js";
 import axios from "axios";
 import { generateClinicsEmbeddingsV2 } from "../api/embeddingsController.js";
+import { applyLanguageOverwrite } from "../../utils/misc.util.js";
 
 dotenv.config();
 
@@ -743,7 +744,7 @@ export const updateClinic = async (req, res) => {
 
 export const getAllTreatments = async (req, res) => {
   try {
-    const language = "en";
+    let {language = "en"} = req.query;
     const treatments = await clinicModels.getAllTreatments();
     if (!treatments.length) {
       return handleError(res, 404, language, "NO_TREATMENTS_FOUND");
@@ -753,7 +754,7 @@ export const getAllTreatments = async (req, res) => {
       200,
       language,
       "TREATMENTS_FETCHED_SUCCESSFULLY",
-      treatments
+      applyLanguageOverwrite(treatments, language)
     );
   } catch (error) {
     console.error("Error in getAllTreatments:", error);
