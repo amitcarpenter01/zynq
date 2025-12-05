@@ -636,7 +636,7 @@ export const getAllTreatmentById = asyncHandler(async (req, res) => {
         })
     );
 
-    return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", treatments[0]);
+    return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", applyLanguageOverwrite(treatments[0], language));
 });
 
 export const addEditConcern = asyncHandler(async (req, res) => {
