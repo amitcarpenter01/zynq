@@ -14,7 +14,7 @@ const { RRule } = pkg;
 const APP_URL = process.env.APP_URL;
 import { v4 as uuidv4 } from "uuid";
 import { isEmpty } from '../../utils/user_helper.js';
-import { getTreatmentsByAppointmentId, getTreatmentsByTreatmentIds } from '../../models/api.js';
+import { getTreatmentsByAppointmentId, getTreatmentsByTreatmentDoctorId, getTreatmentsByTreatmentIds } from '../../models/api.js';
 
 export const getMyAppointmentsDoctor = async (req, res) => {
     try {
@@ -354,14 +354,27 @@ export const addAppointmentDraft = asyncHandler(async (req, res) => {
 
 });
 
+// export const getRecommendedTreatmentsForUser = asyncHandler(async (req, res) => {
+//     const language = req?.user?.language || 'en';
+//     const user_id = req?.params?.user_id;
+
+//     if (isEmpty(user_id)) return handleError(res, 404, language, "USER_NOT_FOUND");
+
+//     const treatmentIDs = await getTreatmentIDsByUserID(user_id)
+//     const recommendedTreatments = await getTreatmentsByTreatmentIds(treatmentIDs, language)
+
+//     return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", recommendedTreatments);
+// })
+
 export const getRecommendedTreatmentsForUser = asyncHandler(async (req, res) => {
     const language = req?.user?.language || 'en';
-    const user_id = req?.params?.user_id;
+    const doctor_id = req?.params?.user_id;
 
-    if (isEmpty(user_id)) return handleError(res, 404, language, "USER_NOT_FOUND");
+    if (isEmpty(doctor_id)) return handleError(res, 404, language, "DOCTOR_NOT_FOUND");
 
-    const treatmentIDs = await getTreatmentIDsByUserID(user_id)
-    const recommendedTreatments = await getTreatmentsByTreatmentIds(treatmentIDs, language)
+    // const treatmentIDs = await getTreatmentIDsByUserID(user_id)
+    // const recommendedTreatments = await getTreatmentsByTreatmentIds(treatmentIDs, language)
+    const recommendedTreatments = await getTreatmentsByTreatmentDoctorId(doctor_id, language); //await getTreatmentsByTreatmentIds(treatmentIDs, language)
 
     return handleSuccess(res, 200, language, "TREATMENTS_FETCHED", recommendedTreatments);
 })

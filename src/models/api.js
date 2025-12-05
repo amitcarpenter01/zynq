@@ -2169,6 +2169,92 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang, doct
     }
 };
 
+export const getTreatmentsByTreatmentDoctorId = async (doctor_id, lang) => {
+    try {
+        const query = `
+            SELECT 
+                dt.doctor_id,
+                dt.treatment_id,
+                dt.price,
+                dt.sub_treatment_id,
+                dt.sub_treatment_price,
+
+                t.name,
+                t.swedish,
+                t.classification_type,
+                t.description_en,
+                t.description_sv,
+                t.benefits_en,
+                t.benefits_sv,
+                t.is_device,
+                t.is_admin_created,
+
+                st.name AS sub_treatment_name_en,
+                st.swedish AS sub_treatment_name_sv
+
+            FROM tbl_doctor_treatments dt
+            LEFT JOIN tbl_treatments t 
+                ON dt.treatment_id = t.treatment_id
+            LEFT JOIN tbl_sub_treatment_master st
+                ON dt.sub_treatment_id = st.sub_treatment_id
+
+            WHERE 
+                dt.doctor_id = ?
+                AND t.is_deleted = 0
+                AND t.approval_status = 'APPROVED'
+
+            ORDER BY t.name, st.name
+        `;
+
+        // SAFE QUERY
+        let results = await db.query(query, [doctor_id]);
+
+        // TRANSLATE FIELDS
+        results = results.map(row => ({
+            ...row,
+            treatment_name: lang === 'sv' ? row.swedish : row.name,
+            sub_treatment_name: lang === 'sv' ? row.sub_treatment_name_sv : row.sub_treatment_name_en
+        }));
+
+        // GROUP DATA: treatment → sub_treatments
+        const grouped = {};
+
+        for (const row of results) {
+            if (!grouped[row.treatment_id]) {
+                grouped[row.treatment_id] = {
+                    treatment_id: row.treatment_id,
+                    name: row.treatment_name,
+                    price: row.price,
+                    classification_type: row.classification_type,
+                    description_en: row.description_en,
+                    description_sv: row.description_sv,
+                    benefits_en: row.benefits_en,
+                    benefits_sv: row.benefits_sv,
+                    is_device: row.is_device,
+                    is_admin_created: row.is_admin_created,
+                    sub_treatments: []
+                };
+            }
+
+            // Add sub treatment
+            if (row.sub_treatment_id) {
+                grouped[row.treatment_id].sub_treatments.push({
+                    sub_treatment_id: row.sub_treatment_id,
+                    name: row.sub_treatment_name,
+                    price: row.sub_treatment_price
+                });
+            }
+        }
+
+        // Convert to array
+        return Object.values(grouped);
+
+    } catch (error) {
+        console.error("DB Error:", error.message);
+        throw new Error("Failed to fetch doctor treatments.");
+    }
+};
+
 export const getTreatmentIdsByConcernIds = async (concern_ids = []) => {
     try {
         if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
@@ -2520,57 +2606,57 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
 
         // 1️⃣ Fetch doctors with embeddings + aggregated fields
         let results = await db.query(`
-      SELECT 
-  d.doctor_id,
-  d.name,
-  TIMESTAMPDIFF(
-      YEAR, 
-      MIN(de.start_date), 
-      MAX(IFNULL(de.end_date, CURDATE()))
-  ) AS experience_years,
-  d.specialization,
-  ANY_VALUE(d.fee_per_session) AS fee_per_session,
-  d.profile_image,
+            SELECT 
+                d.doctor_id,
+                d.name,
+                TIMESTAMPDIFF(
+                    YEAR, 
+                    MIN(de.start_date), 
+                    MAX(IFNULL(de.end_date, CURDATE()))
+                ) AS experience_years,
+                d.specialization,
+                ANY_VALUE(d.fee_per_session) AS fee_per_session,
+                d.profile_image,
 
-  dm.clinic_id,
-  c.clinic_name,
-  c.address AS clinic_address,
+                dm.clinic_id,
+                c.clinic_name,
+                c.address AS clinic_address,
 
-  ROUND(AVG(ar.rating), 2) AS avg_rating,
+                ROUND(AVG(ar.rating), 2) AS avg_rating,
 
-  d.embeddings,
+                d.embeddings,
 
-  -- 🔥 NEW: Comma-separated treatments
-  (
-    SELECT GROUP_CONCAT(t.name ORDER BY t.name SEPARATOR ', ')
-    FROM tbl_doctor_treatments dt
-    JOIN tbl_treatments t ON t.treatment_id = dt.treatment_id
-    WHERE dt.doctor_id = d.doctor_id
-  ) AS treatments
+                -- 🔥 NEW: Comma-separated treatments
+                (
+                    SELECT GROUP_CONCAT(t.name ORDER BY t.name SEPARATOR ', ')
+                    FROM tbl_doctor_treatments dt
+                    JOIN tbl_treatments t ON t.treatment_id = dt.treatment_id
+                    WHERE dt.doctor_id = d.doctor_id
+                ) AS treatments
 
-FROM tbl_doctors d
+                FROM tbl_doctors d
 
-LEFT JOIN tbl_doctor_clinic_map dm 
-       ON d.doctor_id = dm.doctor_id
+                LEFT JOIN tbl_doctor_clinic_map dm 
+                    ON d.doctor_id = dm.doctor_id
 
-LEFT JOIN tbl_clinics c 
-       ON dm.clinic_id = c.clinic_id
+                LEFT JOIN tbl_clinics c 
+                    ON dm.clinic_id = c.clinic_id
 
-LEFT JOIN tbl_appointment_ratings ar 
-       ON d.doctor_id = ar.doctor_id 
-      AND ar.approval_status = 'APPROVED'
+                LEFT JOIN tbl_appointment_ratings ar 
+                    ON d.doctor_id = ar.doctor_id 
+                    AND ar.approval_status = 'APPROVED'
 
-LEFT JOIN tbl_doctor_experiences de 
-       ON d.doctor_id = de.doctor_id
+                LEFT JOIN tbl_doctor_experiences de 
+                    ON d.doctor_id = de.doctor_id
 
-WHERE d.profile_status = 'VERIFIED'
-  AND d.name IS NOT NULL
+                WHERE d.profile_status = 'VERIFIED'
+                AND d.name IS NOT NULL
 
-GROUP BY 
-  d.doctor_id, 
-  dm.clinic_id;
+                GROUP BY 
+                d.doctor_id, 
+                dm.clinic_id;
 
-    `);
+        `);
 
         // 2️⃣ Compute top similar rows using embeddings
         results = await getDoctorsAIResult(results, search, 0.3);
