@@ -105,7 +105,7 @@ export const get_doctor_experience = async (doctorId) => {
     }
 };
 
-export const get_doctor_treatments = async (doctorId) => {
+export const get_doctor_treatments = async (doctorId, language = 'en') => {
     try {
         const rows = await db.query(`
             SELECT 
@@ -142,7 +142,7 @@ export const get_doctor_treatments = async (doctorId) => {
             if (!grouped[row.treatment_id]) {
                 grouped[row.treatment_id] = {
                     treatment_id: row.treatment_id,
-                    treatment_name_en: row.treatment_name_en,
+                    treatment_name_en: language === 'en' ? row.treatment_name_en : row.treatment_name_sv,
                     treatment_name_sv: row.treatment_name_sv,
                     price: row.price,  // total parent price
                     sub_treatments: []
@@ -152,7 +152,7 @@ export const get_doctor_treatments = async (doctorId) => {
             if (row.sub_treatment_id) {
                 grouped[row.treatment_id].sub_treatments.push({
                     sub_treatment_id: row.sub_treatment_id,
-                    sub_treatment_name_en: row.sub_treatment_name_en,
+                    sub_treatment_name_en: language === 'en' ? row.sub_treatment_name_en : row.sub_treatment_name_sv,
                     sub_treatment_name_sv: row.sub_treatment_name_sv,
                     sub_treatment_price: row.sub_treatment_price
                 });
@@ -466,7 +466,7 @@ export const get_all_certification_types = async () => {
     }
 };
 
-export const get_doctor_profile = async (doctorId) => {
+export const get_doctor_profile = async (doctorId, language) => {
     try {
         const [doctor] = await db.query(`
             SELECT d.doctor_id,
@@ -503,7 +503,7 @@ export const get_doctor_profile = async (doctorId) => {
         const [mainUser] = await get_web_user_by_id(doctor.zynq_user_id);
         const education = await get_doctor_education(doctorId);
         const experience = await get_doctor_experience(doctorId);
-        const treatments = await get_doctor_treatments(doctorId);
+        const treatments = await get_doctor_treatments(doctorId, language);
         const skinTypes = await get_doctor_skin_types(doctorId);
         const severityLevels = await get_doctor_severity_levels(doctorId);
         const availability = await get_doctor_availability(doctorId);
