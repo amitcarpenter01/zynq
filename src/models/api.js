@@ -399,6 +399,7 @@ export const getAllRecommendedDoctors = async ({
              ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
       LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
       LEFT JOIN tbl_doctor_treatments dt ON d.doctor_id = dt.doctor_id
+      LEFT JOIN tbl_doctor_skin_types dst ON d.doctor_id = dst.doctor_id
       LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
       LEFT JOIN tbl_doctor_treatments dt2 ON d.doctor_id = dt2.doctor_id
       LEFT JOIN tbl_sub_treatment_master st ON dt2.sub_treatment_id = st.sub_treatment_id
