@@ -2811,13 +2811,10 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
                 // 1️⃣ Basic Fields
                 const basicFields = [
                     "clinic_name",
-                    // "org_number",
                     "email",
                     "mobile_number",
-                    // "address",
-                    // "website_url",
                     "clinic_description",
-                    // "clinic_logo",
+                    "city",
                 ];
 
                 totalFieldsCount += basicFields.length;
@@ -2827,9 +2824,9 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
                 });
 
                 // 2️⃣ Treatments
-                totalFieldsCount += 1;
-                if (clinic.treatments?.length > 0) filledFieldsCount++;
-                else missingFields.push("treatments");
+                // totalFieldsCount += 1;
+                // if (clinic.treatments?.length > 0) filledFieldsCount++;
+                // else missingFields.push("treatments");
 
                 // // 3️⃣ Expertise Categories
                 // const expertiseCategories = {

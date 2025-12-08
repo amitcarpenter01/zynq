@@ -122,7 +122,6 @@ const calculateProfileCompletion = (data) => {
     "mobile_number",
     "clinic_description",
     "city",
-    "state",
   ];
   const percentPerField = 100 / fields.length;
   return fields.reduce(
@@ -147,8 +146,7 @@ const buildClinicData = ({
   hsa_id,
   is_onboarded,
   profile_status,
-  city,
-  state
+  city
 }) => {
   const data = {
     zynq_user_id,
@@ -169,8 +167,7 @@ const buildClinicData = ({
     ivo_registration_number,
     hsa_id,
     is_onboarded,
-    city,
-    state
+    city
   };
 
   if (!isEmpty(profile_status)) {
@@ -375,8 +372,8 @@ export const onboardClinic = async (req, res) => {
       hsa_id: hsa_id === "" ? null : hsa_id || clinic_data.hsa_id,
       is_onboarded:
         is_onboarded === "" ? null : is_onboarded || clinic_data.is_onboarded,
-      city: city || clinic_data.city,
-      state: state || clinic_data.state,
+      city: city === "" ? null : city || clinic_data.city,
+      state: state === "" ? null : state || clinic_data.state,
     };
 
     let profile_status = "ONBOARDING";
