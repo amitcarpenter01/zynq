@@ -42,8 +42,11 @@ export const get_clinic_by_zynq_user_id = async (zynq_user_id) => {
                 tc.ivo_registration_number,
                 tc.hsa_id,
                 tc.is_onboarded,
-                tc.is_unsubscribed 
+                tc.is_unsubscribed,
+                tcl.city,
+                tcl.state
             FROM tbl_clinics tc
+            JOIN tbl_clinic_locations tcl ON tc.clinic_id = tcl.clinic_id
             WHERE zynq_user_id = ?`, [zynq_user_id]
         );
     } catch (error) {
