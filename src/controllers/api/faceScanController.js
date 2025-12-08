@@ -17,6 +17,7 @@ import { saveMessage, uploadMessageFiles } from '../../models/chat.js';
 import { __dirname } from '../../../app.js';
 import { getTreatmentsAIResult } from '../../utils/global_search.js';
 import fs from 'fs';
+import { applyLanguageOverwrite } from '../../utils/misc.util.js';
 
 dotenv.config();
 
@@ -167,6 +168,7 @@ export const get_treatments_by_concerns = async (req, res) => {
     try {
         const { concern_ids, filters } = req?.body;
         const language = req?.user?.language || 'en';
+        console.log("req?.user", req?.user);
         if (filters?.treatment_ids?.length > 0) {
             const treatments = await apiModels.getTreatmentsByIds(filters.treatment_ids, language);
             const newTreatments = await getTreatmentsAIResult(treatments, filters?.search);
@@ -175,9 +177,9 @@ export const get_treatments_by_concerns = async (req, res) => {
                     treatment.treatment_id,
                     language
                 );
-                console.log("sub_treatments",treatment.sub_treatments);
+                // console.log("sub_treatments", treatment.sub_treatments);
             }
-            return handleSuccess(res, 200, 'en', 'TREATMENTS_FETCHED', newTreatments);
+            return handleSuccess(res, 200, 'en', 'TREATMENTS_FETCHED',applyLanguageOverwrite(newTreatments, language));
         } else {
             const treatments = await apiModels.getTreatmentsByConcernIds(concern_ids, language);
             const newTreatments = await getTreatmentsAIResult(treatments, filters?.search);
@@ -186,9 +188,9 @@ export const get_treatments_by_concerns = async (req, res) => {
                     treatment.treatment_id,
                     language
                 );
-                console.log(treatment.sub_treatments);
+                // console.log(treatment.sub_treatments);
             }
-            return handleSuccess(res, 200, 'en', 'TREATMENTS_FETCHED', newTreatments);
+            return handleSuccess(res, 200, 'en', 'TREATMENTS_FETCHED', applyLanguageOverwrite(newTreatments, language));
         }
     } catch (error) {
         console.error('Error fetching concerns:', error);

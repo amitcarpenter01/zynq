@@ -155,7 +155,7 @@ router.delete('/notifications', authenticateUser, deleteNotifications);
 // -------------------------------------Concerns------------------------------------------------//
 
 router.post('/get_treatments_by_concern_id', faceScanControllers.get_treatments_by_concern_id);
-router.post('/get_treatments_by_concerns', validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
+router.post('/get_treatments_by_concerns',authenticateUser, validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
 router.post('/get_treatments', optionalAuthenticateUser, validate(getTreatmentFiltersSchema, "body"), faceScanControllers.get_treatments);
 router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
 router.post('/concerns', faceScanControllers.get_all_concerns);
