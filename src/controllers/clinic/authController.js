@@ -118,11 +118,8 @@ const calculateProfileCompletion = (data) => {
   const fields = [
     "zynq_user_id",
     "clinic_name",
-    // "org_number",
     "email",
     "mobile_number",
-    // "address",
-    // "fee_range",
     "clinic_description",
     "city",
     "state",
