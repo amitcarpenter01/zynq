@@ -3,6 +3,10 @@ import dayjs from 'dayjs';
 import { formatImagePath } from "../utils/user_helper.js";
 import { extractUserData } from "../utils/misc.util.js";
 
+const safeDate = (date) => {
+    return date && dayjs(date).isValid() ? dayjs.utc(date).toISOString() : null;
+};
+
 export const insertAppointment = async (appointmentData) => {
     try {
         return await db.query(`INSERT INTO tbl_appointments SET ?`, appointmentData);
@@ -438,7 +442,8 @@ export const getAppointmentsByRole = async (id, role) => {
     for (const row of rows) {
         const userId = row.user_user_id;
         const faceScanId = row.face_scan_id;
-        const appointmentCreatedAt = dayjs.utc(row.appointment_created_at).toISOString();
+        // const appointmentCreatedAt = dayjs.utc(row.appointment_created_at).toISOString();
+        const appointmentCreatedAt = safeDate(row.appointment_created_at);
 
         if (!groupedByUser[userId]) {
             groupedByUser[userId] = {
@@ -495,7 +500,8 @@ export const getAppointmentsByRole = async (id, role) => {
             type: row.appointment_type,
             report_id: row.report_id,
             created_at: appointmentCreatedAt,
-            updated_at: dayjs.utc(row.appointment_updated_at).toISOString(),
+            // updated_at: dayjs.utc(row.appointment_updated_at).toISOString(),
+            updated_at: safeDate(row.appointment_updated_at),
 
             doctor: {
                 doctor_id: row.doctor_doctor_id,
@@ -678,7 +684,8 @@ export const getAppointmentsByRoleAndSinglePatient = async (id, role, patient_id
     for (const row of rows) {
         const userId = row.user_user_id;
         const faceScanId = row.face_scan_id;
-        const appointmentCreatedAt = dayjs.utc(row.appointment_created_at).toISOString();
+        // const appointmentCreatedAt = dayjs.utc(row.appointment_created_at).toISOString();
+        const appointmentCreatedAt = safeDate(row.appointment_created_at);
 
         if (!groupedByUser[userId]) {
             groupedByUser[userId] = {
@@ -735,7 +742,8 @@ export const getAppointmentsByRoleAndSinglePatient = async (id, role, patient_id
             type: row.appointment_type,
             report_id: row.report_id,
             created_at: appointmentCreatedAt,
-            updated_at: dayjs.utc(row.appointment_updated_at).toISOString(),
+            // updated_at: dayjs.utc(row.appointment_updated_at).toISOString(),
+            updated_at: safeDate(row.appointment_updated_at),
 
             doctor: {
                 doctor_id: row.doctor_doctor_id,

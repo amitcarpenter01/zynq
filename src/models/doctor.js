@@ -127,7 +127,7 @@ export const get_doctor_treatments = async (doctorId, language = 'en') => {
                 tbl_treatments tt 
                 ON dt.treatment_id = tt.treatment_id
             LEFT JOIN 
-                tbl_sub_treatments st
+                tbl_sub_treatment_master st
                 ON dt.sub_treatment_id = st.sub_treatment_id
 
             WHERE 

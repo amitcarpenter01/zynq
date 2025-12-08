@@ -488,33 +488,67 @@ export const getCartMetadataAndStatusByCartId = async (cart_id) => {
     throw new Error("Failed to get user carts.");
   }
 }
-export const createPaymentSessionForAppointment = async ({ payment_gateway, metadata }) => {
+// export const createPaymentSessionForAppointment_081225 = async ({ payment_gateway, metadata }) => {
+//   try {
+//     switch (payment_gateway) {
+//       case "KLARNA": {
+//         const line_items = metadata.order_lines.map((line) => ({
+//           price_data: {
+//             currency: metadata.currency || "sek",
+//             product_data: { name: line.name },
+//             unit_amount: line.unit_amount,
+//           },
+//           quantity: line.quantity,
+//         }));
+
+//         return await stripe.checkout.sessions.create({
+//           payment_method_types: ["klarna"],
+//           mode: "payment",
+//           line_items,
+//           success_url: `https://getzynq.io/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
+//           cancel_url: `https://getzynq.io/payment-cancel/?&redirect_url=${metadata.cancel_url}`,
+//           metadata: {
+//           },
+//         });
+//       }
+
+//       default:
+//         throw new Error(`Unsupported payment gateway: ${payment_gateway}`);
+//     }
+//   } catch (error) {
+//     console.error("Failed to create payment session:", error);
+//     throw error;
+//   }
+// };
+
+export const createPaymentSessionForAppointment = async ({ metadata }) => {
   try {
-    switch (payment_gateway) {
-      case "KLARNA": {
-        const line_items = metadata.order_lines.map((line) => ({
-          price_data: {
-            currency: metadata.currency || "sek",
-            product_data: { name: line.name },
-            unit_amount: line.unit_amount,
-          },
-          quantity: line.quantity,
-        }));
 
-        return await stripe.checkout.sessions.create({
-          payment_method_types: ["klarna"],
-          mode: "payment",
-          line_items,
-          success_url: `https://getzynq.io/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
-          cancel_url: `https://getzynq.io/payment-cancel/?&redirect_url=${metadata.cancel_url}`,
-          metadata: {
-          },
-        });
-      }
+    const line_items = metadata.order_lines.map((line) => ({
+      price_data: {
+        currency: metadata.currency || "sek",
+        product_data: { name: line.name },
+        unit_amount: line.unit_amount,
+      },
+      quantity: line.quantity,
+    }));
 
-      default:
-        throw new Error(`Unsupported payment gateway: ${payment_gateway}`);
-    }
+    return await stripe.checkout.sessions.create({
+      mode: "payment",
+
+      // SHOW ALL PAYMENT METHODS AUTOMATICALLY
+      payment_method_types: [
+        "card",
+        "klarna",
+        "paypal"
+      ],
+
+      line_items,
+      success_url: `https://getzynq.io/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
+      cancel_url: `https://getzynq.io/payment-cancel/?redirect_url=${metadata.cancel_url}`,
+      metadata: {},
+    });
+
   } catch (error) {
     console.error("Failed to create payment session:", error);
     throw error;
