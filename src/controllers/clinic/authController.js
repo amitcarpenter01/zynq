@@ -198,7 +198,7 @@ export const onboardClinic = async (req, res) => {
       latitude: Joi.number().optional().allow("", null),
       longitude: Joi.number().optional().allow("", null),
       website_url: Joi.string().optional().allow("", null),
-      fee_range: Joi.string().optional().allow("", null),
+      fee_range: Joi.string().optional().allow("", null), 
       treatments: Joi.array().items(Joi.string()).optional().allow("", null),
       clinic_timing: Joi.object({
         monday: daySchema.optional().allow("", null),
