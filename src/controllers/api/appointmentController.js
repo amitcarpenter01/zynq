@@ -298,9 +298,8 @@ export const getAppointmentsById = async (req, res) => {
         }
 
         const now = dayjs.utc();
-
         // ----------------- Prepare draft appointments -----------------
-        const rawDrafts = await appointmentModel.getDraftAppointmentsByDoctorId(appointments.doctor_id, "draft", "unpaid");
+        const rawDrafts = await appointmentModel.getDraftAppointmentsByDoctorId(appointments[0].doctor_id, "draft", "unpaid");
 
         let draftTreatments = [];
         for (const draft of rawDrafts) {
