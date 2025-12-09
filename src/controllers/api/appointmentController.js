@@ -1330,6 +1330,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         } = value;
 
         const user_id = req.user.user_id;
+        const language = req?.user?.language || "en";
         const save_type = "booked";
         const appointment_id = inputId || uuidv4();
 
@@ -1374,7 +1375,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             [existingData] = await appointmentModel.getAppointmentDetailsByAppointmentID(appointment_id);
 
             if (!existingData) {
-                return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
+                return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
             }
 
             const { discount_type = "NO_DISCOUNT", discount_value = 0 } = existingData;
@@ -1457,7 +1458,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
                 },
             });
 
-            return handleSuccess(res, 200, "en", "SESSION_CREATED_SUCCESSFULLY", session);
+            return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY", session);
         }
 
         // ---------------- FREE APPOINTMENT FLOW ----------------
@@ -1499,10 +1500,10 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 
     } catch (err) {
         if (err.code === "ER_DUP_ENTRY") {
-            return handleError(res, 400, "en", "SLOT_ALREADY_BOOKED");
+            return handleError(res, 400, language, "SLOT_ALREADY_BOOKED");
         }
         console.error("Error in bookDirectAppointment:", err);
-        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+        return handleError(res, 500, language, "INTERNAL_SERVER_ERROR");
     }
 });
 
