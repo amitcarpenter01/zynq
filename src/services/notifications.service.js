@@ -480,7 +480,7 @@ const enrichNotifications = (notifications, senderDetails) => {
     }));
 };
 
-export const getUserNotifications = async (userData) => {
+export const getUserNotifications = async (userData,language) => {
     try {
         const { user_id: receiver_id } = extractUserData(userData);
 
@@ -497,7 +497,13 @@ export const getUserNotifications = async (userData) => {
         const senderDetails = await fetchSenderDetailsByType(senderMap);
         const enrichedNotifications = enrichNotifications(notifications, senderDetails);
 
-        return enrichedNotifications;
+        const notificationsWithLanguage = enrichedNotifications.map(n => ({
+            ...n,
+            title: language === 'sv' ? n.title_sv : n.title,
+            body: language === 'sv' ? n.body_sv : n.body
+        }))
+
+        return notificationsWithLanguage;
 
     } catch (error) {
         console.error('Error in getUserNotifications:', error);

@@ -4,7 +4,7 @@ import { isEmpty } from "../../utils/user_helper.js";
 
 export const getNotifications = asyncHandler(async (req, res) => {
     const { language = "en" } = req.user;
-    const notificationsData = await getUserNotifications(req.user);
+    const notificationsData = await getUserNotifications(req.user,language);
     return handleSuccess(res, 200, language, "NOTIFICATIONS_FETCHED_SUCCESSFULLY", notificationsData);
 });
 
