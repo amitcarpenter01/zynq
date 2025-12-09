@@ -117,7 +117,7 @@ export const addContactInformation = async (req, res) => {
         const schema = Joi.object({
             street_address: Joi.string().required(),
             city: Joi.string().required(),
-            state: Joi.string().required(),
+            state: Joi.string().optional().allow('',null),
             zip_code: Joi.string().required(),
             latitude: Joi.number().required(),
             longitude: Joi.number().required(),
@@ -725,7 +725,7 @@ export const getDoctorProfileByStatus = async (req, res) => {
         // Personal Details
         if (status == 1) {
             [profileData] = await dbOperations.getData('tbl_doctors', `WHERE zynq_user_id = '${zynqUserId}' `);
-            var [clinic] = await dbOperations.getSelectedColumn('clinic_logo, clinic_name , clinic_id ,mobile_number,address,clinic_description,ivo_registration_number,hsa_id,address', 'tbl_clinics', `WHERE zynq_user_id = '${zynqUserId}' `);
+            var [clinic] = await dbOperations.getSelectedColumn('clinic_logo, clinic_name , clinic_id ,mobile_number,address,clinic_description,org_number,address', 'tbl_clinics', `WHERE zynq_user_id = '${zynqUserId}' `);
             if (!clinic) {
                 return handleError(res, 404, "en", "CLINIC_NOT_FOUND");
             }
@@ -741,6 +741,9 @@ export const getDoctorProfileByStatus = async (req, res) => {
             if (clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")) {
                 clinic.clinic_logo = `${APP_URL}clinic/logo/${clinic.clinic_logo}`;
             }
+
+            const [clinicLocation] = await clinicModels.getClinicLocation(clinicId);
+            clinic.location = clinicLocation;
 
             const images = await clinicModels.getClinicImages(clinicId);
             clinic.images = images
