@@ -1279,9 +1279,9 @@ export const updateDoctorAdminController = asyncHandler(async (req, res) => {
             // Personal Info
             name: Joi.string().max(255).required(),
             phone: Joi.string().max(255).required(),
-            age: Joi.string().max(255).required(),
+            age: Joi.string().optional().allow('', null),
             address: Joi.string().max(255).required(),
-            gender: Joi.string().max(255).required(),
+            gender: Joi.string().optional().allow('', null),
             biography: Joi.string().optional().allow(''),
 
             // New fields
