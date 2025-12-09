@@ -747,46 +747,20 @@ const findLanguagePairs = (obj) => {
 };
 
 
-// export const applyLanguageOverwrite = (data, lang = "en") => {
-//     if (!data) return data;
+const translateUrl = `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_TRANSLATE_KEY}`;
 
-//     const pairs = [
-//         { target: "name", en: "name", sv: "swedish" },
-//         { target: "description_en", en: "description_en", sv: "description_sv" },
-//         { target: "concern_en", en: "concern_en", sv: "concern_sv" }
-//     ];
+export const translateText = async (text, target = 'sv') => {
+    if (!text) return text;
 
-//     const processObject = (obj) => {
-//         let newObj = { ...obj };
+    const response = await fetch(translateUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            q: text,
+            target: target,
+        }),
+    });
 
-//         // overwrite target fields based on language
-//         pairs.forEach(pair => {
-//             if (lang === "sv" && obj[pair.sv] !== undefined) {
-//                 newObj[pair.target] = obj[pair.sv];
-//             } else if (lang === "en" && obj[pair.en] !== undefined) {
-//                 newObj[pair.target] = obj[pair.en];
-//             }
-//         });
-
-//         // recursively apply for nested arrays & objects
-//         Object.keys(newObj).forEach(key => {
-//             const val = newObj[key];
-
-//             if (Array.isArray(val)) {
-//                 newObj[key] = val.map(item =>
-//                     typeof item === "object" && item !== null
-//                         ? processObject(item)
-//                         : item
-//                 );
-//             } else if (typeof val === "object" && val !== null) {
-//                 newObj[key] = processObject(val);
-//             }
-//         });
-
-//         return newObj;
-//     };
-
-//     return Array.isArray(data)
-//         ? data.map(item => processObject(item))
-//         : processObject(data);
-// };
+    const data = await response.json();
+    return data?.data?.translations?.[0]?.translatedText || text;
+};

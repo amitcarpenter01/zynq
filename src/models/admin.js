@@ -3230,3 +3230,27 @@ export const updateConcernApprovalStatusModel = async (concern_id, approval_stat
         throw error;
     }
 };
+
+export const getZynqUserLanguageModel = async (zynq_user_id) => {
+    try {
+        return await db.query(
+            `SELECT language FROM tbl_zqnq_users WHERE id = ?`,
+            [zynq_user_id]
+        );
+    } catch (error) {
+        console.error("getZynqUserLanguage error:", error);
+        throw error;
+    }
+};
+
+export const getUserLanguageModel = async (user_id) => {
+    try {
+        return await db.query(
+            `SELECT language FROM tbl_users WHERE user_id = ?`,
+            [user_id]
+        );
+    } catch (error) {
+        console.error("getUserLanguageModel error:", error);
+        throw error;
+    }
+}
