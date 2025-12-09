@@ -1201,6 +1201,7 @@ export const getDoctorTreatments = async (doctor_id) => {
         const cleanedTreatments = treatments.map(row => {
             const treatmentRow = { ...row };
             if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+            if ('name_embeddings' in treatmentRow) delete treatmentRow.name_embeddings;
             return treatmentRow;
         });
 
@@ -1647,13 +1648,15 @@ export const getAllsurgery = async () => {
 
 export const getAllDevices = async (ids) => {
     try {
-        if (!ids.length) {
+        if (!ids || !ids.length) {
             return await db.query('SELECT * FROM tbl_treatment_devices');
-        };
+        }
 
         const sql = `SELECT * FROM tbl_treatment_devices WHERE treatment_id IN (?)`;
 
-        const devices = await db.query(sql, ids);
+        // MySQL expects an array inside array → [[]]
+        const devices = await db.query(sql, [ids]);
+        
         return devices;
     } catch (error) {
         console.error("Database Error:", error.message);

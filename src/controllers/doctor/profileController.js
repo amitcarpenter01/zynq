@@ -28,9 +28,9 @@ export const addPersonalInformation = async (req, res) => {
         const schema = Joi.object({
             name: Joi.string().max(255).required(),
             phone: Joi.string().max(255).required(),
-            age: Joi.string().max(255).required(),
+            age: Joi.string().optional().allow('', null),
             address: Joi.string().max(255).required(),
-            gender: Joi.string().max(255).required(),
+            gender: Joi.string().optional().allow('', null),
             biography: Joi.string().optional().allow('')
         });
 
@@ -166,7 +166,7 @@ export const addExpertise = async (req, res) => {
             ).min(1).required(),
 
             skin_type_ids: Joi.string().allow("", null).optional(),
-            skin_condition_ids: Joi.string().allow("", null).optional(),
+            // skin_condition_ids: Joi.string().allow("", null).optional(),
             surgery_ids: Joi.string().allow("", null).optional(),
 
             // UPDATED: device ids instead of aesthetic devices
@@ -182,14 +182,14 @@ export const addExpertise = async (req, res) => {
 
         // Convert CSV strings into arrays
         const skinTypeIds = value.skin_type_ids.split(',').map(id => id.trim());
-        const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
+        // const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
         const surgeryIds = value.surgery_ids.split(',').map(id => id.trim());
         const deviceIds = value.device_ids.split(',').map(id => id.trim());
 
         // Save expertise
         await doctorModels.update_doctor_treatments(doctorId, value.treatments);
         await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
-        await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
+        // await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
         await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
 
         // NEW: Save treatment → user → device mapping
@@ -758,7 +758,7 @@ export const calculateProfileCompletionPercentageByDoctorId = async (doctorId) =
         const missingSummary = {}; // Store missing fields by category
 
         // ---------- PERSONAL DETAILS ----------
-        const personalFields = ['name', 'phone', 'age', 'address', 'gender'];
+        const personalFields = ['name', 'phone', 'address'];
         totalFieldsCount += personalFields.length;
 
         const missingPersonal = personalFields.filter(field => !profileData[field]);
@@ -766,16 +766,16 @@ export const calculateProfileCompletionPercentageByDoctorId = async (doctorId) =
         missingSummary.personal = missingPersonal;
 
         // ---------- EDUCATION ----------
-        totalFieldsCount += 1;
-        const hasEducation = profileData.education && profileData.education.length > 0;
-        if (hasEducation) filledFieldsCount++;
-        else missingSummary.education = ["education"];
+        // totalFieldsCount += 1;
+        // const hasEducation = profileData.education && profileData.education.length > 0;
+        // if (hasEducation) filledFieldsCount++;
+        // else missingSummary.education = ["education"];
 
         // ---------- EXPERIENCE ----------
-        totalFieldsCount += 1;
-        const hasExperience = profileData.experience && profileData.experience.length > 0;
-        if (hasExperience) filledFieldsCount++;
-        else missingSummary.experience = ["experience"];
+        // totalFieldsCount += 1;
+        // const hasExperience = profileData.experience && profileData.experience.length > 0;
+        // if (hasExperience) filledFieldsCount++;
+        // else missingSummary.experience = ["experience"];
 
         // ---------- EXPERTISE ----------
         const expertiseCategories = [

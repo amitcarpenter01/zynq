@@ -82,9 +82,9 @@ export const get_doctors_management = async (req, res) => {
                 const treatments = await adminModels.get_doctor_treatments(doctor.doctor_id);
                 const skinTypes = await adminModels.get_doctor_skin_types(doctor.doctor_id);
                 const severityLevels = await adminModels.get_doctor_severity_levels(doctor.doctor_id);
-                const skinConditions = await adminModels.get_doctor_skin_conditions(doctor.doctor_id);
+                // const skinConditions = await adminModels.get_doctor_skin_conditions(doctor.doctor_id);
                 const surgeries = await adminModels.get_doctor_surgeries(doctor.doctor_id);
-                const aestheticDevices = await adminModels.get_doctor_aesthetic_devices(doctor.doctor_id);
+                // const aestheticDevices = await adminModels.get_doctor_aesthetic_devices(doctor.doctor_id);
                 const completionPercantage = await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id)
 
                 return {
@@ -95,9 +95,9 @@ export const get_doctors_management = async (req, res) => {
                     treatments,
                     skinTypes,
                     severityLevels,
-                    skinConditions,
+                    // skinConditions,
                     surgeries,
-                    aestheticDevices
+                    // aestheticDevices
                 };
             })
         );
