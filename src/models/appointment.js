@@ -76,6 +76,26 @@ export const getAppointmentsByUserIdV2 = async (user_id, status, payment_status)
     });
 };
 
+export const getDraftAppointmentsByDoctorId = async (doctor_id, status, payment_status) => {
+    const results = await db.query(` 
+        SELECT 
+        a.*,d.*,zu.email,r.pdf,c.clinic_name 
+        FROM tbl_appointments a 
+        LEFT JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id 
+        LEFT JOIN tbl_face_scan_results r ON r.face_scan_result_id  = a.report_id 
+        LEFT JOIN tbl_clinics c ON c.clinic_id  = a.clinic_id
+        WHERE a.doctor_id = ? AND save_type  = ? AND payment_status = ?
+        ORDER BY  start_time ASC 
+    `, [doctor_id, status, payment_status]);
+    return results.map(row => {
+        if ('embeddings' in row) {
+            delete row.embeddings;
+        }
+        return row;
+    });
+};
+
 export const getBookedAppointmentsByUserId = async (user_id, status) => {
     const results = await db.query(` 
         SELECT a.*,d.*,zu.email,r.pdf,c.clinic_name FROM tbl_appointments a INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
