@@ -193,10 +193,10 @@ export const updateAppointmentStatus = async (req, res) => {
                             message: "Appointment has been completed by the app user.",
                             fromUser: appointment.user_id,
                             toUser: appointment.doctor_id,
-                            user_id  : appointment.user_id,
-                            clinic_id  : appointment.clinic_id,
-                            report_id  : appointment.report_id,
-                            doctor_id  : appointment.doctor_id
+                            user_id: appointment.user_id,
+                            clinic_id: appointment.clinic_id,
+                            report_id: appointment.report_id,
+                            doctor_id: appointment.doctor_id
                         });
                         console.log(`Socket event sent to user ${receiver_id} for appointment ${appointment_id}`);
                     } else {
@@ -280,6 +280,7 @@ export const getAppointmentsById = async (req, res) => {
         const userId = req.user.user_id;
         const language = req?.user?.language || "en";
 
+        // ----------------- Validate input -----------------
         const schema = Joi.object({
             appointment_id: Joi.string().required(),
         });
@@ -289,90 +290,40 @@ export const getAppointmentsById = async (req, res) => {
 
         const { appointment_id } = value;
 
-        // Get MAIN appointment
-        const appointments = await appointmentModel.getAppointmentsById(
-            userId,
-            appointment_id,
-            language
-        );
+        // ----------------- Fetch appointment -----------------
+        const appointments = await appointmentModel.getAppointmentsById(userId, appointment_id, language);
 
-        // Get DRAFT appointments (SAME as getMyTreatmentPlans)
-        const draftAppointments = await appointmentModel.getAppointmentsByUserIdV2(
-            userId,
-            "draft",
-            "unpaid"
-        );
+        if (!appointments.length) {
+            return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", null);
+        }
 
         const now = dayjs.utc();
 
-        // Format DRAFT appointments the same way as getMyTreatmentPlans
-        const formattedDraftAppointments = await Promise.all(
-            draftAppointments.map(async (app) => {
-                const doctor = await getDocterByDocterId(app.doctor_id);
-                let chatId = await getChatBetweenUsers(userId, doctor[0].zynq_user_id);
-                app.chatId = chatId.length > 0 ? chatId[0].id : null;
+        // ----------------- Prepare draft appointments -----------------
+        const rawDrafts = await appointmentModel.getAppointmentsByUserIdV2(userId, "draft", "unpaid");
 
-                const localFormattedStart = app.start_time
-                    ? dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss")
-                    : null;
+        let draftTreatments = [];
+        for (const draft of rawDrafts) {
+            const treatments = await appointmentModel.getAppointmentTreatments(draft.appointment_id, language);
+            draftTreatments.push(...treatments);
+        }
 
-                const localFormattedEnd = app.end_time
-                    ? dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss")
-                    : null;
-
-                if (app.profile_image && !app.profile_image.startsWith("http")) {
-                    app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
-                }
-
-                if (app.pdf && !app.pdf.startsWith("http")) {
-                    app.pdf = `${APP_URL}${app.pdf}`;
-                }
-
-                const startUTC = localFormattedStart ? dayjs.utc(localFormattedStart) : null;
-                const endUTC = localFormattedEnd ? dayjs.utc(localFormattedEnd) : null;
-
-                const videoCallOn =
-                    app.status !== "Completed" &&
-                    now.isAfter(startUTC) &&
-                    now.isBefore(endUTC);
-
-                const treatments = await appointmentModel.getAppointmentTreatments(
-                    app.appointment_id,
-                    language
-                );
-
-                return {
-                    ...app,
-                    start_time: localFormattedStart
-                        ? dayjs.utc(localFormattedStart).toISOString()
-                        : null,
-                    end_time: localFormattedEnd
-                        ? dayjs.utc(localFormattedEnd).toISOString()
-                        : null,
-                    videoCallOn,
-                    treatments,
-                };
-            })
+        // Remove duplicates if same treatment appears in multiple drafts
+        draftTreatments = draftTreatments.filter(
+            (t, index, self) =>
+                index === self.findIndex((x) => x.treatment_id === t.treatment_id)
         );
 
-        // Format MAIN appointment
+        // ----------------- Map appointment data -----------------
         const result = await Promise.all(
             appointments.map(async (app) => {
                 const doctor = await getDocterByDocterId(app.doctor_id);
-                const chatId = await getChatBetweenUsers(
-                    userId,
-                    doctor[0].zynq_user_id
-                );
+                const chatId = await getChatBetweenUsers(userId, doctor[0].zynq_user_id);
 
                 app.chatId = chatId.length > 0 ? chatId[0].id : null;
 
-                const localFormattedStart = app.start_time
-                    ? dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss")
-                    : null;
-
-                const localFormattedEnd = app.end_time
-                    ? dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss")
-                    : null;
+                const localFormattedStart = app.start_time ? dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss") : null;
+                const localFormattedEnd = app.end_time ? dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss") : null;
 
                 if (app.profile_image && !app.profile_image.startsWith("http")) {
                     app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
@@ -385,35 +336,27 @@ export const getAppointmentsById = async (req, res) => {
                 const startUTC = localFormattedStart ? dayjs.utc(localFormattedStart) : null;
                 const endUTC = localFormattedEnd ? dayjs.utc(localFormattedEnd) : null;
 
-                const videoCallOn =
-                    now.isAfter(startUTC) && now.isBefore(endUTC);
+                const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
 
-                const treatments = await appointmentModel.getAppointmentTreatments(
-                    appointment_id,
-                    language
-                );
+                const treatments = await appointmentModel.getAppointmentTreatments(appointment_id, language);
 
                 return {
                     ...app,
-                    start_time: localFormattedStart
-                        ? dayjs.utc(localFormattedStart).toISOString()
-                        : null,
-                    end_time: localFormattedEnd
-                        ? dayjs.utc(localFormattedEnd).toISOString()
-                        : null,
+                    start_time: localFormattedStart ? dayjs.utc(localFormattedStart).toISOString() : null,
+                    end_time: localFormattedEnd ? dayjs.utc(localFormattedEnd).toISOString() : null,
                     videoCallOn,
                     treatments,
-
-                    // ⬅ ADD SAME STRUCTURE AS getMyTreatmentPlans
-                    draftAppointments: formattedDraftAppointments,
+                    draftAppointments: draftTreatments
                 };
             })
         );
 
+        // ----------------- Send single appointment response -----------------
         return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", result[0]);
+
     } catch (error) {
         console.error("Error fetching appointment by ID:", error);
-        return handleError(res, 500, language, "INTERNAL_SERVER_ERROR");
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
 
