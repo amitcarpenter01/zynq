@@ -2365,6 +2365,71 @@ export const updateProductApprovalStatus = async (product_id, approval_status) =
 //     }
 // };
 
+// export const getAllTreatmentsModel = async () => {
+//     console.log("Admin=>")
+//     try {
+//         const query = `
+//             SELECT 
+//                 t.treatment_id,
+//                 t.name,
+//                 t.swedish,
+//                 t.classification_type,
+//                 t.benefits_en,
+//                 t.benefits_sv,
+//                 t.concern_en,
+//                 t.concern_sv,
+//                 t.description_en,
+//                 t.description_sv,
+//                 t.technology,
+//                 t.type,
+//                 t.source,
+//                 t.application,
+//                 t.is_device,
+//                 t.is_admin_created,
+//                 t.created_by_zynq_user_id,
+//                 t.approval_status,
+//                 t.is_deleted,
+//                 t.created_at,
+//                 t.like_wise_terms,
+
+//                 -- Concerns
+//                 GROUP_CONCAT(DISTINCT c.concern_id ORDER BY c.concern_id SEPARATOR ',') AS concern_ids,
+//                 GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ',') AS concern_name,
+
+//                 -- Devices
+//                 GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ',') AS device_name,
+
+//                 -- Sub-Treatment IDs
+//                 GROUP_CONCAT(DISTINCT ttst.sub_treatment_id ORDER BY ttst.sub_treatment_id SEPARATOR ',') AS sub_treatment_ids
+
+//             FROM 
+//                 tbl_treatments t
+//             LEFT JOIN tbl_treatment_concerns tc 
+//                 ON tc.treatment_id = t.treatment_id
+//             LEFT JOIN tbl_concerns c 
+//                 ON c.concern_id = tc.concern_id
+//             LEFT JOIN tbl_treatment_devices d 
+//                 ON d.treatment_id = t.treatment_id
+//             LEFT JOIN tbl_treatment_sub_treatments ttst 
+//                 ON ttst.treatment_id = t.treatment_id
+//             WHERE 
+//                 t.is_deleted = 0
+
+//             GROUP BY 
+//                 t.treatment_id
+
+//             ORDER BY 
+//                 t.created_at DESC
+//         `;
+
+//         return await db.query(query);
+
+//     } catch (error) {
+//         console.error("getAllTreatmentsModel error:", error);
+//         throw error;
+//     }
+// };
+
 export const getAllTreatmentsModel = async () => {
     try {
         const query = `
@@ -2391,34 +2456,39 @@ export const getAllTreatmentsModel = async () => {
                 t.created_at,
                 t.like_wise_terms,
 
-                -- Concerns
                 GROUP_CONCAT(DISTINCT c.concern_id ORDER BY c.concern_id SEPARATOR ',') AS concern_ids,
                 GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ',') AS concern_name,
-
-                -- Devices
                 GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ',') AS device_name,
 
-                -- Sub-Treatment IDs
-                GROUP_CONCAT(DISTINCT ttst.sub_treatment_id ORDER BY ttst.sub_treatment_id SEPARATOR ',') AS sub_treatment_ids
+                -- 🔥 Merge ADMIN + USER sub-treatments
+                GROUP_CONCAT(
+                    DISTINCT COALESCE(t_user_map.sub_treatment_id, t_admin_map.sub_treatment_id)
+                    ORDER BY COALESCE(t_user_map.sub_treatment_id, t_admin_map.sub_treatment_id)
+                    SEPARATOR ','
+                ) AS sub_treatment_ids
 
-            FROM 
-                tbl_treatments t
+            FROM tbl_treatments t
+
             LEFT JOIN tbl_treatment_concerns tc 
                 ON tc.treatment_id = t.treatment_id
             LEFT JOIN tbl_concerns c 
                 ON c.concern_id = tc.concern_id
             LEFT JOIN tbl_treatment_devices d 
                 ON d.treatment_id = t.treatment_id
-            LEFT JOIN tbl_treatment_sub_treatments ttst 
-                ON ttst.treatment_id = t.treatment_id
+
+            -- USER CREATED SUB-TREATMENTS
+            LEFT JOIN tbl_treatment_sub_treatment_user_maps t_user_map
+                ON t_user_map.treatment_id = t.treatment_id
+
+            -- ADMIN CREATED SUB-TREATMENTS
+            LEFT JOIN tbl_treatment_sub_treatments t_admin_map
+                ON t_admin_map.treatment_id = t.treatment_id
+
             WHERE 
                 t.is_deleted = 0
 
-            GROUP BY 
-                t.treatment_id
-
-            ORDER BY 
-                t.created_at DESC
+            GROUP BY t.treatment_id
+            ORDER BY t.created_at DESC
         `;
 
         return await db.query(query);
@@ -2428,7 +2498,9 @@ export const getAllTreatmentsModel = async () => {
         throw error;
     }
 };
+
 export const getTreatmentsByZynqUserId = async (zynq_user_id) => {
+    console.log("user id =>", zynq_user_id)
     try {
         const query = `
             SELECT 
