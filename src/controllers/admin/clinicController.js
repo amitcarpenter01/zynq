@@ -305,9 +305,9 @@ export const get_clinic_managment = async (req, res) => {
                     treatments: await adminModels.get_clinic_treatments(clinic.clinic_id),
                     skinTypes: await adminModels.get_clinic_skintype(clinic.clinic_id),
                     severityLevels: await adminModels.get_clinic_serveritylevel(clinic.clinic_id),
-                    skinConditionsLevel: await adminModels.get_clinic_skin_conditions(clinic.clinic_id),
+                    // skinConditionsLevel: await adminModels.get_clinic_skin_conditions(clinic.clinic_id),
                     surgeriesLevel: await adminModels.get_clinic_surgeries(clinic.clinic_id),
-                    aestheticDevicesLevel: await adminModels.get_clinic_aesthetic_devices(clinic.clinic_id)
+                    // aestheticDevicesLevel: await adminModels.get_clinic_aesthetic_devices(clinic.clinic_id)
                 };
             })
         );

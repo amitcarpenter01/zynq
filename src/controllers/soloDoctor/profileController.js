@@ -21,8 +21,8 @@ export const addPersonalInformation = async (req, res) => {
 
         const schema = Joi.object({
             name: Joi.string().max(255).required(),
-            age: Joi.string().max(255).required(),
-            gender: Joi.string().max(255).required(),
+            age: Joi.string().optional().allow('', null),
+            gender: Joi.string().optional().allow('', null),
             clinic_name: Joi.string().optional().allow('', null),
             clinic_description: Joi.string().optional().allow('', null),
             language: Joi.string().valid('en', 'sv').optional().allow('', null),
@@ -380,7 +380,7 @@ export const addExpertise = async (req, res) => {
             ).min(1).required(),
 
             skin_type_ids: Joi.string().allow("", null).optional(),
-            skin_condition_ids: Joi.string().allow("", null).optional(),
+            // skin_condition_ids: Joi.string().allow("", null).optional(),
             surgery_ids: Joi.string().allow("", null).optional(),
             device_ids: Joi.string().allow("", null).optional()
         });
@@ -400,14 +400,14 @@ export const addExpertise = async (req, res) => {
                 : [];
 
         const skinTypeIds = parseIDs(value.skin_type_ids);
-        const skinConditionIds = parseIDs(value.skin_condition_ids);
+        // const skinConditionIds = parseIDs(value.skin_condition_ids);
         const surgeryIds = parseIDs(value.surgery_ids);
         const deviceIds = parseIDs(value.device_ids);
 
         // ---------- UPDATE DOCTOR EXPERTISE ----------
         await doctorModels.update_doctor_treatments(doctorId, value.treatments);
         await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
-        await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
+        // await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
         await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
 
         await doctorModels.update_doctor_treatment_devices(
@@ -441,15 +441,15 @@ export const addExpertise = async (req, res) => {
         }
 
         // ---------- UPDATE CLINIC SKIN CONDITIONS ----------
-        if (skinConditionIds.length > 0) {
-            const clinicSkinConditions = await clinicModels.getClinicSkinConditions(clinic_id);
+        // if (skinConditionIds.length > 0) {
+        //     const clinicSkinConditions = await clinicModels.getClinicSkinConditions(clinic_id);
 
-            if (clinicSkinConditions && clinicSkinConditions.length > 0) {
-                await clinicModels.updateClinicSkinConditions(skinConditionIds, clinic_id);
-            } else {
-                await clinicModels.insertClinicSkinConditions(skinConditionIds, clinic_id);
-            }
-        }
+        //     if (clinicSkinConditions && clinicSkinConditions.length > 0) {
+        //         await clinicModels.updateClinicSkinConditions(skinConditionIds, clinic_id);
+        //     } else {
+        //         await clinicModels.insertClinicSkinConditions(skinConditionIds, clinic_id);
+        //     }
+        // }
 
         // ---------- UPDATE CLINIC SKIN TYPES ----------
         if (skinTypeIds.length > 0) {
