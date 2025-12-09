@@ -5,7 +5,7 @@ import db from '../config/db.js';
 import { validateSchema } from '../middleware/validation.middleware.js';
 import { getAppointmentsForNotification } from '../models/appointment.js';
 import { getUserDataByReceiverIdAndRole, getUserDataByRole } from '../models/web_user.js';
-import { extractUserData } from '../utils/misc.util.js';
+import { extractUserData, translateText } from '../utils/misc.util.js';
 import { isEmpty } from '../utils/user_helper.js';
 import { sendNotificationSchema } from '../validations/notification.validation.js';
 import admin from 'firebase-admin';
@@ -15,6 +15,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import path from "path";
 import { fileURLToPath } from 'url';
+import { getUserLanguageModel, getZynqUserLanguageModel } from '../models/admin.js';
 // __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -160,7 +161,7 @@ export const NOTIFICATION_MESSAGES = {
     })
 };
 
-const getNotificationContent = (notification_type, full_name) => {
+const getNotificationContent = async (notification_type, full_name) => {
     let template;
 
     if (typeof notification_type === 'object' && typeof notification_type.getBody === 'function') {
@@ -175,7 +176,11 @@ const getNotificationContent = (notification_type, full_name) => {
 
     const body = template.getBody(full_name);
 
-    return { title, body };
+    // Translate to Swedish
+    const title_sv = await translateText(title, 'sv');
+    const body_sv = await translateText(body, 'sv');
+
+    return { title, body, title_sv, body_sv };
 };
 
 // ============================================================================
@@ -183,7 +188,7 @@ const getNotificationContent = (notification_type, full_name) => {
 // ============================================================================
 
 if (!admin.apps.length) {
-    const serviceAccountPath = path.resolve(__dirname, `../../${process.env.FIREBASE_SERVICE_ACCOUNT}`);    
+    const serviceAccountPath = path.resolve(__dirname, `../../${process.env.FIREBASE_SERVICE_ACCOUNT}`);
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
 
     admin.initializeApp({
@@ -266,13 +271,15 @@ const insertUserNotification = async ({
     type,
     type_id = null,
     title,
-    body
+    body,
+    title_sv,
+    body_sv
 }) => {
     try {
         const result = await db.query(
             `INSERT INTO tbl_notifications 
-             (sender_id, sender_type, receiver_id, receiver_type, type, type_id, title, body) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+             (sender_id, sender_type, receiver_id, receiver_type, type, type_id, title, body, title_sv, body_sv) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 sender_id,
                 sender_type,
@@ -281,7 +288,9 @@ const insertUserNotification = async ({
                 type,
                 type_id,
                 title,
-                body
+                body,
+                title_sv,
+                body_sv
             ]
         );
         return result;
@@ -324,7 +333,20 @@ export const sendNotification = async ({
 
         const full_name = isEmpty(senderMeta?.full_name) ? 'Someone' : senderMeta?.full_name;
 
-        const { title, body } = getNotificationContent(notification_type, full_name);
+        let language = 'en';
+
+        if (receiver_type === 'USER') {
+            const [data] = await getUserLanguageModel(receiver_id);
+            language = data?.language || 'en';
+        } else if (receiver_type === 'ADMIN') {
+            language = 'en';
+        } else {
+            const [data] = await getUserLanguageModel(receiver_id);
+            language = data?.language || 'en';
+        }
+
+
+        const { title, body, title_sv, body_sv } = await getNotificationContent(notification_type, full_name);
 
         const isPushEnabled = receiver_type === 'USER'
             ? (receiver_push_enabled ?? await isPushNotificationEnabled(receiver_id, receiver_type))
@@ -340,10 +362,10 @@ export const sendNotification = async ({
             receiver_id,
             receiver_type,
             token,
-            title,
-            body
+            title: language === 'sv' ? title_sv : title,
+            body: language === 'sv' ? body_sv : body
         });
-        
+
         const dbPromise = insertUserNotification({
             sender_id,
             sender_type,
@@ -352,7 +374,9 @@ export const sendNotification = async ({
             type,
             type_id,
             title,
-            body
+            body,
+            title_sv,
+            body_sv
         }).then(() => console.log("✅ Notification recorded in DB"));
 
         const fcmPromise = (token && isPushEnabled)
