@@ -1856,7 +1856,8 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
             LEFT JOIN tbl_doctor_treatments dt ON d.doctor_id = dt.doctor_id
             WHERE dm.clinic_id IN (${clinicIds.map(() => '?').join(', ')})
-              AND d.profile_completion_percentage >= 0
+              AND d.profile_completion_percentage >= 0 and c.is_onboarded = 1
+              and zu.on_boarding_status >= 4
             GROUP BY d.doctor_id, dm.clinic_id
             ORDER BY d.created_at DESC
         `;

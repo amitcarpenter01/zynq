@@ -351,10 +351,10 @@ export const getAppointmentsByRole = async (id, role) => {
     const values = [];
 
     if (role === 'DOCTOR' || role === 'SOLO_DOCTOR') {
-        whereClause = 'a.doctor_id = ?';
+        whereClause = "a.doctor_id = ?  AND a.payment_status != 'unpaid'";
         values.push(id);
     } else if (role === 'CLINIC') {
-        whereClause = 'a.clinic_id = ?';
+        whereClause = "a.clinic_id = ?  AND a.payment_status != 'unpaid'";
         values.push(id);
     } else {
         throw new Error('Invalid role provided');
@@ -592,10 +592,10 @@ export const getAppointmentsByRoleAndSinglePatient = async (id, role, patient_id
     const values = [];
 
     if (role === 'DOCTOR' || role === 'SOLO_DOCTOR') {
-        whereClause = 'a.doctor_id = ? AND a.user_id = ?';
+        whereClause = "a.doctor_id = ? AND a.user_id = ? AND a.payment_status != 'unpaid'";
         values.push(id, patient_id);
     } else if (role === 'CLINIC') {
-        whereClause = 'a.clinic_id = ? AND a.user_id = ?';
+        whereClause = "a.clinic_id = ? AND a.user_id = ? AND a.payment_status != 'unpaid'";
         values.push(id, patient_id);
     } else {
         throw new Error('Invalid role provided');
