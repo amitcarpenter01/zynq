@@ -553,22 +553,23 @@ export const zynqReminderEnglishTemplate = ({
   recipient_name,
   roleKey = "CLINIC", // either "CLINIC" or "DOCTOR"
   logoUrl = "https://getzynq.io:4000/logo1.png",
-  heroUrl = "https://getzynq.io:4000/clinic/files/1760014696773-placeholders.png"
+  heroUrl = "https://getzynq.io:4000/clinic/files/1760014696773-placeholders.png",
 }) => {
   const roles = {
     CLINIC: {
       subject: "Reminder: Complete Your ZYNQ Clinic Profile",
-      intro: `We noticed your clinic hasn't signed in to <strong>ZYNQ</strong> yet. Completing your clinic profile will allow you to start accepting appointments and connect with patients.`,
+      intro: `We noticed your clinic hasn't signed in to <strong>ZYNQ</strong> yet. Completing your clinic profile will allow you to start accepting appointments and connect with clients.`,
       heroAlt: "Clinic Reminder Illustration"
     },
     DOCTOR: {
-      subject: "Reminder: Complete Your ZYNQ Doctor Profile",
-      intro: `We noticed you haven't signed in to <strong>ZYNQ</strong> yet. Completing your doctor profile will allow you to start managing appointments and connect with patients.`,
-      heroAlt: "Doctor Reminder Illustration"
+      subject: "Reminder: Complete Your ZYNQ Expert Profile",
+      intro: `We noticed you haven't signed in to <strong>ZYNQ</strong> yet. Completing your expert profile will allow you to start managing appointments and connect with clients.`,
+      heroAlt: "Expert Reminder Illustration"
     }
   };
 
   const { subject, intro, heroAlt } = roles[roleKey] || roles.CLINIC;
+  let onboarding_link = `https://getzynq.io/`;
 
   return {
     subject,
@@ -611,6 +612,17 @@ export const zynqReminderEnglishTemplate = ({
               <p style="font-size:14px; color:#555555; line-height:20px; margin:0 0 25px 0;">
                 ${intro}
               </p>
+
+
+              <div style="text-center">
+               <a href=${onboarding_link} target="_blank"
+                            style="background-color: #282828; font-size: 15px; line-height: 22px;  font-family: 'Poppins', sans-serif; font-weight: normal; text-decoration: none; padding: 12px 15px; color: #ffffff; border-radius: 5px; display: inline-block; mso-padding-alt: 0;">
+
+
+                            <span style="mso-text-raise: 15pt; color: #ffffff;">Complete Onboarding</span>
+
+                        </a>
+              </div>
             
             </td>
           </tr>
@@ -655,22 +667,23 @@ export const zynqReminderSwedishTemplate = ({
   recipient_name,
   roleKey = "CLINIC", // either "CLINIC" or "DOCTOR"
   logoUrl = "https://getzynq.io:4000/logo1.png",
-  heroUrl = "https://getzynq.io:4000/clinic/files/1760014696773-placeholders.png"
+  heroUrl = "https://getzynq.io:4000/clinic/files/1760014696773-placeholders.png",
 }) => {
   const roles = {
     CLINIC: {
       subject: "Påminnelse: Slutför din ZYNQ-klinikprofil",
-      intro: `Vi har märkt att din klinik ännu inte har loggat in på <strong>ZYNQ</strong>. Genom att slutföra din klinikprofil kan du börja ta emot bokningar och koppla samman med patienter.`,
+      intro: `Vi har märkt att din klinik ännu inte har loggat in på <strong>ZYNQ</strong>. Genom att fylla i din klinikprofil kan du börja ta emot bokade tider och få kontakt med klienter.`,
       heroAlt: "Klinik Påminnelse Illustration"
     },
     DOCTOR: {
       subject: "Påminnelse: Slutför din ZYNQ-läkarprofil",
-      intro: `Vi har märkt att du ännu inte har loggat in på <strong>ZYNQ</strong>. Genom att slutföra din läkarprofil kan du börja hantera bokningar och koppla samman med patienter.`,
-      heroAlt: "Läkare Påminnelse Illustration"
+      intro: `Vi har märkt att du inte har loggat in på <strong>ZYNQ</strong> ännu. Genom att slutföra din läkarprofil kan du börja hantera möten och få kontakt med klienter.`,
+      heroAlt: "Expert Påminnelse Illustration"
     }
   };
 
   const { subject, intro, heroAlt } = roles[roleKey] || roles.CLINIC;
+  let onboarding_link = `https://getzynq.io/`
 
   return {
     subject,
@@ -713,6 +726,18 @@ export const zynqReminderSwedishTemplate = ({
               <p style="font-size:14px; color:#555555; line-height:20px; margin:0 0 25px 0;">
                 ${intro}
               </p>
+
+
+              <div style="text-center">
+               <a href=${onboarding_link} target="_blank"
+                            style="background-color: #282828; font-size: 15px; line-height: 22px;  font-family: 'Poppins', sans-serif; font-weight: normal; text-decoration: none; padding: 12px 15px; color: #ffffff; border-radius: 5px; display: inline-block; mso-padding-alt: 0;">
+
+
+                            <span style="mso-text-raise: 15pt; color: #ffffff;">Komplett onboarding</span>
+
+                        </a>
+              </div>
+
             
             </td>
           </tr>
