@@ -104,7 +104,7 @@ export const get_doctors_management = async (req, res) => {
 
         fullDoctorData.map((item) => {
             if(item.onboarding_progress == 100 && item.profile_status != 'VERIFIED') {
-                item.profile_status = 'verify'
+                item.profile_status = 'ONBOARDING'
             }
         })
 
