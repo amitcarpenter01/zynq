@@ -540,7 +540,7 @@ export const createPaymentSessionForAppointment = async ({ metadata }) => {
       payment_method_types: [
         "card",
         "klarna",
-        "paypal"
+        // "paypal"
       ],
 
       line_items,
