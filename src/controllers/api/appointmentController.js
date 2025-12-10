@@ -1475,6 +1475,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             }
         }
 
+
         // vat_amount = +(subtotal * (VAT_PERCENTAGE / 100)).toFixed(2);
         // final_total = +(subtotal + vat_amount).toFixed(2);
 
@@ -1484,8 +1485,11 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         // let clinic_earnings = +(subtotal - admin_earnings).toFixed(2);
 
         // ---------------- NO VAT Logic ----------------
+        const appointmentDetails = await getAppointmentDetails(user_id, appointment_id);
+        const [doctor] = await getDocterByDocterId(doctor_id);
+
         vat_amount = 0;
-        final_total = subtotal;
+        final_total = subtotal === 0 ? doctor.fee_per_session : subtotal;
 
         let admin_earnings = +((subtotal * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2);
         let clinic_earnings = +(subtotal - admin_earnings).toFixed(2);
@@ -1553,10 +1557,10 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         }
 
         // ---------------- FREE APPOINTMENT FLOW ----------------
-        const appointmentDetails = await getAppointmentDetails(user_id, appointment_id);
-        const [doctor] = await getDocterByDocterId(doctor_id);
+        // const appointmentDetails = await getAppointmentDetails(user_id, appointment_id);
+        // const [doctor] = await getDocterByDocterId(doctor_id);
 
-        if (doctor.fee_per_session) {
+        if (doctor.fee_per_session && appointmentType === "Video Call") {
             const session = await createPaymentSessionForAppointment({
                 metadata: {
                     order_lines: [
