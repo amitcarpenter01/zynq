@@ -751,9 +751,14 @@ export const getAllRoles = async () => {
     }
 };
 
-export const getAllSkinTypes = async () => {
+export const getAllSkinTypes = async (language) => {
     try {
         const skinTypes = await db.query('SELECT * FROM tbl_skin_types WHERE name IS NOT NULL ORDER BY created_at DESC');
+        skinTypes?.map((item) => {
+            if(language == "sv"){
+                item.name = item.Swedish
+            }
+        })
         return skinTypes;
     }
     catch (error) {
@@ -1636,9 +1641,14 @@ export const getAllSkinCondition = async () => {
     }
 };
 
-export const getAllsurgery = async () => {
+export const getAllsurgery = async (language) => {
     try {
         const surgeries = await db.query('SELECT * FROM tbl_surgery');
+        surgeries?.map((item)=> {
+            if(language == "sv"){
+                item.english = item.swedish
+            }
+        })
         return surgeries;
     } catch (error) {
         console.error("Database Error:", error.message);

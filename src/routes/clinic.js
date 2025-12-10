@@ -57,14 +57,14 @@ router.delete("/images/:clinic_image_id", authenticate(['CLINIC', 'SOLO_DOCTOR']
 //==================================== Get Data For Onboarding ==============================
 router.get("/get-treatments", authControllers.getAllTreatments);
 router.get("/get-equipments", authControllers.getClinicEquipments);
-router.get("/get-skin-types", authControllers.getClinicSkinTypes);
+router.get("/get-skin-types",authenticate(['CLINIC', 'SOLO_DOCTOR', 'DOCTOR']), authControllers.getClinicSkinTypes);
 router.get("/get-severity-levels", authControllers.getClinicSeverityLevels);
 router.get("/get-certificate-type", authControllers.getCertificateType);
 router.get("/search-location", authControllers.searchLocation);
 router.get("/get-lat-long", authControllers.getLatLong);
 
 router.get("/get-SkinConditions", authControllers.getAllSkinConditions)
-router.get("/get-surgery", authControllers.getAllSurgery)
+router.get("/get-surgery",authenticate(['CLINIC', 'SOLO_DOCTOR', 'DOCTOR']), authControllers.getAllSurgery)
 router.get("/get-devices", authControllers.getAllDevices)
 
 //==================================== Roles ==============================
