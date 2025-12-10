@@ -102,6 +102,12 @@ export const get_doctors_management = async (req, res) => {
             })
         );
 
+        fullDoctorData.map((item) => {
+            if(item.onboarding_progress == 100 && item.profile_status != 'VERIFIED') {
+                item.profile_status = 'ONBOARDING'
+            }
+        })
+
         return handleSuccess(res, 200, 'en', "Fetch doctor management successfully", {
             Doctors: fullDoctorData,
             totalRecords,
