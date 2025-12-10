@@ -528,10 +528,14 @@ export const getAllRecommendedDoctors = async ({
         const params = [];
         const needsDistance = userLatitude != null && userLongitude != null;
 
-        // Distance calculation if coords provided
+        // Distance SELECT
         const distanceSelect = needsDistance
             ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance`
             : null;
+
+        if (needsDistance) {
+            params.push(userLongitude, userLatitude);
+        }
 
         const selectFields = [
             'd.doctor_id',
@@ -549,8 +553,6 @@ export const getAllRecommendedDoctors = async ({
             distanceSelect
         ].filter(Boolean).join(', ');
 
-        if (needsDistance) params.push(userLongitude, userLatitude);
-
         // Base query
         let query = `
             SELECT ${selectFields}
@@ -559,11 +561,11 @@ export const getAllRecommendedDoctors = async ({
             LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
             LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
             LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
-            LEFT JOIN tbl_appointment_ratings ar
-                ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
+            LEFT JOIN tbl_appointment_ratings ar 
+                   ON d.doctor_id = ar.doctor_id 
+                  AND ar.approval_status = 'APPROVED'
             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
             LEFT JOIN tbl_doctor_treatments dt ON d.doctor_id = dt.doctor_id
-            LEFT JOIN tbl_doctor_skin_types dst ON d.doctor_id = dst.skin_type_id
             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
             LEFT JOIN tbl_doctor_treatments dt2 ON d.doctor_id = dt2.doctor_id
             LEFT JOIN tbl_sub_treatment_master st ON dt2.sub_treatment_id = st.sub_treatment_id
@@ -571,6 +573,7 @@ export const getAllRecommendedDoctors = async ({
 
         const filters = [];
 
+        // Helper for filters
         const addFilter = (ids, alias, field) => {
             if (Array.isArray(ids) && ids.length) {
                 filters.push(`${alias}.${field} IN (${ids.map(() => '?').join(', ')})`);
@@ -609,25 +612,41 @@ export const getAllRecommendedDoctors = async ({
             params.push(price.max);
         }
 
+        // -------------------- SEARCH FILTER (NO AI) --------------------
+        if (search && search.trim()) {
+            const like = `%${search.trim()}%`;
+            filters.push(`
+                (
+                    d.name LIKE ? OR
+                    c.clinic_name LIKE ? OR
+                    d.specialization LIKE ? OR
+                    t.name LIKE ? OR
+                    st.name LIKE ?
+                )
+            `);
+            params.push(like, like, like, like, like);
+        }
+
+        // Apply filters
         if (filters.length) query += ` AND ${filters.join(' AND ')}`;
 
-        // Group
+        // GROUPING
         query += ` GROUP BY d.doctor_id, dm.clinic_id`;
 
         // Rating filter
         if (min_rating !== null) {
             const ceiling = Math.min(min_rating + 1, 5.01);
-            query += ` HAVING avg_rating >= ? AND avg_rating <= ?`;
+            query += ` HAVING CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) <= ?`;
             params.push(min_rating, ceiling);
         }
 
         // Sorting
         if (sort.by === 'rating') {
-            query += ` ORDER BY avg_rating IS NULL, avg_rating ${sort.order}`;
+            query += ` ORDER BY avg_rating IS NULL, CAST(avg_rating AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
         } else if (sort.by === 'nearest' && needsDistance) {
-            query += ` ORDER BY distance IS NULL, distance ${sort.order}`;
+            query += ` ORDER BY distance IS NULL, CAST(distance AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
         } else if (sort.by === 'price') {
-            query += ` ORDER BY d.fee_per_session IS NULL, d.fee_per_session ${sort.order}`;
+            query += ` ORDER BY d.fee_per_session IS NULL, CAST(d.fee_per_session AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
         } else {
             query += ` ORDER BY d.created_at DESC`;
         }
@@ -635,18 +654,13 @@ export const getAllRecommendedDoctors = async ({
         console.log("query", query);
         console.log("params", params);
 
+        // Run query
         const rows = await db.query(query, params);
 
         if (!rows?.length) return [];
 
-        // Apply pagination
-        const paginated = rows.slice(offset, offset + limit);
-
-        return paginated.map(row => {
-            const clean = { ...row };
-            delete clean.embeddings; // safety
-            return clean;
-        });
+        // Pagination without AI
+        return rows.slice(offset, offset + limit);
 
     } catch (error) {
         console.error('Database Error in getAllRecommendedDoctors:', error.message);
