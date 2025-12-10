@@ -1445,7 +1445,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         // ---------------- Load Commission & VAT ----------------
         const [{ APPOINTMENT_COMMISSION }] = await getAdminCommissionRatesModel();
         const ADMIN_EARNING_PERCENTAGE = APPOINTMENT_COMMISSION || 3;
-        const VAT_PERCENTAGE = 1;
+        const VAT_PERCENTAGE = 25;
 
         // ---------------- Discount & VAT Logic ----------------
         let discounted_amount = 0;
@@ -1475,12 +1475,19 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             }
         }
 
-        vat_amount = +(subtotal * (VAT_PERCENTAGE / 100)).toFixed(2);
-        final_total = +(subtotal + vat_amount).toFixed(2);
+        // vat_amount = +(subtotal * (VAT_PERCENTAGE / 100)).toFixed(2);
+        // final_total = +(subtotal + vat_amount).toFixed(2);
+
+        // let admin_earnings = +((subtotal * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2);
+        // admin_earnings = +(admin_earnings + vat_amount).toFixed(2);
+
+        // let clinic_earnings = +(subtotal - admin_earnings).toFixed(2);
+
+        // ---------------- NO VAT Logic ----------------
+        vat_amount = 0;
+        final_total = subtotal;
 
         let admin_earnings = +((subtotal * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2);
-        admin_earnings = +(admin_earnings + vat_amount).toFixed(2);
-
         let clinic_earnings = +(subtotal - admin_earnings).toFixed(2);
 
         const is_paid = final_total > 0 ? 1 : 0;
