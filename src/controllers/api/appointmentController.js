@@ -1445,7 +1445,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         // ---------------- Load Commission & VAT ----------------
         const [{ APPOINTMENT_COMMISSION }] = await getAdminCommissionRatesModel();
         const ADMIN_EARNING_PERCENTAGE = APPOINTMENT_COMMISSION || 3;
-        const VAT_PERCENTAGE = 25;
+        const VAT_PERCENTAGE = 1;
 
         // ---------------- Discount & VAT Logic ----------------
         let discounted_amount = 0;
