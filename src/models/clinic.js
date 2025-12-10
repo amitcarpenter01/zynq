@@ -1969,7 +1969,7 @@ export const getDoctorExperienceBulk = async (doctorIds) => {
     try {
         const placeholders = doctorIds.map(() => '?').join(',');
 
-        const query = `SELECT * FROM tbl_doctor_experiences WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
+        const query = `SELECT * FROM tbl_doctor_experiences WHERE organization IS NOT NULL and doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
         const results = await db.query(query, doctorIds);
 
         const grouped = {};
