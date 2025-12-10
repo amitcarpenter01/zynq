@@ -32,8 +32,8 @@ export const checkIfSlotAlreadyBooked = async (doctor_id, start_time) => {
 export const getAppointmentsByUserId = async (user_id, status, payment_status) => {
     let results = await db.query(`
     SELECT 
-      a.*, 
       d.*, 
+      a.*, 
       zu.email, 
       r.pdf, 
       c.clinic_name 
