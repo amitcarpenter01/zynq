@@ -1172,7 +1172,7 @@ const getDoctorDashboard = async (doctorId) => {
     LEFT JOIN tbl_appointment_ratings ar 
            ON a.appointment_id = ar.appointment_id 
            AND ar.approval_status = 'APPROVED'
-    WHERE a.doctor_id = ?
+    WHERE a.doctor_id = ? and a.payment_status != 'unpaid'
   `;
 
     const [dashboard = {}] = await db.query(query, [doctorId, doctorId]);
