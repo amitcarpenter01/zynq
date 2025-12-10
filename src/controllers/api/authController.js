@@ -236,7 +236,7 @@ export const login_with_otp = async (req, res) => {
     let language = req.body.language || 'en';
     try {
         const loginOtpSchema = Joi.object({
-            device_id : Joi.string().optional().allow("", null),
+            device_id: Joi.string().optional().allow("", null),
             mobile_number: Joi.string().required(),
             otp: Joi.string().length(4).required(),
             language: Joi.string().valid("en", "sv").optional().allow("", null),
@@ -762,22 +762,21 @@ export const getFutureDoctorSlots = async (req, res) => {
             bookedMap[key] = app.count || 1;
         }
 
+        const doctorInfo = await doctorModels.fetchDoctorFeeModel(doctor_id);
+        const fee_per_session = doctorInfo[0].fee_per_session || null;
+
         // 3. Assign status in-memory
         const resultWithStatus = filteredSlotData.map(slot => {
-            // const key = `${slot.date}_${slot.start_time}`;
-            // const status = bookedMap[key] > 0 ? 'booked' : 'available';
             const key = slot.start_time;
             const status = bookedMap[key] > 0 ? 'booked' : 'available';
             return {
-                // date: slot.date,
-                // day: slot.day,
                 start_time: slot.start_time,
                 end_time: slot.end_time,
                 status
             };
         });
 
-        return handleSuccess(res, 200, 'en', "FUTURE_DOCTOR_SLOTS", resultWithStatus);
+        return handleSuccess(res, 200, 'en', "FUTURE_DOCTOR_SLOTS", {fee_per_session : fee_per_session, resultWithStatus});
     } catch (err) {
         console.error('Error fetching future slots:', err);
         res.status(500).json({ error: 'Internal server error' });

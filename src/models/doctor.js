@@ -1009,6 +1009,23 @@ export const fetchAppointmentsBulkModel = async (doctorId, fromDate, toDate) => 
     }
 };
 
+export const fetchDoctorFeeModel = async (doctorId) => {
+    try {
+        const query = `
+            SELECT fee_per_session
+            FROM tbl_doctors
+            WHERE doctor_id = ?
+            LIMIT 1
+        `;
+        
+        return await db.query(query, [doctorId]); 
+
+    } catch (error) {
+        console.error("DB Error in fetchDoctorFeeModel:", error);
+        throw error;
+    }
+};
+
 
 export const createOrUpdateCallLog = async ({
     call_id,
