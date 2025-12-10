@@ -290,6 +290,7 @@
   "PRODUCT_HIDDEN_SUCCESSFULLY": "Produkt dold framgångsrikt",
   "PRODUCT_UNHIDDEN_SUCCESSFULLY": "Produkten är nu synlig",
   "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY": "Utkasstid raderad framgångsrikt",
+  "APPOINTMENT_DELETED_SUCCESSFULLY": "Avtalad tid har raderats",
   "NOT_AUTHORIZED_TO_EDIT_TREATMENT": "Du har inte behörighet att redigera denna behandlingsplan",
   "TREATMENT_ADDED_SUCCESSFULLY": "Behandling tillagd framgångsrikt",
   "TREATMENT_UPDATED_SUCCESSFULLY": "Behandling uppdaterad framgångsrikt",

@@ -1687,8 +1687,9 @@ export const getDraftAppointments = asyncHandler(async (req, res) => {
 })
 
 export const deleteDraftAppointment = asyncHandler(async (req, res) => {
-    const { appointment_id } = req.params;
+    const { appointment_id, } = req.params;
+    const { is_appointment } = req.query;
     const { user_id, language = "en" } = req.user;
     await appointmentModel.deleteDraftAppointmentsModel(user_id, appointment_id);
-    return handleSuccess(res, 200, language, "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY",);
+    return handleSuccess(res, 200, language, is_appointment ? "APPOINTMENT_DELETED_SUCCESSFULLY" : "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY",);
 })
