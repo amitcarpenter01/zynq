@@ -1611,10 +1611,10 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 
     } catch (err) {
         if (err.code === "ER_DUP_ENTRY") {
-            return handleError(res, 400, language, "SLOT_ALREADY_BOOKED");
+            return handleError(res, 400, 'en', "SLOT_ALREADY_BOOKED");
         }
         console.error("Error in bookDirectAppointment:", err);
-        return handleError(res, 500, language, "INTERNAL_SERVER_ERROR");
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
     }
 });
 
