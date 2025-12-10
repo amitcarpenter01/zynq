@@ -798,8 +798,8 @@ export const getAllRoles = async (req, res) => {
 
 export const getClinicSkinTypes = async (req, res) => {
   try {
-    const language = "en";
-    const skinTypes = await clinicModels.getAllSkinTypes();
+    const language = req.user.language || "en";
+    const skinTypes = await clinicModels.getAllSkinTypes(language);
     if (!skinTypes.length) {
       return handleError(res, 404, language, "NO_SKIN_TYPES_FOUND");
     }
