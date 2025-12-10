@@ -1098,7 +1098,7 @@ export const getAppointmentTreatments = async (appointment_id, language) => {
         FROM tbl_appointment_treatments ap
         INNER JOIN tbl_treatments t 
             ON ap.treatment_id = t.treatment_id
-        LEFT JOIN tbl_sub_treatments st 
+        LEFT JOIN tbl_sub_treatment_master st 
             ON ap.sub_treatment_id = st.sub_treatment_id
         WHERE ap.appointment_id = ?
         ORDER BY t.name, st.name
@@ -1259,7 +1259,7 @@ export const getDraftAppointmentsModel = async (user_id, doctor_id) => {
             ON a.appointment_id = at.appointment_id
         INNER JOIN tbl_treatments t
             ON at.treatment_id = t.treatment_id
-        LEFT JOIN tbl_sub_treatments st
+        LEFT JOIN tbl_sub_treatment_master st
             ON at.sub_treatment_id = st.sub_treatment_id
 
         WHERE 
