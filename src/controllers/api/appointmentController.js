@@ -1556,6 +1556,26 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         const appointmentDetails = await getAppointmentDetails(user_id, appointment_id);
         const [doctor] = await getDocterByDocterId(doctor_id);
 
+        if (doctor.fee_per_session) {
+            const session = await createPaymentSessionForAppointment({
+                metadata: {
+                    order_lines: [
+                        {
+                            name: "Appointment",
+                            quantity: 1,
+                            unit_amount: doctor.fee_per_session * 100,
+                        },
+                    ],
+                    appointment_id,
+                    redirect_url,
+                    cancel_url,
+                    currency: "sek",
+                },
+            });
+
+            return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY", session);
+        }
+
         await sendNotification({
             userData: req.user,
             type: "APPOINTMENT",
