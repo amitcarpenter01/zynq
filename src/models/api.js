@@ -3515,9 +3515,9 @@ ORDER BY tat.treatment_id
 
         treatments.forEach(t => {
             total_price += t.price;
-            t.sub_treatments.forEach(st => {
-                total_price += st.price;
-            });
+            // t.sub_treatments.forEach(st => {
+            //     total_price += st.price;
+            // });
         });
 
         const discount_type = rows[0].discount_type;
