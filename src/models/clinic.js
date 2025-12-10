@@ -1636,9 +1636,14 @@ export const getAllSkinCondition = async () => {
     }
 };
 
-export const getAllsurgery = async () => {
+export const getAllsurgery = async (language) => {
     try {
         const surgeries = await db.query('SELECT * FROM tbl_surgery');
+        surgeries?.map((item)=> {
+            if(language == "sv"){
+                item.english = item.swedish
+            }
+        })
         return surgeries;
     } catch (error) {
         console.error("Database Error:", error.message);

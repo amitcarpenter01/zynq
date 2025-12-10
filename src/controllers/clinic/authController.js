@@ -941,8 +941,8 @@ export const getAllSkinConditions = async (req, res) => {
 
 export const getAllSurgery = async (req, res) => {
   try {
-    const language = "en";
-    const surgery = await clinicModels.getAllsurgery();
+    const language = req?.user?.language || "en";
+    const surgery = await clinicModels.getAllsurgery(language);
     if (!surgery.length) {
       return handleError(res, 400, language, "NO_SURGERY_FOUND");
     }
