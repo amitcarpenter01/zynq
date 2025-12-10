@@ -45,7 +45,12 @@ export const getAppointmentsByUserId = async (user_id, status, payment_status) =
     WHERE a.user_id = ? 
       AND a.save_type = ? 
       AND a.payment_status != ?
-    ORDER BY a.start_time ASC
+    ORDER BY    
+    CASE 
+    WHEN a.end_time >= NOW() THEN 0   
+    ELSE 1                            
+  END,
+  a.end_time ASC;
   `, [user_id, status, payment_status]);
 
     return results.map(row => {
@@ -1291,52 +1296,52 @@ export const getDraftAppointmentsModel = async (user_id, doctor_id) => {
 };
 
 export const insertDraftTreatmentsModel = async (appointment_id, treatments) => {
-  if (!treatments || !treatments.length) return;
+    if (!treatments || !treatments.length) return;
 
-  try {
-    const params = [];
+    try {
+        const params = [];
 
-    for (const treatment of treatments) {
-      const mainPrice = treatment.price ? treatment.price : 0;
+        for (const treatment of treatments) {
+            const mainPrice = treatment.price ? treatment.price : 0;
 
-      // If sub-treatments exist → create row for each sub
-      if (treatment.sub_treatments?.length) {
-        treatment.sub_treatments.forEach(sub => {
-          params.push([
-            appointment_id,
-            treatment.treatment_id,
-            mainPrice,                // always main treatment price
-            sub.sub_treatment_id,
-            sub.price                 // sub treatment price
-          ]);
-        });
-      } else {
-        // If NO sub-treatments → insert single row
-        params.push([
-          appointment_id,
-          treatment.treatment_id,
-          mainPrice,
-          null,                       // no sub
-          0
-        ]);
-      }
-    }
+            // If sub-treatments exist → create row for each sub
+            if (treatment.sub_treatments?.length) {
+                treatment.sub_treatments.forEach(sub => {
+                    params.push([
+                        appointment_id,
+                        treatment.treatment_id,
+                        mainPrice,                // always main treatment price
+                        sub.sub_treatment_id,
+                        sub.price                 // sub treatment price
+                    ]);
+                });
+            } else {
+                // If NO sub-treatments → insert single row
+                params.push([
+                    appointment_id,
+                    treatment.treatment_id,
+                    mainPrice,
+                    null,                       // no sub
+                    0
+                ]);
+            }
+        }
 
-    const query = `
+        const query = `
       INSERT INTO tbl_appointment_treatments
       (appointment_id, treatment_id, price, sub_treatment_id, sub_treatment_price)
       VALUES ?
     `;
 
-    console.log("query", query);
-    console.log("params", params);
+        console.log("query", query);
+        console.log("params", params);
 
-    return await db.query(query, [params]);
+        return await db.query(query, [params]);
 
-  } catch (error) {
-    console.error("Database Error:", error.message);
-    throw new Error("Failed to insert draft treatments.");
-  }
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to insert draft treatments.");
+    }
 };
 
 
