@@ -2863,6 +2863,39 @@ export const getTreatmentsBySearchOnly = async ({
     }
 };
 
+// export const getSubTreatmentsBySearchOnly = async ({
+//     search = '',
+//     language = 'en',
+//     page = null,
+//     limit = null,
+//     actualSearch
+// }) => {
+//     try {
+//         if (!search?.trim()) return [];
+
+//         // 1️⃣ Fetch all treatments that have embeddings
+//         let results = await db.query(`
+//       SELECT s.sub_treatment_id,s.treatment_id,s.name,s.swedish,t.name as treatment_name,t.swedish as treatment_swedish
+//       FROM tbl_sub_treatments s
+//       LEFT JOIN tbl_treatments t ON s.treatment_id = t.treatment_id
+//       WHERE s.is_deleted = 0 AND s.approval_status = 'APPROVED' AND t.approval_status = 'APPROVED' AND t.is_deleted = 0
+//     `);
+
+
+//         // 2️⃣ Compute top similar rows using embedding
+//         results = await getSubTreatmentsAIResult(results, search, 0.4, null, language, actualSearch);
+
+//         // 3️⃣ Apply pagination
+//         results = paginateRows(results, limit, page);
+
+//         return results;
+//     } catch (error) {
+//         console.error('Database Error in getTreatmentsBySearch:', error.message);
+//         throw new Error('Failed to fetch treatments.');
+//     }
+// };
+
+
 export const getSubTreatmentsBySearchOnly = async ({
     search = '',
     language = 'en',
@@ -2875,12 +2908,23 @@ export const getSubTreatmentsBySearchOnly = async ({
 
         // 1️⃣ Fetch all treatments that have embeddings
         let results = await db.query(`
-      SELECT s.sub_treatment_id,s.treatment_id,s.name,s.swedish,t.name as treatment_name,t.swedish as treatment_swedish
-      FROM tbl_sub_treatments s
-      LEFT JOIN tbl_treatments t ON s.treatment_id = t.treatment_id
-      WHERE s.is_deleted = 0 AND s.approval_status = 'APPROVED' AND t.approval_status = 'APPROVED' AND t.is_deleted = 0
-    `);
-
+            SELECT
+                stm.sub_treatment_id,
+                tstm.treatment_id,
+                stm.name,
+                stm.swedish,
+                t.name AS treatment_name,
+                t.swedish AS treatment_swedish
+            FROM tbl_sub_treatment_master stm
+            LEFT JOIN tbl_treatment_sub_treatments tstm 
+                ON stm.sub_treatment_id = tstm.sub_treatment_id
+            LEFT JOIN tbl_treatments t
+                ON tstm.treatment_id = t.treatment_id
+            WHERE stm.is_deleted = 0
+            AND stm.approval_status = 'APPROVED'
+            AND t.approval_status = 'APPROVED'
+            AND t.is_deleted = 0
+        `);
 
         // 2️⃣ Compute top similar rows using embedding
         results = await getSubTreatmentsAIResult(results, search, 0.4, null, language, actualSearch);
@@ -2894,7 +2938,6 @@ export const getSubTreatmentsBySearchOnly = async ({
         throw new Error('Failed to fetch treatments.');
     }
 };
-
 
 const APP_URL = process.env.APP_URL;
 
