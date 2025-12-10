@@ -1115,7 +1115,7 @@ export const getDoctorByDoctorID = async (doctor_id, clinic_id) => {
             LEFT JOIN tbl_clinics c ON c.clinic_id = dcm.clinic_id
             LEFT JOIN tbl_appointment_ratings ar 
                 ON d.doctor_id = ar.doctor_id 
-               AND dcm.clinic_id = ar.clinic_id 
+            --  AND dcm.clinic_id = ar.clinic_id 
                AND ar.approval_status = 'APPROVED'
             WHERE d.doctor_id = ? 
               AND dcm.clinic_id = ? 
