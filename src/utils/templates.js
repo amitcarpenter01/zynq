@@ -980,4 +980,174 @@ export const supportTicketTemplateSwedish = ({
 
 
 
+export const appointmentReceiptTemplate = {
+  subject: () =>
+    `Appointment Receipt`,
 
+  body: ({
+    logo = 'https://getzynq.io:4000/logo1.png',
+    doctor_image,
+    doctor_name,
+    clinic_name,
+    visit_link,
+    refund_policy,
+    subtotal,
+    vat_amount,
+    vat_percentage,
+    treatments = [],
+  }) => {
+
+    // Convert your treatment array → HTML table rows
+    const treatmentHTML = treatments
+      .map((item) => {
+        // Sub-treatment rows (if exist)
+        const subHTML =
+          item.sub_treatments && item.sub_treatments.length > 0
+            ? item.sub_treatments
+              .map(
+                (sub) => `
+                    <tr>
+                      <td style="font-family: 'Poppins', sans-serif; text-align:left;">• ${sub.name ||sub.swedish }</td>
+                      <td style="font-family: 'Poppins', sans-serif; text-align:left; opacity:0.6;">SEK ${sub.price}</td>
+                    </tr>
+                  `
+              )
+              .join("")
+            : "";
+
+        // If treatment has sub-treatments → Header row + sub rows  
+        if (subHTML) {
+          return `
+            <tr>
+              <td style="font-family: 'Poppins', sans-serif; font-size:18px; font-weight:600; text-align:left;">
+                ${item.name || item.swedish}
+              </td>
+              <td></td>
+            </tr>
+            ${subHTML}
+          `;
+        }
+
+        // Simple treatment (no sub-treatments)
+        return `
+          <tr>
+            <td style="font-family:'Poppins',sans-serif; text-align:left;">
+              ${item.name ||item.swedish}
+            </td>
+            <td style="font-family:'Poppins',sans-serif; text-align:left; opacity:0.6;">
+              SEK ${item.price}
+            </td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    // HTML TEMPLATE -------------------------------------------------------
+    return `
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Appointment Receipt</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+  </style>
+</head>
+
+<body style="margin:0; background:#f2f4f6; padding:30px 0; text-align:center; font-family:Poppins;">
+  
+  <!-- Logo -->
+  <table align="center" style="width:100%; max-width:620px; background:#fff;">
+    <tr>
+      <td style="padding:15px;">
+        <img src="${logo}" style="width:180px; height:85px; object-fit:contain;" alt="Logo">
+      </td>
+    </tr>
+  </table>
+
+  <!-- Body -->
+  <table align="center" style="width:100%; max-width:620px; background:#fff;">
+    <tr>
+      <td style="padding:30px;">
+
+        <p style="font-size:22px; font-weight:600;">Appointment Receipt</p>
+
+        <!-- Doctor Box -->
+        <table width="100%" cellpadding="10" cellspacing="0" style="border:1px solid #e0e0e0; border-radius:6px; margin-top:20px;">
+          <tr>
+            <td width="60">
+              <img src="${doctor_image}" style="width:60px; height:60px; border-radius:8px;" alt="">
+            </td>
+            <td style="font-size:16px; font-weight:600; text-align:left;">${doctor_name}</td>
+          </tr>
+        </table>
+
+        <!-- Treatments -->
+        <table width="100%" cellpadding="10" cellspacing="0" style="border:1px solid #e0e0e0; border-radius:6px; margin-top:25px;">
+          <tr>
+            <td colspan="2" style="font-size:20px; font-weight:600; text-align:left;">Treatments</td>
+          </tr>
+
+          ${treatmentHTML}
+
+          <tr><td colspan="2" style="height:1px; background:#ddd;"></td></tr>
+
+          <tr>
+            <td style="text-align:left;">Subtotal (incl. VAT)</td>
+            <td style="text-align:left; opacity:0.6;">${subtotal}</td>
+          </tr>
+
+          <tr>
+            <td style="text-align:left;">Where as VAT (${vat_percentage}%)</td>
+            <td style="text-align:left; opacity:0.6;">${vat_amount}</td>
+          </tr>
+        </table>
+
+
+        <!-- Refund Policy -->
+        <p style="padding-top:25px; color:#666; line-height:22px;">
+          ${refund_policy}
+        </p>
+
+
+
+        <!-- Clinic -->
+        <table width="100%" cellpadding="12" style="border:1px solid #e0e0e0; border-radius:6px; background:#f5f5f5; margin-top:25px;">
+          <tr>
+            <td style="font-size:16px; font-weight:600;">${clinic_name}</td>
+          </tr>
+          <tr>
+            <td style="font-size:14px; font-weight:600; text-decoration:underline;">
+              <a href="${visit_link}" style="color:#000;">Visit</a>
+            </td>
+          </tr>
+        </table>
+
+        <div style="padding-top:30px; text-align:left;">
+          <h4 style="margin-bottom:10px;">Cheers,</h4>
+          <p>ZYNQ Team</p>
+        </div>
+
+      </td>
+    </tr>
+  </table>
+
+  <!-- Footer -->
+  <table align="center" style="width:100%; max-width:620px; background:#282828;">
+    <tr>
+      <td style="padding:30px;">
+        <p style="color:#fff;">Need More Help?</p>
+        <a href="#" style="color:#fff; text-decoration:underline;">We are here to help you out</a>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+    `;
+  },
+};

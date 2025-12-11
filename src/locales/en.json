@@ -315,5 +315,7 @@
   "SUB_TREATMENTS_FETCHED": "Sub Treatments Fetched Successfully",
   "SUB_TREATMENT_MASTER_UPDATED_SUCCESSFULLY": "Sub Treatment Master Updated Successfully",
   "SUB_TREATMENT_MASTER_ADDED_SUCCESSFULLY": "Sub Treatment Master Added Successfully",
-  "SUB_TREATMENT_MASTER_DELETED_SUCCESSFULLY": "Sub Treatment Master Deleted Successfully"
+  "SUB_TREATMENT_MASTER_DELETED_SUCCESSFULLY": "Sub Treatment Master Deleted Successfully",
+  "RECIEPT_SENT_SUCCESSFULLY": "Receipt sent successfully on your registered email"
+  
 }

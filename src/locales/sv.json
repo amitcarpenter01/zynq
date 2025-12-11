@@ -314,5 +314,6 @@
   "SUB_TREATMENTS_FETCHED": "Delbehandlingar hämtade framgångsrikt",
   "SUB_TREATMENT_MASTER_UPDATED_SUCCESSFULLY": "Huvuddelbehandling uppdaterad framgångsrikt",
   "SUB_TREATMENT_MASTER_ADDED_SUCCESSFULLY": "Huvuddelbehandling tillagd framgångsrikt",
-  "SUB_TREATMENT_MASTER_DELETED_SUCCESSFULLY": "Huvuddelbehandling raderad framgångsrikt"
+  "SUB_TREATMENT_MASTER_DELETED_SUCCESSFULLY": "Huvuddelbehandling raderad framgångsrikt",
+  "RECIEPT_SENT_SUCCESSFULLY": "Kvitto skickat till din registrerade e-postadress"
 }
