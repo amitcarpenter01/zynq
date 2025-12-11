@@ -471,7 +471,8 @@ export const get_doctor_profile = async (doctorId, language) => {
         const [doctor] = await db.query(`
             SELECT d.doctor_id,
                 d.zynq_user_id, 
-                d.name, 
+                d.name,
+                d.last_name,
                 d.profile_status, 
                 d.invited_date, 
                 d.invitation_email_count, 
