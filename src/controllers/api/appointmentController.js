@@ -620,6 +620,7 @@ export const requestCallback = asyncHandler(async (req, res) => {
 
 export const cancelAppointment = async (req, res) => {
     try {
+        const language = req?.user?.language || 'en';
         const { appointment_id, reason } = req.body;
         const schema = Joi.object({
             appointment_id: Joi.string().required(),
@@ -634,10 +635,10 @@ export const cancelAppointment = async (req, res) => {
 
         const appointmentDetails = await appointmentModel.getAppointmentsById(user_id, appointment_id);
         const appointment = appointmentDetails[0]
-        if (!appointment) return handleError(res, 404, "en", "APPOINTMENT_NOT_FOUND");
-        if (appointment.user_id !== user_id) return handleError(res, 404, "en", "NOT_ALLOWED");
+        if (!appointment) return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
+        if (appointment.user_id !== user_id) return handleError(res, 404, language, "NOT_ALLOWED");
         if (appointment.is_paid) {
-            return handleError(res, 404, "en", "NOT_ALLOWED");
+            return handleError(res, 404, language, "NOT_ALLOWED");
         }
 
 
@@ -649,7 +650,7 @@ export const cancelAppointment = async (req, res) => {
             payment_status: appointment.is_paid ? 'refund_initiated' : appointment.payment_status
         });
 
-        handleSuccess(res, 200, 'en', 'APPOINTMENT_CANCELLED_SUCCESSFULLY');
+        handleSuccess(res, 200, language, 'APPOINTMENT_CANCELLED_SUCCESSFULLY');
 
         await sendNotification({
             userData: req.user,
