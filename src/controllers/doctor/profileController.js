@@ -31,7 +31,8 @@ export const addPersonalInformation = async (req, res) => {
             age: Joi.string().optional().allow('', null),
             address: Joi.string().max(255).required(),
             gender: Joi.string().optional().allow('', null),
-            biography: Joi.string().optional().allow('')
+            biography: Joi.string().optional().allow(''),
+            last_name: Joi.string().optional().allow('', null),
         });
 
         let language = req?.user?.language || 'en';
@@ -46,7 +47,7 @@ export const addPersonalInformation = async (req, res) => {
         const zynqUserId = req.user.id
 
 
-        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography);
+        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography,value.last_name);
 
         if (result.affectedRows) {
             await update_onboarding_status(1, zynqUserId)
@@ -315,7 +316,8 @@ export const editPersonalInformation = async (req, res) => {
             age: Joi.string().max(255).optional(),
             address: Joi.string().max(255).optional(),
             gender: Joi.string().max(255).optional(),
-            biography: Joi.string().optional().allow('')
+            biography: Joi.string().optional().allow(''),
+            last_name: Joi.string().optional().allow('', null),
         });
         let language = req?.user?.language || 'en';
 
@@ -335,7 +337,7 @@ export const editPersonalInformation = async (req, res) => {
             filename = req.file.filename
         }
         // await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
-        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography);
+        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography,value.last_name);
         // await generateDoctorsEmbeddingsV2(zynqUserId)
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", result.affectedRows);

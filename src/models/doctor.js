@@ -15,9 +15,9 @@ export const get_doctor_by_zynquser_id = async (zynqUserId) => {
     }
 };
 
-export const add_personal_details = async (zynqUserId, name, phone, age, address, gender, profile_image, biography) => {
+export const add_personal_details = async (zynqUserId, name, phone, age, address, gender, profile_image, biography,last_name) => {
     try {
-        return await db.query(`UPDATE tbl_doctors SET profile_status = ?, name = ?, phone=? , age=?, address=?, gender=?, profile_image=?,biography=? where zynq_user_id = ? `, ["ONBOARDING", name, phone, age, address, gender, profile_image, biography, zynqUserId]);
+        return await db.query(`UPDATE tbl_doctors SET profile_status = ?, name = ?, phone=? , age=?, address=?, gender=?, profile_image=?,biography=?,last_name = ? where zynq_user_id = ? `, ["ONBOARDING", name, phone, age, address, gender, profile_image, biography,last_name, zynqUserId]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to add doctor personal details.");
