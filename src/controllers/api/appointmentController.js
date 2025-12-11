@@ -637,6 +637,15 @@ export const cancelAppointment = async (req, res) => {
         const appointment = appointmentDetails[0]
         if (!appointment) return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
         if (appointment.user_id !== user_id) return handleError(res, 404, language, "NOT_ALLOWED");
+
+
+        const startTime = new Date(appointment.start_time);
+        const now = new Date();
+        const diffHours = (startTime - now) / (1000 * 60 * 60); // Convert ms → hours
+        if (diffHours < 24) {
+            return handleError(res, 400, language, "CANCELLATION_NOT_ALLOWED_WITHIN_24_HOURS");
+        }
+
         if (appointment.is_paid) {
             return handleError(res, 404, language, "NOT_ALLOWED");
         }
