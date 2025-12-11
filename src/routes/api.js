@@ -218,6 +218,8 @@ router.post('/book-direct-appointment', authenticateUser, appointmentController.
 
 router.post('/mark-appointment-paid', authenticateUser, appointmentController.markAppointmentAsPaid);
 
+router.post('/send-reciept', authenticateUser, appointmentController.sendReciept);
+
 router.post('/send-face-result', authenticateUser, validate(sendFaceResultToEmailSchema, "body"), faceScanControllers.sendFaceResultToEmail);
 
 router.post('/get-all-faqs', optionalAuthenticateUser, validate(getAllFAQSchema, "body"), getAllFAQs);

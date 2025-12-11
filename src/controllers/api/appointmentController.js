@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
 import { sendEmail } from '../../services/send_email.js';
-import { appointmentBookedTemplate } from '../../utils/templates.js';
+import { appointmentBookedTemplate, appointmentReceiptTemplate } from '../../utils/templates.js';
 import { getAdminCommissionRatesModel } from '../../models/admin.js';
 import { createPaymentSessionForAppointment } from '../../models/payment.js';
 import { booleanValidation } from '../../utils/joi.util.js';
@@ -1733,4 +1733,105 @@ export const deleteDraftAppointment = asyncHandler(async (req, res) => {
     const { user_id, language = "en" } = req.user;
     await appointmentModel.deleteDraftAppointmentsModel(user_id, appointment_id);
     return handleSuccess(res, 200, language, is_appointment ? "APPOINTMENT_DELETED_SUCCESSFULLY" : "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY",);
-})
+});
+
+export const sendReciept = async (req, res) => {
+    try {
+
+        const schema = Joi.object({
+            appointment_id: Joi.string().required(),
+        });
+
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        let {
+            appointment_id
+        } = value;
+
+
+        const language = req?.user?.language || 'en';
+        const userId = req.user.user_id;
+
+        // ----------------- Fetch appointment -----------------
+        const appointments = await appointmentModel.getAppointmentsById(userId, appointment_id, language);
+
+        console.log("appointments", appointments);
+
+        if (!appointments.length) {
+            return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", null);
+        }
+
+
+        // ----------------- Map appointment data -----------------
+        const result = await Promise.all(
+            appointments.map(async (app) => {
+                const doctor = await getDocterByDocterId(app.doctor_id);
+
+                if (app.profile_image && !app.profile_image.startsWith("http")) {
+                    app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
+                }
+
+                if (app.pdf && !app.pdf.startsWith("http")) {
+                    app.pdf = `${APP_URL}${app.pdf}`;
+                }
+
+                const treatments = await appointmentModel.getAppointmentTreatments(appointment_id, language);
+
+                return {
+                    ...app,
+                    treatments,
+                };
+            })
+        );
+
+        // ----------------- Send single appointment response -----------------
+        // return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", result[0]);
+        const data = result[0];
+
+
+        await sendEmail({
+            to: req.user.email,
+            subject: appointmentReceiptTemplate.subject(),
+            html: appointmentReceiptTemplate.body({
+                doctor_image: data.profile_image,
+                doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name}`,
+                clinic_name: data.clinic_name,
+                visit_link: "#",
+                refund_policy: "This appointment can be cancelled and will be fully refunded up to  24 hours before the schedule time.",
+                subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
+                vat_amount: data.vat_amount ? `SEK ${data.vat_amount}` : "SEK 0.00",
+                vat_percentage: (() => {
+                    const total = parseFloat(data.total_price) || 0;
+                    const vat = parseFloat(data.vat_amount) || 0;
+                    const base = total - vat;
+
+                    return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
+                })(),
+
+                treatments: data.treatments
+            }),
+        });
+
+
+        return handleSuccess(
+            res,
+            200,
+            language,
+            'RECIEPT_SENT_SUCCESSFULLY',
+        );
+    }
+
+
+
+
+
+    catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return handleError(res, 400, "en", "SLOT_ALREADY_BOOKED");
+        }
+        console.error("Error in saveOrBookAppointment:", err);
+        return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+    }
+};
