@@ -240,6 +240,7 @@
   "SHIPMENT_STATUS_UPDATED_SUCCESSFULLY": "Fraktstatus uppdaterad framgångsrikt",
   "NOTIFICATION_DELETED_SUCCESSFULLY": "Avisering raderad framgångsrikt",
   "NOT_ALLOWED": "Inte tillåtet att avboka tiden",
+  "CANCELLATION_NOT_ALLOWED_WITHIN_24_HOURS": "Kan inte avbokas inom 24 timmar före bokad tid",
   "APPOINTMENT_CANCELLED_SUCCESSFULLY": "Tid avbokad framgångsrikt",
   "REFUND_NOT_INITIATED": "Återbetalning har inte påbörjats",
   "REFUND_ALREADY_PAID": "Återbetalning för denna tid är redan utbetald",
