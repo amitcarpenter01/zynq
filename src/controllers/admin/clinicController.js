@@ -354,6 +354,7 @@ export const delete_clinic_management = async (req, res) => {
 
 export const send_invitation = async (req, res) => {
     try {
+        const language = req?.user?.language || 'en';
         const schema = Joi.object({
             invitation_ids: Joi.string().required()
         });
@@ -417,7 +418,7 @@ export const send_invitation = async (req, res) => {
             });
         }));
 
-        return handleSuccess(res, 200, 'en', "Clinic invitation sent successfully");
+        return handleSuccess(res, 200, language, "INVITATION_SENT_SUCCESSFULLY");
 
     } catch (error) {
         console.error("Send Invitation Error:", error);
