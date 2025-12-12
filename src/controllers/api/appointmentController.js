@@ -1801,7 +1801,7 @@ export const sendReciept = async (req, res) => {
                 visit_link: "#",
                 refund_policy: "This appointment can be cancelled and will be fully refunded up to  24 hours before the schedule time.",
                 subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
-                vat_amount: data.vat_amount ? `SEK ${data.vat_amount}` : "SEK 0.00",
+                vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25))}` : "SEK 0.00",
                 vat_percentage: (() => {
                     const total = parseFloat(data.total_price) || 0;
                     const vat = parseFloat(data.vat_amount) || 0;
