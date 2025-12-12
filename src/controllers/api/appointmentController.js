@@ -1546,7 +1546,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         }
 
         // ---------------- PAYMENT SECTION (UPDATED) ----------------
-        if (is_paid && appointmentType === "Clinic Visit") {
+        if (is_paid && appointmentType === "Clinic Visit" && final_total != 0) {
             const session = await createPaymentSessionForAppointment({
                 metadata: {
                     order_lines: [
@@ -1570,7 +1570,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         // const appointmentDetails = await getAppointmentDetails(user_id, appointment_id);
         // const [doctor] = await getDocterByDocterId(doctor_id);
 
-        if (is_paid && appointmentType === "Video Call") {
+        if (is_paid && appointmentType === "Video Call" && final_total != 0) {
             const session = await createPaymentSessionForAppointment({
                 metadata: {
                     order_lines: [
@@ -1609,7 +1609,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
                 user_name: req.user.full_name,
                 doctor_name: doctor.name,
                 appointment_date: normalizedStart,
-                total_price: final_total,
+                total_price: final_total == 0 ? "Free" : final_total,
                 clinic_name: appointmentDetails.clinic_name,
             }),
         });
