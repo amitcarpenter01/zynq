@@ -1102,7 +1102,7 @@ export const appointmentReceiptTemplate = {
           </tr>
 
           <tr>
-            <td style="text-align:left;">Where as VAT (${vat_percentage}%)</td>
+            <td style="text-align:left;">Where as VAT (25%)</td>
             <td style="text-align:left; opacity:0.6;">${vat_amount}</td>
           </tr>
         </table>
