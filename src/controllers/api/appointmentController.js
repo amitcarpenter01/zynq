@@ -1864,7 +1864,7 @@ export const sendReciept = async (req, res) => {
             to: req.user.email,
             subject: appointmentReceiptTemplateSwedish.subject(),
             html: appointmentReceiptTemplateSwedish.body({
-                doctor_image: data.profile_image,
+                doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
                 doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
                 clinic_name: data.clinic_name,
                 visit_link: "#",
