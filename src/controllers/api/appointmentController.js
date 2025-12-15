@@ -1832,7 +1832,7 @@ export const sendReciept = async (req, res) => {
         if(language == "en"){
             
         await sendEmail({
-            to: "rohangupta.ctinfotech@gmail.com",
+            to: req.user.email,
             subject: appointmentReceiptTemplate.subject(),
             html: appointmentReceiptTemplate.body({
                 doctor_image: data.profile_image,
