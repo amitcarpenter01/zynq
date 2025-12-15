@@ -1546,7 +1546,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         }
 
         // ---------------- PAYMENT SECTION (UPDATED) ----------------
-        if (is_paid && appointmentType === "Clinic Visit") {
+        if (is_paid && appointmentType === "Clinic Visit" && final_total != 0) {
             const session = await createPaymentSessionForAppointment({
                 metadata: {
                     order_lines: [
@@ -1570,7 +1570,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         // const appointmentDetails = await getAppointmentDetails(user_id, appointment_id);
         // const [doctor] = await getDocterByDocterId(doctor_id);
 
-        if (is_paid && appointmentType === "Video Call") {
+        if (is_paid && appointmentType === "Video Call" && final_total != 0) {
             const session = await createPaymentSessionForAppointment({
                 metadata: {
                     order_lines: [
@@ -1609,7 +1609,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
                 user_name: req.user.full_name,
                 doctor_name: doctor.name,
                 appointment_date: normalizedStart,
-                total_price: final_total,
+                total_price: final_total == 0 ? "Free" : final_total,
                 clinic_name: appointmentDetails.clinic_name,
             }),
         });
@@ -1830,7 +1830,7 @@ export const sendReciept = async (req, res) => {
                 visit_link: "#",
                 refund_policy: "This appointment can be cancelled and will be fully refunded up to  24 hours before the schedule time.",
                 subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
-                vat_amount: data.vat_amount ? `SEK ${data.vat_amount}` : "SEK 0.00",
+                vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25))}` : "SEK 0.00",
                 vat_percentage: (() => {
                     const total = parseFloat(data.total_price) || 0;
                     const vat = parseFloat(data.vat_amount) || 0;
