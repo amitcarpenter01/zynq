@@ -1749,7 +1749,9 @@ const formatDate = (date) => {
   hours = hours % 12 || 12; // convert 0 → 12
   hours = String(hours).padStart(2, "0");
 
-  return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`;
+//    ${hours}:${minutes} ${ampm}
+
+  return `${day}-${month}-${year}`;
 };
 
 
@@ -1835,13 +1837,13 @@ export const sendReciept = async (req, res) => {
             to: req.user.email,
             subject: appointmentReceiptTemplate.subject(),
             html: appointmentReceiptTemplate.body({
-                doctor_image: data.profile_image,
+                doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
                 doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
                 clinic_name: data.clinic_name,
                 visit_link: "#",
                 refund_policy: "This appointment can be cancelled and will be fully refunded up to  24 hours before the schedule time.",
-                subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
-                vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25))}` : "SEK 0.00",
+                subtotal: data.total_price ? `SEK ${data.total_price.toFixed(2)}` : "SEK 0.00",
+                vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25)).toFixed(2)}` : "SEK 0.00",
                 vat_percentage: (() => {
                     const total = parseFloat(data.total_price) || 0;
                     const vat = parseFloat(data.vat_amount) || 0;
