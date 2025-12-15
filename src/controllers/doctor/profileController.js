@@ -1052,10 +1052,7 @@ export const updateDoctorAvailability = async (req, res) => {
         const doctor_id = req.user.doctorData.doctor_id;
         const language = req?.user?.language || 'en';
         const { days, fee_per_session, dr_type } = req.body;
-
-        if (fee_per_session) {
             await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
-        }
         await doctorModels.deleteDoctorAvailabilityByDoctorId(doctor_id);
         await Promise.all(
             days.map(dayObj => {
