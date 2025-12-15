@@ -1134,7 +1134,7 @@ export const appointmentReceiptTemplate = {
             <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">${subtotal}</td>
           </tr>
           <tr>
-            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">Where as VAT (${vat_percentage}%)</td>
+            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">Where as VAT (25%)</td>
             <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">${vat_amount}</td>
           </tr>
         </table>
