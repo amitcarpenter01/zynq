@@ -1567,7 +1567,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         }
 
         // ---------------- FREE APPOINTMENT FLOW ----------------
-        // const appointmentDetails = await getAppointmentDetails(user_id, appointment_id);
+        const newAppointmentDetails = await getAppointmentDetails(user_id, appointment_id);
         // const [doctor] = await getDocterByDocterId(doctor_id);
 
         if (is_paid && appointmentType === "Video Call" && final_total != 0) {
@@ -1610,7 +1610,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
                 doctor_name: doctor.name,
                 appointment_date: normalizedStart,
                 total_price: final_total == 0 ? "Free" : final_total,
-                clinic_name: appointmentDetails.clinic_name,
+                clinic_name: newAppointmentDetails.clinic_name,
             }),
         });
 
@@ -1620,7 +1620,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         return handleSuccess(res, 201, language, "APPOINTMENT_BOOKED_SUCCESSFULLY", {
             appointment_id,
             chat_id,
-            appointmentDetails,
+            appointmentDetails : newAppointmentDetails,
         });
 
     } catch (err) {
