@@ -979,10 +979,8 @@ export const supportTicketTemplateSwedish = ({
 };
 
 
-
 export const appointmentReceiptTemplate = {
-  subject: () =>
-    `Appointment Receipt`,
+  subject: () => `Appointment Receipt`,
 
   body: ({
     logo = 'https://getzynq.io:4000/logo1.png',
@@ -995,31 +993,35 @@ export const appointmentReceiptTemplate = {
     vat_amount,
     vat_percentage,
     treatments = [],
+    booking_date,
+    treatment_date,
+    order_number
   }) => {
 
-    // Convert your treatment array → HTML table rows
     const treatmentHTML = treatments
       .map((item) => {
-        // Sub-treatment rows (if exist)
         const subHTML =
           item.sub_treatments && item.sub_treatments.length > 0
             ? item.sub_treatments
-              .map(
-                (sub) => `
-                    <tr>
-                      <td style="font-family: 'Poppins', sans-serif; text-align:left;">• ${sub.name ||sub.swedish }</td>
-                      <td style="font-family: 'Poppins', sans-serif; text-align:left; opacity:0.6;">SEK ${sub.price}</td>
-                    </tr>
-                  `
-              )
-              .join("")
+                .map(
+                  (sub) => `
+                  <tr>
+                    <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">
+                      • ${sub.name || sub.swedish}
+                    </td>
+                    <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">
+                      SEK ${sub.price}
+                    </td>
+                  </tr>
+                `
+                )
+                .join("")
             : "";
 
-        // If treatment has sub-treatments → Header row + sub rows  
         if (subHTML) {
           return `
             <tr>
-              <td style="font-family: 'Poppins', sans-serif; font-size:18px; font-weight:600; text-align:left;">
+              <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">
                 ${item.name || item.swedish}
               </td>
               <td></td>
@@ -1028,13 +1030,12 @@ export const appointmentReceiptTemplate = {
           `;
         }
 
-        // Simple treatment (no sub-treatments)
         return `
           <tr>
             <td style="font-family:'Poppins',sans-serif; text-align:left;">
-              ${item.name ||item.swedish}
+              ${item.name || item.swedish}
             </td>
-            <td style="font-family:'Poppins',sans-serif; text-align:left; opacity:0.6;">
+            <td style="font-family:'Poppins',sans-serif; text-align:left;">
               SEK ${item.price}
             </td>
           </tr>
@@ -1042,24 +1043,22 @@ export const appointmentReceiptTemplate = {
       })
       .join("");
 
-    // HTML TEMPLATE -------------------------------------------------------
     return `
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Appointment Receipt</title>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
   </style>
 </head>
 
-<body style="margin:0; background:#f2f4f6; padding:30px 0; text-align:center; font-family:Poppins;">
-  
+<body style="margin:0; padding:30px 0; background:#f2f4f6; text-align:center; font-family:'Poppins',sans-serif;">
+
   <!-- Logo -->
   <table align="center" style="width:100%; max-width:620px; background:#fff;">
     <tr>
@@ -1069,27 +1068,61 @@ export const appointmentReceiptTemplate = {
     </tr>
   </table>
 
-  <!-- Body -->
+  <!-- Main Content -->
   <table align="center" style="width:100%; max-width:620px; background:#fff;">
     <tr>
-      <td style="padding:30px;">
+      <td style="padding:30px 30px 40px;">
 
-        <p style="font-size:22px; font-weight:600;">Appointment Receipt</p>
+        <p style="font-size:22px; font-weight:600; margin:0 0 20px;">
+          Appointment Receipt
+        </p>
 
-        <!-- Doctor Box -->
-        <table width="100%" cellpadding="10" cellspacing="0" style="border:1px solid #e0e0e0; border-radius:6px; margin-top:20px;">
+        <!-- Doctor -->
+        <table width="100%" cellpadding="10" cellspacing="0"
+          style="border:1px solid #e0e0e0; border-radius:6px; background:#f9f9f9;">
           <tr>
             <td width="60">
-              <img src="${doctor_image}" style="width:60px; height:60px; border-radius:8px;" alt="">
+              <img src="${doctor_image}" style="width:60px; height:60px; border-radius:8px;">
             </td>
-            <td style="font-size:16px; font-weight:600; text-align:left;">${doctor_name}</td>
+            <td style="font-size:16px; font-weight:600; text-align:left;">
+              ${doctor_name}
+            </td>
+          </tr>
+        </table>
+
+        <!-- Appointment Details -->
+        <table width="100%" cellpadding="10" cellspacing="0"
+          style="border:1px solid #e0e0e0; border-radius:6px; margin-top:10px; background:#f9f9f9;">
+          <tr>
+            <td colspan="2" style="font-size:20px; font-weight:600; text-align:center;">
+              Appointment Details
+            </td>
+          </tr>
+          <tr>
+            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">Clinic Name</td>
+            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">${clinic_name}</td>
+          </tr>
+          <tr>
+            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">Order Number</td>
+            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">${order_number}</td>
+          </tr>
+          <tr>
+            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">Booking Date</td>
+            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">${booking_date}</td>
+          </tr>
+          <tr>
+            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">Treatment Date</td>
+            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">${treatment_date}</td>
           </tr>
         </table>
 
         <!-- Treatments -->
-        <table width="100%" cellpadding="10" cellspacing="0" style="border:1px solid #e0e0e0; border-radius:6px; margin-top:25px;">
+        <table width="100%" cellpadding="10" cellspacing="0"
+          style="border:1px solid #e0e0e0; border-radius:6px; margin-top:10px; background:#f9f9f9;">
           <tr>
-            <td colspan="2" style="font-size:20px; font-weight:600; text-align:left;">Treatments</td>
+            <td colspan="2" style="font-size:20px; font-weight:600; text-align:center;">
+              Treatments
+            </td>
           </tr>
 
           ${treatmentHTML}
@@ -1097,28 +1130,27 @@ export const appointmentReceiptTemplate = {
           <tr><td colspan="2" style="height:1px; background:#ddd;"></td></tr>
 
           <tr>
-            <td style="text-align:left;">Subtotal (incl. VAT)</td>
-            <td style="text-align:left; opacity:0.6;">${subtotal}</td>
+            <td style="  font-family: 'Poppins', sans-serif; text-align: left;">Subtotal (incl. VAT)</td>
+            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">${subtotal}</td>
           </tr>
-
           <tr>
-            <td style="text-align:left;">Where as VAT (${vat_percentage}%)</td>
-            <td style="text-align:left; opacity:0.6;">${vat_amount}</td>
+            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">Where as VAT (${vat_percentage}%)</td>
+            <td  style="  font-family: 'Poppins', sans-serif; text-align: left;">${vat_amount}</td>
           </tr>
         </table>
 
-
-        <!-- Refund Policy -->
-        <p style="padding-top:25px; color:#666; line-height:22px;">
+        <!-- Refund -->
+        <p style="margin-top:25px; color:#666; line-height:22px;">
           ${refund_policy}
         </p>
 
-
-
         <!-- Clinic -->
-        <table width="100%" cellpadding="12" style="border:1px solid #e0e0e0; border-radius:6px; background:#f5f5f5; margin-top:25px;">
+        <table width="100%" cellpadding="12"
+          style="border:1px solid #e0e0e0; border-radius:6px; background:#f5f5f5; margin-top:25px;">
           <tr>
-            <td style="font-size:16px; font-weight:600;">${clinic_name}</td>
+            <td style="font-size:16px; font-weight:600;">
+              ${clinic_name}
+            </td>
           </tr>
           <tr>
             <td style="font-size:14px; font-weight:600; text-decoration:underline;">
@@ -1141,13 +1173,215 @@ export const appointmentReceiptTemplate = {
     <tr>
       <td style="padding:30px;">
         <p style="color:#fff;">Need More Help?</p>
-        <a href="#" style="color:#fff; text-decoration:underline;">We are here to help you out</a>
+        <a href="#" style="color:#fff; text-decoration:underline;">
+          We are here to help you out
+        </a>
       </td>
     </tr>
   </table>
 
 </body>
 </html>
-    `;
+`;
   },
 };
+
+
+
+// export const appointmentReceiptTemplate = {
+//   subject: () =>
+//     `Appointment Receipt`,
+
+//   body: ({
+//     logo = 'https://getzynq.io:4000/logo1.png',
+//     doctor_image,
+//     doctor_name,
+//     clinic_name,
+//     visit_link,
+//     refund_policy,
+//     subtotal,
+//     vat_amount,
+//     vat_percentage,
+//     treatments = [],
+//   }) => {
+
+//     // Convert your treatment array → HTML table rows
+//     const treatmentHTML = treatments
+//       .map((item) => {
+//         // Sub-treatment rows (if exist)
+//         const subHTML =
+//           item.sub_treatments && item.sub_treatments.length > 0
+//             ? item.sub_treatments
+//               .map(
+//                 (sub) => `
+//                     <tr>
+//                       <td style="font-family: 'Poppins', sans-serif; text-align:left;">• ${sub.name ||sub.swedish }</td>
+//                       <td style="font-family: 'Poppins', sans-serif; text-align:left; opacity:0.6;">SEK ${sub.price}</td>
+//                     </tr>
+//                   `
+//               )
+//               .join("")
+//             : "";
+
+//         // If treatment has sub-treatments → Header row + sub rows  
+//         if (subHTML) {
+//           return `
+//             <tr>
+//               <td style="font-family: 'Poppins', sans-serif; font-size:18px; font-weight:600; text-align:left;">
+//                 ${item.name || item.swedish}
+//               </td>
+//               <td></td>
+//             </tr>
+//             ${subHTML}
+//           `;
+//         }
+
+//         // Simple treatment (no sub-treatments)
+//         return `
+//           <tr>
+//             <td style="font-family:'Poppins',sans-serif; text-align:left;">
+//               ${item.name ||item.swedish}
+//             </td>
+//             <td style="font-family:'Poppins',sans-serif; text-align:left; opacity:0.6;">
+//               SEK ${item.price}
+//             </td>
+//           </tr>
+//         `;
+//       })
+//       .join("");
+
+//     // HTML TEMPLATE -------------------------------------------------------
+//     return `
+// <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+// <html>
+
+// <head>
+//   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+//   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+//   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+//   <title>Appointment Receipt</title>
+
+//   <style>
+//     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+//   </style>
+// </head>
+
+// <body style="margin:0; background:#f2f4f6; padding:30px 0; text-align:center; font-family:Poppins;">
+  
+//   <!-- Logo -->
+//   <table align="center" style="width:100%; max-width:620px; background:#fff;">
+//     <tr>
+//       <td style="padding:15px;">
+//         <img src="${logo}" style="width:180px; height:85px; object-fit:contain;" alt="Logo">
+//       </td>
+//     </tr>
+//   </table>
+
+//   <!-- Body -->
+//   <table align="center" style="width:100%; max-width:620px; background:#fff;">
+//     <tr>
+//       <td style="padding:30px;">
+
+//         <p style="font-size:22px; font-weight:600;font-family: 'Poppins', sans-serif;">Appointment Receipt</p>
+
+//         <!-- Doctor Box -->
+//         <table width="100%" cellpadding="10" cellspacing="0" style="border:1px solid #e0e0e0; border-radius:6px; margin-top:20px;">
+//           <tr>
+//             <td width="60">
+//               <img src="${doctor_image}" style="width:60px; height:60px; border-radius:8px;" alt="">
+//             </td>
+//             <td style="font-size:16px; font-weight:600; text-align:left;font-family: 'Poppins', sans-serif;">${doctor_name}</td>
+//           </tr>
+//         </table>
+
+//         <table  width="100%" cellpadding="10" cellspacing="0" style="border:1px solid #e0e0e0; border-radius:6px; margin-top:25px;">
+
+//          <tr>
+//             <td colspan="2" style="font-size:20px; font-weight:600; text-align:left;font-family: 'Poppins', sans-serif;">Appointment Details</td>
+//           </tr>
+//           <tr>
+// <td style="  font-family: 'Poppins', sans-serif; text-align: left;">Clinic Name</td>
+// <td style="  font-family: 'Poppins', sans-serif; text-align: left;  opacity: 0.6;">xyz </td>
+// </tr>
+// <tr>
+// <td style="  font-family: 'Poppins', sans-serif; text-align: left;">Order Number</td>
+// <td style="  font-family: 'Poppins', sans-serif; text-align: left;  opacity: 0.6;">#23</td>
+// </tr>
+// <tr>
+// <td style="  font-family: 'Poppins', sans-serif; text-align: left;">Booking Date</td>
+// <td style="  font-family: 'Poppins', sans-serif; text-align: left;  opacity: 0.6;">22/2/2025</td>
+// </tr>
+// <tr>
+// <td style="  font-family: 'Poppins', sans-serif; text-align: left;">Treatment Date</td>
+// <td style="  font-family: 'Poppins', sans-serif; text-align: left;  opacity: 0.6;">22/2/2025</td>
+// </tr>
+
+//         </table>
+
+//         <!-- Treatments -->
+//         <table width="100%" cellpadding="10" cellspacing="0" style="border:1px solid #e0e0e0; border-radius:6px; margin-top:25px;">
+//           <tr>
+//             <td colspan="2" style="font-size:20px; font-weight:600; text-align:left;font-family: 'Poppins', sans-serif;">Treatments</td>
+//           </tr>
+
+        
+
+//           ${treatmentHTML}
+
+//           <tr><td colspan="2" style="height:1px; background:#ddd; padding-top:0px; padding-bottom:0px;"></td></tr>
+
+//           <tr>
+//             <td style="text-align:left;font-family: 'Poppins', sans-serif;">Subtotal (incl. VAT)</td>
+//             <td style="text-align:left;font-family: 'Poppins', sans-serif; opacity:0.6;">${subtotal}</td>
+//           </tr>
+
+//           <tr>
+//             <td style="text-align:left;font-family: 'Poppins', sans-serif;">Where as VAT (${vat_percentage}%)</td>
+//             <td style="text-align:left; opacity:0.6;font-family: 'Poppins', sans-serif;">${vat_amount}</td>
+//           </tr>
+//         </table>
+
+
+//         <!-- Refund Policy -->
+//         <p style="padding-top:25px; color:#666; line-height:22px;font-family: 'Poppins', sans-serif;">
+//           ${refund_policy}
+//         </p>
+
+
+
+//         <!-- Clinic -->
+//         <table width="100%" cellpadding="12" style="border:1px solid #e0e0e0; border-radius:6px; background:#f5f5f5; margin-top:25px;">
+//           <tr>
+//             <td style="font-size:16px; font-weight:600;font-family: 'Poppins', sans-serif;">${clinic_name}</td>
+//           </tr>
+//           <tr>
+//             <td style="font-size:14px; font-weight:600; text-decoration:underline;">
+//               <a href="${visit_link}" style="color:#000;font-family: 'Poppins', sans-serif;">Visit</a>
+//             </td>
+//           </tr>
+//         </table>
+
+//         <div style="padding-top:30px; text-align:left;">
+//           <h4 style="margin-bottom:10px;font-family: 'Poppins', sans-serif;">Cheers,</h4>
+//           <p style="font-family: 'Poppins', sans-serif;">ZYNQ Team</p>
+//         </div>
+
+//       </td>
+//     </tr>
+//   </table>
+
+//   <!-- Footer -->
+//   <table align="center" style="width:100%; max-width:620px; background:#282828;">
+//     <tr>
+//       <td style="padding:30px;">
+//         <p style="color:#fff;font-family: 'Poppins', sans-serif;">Need More Help?</p>
+//         <a href="#" style="color:#fff; text-decoration:underline;font-family: 'Poppins', sans-serif;">We are here to help you out</a>
+//       </td>
+//     </tr>
+//   </table>
+
+// </body>
+// </html>
+//     `;
+//   },
+// };

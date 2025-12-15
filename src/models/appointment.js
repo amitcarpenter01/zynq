@@ -1453,3 +1453,14 @@ export const updateAppointmentConcerns = async (appointment_id, concerns) => {
         throw new Error("Failed to update appointment concerns.");
     }
 }
+
+export const getNumberOfAppointments = async (user_id) => {
+    try {
+        return await db.query(`
+            SELECT COUNT(*) as count FROM tbl_appointments WHERE user_id = ?
+        `, [user_id]);
+    } catch (error) {
+        console.error("Database Error in getNumberOfAppointments:", error.message);
+        throw new Error("Failed to get number of appointments.");
+    }
+}
