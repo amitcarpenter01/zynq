@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
 import { sendEmail } from '../../services/send_email.js';
-import { appointmentBookedTemplate, appointmentReceiptTemplate } from '../../utils/templates.js';
+import { appointmentBookedTemplate, appointmentReceiptTemplate, appointmentReceiptTemplateSwedish } from '../../utils/templates.js';
 import { getAdminCommissionRatesModel } from '../../models/admin.js';
 import { createPaymentSessionForAppointment } from '../../models/payment.js';
 import { booleanValidation } from '../../utils/joi.util.js';
@@ -1737,11 +1737,21 @@ export const deleteDraftAppointment = asyncHandler(async (req, res) => {
 
 const formatDate = (date) => {
   const d = new Date(date);
+
   const day = String(d.getDate()).padStart(2, "0");
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
+
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12; // convert 0 → 12
+  hours = String(hours).padStart(2, "0");
+
+  return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`;
 };
+
 
 const generateOrderNumber = (start_time) => {
   return `#${new Date(start_time).getTime()}`;
@@ -1819,13 +1829,14 @@ export const sendReciept = async (req, res) => {
         const [totalAppointmentBooked] = await appointmentModel.getNumberOfAppointments(userId);
         const formattedAppointmentCount = formatAppointmentCount(totalAppointmentBooked.count);
 
-
+        if(language == "en"){
+            
         await sendEmail({
-            to: req.user.email,
+            to: "rohangupta.ctinfotech@gmail.com",
             subject: appointmentReceiptTemplate.subject(),
             html: appointmentReceiptTemplate.body({
                 doctor_image: data.profile_image,
-                doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name}`,
+                doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
                 clinic_name: data.clinic_name,
                 visit_link: "#",
                 refund_policy: "This appointment can be cancelled and will be fully refunded up to  24 hours before the schedule time.",
@@ -1840,11 +1851,39 @@ export const sendReciept = async (req, res) => {
                 })(),
 
                 treatments: data.treatments,
-                booking_date : formatDate(data.created_at),
-                treatment_date : formatDate(data.start_time),
+                start_time : formatDate(data.start_time),
+                end_time : formatDate(data.end_time),
                 order_number : `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
             }),
         });
+        }else{
+            
+        await sendEmail({
+            to: req.user.email,
+            subject: appointmentReceiptTemplateSwedish.subject(),
+            html: appointmentReceiptTemplateSwedish.body({
+                doctor_image: data.profile_image,
+                doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
+                clinic_name: data.clinic_name,
+                visit_link: "#",
+                refund_policy: "Denna bokade tid kan avbokas och återbetalas i sin helhet upp till 24 timmar före den schemalagda tiden.",
+                subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
+                vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25))}` : "SEK 0.00",
+                vat_percentage: (() => {
+                    const total = parseFloat(data.total_price) || 0;
+                    const vat = parseFloat(data.vat_amount) || 0;
+                    const base = total - vat;
+
+                    return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
+                })(),
+
+                treatments: data.treatments,
+                start_time : formatDate(data.start_time),
+                end_time : formatDate(data.end_time),
+                order_number : `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
+            }),
+        });
+        }
 
 
         return handleSuccess(
