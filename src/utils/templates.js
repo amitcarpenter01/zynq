@@ -1147,11 +1147,11 @@ export const appointmentReceiptTemplate = {
                       <td style="font-family:'Poppins',sans-serif; text-align:left;">${order_number}</td>
                     </tr>
                     <tr>
-                      <td style="font-family:'Poppins',sans-serif; text-align:left; font-weight:600;">Start Date & Time</td>
+                      <td style="font-family:'Poppins',sans-serif; text-align:left; font-weight:600;">Start Date</td>
                       <td style="font-family:'Poppins',sans-serif; text-align:left;">${start_time}</td>
                     </tr>
                     <tr>
-                      <td style="font-family:'Poppins',sans-serif; text-align:left; font-weight:600;">End Date & Time</td>
+                      <td style="font-family:'Poppins',sans-serif; text-align:left; font-weight:600;">End Date</td>
                       <td style="font-family:'Poppins',sans-serif; text-align:left;">${end_time}</td>
                     </tr>
                   </table>
@@ -1394,11 +1394,11 @@ export const appointmentReceiptTemplateSwedish = {
                       <td style="font-family:'Poppins',sans-serif; text-align:left;">${order_number}</td>
                     </tr>
                     <tr>
-                      <td style="font-family:'Poppins',sans-serif; text-align:left; font-weight:600;">Startdatum och tid</td>
+                      <td style="font-family:'Poppins',sans-serif; text-align:left; font-weight:600;">Startdatum</td>
                       <td style="font-family:'Poppins',sans-serif; text-align:left;">${start_time}</td>
                     </tr>
                     <tr>
-                      <td style="font-family:'Poppins',sans-serif; text-align:left; font-weight:600;">Slutdatum och tid</td>
+                      <td style="font-family:'Poppins',sans-serif; text-align:left; font-weight:600;">Slutdatum</td>
                       <td style="font-family:'Poppins',sans-serif; text-align:left;">${end_time}</td>
                     </tr>
                   </table>
