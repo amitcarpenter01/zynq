@@ -1735,6 +1735,32 @@ export const deleteDraftAppointment = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language, is_appointment ? "APPOINTMENT_DELETED_SUCCESSFULLY" : "DRAFT_APPOINTMENT_DELETED_SUCCESSFULLY",);
 });
 
+const formatDate = (date) => {
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const generateOrderNumber = (start_time) => {
+  return `#${new Date(start_time).getTime()}`;
+};
+
+const formatAppointmentCount = (count) => {
+  const str = String(count);
+
+  // If more than 3 digits → take first 3
+  if (str.length > 3) {
+    return str.slice(0, 3);
+  }
+
+  // If less than 3 digits → pad with leading zeros
+  return str.padStart(3, "0");
+};
+
+
+
 export const sendReciept = async (req, res) => {
     try {
 
@@ -1757,7 +1783,6 @@ export const sendReciept = async (req, res) => {
         // ----------------- Fetch appointment -----------------
         const appointments = await appointmentModel.getAppointmentsById(userId, appointment_id, language);
 
-        console.log("appointments", appointments);
 
         if (!appointments.length) {
             return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", null);
@@ -1791,6 +1816,10 @@ export const sendReciept = async (req, res) => {
         const data = result[0];
 
 
+        const [totalAppointmentBooked] = await appointmentModel.getNumberOfAppointments(userId);
+        const formattedAppointmentCount = formatAppointmentCount(totalAppointmentBooked.count);
+
+
         await sendEmail({
             to: req.user.email,
             subject: appointmentReceiptTemplate.subject(),
@@ -1810,7 +1839,10 @@ export const sendReciept = async (req, res) => {
                     return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
                 })(),
 
-                treatments: data.treatments
+                treatments: data.treatments,
+                booking_date : formatDate(data.created_at),
+                treatment_date : formatDate(data.start_time),
+                order_number : `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
             }),
         });
 
