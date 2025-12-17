@@ -295,6 +295,28 @@ export const sendFaceResultToEmail = async (req, res) => {
     }
 };
 
+export const deleteFaceScanResultByIdController = async (req, res) => {
+    try {
+        let { face_scan_result_id } = req.body;
+
+        const language = req?.user?.language || 'en';
+
+
+        const [faceScanResult] = await apiModels.getFaceScanResultById(face_scan_result_id );
+
+        if (isEmpty(faceScanResult)) return handleError(res, 404, 'en', 'FACE_SCAN_RESULT_NOT_FOUND');
+
+        const deleteFaceResult = await apiModels.delete_face_scan_result_by_id(face_scan_result_id);
+
+        handleSuccess(res, 200, language, 'REPORT_DELETED_SUCCESSFULLY');
+    } catch (error) {
+        console.error('Error in getFaceScanPDF:', error);
+        return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+    }
+};
+
+
+
 export const sendReportToChat = asyncHandler(async (req, res) => {
     const { chat_id, report_id } = req.body;
 

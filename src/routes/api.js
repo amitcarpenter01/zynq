@@ -222,6 +222,11 @@ router.post('/send-reciept', authenticateUser, appointmentController.sendReciept
 
 router.post('/send-face-result', authenticateUser, validate(sendFaceResultToEmailSchema, "body"), faceScanControllers.sendFaceResultToEmail);
 
+
+router.post('/delete-face-result', authenticateUser, validate(sendFaceResultToEmailSchema, "body"), faceScanControllers.deleteFaceScanResultByIdController);
+
+
+
 router.post('/get-all-faqs', optionalAuthenticateUser, validate(getAllFAQSchema, "body"), getAllFAQs);
 
 router.get('/faq-categories', optionalAuthenticateUser, getAllFAQCategories);
