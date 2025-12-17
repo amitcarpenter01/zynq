@@ -132,6 +132,8 @@
   "PRODUCTS_FETCHED_SUCCESSFULLY": "Produkter hämtade framgångsrikt",
   "NO_PRODUCTS_FOUND": "Inga produkter hittades",
   "INVALID_JSON_FOR_TREATMENTS": "Ogiltigt JSON för behandlingar",
+  "INVALID_JSON_FOR_EDUCATION": "Ogiltig JSON för utbildning",
+  "INVALID_JSON_FOR_EXPERIENCE": "Ogiltig JSON för upplevelsen",
   "INVALID_JSON_FOR_EQUIPMENTS": "Ogiltigt JSON för utrustning",
   "INVALID_JSON_FOR_SKIN_TYPES": "Ogiltigt JSON för hudtyper",
   "INVALID_JSON_FOR_SEVERITY_LEVELS": "Ogiltigt JSON för allvarlighetsnivåer",
@@ -253,6 +255,7 @@
   "USER_ALREADY_EXISTS": "Ett konto med denna e-postadress finns redan. Använd en annan e-postadress",
   "FACE_SCAN_RESULT_NOT_FOUND": "Ansiktsskanningsresultat hittades inte",
   "REPORT_SENT_SUCCESSFULLY": "Rapport skickad framgångsrikt till din registrerade e-postadress",
+  "REPORT_DELETED_SUCCESSFULLY": "Rapporten har raderats",
   "PDF_NOT_FOUND": "PDF hittades inte",
   "RATING_STATUS_UPDATED": "Betygsstatus uppdaterad framgångsrikt",
   "FAQ_FETCHED_SUCCESSFULLY": "Vanliga frågor hämtade framgångsrikt",
@@ -315,5 +318,6 @@
   "SUB_TREATMENT_MASTER_UPDATED_SUCCESSFULLY": "Huvuddelbehandling uppdaterad framgångsrikt",
   "SUB_TREATMENT_MASTER_ADDED_SUCCESSFULLY": "Huvuddelbehandling tillagd framgångsrikt",
   "SUB_TREATMENT_MASTER_DELETED_SUCCESSFULLY": "Huvuddelbehandling raderad framgångsrikt",
-  "RECIEPT_SENT_SUCCESSFULLY": "Kvitto skickat till din registrerade e-postadress"
+  "RECIEPT_SENT_SUCCESSFULLY": "Kvitto skickat till din registrerade e-postadress",
+  "CLINIC_CREATED_SUCCESSFULLY": "Clinic Created Successfully"
 }

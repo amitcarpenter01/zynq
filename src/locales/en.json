@@ -132,6 +132,8 @@
   "PRODUCTS_FETCHED_SUCCESSFULLY": "Products Fetched Successfully",
   "NO_PRODUCTS_FOUND": "No Products Found",
   "INVALID_JSON_FOR_TREATMENTS": "Invalid JSON for treatments",
+  "INVALID_JSON_FOR_EDUCATION": "Invalid JSON for education",
+  "INVALID_JSON_FOR_EXPERIENCE": "Invalid JSON for experience",
   "INVALID_JSON_FOR_EQUIPMENTS": "Invalid JSON for equipments",
   "INVALID_JSON_FOR_SKIN_TYPES": "Invalid JSON for skin_types",
   "INVALID_JSON_FOR_SEVERITY_LEVELS": "Invalid JSON for severity_levels",
@@ -254,6 +256,7 @@
   "USER_ALREADY_EXISTS": "An account with this email already exists. Please use a different email",
   "FACE_SCAN_RESULT_NOT_FOUND": "Face Scan Result Not Found",
   "REPORT_SENT_SUCCESSFULLY": "Report sent successfully on your registered email",
+  "REPORT_DELETED_SUCCESSFULLY": "Report deleted successfully",
   "PDF_NOT_FOUND": "PDF Not Found",
   "RATING_STATUS_UPDATED": "Rating Status Updated Successfully",
   "FAQ_FETCHED_SUCCESSFULLY": "FAQ Fetched Successfully",
@@ -316,6 +319,6 @@
   "SUB_TREATMENT_MASTER_UPDATED_SUCCESSFULLY": "Sub Treatment Master Updated Successfully",
   "SUB_TREATMENT_MASTER_ADDED_SUCCESSFULLY": "Sub Treatment Master Added Successfully",
   "SUB_TREATMENT_MASTER_DELETED_SUCCESSFULLY": "Sub Treatment Master Deleted Successfully",
-  "RECIEPT_SENT_SUCCESSFULLY": "Receipt sent successfully on your registered email"
-  
+  "RECIEPT_SENT_SUCCESSFULLY": "Receipt sent successfully on your registered email",
+  "CLINIC_CREATED_SUCCESSFULLY": "Clinic Created Successfully"
 }
