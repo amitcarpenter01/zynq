@@ -202,6 +202,25 @@ export const get_face_scan_result_by_id = async (user_id, face_scan_result_id) =
     }
 };
 
+export const getFaceScanResultById = async (face_scan_result_id) => {
+    try {
+        return await db.query(`SELECT * FROM tbl_face_scan_results WHERE face_scan_result_id = ?`, [face_scan_result_id]);
+    } catch (error) {
+        console.error("DB Error in get_face_scan_result_by_id:", error);
+        throw new Error("Failed to fetch face scan result data");
+    }
+};
+
+
+export const delete_face_scan_result_by_id = async (face_scan_result_id) => {
+    try {
+        return await db.query( `DELETE FROM tbl_face_scan_results WHERE face_scan_result_id = ?`, [face_scan_result_id]);
+    } catch (error) {
+        console.error("DB Error in get_face_scan_result_by_id:", error);
+        throw new Error("Failed to fetch face scan result data");
+    }
+};
+
 
 
 //======================================= Doctor =========================================
@@ -404,7 +423,7 @@ export const getAllDoctors = async ({
 //       LEFT JOIN tbl_doctor_treatments dt2 ON d.doctor_id = dt2.doctor_id
 //       LEFT JOIN tbl_sub_treatment_master st ON dt2.sub_treatment_id = st.sub_treatment_id
 
-      
+
 //     `;
 
 //         // ---------- Joins & filters ----------
