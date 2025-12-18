@@ -9,6 +9,7 @@ import dbOperations from '../../models/common.js';
 import { fetchZynqUserByUserId } from "../../models/api.js";
 import { generateDoctorsEmbeddingsV2 } from "../api/embeddingsController.js";
 import { applyLanguageOverwrite } from "../../utils/misc.util.js";
+import { mapTreatmentsForClinic } from "../admin/doctorController.js";
 
 dotenv.config();
 
@@ -117,7 +118,7 @@ export const addContactInformation = async (req, res) => {
         const schema = Joi.object({
             street_address: Joi.string().required(),
             city: Joi.string().required(),
-            state: Joi.string().optional().allow('',null),
+            state: Joi.string().optional().allow('', null),
             zip_code: Joi.string().required(),
             latitude: Joi.number().required(),
             longitude: Joi.number().required(),
@@ -419,14 +420,15 @@ export const addExpertise = async (req, res) => {
         // ---------- UPDATE CLINIC TREATMENTS ----------
         const treatmentIds = value.treatments.map((item) => item.treatment_id);
 
-        if (treatmentIds.length > 0) {
-            const clinicTreatments = await clinicModels.getClinicTreatments(clinic_id);
+        if (Array.isArray(value.treatments) && value.treatments.length > 0) {
+            const mappedTreatments = mapTreatmentsForClinic(value.treatments);
 
-            if (clinicTreatments && clinicTreatments.length > 0) {
-                await clinicModels.updateClinicTreatments(treatmentIds, clinic_id);
-            } else {
-                await clinicModels.insertClinicTreatments(treatmentIds, clinic_id);
-            }
+            const treatmentsData =
+                await clinicModels.updateClinicMappedTreatments(
+                    clinic_id,
+                    mappedTreatments
+                );
+            await doctorModels.update_doctor_treatments(doctorId, value.treatments);
         }
 
         // ---------- UPDATE CLINIC SURGERIES ----------
@@ -623,9 +625,9 @@ export const getDoctorProfile = async (req, res) => {
                     : `${APP_URL}clinic/files/${img.image_url}`,
             }));
 
-            // applyLanguageOverwrite({ ...profileData, clinic, completionPercentage }, language)
+        // applyLanguageOverwrite({ ...profileData, clinic, completionPercentage }, language)
 
-        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED",{ ...profileData, clinic, completionPercentage });
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, clinic, completionPercentage });
     } catch (error) {
         console.error(error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");

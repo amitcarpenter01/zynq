@@ -130,7 +130,7 @@ const calculateProfileCompletion = (data) => {
   );
 };
 
-const buildClinicData = ({
+export const buildClinicData = ({
   zynq_user_id,
   clinic_name,
   org_number,
@@ -199,7 +199,6 @@ export const onboardClinic = async (req, res) => {
       longitude: Joi.number().optional().allow("", null),
       website_url: Joi.string().optional().allow("", null),
       fee_range: Joi.string().optional().allow("", null),
-      treatments: Joi.array().items(Joi.string()).optional().allow("", null),
       clinic_timing: Joi.object({
         monday: daySchema.optional().allow("", null),
         tuesday: daySchema.optional().allow("", null),
@@ -228,6 +227,25 @@ export const onboardClinic = async (req, res) => {
         .items(Joi.string())
         .optional()
         .allow("", null),
+      treatments: Joi.array()
+        .items(
+          Joi.object({
+            treatment_id: Joi.string().uuid().required(),
+            total_price: Joi.number().precision(2).required(),
+
+            sub_treatments: Joi.array()
+              .items(
+                Joi.object({
+                  sub_treatment_id: Joi.string().uuid().required(),
+                  price: Joi.number().precision(2).required(),
+                })
+              )
+              .optional()
+              .allow(null)
+          })
+        )
+        .optional()
+        .allow(null),
     });
 
     if (typeof req.body.clinic_timing === "string") {
@@ -458,14 +476,8 @@ export const onboardClinic = async (req, res) => {
       await clinicModels.insertClinicLocation(insert_data);
     }
 
-    if (treatments) {
-      const treatmentsData = await clinicModels.getClinicTreatments(clinic_id);
-      if (treatmentsData) {
-        await clinicModels.updateClinicTreatments(treatments, clinic_id);
-        await generateClinicsEmbeddingsV2(zynq_user_id);
-      } else {
-        await clinicModels.insertClinicTreatments(treatments, clinic_id);
-      }
+    if (Array.isArray(treatments) && treatments.length > 0) {
+      const treatmentsData = await clinicModels.updateClinicMappedTreatments(clinic_id, treatments);
     }
 
     if (surgeries) {
@@ -738,7 +750,7 @@ export const updateClinic = async (req, res) => {
 
 export const getAllTreatments = async (req, res) => {
   try {
-    let {language = "en"} = req.query;
+    let { language = "en" } = req.query;
     const treatments = await clinicModels.getAllTreatments();
     if (!treatments.length) {
       return handleError(res, 404, language, "NO_TREATMENTS_FOUND");

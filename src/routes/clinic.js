@@ -26,7 +26,7 @@ const router = express.Router();
 //==================================== upload ==============================
 
 
-const getFieldsFn = async (req) => {
+export const getFieldsFn = async (req) => {
     const certificationType = await clinicModels.getCertificateType();
     if (certificationType.length === 0) {
         return [];
