@@ -3306,7 +3306,7 @@ export const updateConcernApprovalStatusModel = async (concern_id, approval_stat
 export const getZynqUserLanguageModel = async (zynq_user_id) => {
     try {
         return await db.query(
-            `SELECT language FROM tbl_zqnq_users WHERE id = ?`,
+            `SELECT role_id ,language FROM tbl_zqnq_users WHERE id = ?`,
             [zynq_user_id]
         );
     } catch (error) {

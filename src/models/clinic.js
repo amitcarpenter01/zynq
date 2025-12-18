@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { formatImagePath } from "../utils/user_helper.js";
 import { getTopSimilarRows ,translator } from "../utils/misc.util.js";
 import { getTreatmentsAIResult } from "../utils/global_search.js";
+import { v4 as uuidv4 } from "uuid";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,7 +47,7 @@ export const get_clinic_by_zynq_user_id = async (zynq_user_id) => {
                 tcl.city,
                 tcl.state
             FROM tbl_clinics tc
-            JOIN tbl_clinic_locations tcl ON tc.clinic_id = tcl.clinic_id
+            LEFT JOIN tbl_clinic_locations tcl ON tc.clinic_id = tcl.clinic_id
             WHERE zynq_user_id = ?`, [zynq_user_id]
         );
     } catch (error) {
@@ -2905,4 +2906,212 @@ export const getProductByProductAndClinicId = async (product_id, clinic_id) => {
         console.error("getProductByProductAndClinicId error:", error);
         throw error;
     }
+}
+
+export async function createClinicMappedTreatments(clinicId, treatments = []) {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    for (const treatment of treatments) {
+      const clinicTreatmentId = uuidv4();
+
+      /** Insert clinic treatment */
+      await connection.query(
+        `
+        INSERT INTO tbl_mapped_clinic_treatments
+        (clinic_treatment_id, clinic_id, treatment_id, total_price)
+        VALUES (?, ?, ?, ?)
+        `,
+        [
+          clinicTreatmentId,
+          clinicId,
+          treatment.treatment_id,
+          treatment.total_price,
+        ]
+      );
+
+      /** Insert sub-treatments (BULK INSERT) */
+      if (treatment.sub_treatments?.length) {
+        const subValues = treatment.sub_treatments.map((sub) => [
+          uuidv4(),
+          clinicTreatmentId,
+          sub.sub_treatment_id,
+          sub.price,
+        ]);
+
+        await connection.query(
+          `
+          INSERT INTO tbl_mapped_clinic_sub_treatments
+          (clinic_sub_treatment_id, clinic_treatment_id, sub_treatment_id, price)
+          VALUES ?
+          `,
+          [subValues]
+        );
+      }
+    }
+
+    await connection.commit();
+    return { success: true };
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
+  }
+};
+
+
+export async function updateClinicMappedTreatments(clinicId, treatments = []) {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    /** Get existing clinic treatment IDs */
+    const existing = await connection.query(
+      `
+      SELECT clinic_treatment_id
+      FROM tbl_mapped_clinic_treatments
+      WHERE clinic_id = ?
+      `,
+      [clinicId]
+    );
+
+    const ids = existing[0].map((r) => r.clinic_treatment_id);
+
+    /** Delete sub-treatments first */
+    if (ids.length) {
+      await connection.query(
+        `
+        DELETE FROM tbl_mapped_clinic_sub_treatments
+        WHERE clinic_treatment_id IN (?)
+        `,
+        [ids]
+      );
+    }
+
+    /** Delete treatments */
+    await connection.query(
+      `
+      DELETE FROM tbl_mapped_clinic_treatments
+      WHERE clinic_id = ?
+      `,
+      [clinicId]
+    );
+
+    /** Re-insert */
+    for (const treatment of treatments) {
+      const clinicTreatmentId = uuidv4();
+
+      await connection.query(
+        `
+        INSERT INTO tbl_mapped_clinic_treatments
+        (clinic_treatment_id, clinic_id, treatment_id, total_price)
+        VALUES (?, ?, ?, ?)
+        `,
+        [
+          clinicTreatmentId,
+          clinicId,
+          treatment.treatment_id,
+          treatment.total_price,
+        ]
+      );
+
+      if (treatment.sub_treatments?.length) {
+        const subValues = treatment.sub_treatments.map((sub) => [
+          uuidv4(),
+          clinicTreatmentId,
+          sub.sub_treatment_id,
+          sub.price,
+        ]);
+
+        await connection.query(
+          `
+          INSERT INTO tbl_mapped_clinic_sub_treatments
+          (clinic_sub_treatment_id, clinic_treatment_id, sub_treatment_id, price)
+          VALUES ?
+          `,
+          [subValues]
+        );
+      }
+    }
+
+    await connection.commit();
+    return { success: true };
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
+  }
+}
+
+
+export async function getClinicMappedTreatments(clinicId) {
+  try {
+    const rows = await db.query(
+      `
+      SELECT
+        c.clinic_id,
+        c.clinic_name,
+
+        COALESCE(
+          JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'clinic_treatment_id', ct.clinic_treatment_id,
+              'treatment_id', ct.treatment_id,
+              'name', t.name,
+              'swedish', t.swedish,
+              'total_price', ct.total_price,
+              'sub_treatments',
+                COALESCE(
+                  (
+                    SELECT JSON_ARRAYAGG(
+                      JSON_OBJECT(
+                        'clinic_sub_treatment_id', cst.clinic_sub_treatment_id,
+                        'sub_treatment_id', cst.sub_treatment_id,
+                        'name', st.name,
+                        'swedish', st.swedish,
+                        'price', cst.price
+                      )
+                    )
+                    FROM tbl_mapped_clinic_sub_treatments cst
+                    LEFT JOIN tbl_sub_treatment_master st
+                      ON cst.sub_treatment_id = st.sub_treatment_id
+                      AND st.is_deleted = 0
+                    WHERE cst.clinic_treatment_id = ct.clinic_treatment_id
+                  ),
+                  JSON_ARRAY()
+                )
+            )
+          ),
+          JSON_ARRAY()
+        ) AS treatments
+
+      FROM tbl_clinics c
+
+      LEFT JOIN tbl_mapped_clinic_treatments ct
+        ON c.clinic_id = ct.clinic_id
+
+      LEFT JOIN tbl_treatments t
+        ON ct.treatment_id = t.treatment_id
+        AND t.is_deleted = 0
+
+      WHERE c.clinic_id = ?
+        AND c.is_deleted = 0
+
+      GROUP BY c.clinic_id
+      `,
+      [clinicId]
+    );
+
+    if (!rows.length) return null;
+
+    return rows[0];
+  } catch (error) {
+    console.error("Error fetching clinic mapped treatments:", error.message);
+    throw error; // let controller handle response
+  }
 }

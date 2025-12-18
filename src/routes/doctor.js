@@ -13,6 +13,7 @@ import { getAllFAQSchema } from '../validations/faq.validation.js';
 import { getAllFAQCategories, getAllFAQs } from '../controllers/api/FAQController.js';
 import { addAppointmentDraftSchema, addEditConcernSchema, addEditSubtreatmentSchema, addEditTreatmentSchema, deleteConcernSchema, deleteTreatmentSchema } from '../validations/treatment.validation.js';
 import { get_all_concerns, addEditConcern, addEditSubtreatment, getAllTreatments, getAllTreatmentById, addEditTreatment, deleteConcern, deleteTreatment, getAllSubTreatmentMasters } from '../controllers/api/treatmentController.js';
+import { get_Clinic_Mapped_treatments } from '../controllers/admin/clinicController.js';
 
 
 router.get("/get_profile", authenticate(['DOCTOR']), doctorController.getDoctorProfile);
@@ -153,5 +154,10 @@ router.get('/get-allconcerns', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC'])
 router.post('/concern', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(addEditConcernSchema, 'body'), addEditConcern);
 
 router.delete('/concern/:concern_id', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(deleteConcernSchema, 'params'), deleteConcern);
+
+
+
+router.get("/get-clinic-mapped-treatments/:clinic_id",authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']),get_Clinic_Mapped_treatments);
+
 
 export default router;

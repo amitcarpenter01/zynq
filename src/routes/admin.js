@@ -28,7 +28,7 @@ import { get_all_concerns, addEditConcern, getAllTreatments, getAllTreatmentById
 import { uploadDynamicClinicFiles } from '../services/clinic_multer.js';
 import { updateClinicAdmin } from '../controllers/clinic/authController.js';
 import * as clinicModels from '../models/clinic.js';
-import { uploadFileTo } from '../services/doctor_multer.js';
+import { uploadCertificationFieldsTo, uploadFileTo } from '../services/doctor_multer.js';
 import { updateDoctorAdminController } from '../controllers/doctor/profileController.js';
 
 const router = express.Router();
@@ -203,6 +203,34 @@ router.patch("/update-clinic", authenticateAdmin, uploadDynamicClinicFiles(getFi
 
 
 router.patch("/update-doctor", authenticateAdmin, uploadFileTo('profile_images'), updateDoctorAdminController);
+
+
+
+router.post("/add-clinic-onboarding",authenticateAdmin,uploadDynamicClinicFiles(getFieldsFn),clinicControllers.add_clinic_with_onboarding);
+router.get("/get-clinic-mapped-treatments/:clinic_id",authenticateAdmin,clinicControllers.get_Clinic_Mapped_treatments);
+
+const uploadVariousFields = uploadCertificationFieldsTo([
+    { name: 'medical_council', maxCount: 1, subfolder: 'certifications' },
+    { name: 'deramatology_board', maxCount: 1, subfolder: 'certifications' },
+    { name: 'laser_safety', maxCount: 1, subfolder: 'certifications' },
+    { name: 'cosmetology_license', maxCount: 1, subfolder: 'certifications' },
+    { name : "profile", maxCount: 1 , subfolder: 'profile_images' },
+]);
+
+const uploadVariousFieldsForSoloDoctor = uploadCertificationFieldsTo([
+  { name: 'medical_council', maxCount: 1, subfolder: 'certifications' },
+  { name: 'deramatology_board', maxCount: 1, subfolder: 'certifications' },
+  { name: 'laser_safety', maxCount: 1, subfolder: 'certifications' },
+  { name: 'cosmetology_license', maxCount: 1, subfolder: 'certifications' },
+  { name: 'profile', maxCount: 1 },
+  { name: 'logo', maxCount: 1 },
+  { name: 'files', maxCount: 50 }
+]);
+
+
+router.post("/add-doctor-onboarding",authenticateAdmin,uploadVariousFields,doctorControllers.sendDoctorOnaboardingInvitation);
+
+router.post("/add-solo-doctor-onboarding",authenticateAdmin,uploadVariousFieldsForSoloDoctor,doctorControllers.sendSoloDoctorOnaboardingInvitation);
 
 
 export default router;
