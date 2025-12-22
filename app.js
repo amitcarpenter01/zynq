@@ -16,6 +16,8 @@ import { connectDB } from "./src/config/db.js";
 import { loadTreatmentEmbeddings } from "./src/utils/vectorIndex.js";
 import initializeCallSocket from "./src/utils/callSocket.js";
 import { Server } from "socket.io";
+import bodyParser from "body-parser";
+import { handleStripeWebhook } from "./src/controllers/api/appointmentController.js";
 
 // --------------------- ENV + PATH CONFIG ---------------------
 dotenv.config();
@@ -31,6 +33,15 @@ export const openai = process.env.OPENAI_API_KEY ? new OpenAI(process.env.OPENAI
 export const gemini = process.env.GEMINI_API_KEY ? new GoogleGenAI({}) : null;
 
 // --------------------- MIDDLEWARE ---------------------
+
+router.post(
+  "/stripe/webhook",
+  bodyParser.raw({ type: "application/json" }), // Stripe requires raw body
+  handleStripeWebhook
+);
+
+
+
 app.use(cors());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
