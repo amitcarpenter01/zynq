@@ -220,7 +220,7 @@ router.post('/book-direct-appointment', authenticateUser, appointmentController.
 
 router.post(
   "/stripe/webhook",
-  bodyParser.raw({ type: "application/json" }), // Stripe requires raw body
+  // bodyParser.raw({ type: "application/json" }), // Stripe requires raw body
   appointmentController.handleStripeWebhook
 );
 
