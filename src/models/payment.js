@@ -575,32 +575,6 @@ export const createPayLaterSetupSession = async ({ metadata }) => {
   }
 };
 
-
-
-// export const createPayLaterSetupSession = async ({ metadata }) => {
-//   try {
-//     return await stripe.checkout.sessions.create({
-//       mode: "setup", // ⚡ This is SetupIntent
-//       payment_method_types: ["card"],
-
-//       customer: metadata.stripe_customer_id, // Required if user has Stripe customer
-//       setup_intent_data: {
-//         usage: "off_session",
-//         metadata: { appointment_id: metadata.appointment_id },
-//       },
-
-//       success_url: `https://getzynq.io/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}&type=PAY_LATER`,
-//       cancel_url: `https://getzynq.io/payment-cancel/?redirect_url=${metadata.cancel_url}&type=PAY_LATER`,
-
-//       metadata: { appointment_id: metadata.appointment_id },
-//     });
-//   } catch (error) {
-//     console.error("Failed to create PAY_LATER setup session:", error);
-//     throw error;
-//   }
-// };
-
-
 export const getOrCreateStripeCustomerId = async (user_id) => {
   // Check if user already has a stripe_customer_id in DB
   let [user] = await db.query(
