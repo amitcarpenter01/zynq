@@ -2,6 +2,9 @@ import { stripe } from "../../app.js";
 import db from "../config/db.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../services/notifications.service.js";
 import { getSinglePurchasedProductsModel } from "./api.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export const insertPayment = async (
   amount,
@@ -651,7 +654,7 @@ export const verifyStripeWebhook = (rawBody, signature) => {
       rawBody,
       signature,
       // live    'whsec_qVsee2IzT3SbthcJK4XihvLbg4zdL3Yf'
-      'whsec_N8lHIH3YKUfJX2ZKTssAZ6Uw4Erl8BZH'
+      process.env.STRIPE_SIGNING_WEBHOOK_SECRET
     );
     return event;
   } catch (err) {
@@ -715,6 +718,8 @@ export const processDueAuthorizedAppointments = async () => {
   const appointments = await db.query(
     `SELECT t.*,u.stripe_customer_id FROM tbl_appointments t JOIN tbl_users u ON t.user_id = u.user_id WHERE payment_status = 'authorized' AND start_time < NOW()`
   );
+
+  console.log(`Found ${appointments.length} appointments due for payment`);
 
   for (const appt of appointments) {
     try {

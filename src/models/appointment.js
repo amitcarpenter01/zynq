@@ -942,34 +942,34 @@ export const getAppointmentsForNotification = async (windowStart, windowEnd) => 
 export const updateAppointment = async (data) => {
     const {
         appointment_id, doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings,
-        type, start_time, end_time, save_type, status
+        type, start_time, end_time, save_type, status,payment_timing
     } = data;
 
     const query = `
     UPDATE tbl_appointments
     SET doctor_id = ?, clinic_id = ?, total_price = ?, admin_earnings = ?, clinic_earnings = ?, type = ?,
-        start_time = ?, end_time = ?, save_type = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+        start_time = ?, end_time = ?, save_type = ?, status = ?, updated_at = CURRENT_TIMESTAM , payment_timing = ?
     WHERE appointment_id = ?
   `;
-    return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings, type, start_time, end_time, save_type, status, appointment_id]);
+    return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings, type, start_time, end_time, save_type, status,payment_timing, appointment_id]);
 };
 
 export const updateAppointmentV3 = async (data) => {
     const {
         appointment_id, doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings,
-        type, start_time, end_time, save_type, status, total_price_with_discount, discounted_amount
+        type, start_time, end_time, save_type, status, total_price_with_discount, discounted_amount,payment_timing
     } = data;
 
     const query = `
     UPDATE tbl_appointments
     SET doctor_id = ?, clinic_id = ?, total_price = ?, admin_earnings = ?, clinic_earnings = ?, 
     type = ?, start_time = ?, end_time = ?, save_type = ?, status = ?, 
-    updated_at = CURRENT_TIMESTAMP, total_price_with_discount = ?, discounted_amount = ?
+    updated_at = CURRENT_TIMESTAMP, total_price_with_discount = ?, discounted_amount = ? , payment_timing = ?
     WHERE appointment_id = ?
   `;
     return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings,
         clinic_earnings, type, start_time, end_time, save_type, status,
-        total_price_with_discount, discounted_amount, appointment_id]);
+        total_price_with_discount, discounted_amount,payment_timing, appointment_id]);
 };
 
 export const updateAppointmentV2 = async (data) => {
