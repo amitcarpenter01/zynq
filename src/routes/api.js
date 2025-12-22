@@ -218,11 +218,6 @@ router.post('/save-appointment-draft', authenticateUser, appointmentController.s
 router.post('/book-direct-appointment', authenticateUser, appointmentController.bookDirectAppointment);
 
 
-router.post(
-  "/stripe/webhook",
-  // bodyParser.raw({ type: "application/json" }), // Stripe requires raw body
-  appointmentController.handleStripeWebhook
-);
 
 router.post('/mark-appointment-paid', authenticateUser, appointmentController.markAppointmentAsPaid);
 
