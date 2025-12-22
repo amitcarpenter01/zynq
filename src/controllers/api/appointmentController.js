@@ -1404,7 +1404,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             redirect_url: Joi.string().required(),
             cancel_url: Joi.string().required(),
             appointmentType: Joi.string().required(),
-            payment_timing: Joi.string().optional().valid('PAY_NOW', 'PAY_LATER'),
+            payment_timing: Joi.string().required().valid('PAY_NOW', 'PAY_LATER'),
         });
 
         const { error, value } = schema.validate(req.body);
@@ -1527,7 +1527,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             end_time: normalizedEnd,
             is_paid,
             payment_status: is_paid ? "unpaid" : "paid",
-            payment_timing: payment_timing || 'PAY_NOW',
+            payment_timing: payment_timing,
         };
 
         if (inputId) {

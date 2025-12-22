@@ -650,8 +650,8 @@ export const verifyStripeWebhook = (rawBody, signature) => {
     const event = stripe.webhooks.constructEvent(
       rawBody,
       signature,
-      // 'whsec_a0a9955a0968cd854c07c600ac6345d00b8fce59356040e0c02be6a6e3ad1c40'
-      'whsec_qVsee2IzT3SbthcJK4XihvLbg4zdL3Yf'
+      // live    'whsec_qVsee2IzT3SbthcJK4XihvLbg4zdL3Yf'
+      'whsec_N8lHIH3YKUfJX2ZKTssAZ6Uw4Erl8BZH'
     );
     return event;
   } catch (err) {
