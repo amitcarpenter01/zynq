@@ -9,6 +9,7 @@ import { sendEmail } from "../services/send_email.js";
 import { generatePassword } from "./user_helper.js";
 import { sendAppointmentNotifications } from "../services/notifications.service.js";
 import { deleteGuestData, sendInvitationReminders } from "./misc.util.js";
+import { processDueAuthorizedAppointments } from "../models/payment.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -101,8 +102,12 @@ export const send_clinic_email_cron = async () => {
 };
 
 // Schedule: Every 10 minutes
+// export const appointmentReminderCron = () => {
+//     cron.schedule('*/10 * * * *', sendAppointmentNotifications);
+// };
 export const appointmentReminderCron = () => {
     cron.schedule('*/10 * * * *', sendAppointmentNotifications);
+    cron.schedule('* * * * *', processDueAuthorizedAppointments);
 };
 
 export const invitationReminderCron = () => {
@@ -112,3 +117,4 @@ export const invitationReminderCron = () => {
 export const deleteGuestDataCron = () => {
     cron.schedule('0 3 * * *', deleteGuestData);
 }
+

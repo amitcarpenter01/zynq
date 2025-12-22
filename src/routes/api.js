@@ -1,4 +1,5 @@
 import express from 'express';
+import bodyParser from "body-parser";
 import { upload } from '../services/multer.js';
 import { authenticateAdmin, authenticateUser, optionalAuthenticateUser } from '../middleware/auth.js';
 import { authenticate } from '../middleware/web_user_auth.js';;
@@ -215,6 +216,13 @@ router.post('/request-callback/:doctor_id', authenticateUser, validate(requestCa
 router.post('/save-appointment-draft', authenticateUser, appointmentController.saveAppointmentAsDraft);
 
 router.post('/book-direct-appointment', authenticateUser, appointmentController.bookDirectAppointment);
+
+
+router.post(
+  "/stripe/webhook",
+  bodyParser.raw({ type: "application/json" }), // Stripe requires raw body
+  appointmentController.handleStripeWebhook
+);
 
 router.post('/mark-appointment-paid', authenticateUser, appointmentController.markAppointmentAsPaid);
 
