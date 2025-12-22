@@ -774,7 +774,7 @@ export const handleCheckoutSessionCompleted = async (session) => {
 
   await db.query(
     `UPDATE tbl_appointments 
-     SET stripe_payment_method_id = ?, stripe_setup_intent_id = ?
+     SET stripe_payment_method_id = ?, stripe_setup_intent_id = ? , payment_status = 'authorized'
      WHERE appointment_id = ?`,
     [setupIntent.payment_method, setupIntent.id, appointment_id]
   );
