@@ -38,6 +38,7 @@ app.use(
   "/api/stripe/webhook",
   (req, res, next) => {
     console.log("🟢 Stripe webhook endpoint hit");
+    next();
   },
   bodyParser.raw({ type: "application/json" }), // Stripe requires raw body,
   handleStripeWebhook
