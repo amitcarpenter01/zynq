@@ -612,6 +612,7 @@ export const getOrCreateStripeCustomerId = async (user_id) => {
   );
 
   if (user?.stripe_customer_id) {
+    console.log("User already has a Stripe customer ID", user.stripe_customer_id);
     return user.stripe_customer_id;
   }
 
@@ -621,6 +622,10 @@ export const getOrCreateStripeCustomerId = async (user_id) => {
     name: user.full_name,
     metadata: { user_id },
   });
+
+  console.log("Created Stripe customer", customer,);
+
+  console.log("User  Stripe customer ID", user.stripe_customer_id);
 
   // Store in DB
   await db.query(
