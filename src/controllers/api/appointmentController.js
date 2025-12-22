@@ -1592,12 +1592,14 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 
         if (is_paid && appointmentType === "Video Call" && final_total != 0) {
 
+            let session ;
+
             if (payment_timing === 'PAY_LATER') {
 
                 
                 const stripe_customer_id = await getOrCreateStripeCustomerId(user_id);
 
-                const session = await createPayLaterSetupSession({
+                 session = await createPayLaterSetupSession({
                     metadata: {
                         appointment_id,
                         redirect_url,
@@ -1609,7 +1611,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
                 const updateStatus = await updateAuthorizationSetupIntentIdOfAppointment(session.setup_intent, appointment_id);
 
             } else {
-                const session = await createPaymentSessionForAppointment({
+               session = await createPaymentSessionForAppointment({
                     metadata: {
                         order_lines: [
                             {
