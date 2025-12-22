@@ -554,3 +554,178 @@ export const createPaymentSessionForAppointment = async ({ metadata }) => {
     throw error;
   }
 };
+
+
+export const createPayLaterSetupSession = async ({ metadata }) => {
+  try {
+    return await stripe.checkout.sessions.create({
+      mode: "setup", // ⚡ This is SetupIntent
+      payment_method_types: ["card"],
+
+      customer: metadata.stripe_customer_id, // Required if user has Stripe customer
+      setup_intent_data: {
+        usage: "off_session",
+        metadata: { appointment_id: metadata.appointment_id },
+      },
+
+      success_url: `https://getzynq.io/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}&type=PAY_LATER`,
+      cancel_url: `https://getzynq.io/payment-cancel/?redirect_url=${metadata.cancel_url}&type=PAY_LATER`,
+
+      metadata: { appointment_id: metadata.appointment_id },
+    });
+  } catch (error) {
+    console.error("Failed to create PAY_LATER setup session:", error);
+    throw error;
+  }
+};
+
+
+export const getOrCreateStripeCustomerId = async (user_id) => {
+  // Check if user already has a stripe_customer_id in DB
+  let [user] = await db.query(
+    ` SELECT stripe_customer_id, email, full_name
+      FROM tbl_users
+      WHERE user_id = ?
+    `,
+    [user_id]
+  );
+
+  if (user?.stripe_customer_id) {
+    return user.stripe_customer_id;
+  }
+
+  // Create Stripe customer
+  const customer = await stripe.customers.create({
+    email: user.email,
+    name: user.full_name,
+    metadata: { user_id },
+  });
+
+  // Store in DB
+  await db.query(
+    ` UPDATE tbl_users
+      SET stripe_customer_id = ?
+      WHERE user_id = ?
+    `,
+    [customer.id, user_id]
+  );
+
+  return customer.id;
+};
+
+export const updateAuthorizationSetupIntentIdOfAppointment = async (stripe_setup_intent_id, appointment_id) => {
+  try {
+
+    return db.query(
+      `UPDATE tbl_appointments SET stripe_setup_intent_id  = ? WHERE appointment_id = ?`,
+      [stripe_setup_intent_id, appointment_id]
+    );
+
+  } catch (err) {
+    console.error("Error in updateAuthorizationStatusOfAppointment:", err);
+  }
+};
+
+
+export const verifyStripeWebhook = (rawBody, signature) => {
+  try {
+    const event = stripe.webhooks.constructEvent(
+      rawBody,
+      signature,
+      // 'whsec_a0a9955a0968cd854c07c600ac6345d00b8fce59356040e0c02be6a6e3ad1c40'
+      'whsec_qVsee2IzT3SbthcJK4XihvLbg4zdL3Yf'
+    );
+    return event;
+  } catch (err) {
+    console.error("Stripe Webhook Verification Failed:", err.message);
+    throw new Error(`Webhook Verification Failed: ${err.message}`);
+  }
+};
+
+export const handleSetupIntentSucceeded = async (setupIntent) => {
+  const appointment_id = setupIntent.metadata?.appointment_id;
+  if (!appointment_id) {
+    console.log("No appointment_id found in SetupIntent metadata");
+    return;
+  }
+
+  // Save payment method for future off-session charge
+
+  const update = await db.query(
+    `UPDATE tbl_appointments SET stripe_payment_method_id = ? WHERE appointment_id = ?`,
+    [setupIntent.payment_method, appointment_id]);
+
+  console.log(`SetupIntent succeeded for appointment ${appointment_id}`);
+};
+
+
+export const handlePaymentIntentSucceeded = async (paymentIntent) => {
+  const appointment_id = paymentIntent.metadata?.appointment_id;
+  if (!appointment_id) {
+    console.log("No appointment_id found in PaymentIntent metadata");
+    return;
+  };
+
+  // Mark appointment as paid
+  const update = await db.query(
+    `UPDATE tbl_appointments SET payment_status = ? WHERE appointment_id = ?`,
+    ["paid", appointment_id]
+  )
+
+  console.log(`PaymentIntent succeeded for appointment ${appointment_id}`);
+};
+
+
+export const handlePaymentIntentFailed = async (paymentIntent) => {
+  const appointment_id = paymentIntent.metadata?.appointment_id;
+  if (!appointment_id) {
+    console.log("No appointment_id found in PaymentIntent metadata");
+    return;
+  };
+
+  // Mark payment failed
+  const update = await db.query(
+    `UPDATE tbl_appointments SET payment_status = ? WHERE appointment_id = ?`,
+    ["failed", appointment_id]
+  )
+
+  console.log(`PaymentIntent failed for appointment ${appointment_id}`);
+};
+
+export const processDueAuthorizedAppointments = async () => {
+  // Get all appointments with status 'authorized' and due for payment
+  const appointments = await db.query(
+    `SELECT t.*,u.stripe_customer_id FROM tbl_appointments t JOIN tbl_users u ON t.user_id = u.user_id WHERE payment_status = 'authorized' AND start_time < NOW()`
+  );
+
+  for (const appt of appointments) {
+    try {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: appt.total_price * 100, // Convert to cents
+        currency: "sek",
+        customer: appt.stripe_customer_id,
+        payment_method: appt.stripe_payment_method_id,
+        off_session: true, // Important for off-session charges
+        confirm: true,     // Immediately attempt the payment
+        metadata: { appointment_id: appt.appointment_id },
+      });
+
+      // Save PaymentIntent ID in database
+      const update = await db.query(
+        `UPDATE tbl_appointments SET stripe_payment_intent_id = ? WHERE appointment_id = ?`,
+        [paymentIntent.id, appt.appointment_id]
+      );
+
+      console.log(`Auto-charge succeeded for appointment ${appt.appointment_id}`);
+
+    } catch (err) {
+      console.error(`Auto-charge failed for appointment ${appt.appointment_id}:`, err.message);
+
+      // Mark payment failed in database
+      const updateFailed = await db.query(
+        `UPDATE tbl_appointments SET payment_status = ? WHERE appointment_id = ?`,
+        ["failed", appt.appointment_id]
+      );
+    }
+  }
+};

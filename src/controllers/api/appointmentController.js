@@ -14,7 +14,7 @@ import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
 import { sendEmail } from '../../services/send_email.js';
 import { appointmentBookedTemplate, appointmentReceiptTemplate, appointmentReceiptTemplateSwedish } from '../../utils/templates.js';
 import { getAdminCommissionRatesModel } from '../../models/admin.js';
-import { createPaymentSessionForAppointment } from '../../models/payment.js';
+import { createPayLaterSetupSession, createPaymentSessionForAppointment, getOrCreateStripeCustomerId, handlePaymentIntentFailed, handlePaymentIntentSucceeded, handleSetupIntentSucceeded, updateAuthorizationSetupIntentIdOfAppointment, verifyStripeWebhook } from '../../models/payment.js';
 import { booleanValidation } from '../../utils/joi.util.js';
 import { getIO } from '../../utils/socketManager.js';
 import { onlineUsers } from "../../utils/callSocket.js";
@@ -1403,7 +1403,8 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             end_time: Joi.string().isoDate().required(),
             redirect_url: Joi.string().required(),
             cancel_url: Joi.string().required(),
-            appointmentType: Joi.string().required()
+            appointmentType: Joi.string().required(),
+            payment_timing: Joi.string().optional().valid('PAY_NOW', 'PAY_LATER'),
         });
 
         const { error, value } = schema.validate(req.body);
@@ -1420,7 +1421,8 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             redirect_url,
             cancel_url,
             appointmentType,
-            concerns = []
+            concerns = [],
+            payment_timing
         } = value;
 
         const user_id = req.user.user_id;
@@ -1525,6 +1527,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             end_time: normalizedEnd,
             is_paid,
             payment_status: is_paid ? "unpaid" : "paid",
+            payment_timing: payment_timing || 'PAY_NOW',
         };
 
         if (inputId) {
@@ -1547,21 +1550,38 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 
         // ---------------- PAYMENT SECTION (UPDATED) ----------------
         if (is_paid && appointmentType === "Clinic Visit" && final_total != 0) {
-            const session = await createPaymentSessionForAppointment({
-                metadata: {
-                    order_lines: [
-                        {
-                            name: "Appointment",
-                            quantity: 1,
-                            unit_amount: final_total * 100,
-                        },
-                    ],
-                    appointment_id,
-                    redirect_url,
-                    cancel_url,
-                    currency: "sek",
-                },
-            });
+            if (payment_timing === 'PAY_LATER') {
+
+                const stripe_customer_id = await getOrCreateStripeCustomerId(user_id);
+
+                const session = await createPayLaterSetupSession({
+                    metadata: {
+                        appointment_id,
+                        redirect_url,
+                        cancel_url,
+                        stripe_customer_id: stripe_customer_id
+                    }
+                });
+
+                const updateStatus = await updateAuthorizationSetupIntentIdOfAppointment(session.setup_intent, appointment_id);
+
+            } else {
+                const session = await createPaymentSessionForAppointment({
+                    metadata: {
+                        order_lines: [
+                            {
+                                name: "Appointment",
+                                quantity: 1,
+                                unit_amount: final_total * 100,
+                            },
+                        ],
+                        appointment_id,
+                        redirect_url,
+                        cancel_url,
+                        currency: "sek",
+                    },
+                });
+            }
 
             return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY", session);
         }
@@ -1571,21 +1591,40 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         // const [doctor] = await getDocterByDocterId(doctor_id);
 
         if (is_paid && appointmentType === "Video Call" && final_total != 0) {
-            const session = await createPaymentSessionForAppointment({
-                metadata: {
-                    order_lines: [
-                        {
-                            name: "Appointment",
-                            quantity: 1,
-                            unit_amount: final_total * 100,
-                        },
-                    ],
-                    appointment_id,
-                    redirect_url,
-                    cancel_url,
-                    currency: "sek",
-                },
-            });
+
+            if (payment_timing === 'PAY_LATER') {
+
+                
+                const stripe_customer_id = await getOrCreateStripeCustomerId(user_id);
+
+                const session = await createPayLaterSetupSession({
+                    metadata: {
+                        appointment_id,
+                        redirect_url,
+                        cancel_url,
+                        stripe_customer_id: stripe_customer_id
+                    }
+                });
+
+                const updateStatus = await updateAuthorizationSetupIntentIdOfAppointment(session.setup_intent, appointment_id);
+
+            } else {
+                const session = await createPaymentSessionForAppointment({
+                    metadata: {
+                        order_lines: [
+                            {
+                                name: "Appointment",
+                                quantity: 1,
+                                unit_amount: final_total * 100,
+                            },
+                        ],
+                        appointment_id,
+                        redirect_url,
+                        cancel_url,
+                        currency: "sek",
+                    },
+                });
+            }
 
             return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY", session);
         }
@@ -1620,7 +1659,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         return handleSuccess(res, 201, language, "APPOINTMENT_BOOKED_SUCCESSFULLY", {
             appointment_id,
             chat_id,
-            appointmentDetails : newAppointmentDetails,
+            appointmentDetails: newAppointmentDetails,
         });
 
     } catch (err) {
@@ -1736,39 +1775,39 @@ export const deleteDraftAppointment = asyncHandler(async (req, res) => {
 });
 
 const formatDate = (date) => {
-  const d = new Date(date);
+    const d = new Date(date);
 
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
 
-  let hours = d.getHours();
-  const minutes = String(d.getMinutes()).padStart(2, "0");
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, "0");
 
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12; // convert 0 → 12
-  hours = String(hours).padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12; // convert 0 → 12
+    hours = String(hours).padStart(2, "0");
 
-//    ${hours}:${minutes} ${ampm}
+    //    ${hours}:${minutes} ${ampm}
 
-  return `${day}-${month}-${year}`;
+    return `${day}-${month}-${year}`;
 };
 
 
 const generateOrderNumber = (start_time) => {
-  return `#${new Date(start_time).getTime()}`;
+    return `#${new Date(start_time).getTime()}`;
 };
 
 const formatAppointmentCount = (count) => {
-  const str = String(count);
+    const str = String(count);
 
-  // If more than 3 digits → take first 3
-  if (str.length > 3) {
-    return str.slice(0, 3);
-  }
+    // If more than 3 digits → take first 3
+    if (str.length > 3) {
+        return str.slice(0, 3);
+    }
 
-  // If less than 3 digits → pad with leading zeros
-  return str.padStart(3, "0");
+    // If less than 3 digits → pad with leading zeros
+    return str.padStart(3, "0");
 };
 
 
@@ -1831,60 +1870,60 @@ export const sendReciept = async (req, res) => {
         const [totalAppointmentBooked] = await appointmentModel.getNumberOfAppointments(userId);
         const formattedAppointmentCount = formatAppointmentCount(totalAppointmentBooked.count);
 
-        if(language == "en"){
-            
-        await sendEmail({
-            to: req.user.email,
-            subject: appointmentReceiptTemplate.subject(),
-            html: appointmentReceiptTemplate.body({
-                doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
-                doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
-                clinic_name: data.clinic_name,
-                visit_link: "#",
-                refund_policy: "This appointment can be cancelled and will be fully refunded up to  24 hours before the schedule time.",
-                subtotal: data.total_price ? `SEK ${data.total_price.toFixed(2)}` : "SEK 0.00",
-                vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25)).toFixed(2)}` : "SEK 0.00",
-                vat_percentage: (() => {
-                    const total = parseFloat(data.total_price) || 0;
-                    const vat = parseFloat(data.vat_amount) || 0;
-                    const base = total - vat;
+        if (language == "en") {
 
-                    return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
-                })(),
+            await sendEmail({
+                to: req.user.email,
+                subject: appointmentReceiptTemplate.subject(),
+                html: appointmentReceiptTemplate.body({
+                    doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
+                    doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
+                    clinic_name: data.clinic_name,
+                    visit_link: "#",
+                    refund_policy: "This appointment can be cancelled and will be fully refunded up to  24 hours before the schedule time.",
+                    subtotal: data.total_price ? `SEK ${data.total_price.toFixed(2)}` : "SEK 0.00",
+                    vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25)).toFixed(2)}` : "SEK 0.00",
+                    vat_percentage: (() => {
+                        const total = parseFloat(data.total_price) || 0;
+                        const vat = parseFloat(data.vat_amount) || 0;
+                        const base = total - vat;
 
-                treatments: data.treatments,
-                start_time : formatDate(data.start_time),
-                end_time : formatDate(data.end_time),
-                order_number : `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
-            }),
-        });
-        }else{
-            
-        await sendEmail({
-            to: req.user.email,
-            subject: appointmentReceiptTemplateSwedish.subject(),
-            html: appointmentReceiptTemplateSwedish.body({
-                doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
-                doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
-                clinic_name: data.clinic_name,
-                visit_link: "#",
-                refund_policy: "Denna bokade tid kan avbokas och återbetalas i sin helhet upp till 24 timmar före den schemalagda tiden.",
-                subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
-                vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25))}` : "SEK 0.00",
-                vat_percentage: (() => {
-                    const total = parseFloat(data.total_price) || 0;
-                    const vat = parseFloat(data.vat_amount) || 0;
-                    const base = total - vat;
+                        return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
+                    })(),
 
-                    return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
-                })(),
+                    treatments: data.treatments,
+                    start_time: formatDate(data.start_time),
+                    end_time: formatDate(data.end_time),
+                    order_number: `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
+                }),
+            });
+        } else {
 
-                treatments: data.treatments,
-                start_time : formatDate(data.start_time),
-                end_time : formatDate(data.end_time),
-                order_number : `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
-            }),
-        });
+            await sendEmail({
+                to: req.user.email,
+                subject: appointmentReceiptTemplateSwedish.subject(),
+                html: appointmentReceiptTemplateSwedish.body({
+                    doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
+                    doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
+                    clinic_name: data.clinic_name,
+                    visit_link: "#",
+                    refund_policy: "Denna bokade tid kan avbokas och återbetalas i sin helhet upp till 24 timmar före den schemalagda tiden.",
+                    subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
+                    vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25))}` : "SEK 0.00",
+                    vat_percentage: (() => {
+                        const total = parseFloat(data.total_price) || 0;
+                        const vat = parseFloat(data.vat_amount) || 0;
+                        const base = total - vat;
+
+                        return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
+                    })(),
+
+                    treatments: data.treatments,
+                    start_time: formatDate(data.start_time),
+                    end_time: formatDate(data.end_time),
+                    order_number: `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
+                }),
+            });
         }
 
 
@@ -1907,4 +1946,40 @@ export const sendReciept = async (req, res) => {
         console.error("Error in saveOrBookAppointment:", err);
         return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
     }
+};
+
+
+export const handleStripeWebhook = async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+  let event;
+
+  try {
+    event = verifyStripeWebhook(req.body, sig);
+  } catch (err) {
+    return res.status(400).send(err.message);
+  }
+
+  try {
+    switch (event.type) {
+      case "setup_intent.succeeded":
+        await handleSetupIntentSucceeded(event.data.object);
+        break;
+
+      case "payment_intent.succeeded":
+        await handlePaymentIntentSucceeded(event.data.object);
+        break;
+
+      case "payment_intent.payment_failed":
+        await handlePaymentIntentFailed(event.data.object);
+        break;
+
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error("Error processing Stripe webhook:", err);
+    res.status(500).send("Internal Server Error");
+  }
 };
