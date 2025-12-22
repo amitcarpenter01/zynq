@@ -34,13 +34,6 @@ export const gemini = process.env.GEMINI_API_KEY ? new GoogleGenAI({}) : null;
 
 // --------------------- MIDDLEWARE ---------------------
 
-router.post(
-  "/stripe/webhook",
-  bodyParser.raw({ type: "application/json" }), // Stripe requires raw body
-  handleStripeWebhook
-);
-
-
 
 app.use(cors());
 app.use(express.json({ limit: "100mb" }));
