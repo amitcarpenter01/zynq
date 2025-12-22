@@ -14,7 +14,7 @@ import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
 import { sendEmail } from '../../services/send_email.js';
 import { appointmentBookedTemplate, appointmentReceiptTemplate, appointmentReceiptTemplateSwedish } from '../../utils/templates.js';
 import { getAdminCommissionRatesModel } from '../../models/admin.js';
-import { createPayLaterSetupSession, createPaymentSessionForAppointment, getOrCreateStripeCustomerId, handlePaymentIntentFailed, handlePaymentIntentSucceeded, handleSetupIntentSucceeded, updateAuthorizationSetupIntentIdOfAppointment, verifyStripeWebhook } from '../../models/payment.js';
+import { createPayLaterSetupSession, createPaymentSessionForAppointment, getOrCreateStripeCustomerId, handleCheckoutSessionCompleted, handlePaymentIntentFailed, handlePaymentIntentSucceeded, handleSetupIntentSucceeded, updateAuthorizationSetupIntentIdOfAppointment, verifyStripeWebhook } from '../../models/payment.js';
 import { booleanValidation } from '../../utils/joi.util.js';
 import { getIO } from '../../utils/socketManager.js';
 import { onlineUsers } from "../../utils/callSocket.js";
@@ -1592,14 +1592,14 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 
         if (is_paid && appointmentType === "Video Call" && final_total != 0) {
 
-            let session ;
+            let session;
 
             if (payment_timing === 'PAY_LATER') {
 
-                
+
                 const stripe_customer_id = await getOrCreateStripeCustomerId(user_id);
 
-                 session = await createPayLaterSetupSession({
+                session = await createPayLaterSetupSession({
                     metadata: {
                         appointment_id,
                         redirect_url,
@@ -1611,7 +1611,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
                 const updateStatus = await updateAuthorizationSetupIntentIdOfAppointment(session.setup_intent, appointment_id);
 
             } else {
-               session = await createPaymentSessionForAppointment({
+                session = await createPaymentSessionForAppointment({
                     metadata: {
                         order_lines: [
                             {
@@ -1952,36 +1952,41 @@ export const sendReciept = async (req, res) => {
 
 
 export const handleStripeWebhook = async (req, res) => {
-  const sig = req.headers["stripe-signature"];
-  let event;
+    const sig = req.headers["stripe-signature"];
+    let event;
 
-  try {
-    event = verifyStripeWebhook(req.body, sig);
-  } catch (err) {
-    return res.status(400).send(err.message);
-  }
-
-  try {
-    switch (event.type) {
-      case "setup_intent.succeeded":
-        await handleSetupIntentSucceeded(event.data.object);
-        break;
-
-      case "payment_intent.succeeded":
-        await handlePaymentIntentSucceeded(event.data.object);
-        break;
-
-      case "payment_intent.payment_failed":
-        await handlePaymentIntentFailed(event.data.object);
-        break;
-
-      default:
-        console.log(`Unhandled event type ${event.type}`);
+    try {
+        event = verifyStripeWebhook(req.body, sig);
+    } catch (err) {
+        return res.status(400).send(err.message);
     }
 
-    res.json({ received: true });
-  } catch (err) {
-    console.error("Error processing Stripe webhook:", err);
-    res.status(500).send("Internal Server Error");
-  }
+    try {
+        switch (event.type) {
+            case "checkout.session.completed":
+                await handleCheckoutSessionCompleted(event.data.object);
+                break;
+
+
+            case "setup_intent.succeeded":
+                await handleSetupIntentSucceeded(event.data.object);
+                break;
+
+            case "payment_intent.succeeded":
+                await handlePaymentIntentSucceeded(event.data.object);
+                break;
+
+            case "payment_intent.payment_failed":
+                await handlePaymentIntentFailed(event.data.object);
+                break;
+
+            default:
+                console.log(`Unhandled event type ${event.type}`);
+        }
+
+        res.json({ received: true });
+    } catch (err) {
+        console.error("Error processing Stripe webhook:", err);
+        res.status(500).send("Internal Server Error");
+    }
 };

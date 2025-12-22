@@ -747,3 +747,32 @@ export const processDueAuthorizedAppointments = async () => {
     }
   }
 };
+
+export const handleCheckoutSessionCompleted = async (session) => {
+  const appointment_id = session.metadata?.appointment_id;
+
+  if (!appointment_id) {
+    console.log("No appointment_id found in Checkout Session metadata");
+    return;
+  }
+
+  // Retrieve SetupIntent ID created by Checkout
+  const setupIntentId = session.setup_intent;
+
+  if (!setupIntentId) {
+    console.log("No setup_intent found on session");
+    return;
+  }
+
+  // Fetch SetupIntent to get payment_method
+  const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
+
+  await db.query(
+    `UPDATE tbl_appointments 
+     SET stripe_payment_method_id = ?, stripe_setup_intent_id = ?
+     WHERE appointment_id = ?`,
+    [setupIntent.payment_method, setupIntent.id, appointment_id]
+  );
+
+  console.log(`✅ Card authorized for appointment ${appointment_id}`);
+};
