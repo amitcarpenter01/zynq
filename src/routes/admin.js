@@ -3,6 +3,7 @@ import { upload } from '../services/multer.js';
 import { authenticateAdmin } from "../middleware/auth.js";
 
 //==================================== Import Controllers ==============================
+import * as authControllersClinic from "../controllers/clinic/authController.js";
 import * as authControllers from "../controllers/admin/authController.js"
 import * as dashboardControllers from "../controllers/admin/dashboardController.js";
 import * as userControllers from "../controllers/admin/userController.js";
@@ -231,6 +232,11 @@ const uploadVariousFieldsForSoloDoctor = uploadCertificationFieldsTo([
 router.post("/add-doctor-onboarding",authenticateAdmin,uploadVariousFields,doctorControllers.sendDoctorOnaboardingInvitation);
 
 router.post("/add-solo-doctor-onboarding",authenticateAdmin,uploadVariousFieldsForSoloDoctor,doctorControllers.sendSoloDoctorOnaboardingInvitation);
+
+router.get("/get-surgery",authenticateAdmin, authControllersClinic.getAllSurgery)
+router.get("/get-devices", authControllersClinic.getAllDevices);
+router.get("/get-treatments", authControllersClinic.getAllTreatments);
+router.get("/get-skin-types",authenticateAdmin, authControllersClinic.getClinicSkinTypes);
 
 
 export default router;
