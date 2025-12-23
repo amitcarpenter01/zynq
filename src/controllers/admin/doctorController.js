@@ -505,6 +505,7 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
 
         const schema = Joi.object({
             email: Joi.string().email().min(1).required(),
+            slot_time : Joi.string().required(),
             name: Joi.string().max(255).optional().allow('', null),
             last_name: Joi.string().max(255).optional().allow('', null),
             age: Joi.string().optional().allow('', null),
@@ -639,7 +640,8 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
             ivo_registration_number,
             hsa_id,
             fee_range,
-            form_stage
+            form_stage,
+            slot_time
         } = value;
 
 
@@ -710,6 +712,8 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
         delete clinicDataV2.city;
         delete clinicDataV2.state;
 
+        clinicDataV2.slot_time = slot_time
+
         await clinicModels.insertClinicData(clinicDataV2);
 
 
@@ -765,7 +769,8 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
             address: address,
             fee_per_session: fee_per_session,
             currency: currency,
-            session_duration: session_duration
+            session_duration: session_duration,
+            slot_time: slot_time || null
         });
 
 

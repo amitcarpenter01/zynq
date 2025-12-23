@@ -54,6 +54,16 @@ export const NOTIFICATION_MESSAGES = {
         title: 'Appointment',
         getBody: (name) => `${name} booked an appointment.`
     },
+    payment_success_booking_confirmed: {
+        title: 'Payment Successful',
+        getBody: () =>
+            `Your payment was successful and your appointment is confirmed.`,
+    },
+    payment_failed_pay_later: {
+        title: 'Payment Failed',
+        getBody: (reason) =>
+            `Your payment failed${reason ? ` due to ${reason}` : ' due to insufficient funds'}. Your appointment has been cancelled.`,
+    },
     appointment_rescheduled: {
         title: 'Appointment',
         getBody: (name) => `${name} rescheduled an appointment.`
@@ -312,7 +322,8 @@ export const sendNotification = async ({
     receiver_id,
     system = false,
     receiver_fcm_token = null,
-    receiver_push_enabled = null
+    receiver_push_enabled = null,
+    params = null,
 }) => {
     try {
         validateSchema(sendNotificationSchema, {
@@ -331,8 +342,7 @@ export const sendNotification = async ({
             role: sender_type,
         } = senderMeta;
 
-        const full_name = isEmpty(senderMeta?.full_name) ? 'Someone' : senderMeta?.full_name;
-
+        const full_name = params ? params : isEmpty(senderMeta?.full_name) ? 'Someone' : senderMeta?.full_name;
         let language = 'en';
 
         if (receiver_type === 'USER') {
@@ -480,7 +490,7 @@ const enrichNotifications = (notifications, senderDetails) => {
     }));
 };
 
-export const getUserNotifications = async (userData,language) => {
+export const getUserNotifications = async (userData, language) => {
     try {
         const { user_id: receiver_id } = extractUserData(userData);
 

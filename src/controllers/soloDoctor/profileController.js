@@ -31,6 +31,7 @@ export const addPersonalInformation = async (req, res) => {
             // ivo_registration_number: Joi.string().optional().allow('', null),
             // hsa_id: Joi.string().optional().allow('', null),
             org_number: Joi.string().optional().allow('', null),
+            slot_time: Joi.string().optional().allow("", null),
         });
         let language = 'en';
 
@@ -49,7 +50,7 @@ export const addPersonalInformation = async (req, res) => {
             doctorData.profile_image = req.files.profile[0].filename
         }
 
-        const clinicData = {
+        let clinicData = {
             clinic_name: value.clinic_name,
             clinic_description: value.clinic_description === "" ? null : value.clinic_description,
             language: value.language === "" ? null : value.language,
@@ -88,6 +89,7 @@ export const addPersonalInformation = async (req, res) => {
             if (getClinicData[0]?.profile_status === "CLAIMED") {
                 clinicData.profile_status = "ONBOARDING";
             }
+            clinicData.slot_time = value.slot_time ? value.slot_time : getClinicData[0]?.slot_time;
             var updatClinic = await dbOperations.updateData('tbl_clinics', clinicData, `WHERE zynq_user_id = '${zynqUserId}' `);
         }
         if (doctorResult.length > 0) {

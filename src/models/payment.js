@@ -1,7 +1,7 @@
 import { stripe } from "../../app.js";
 import db from "../config/db.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../services/notifications.service.js";
-import { getSinglePurchasedProductsModel } from "./api.js";
+import { get_user_by_user_id, getSinglePurchasedProductsModel } from "./api.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -666,11 +666,26 @@ export const handlePaymentIntentSucceeded = async (paymentIntent) => {
     return;
   };
 
+  const [appointment] = await db.query(
+    `SELECT user_id FROM tbl_appointments WHERE appointment_id = ?`,
+    [appointment_id]
+  );
+  let [user] = await get_user_by_user_id(appointment.user_id);
+
   // Mark appointment as paid
   const update = await db.query(
     `UPDATE tbl_appointments SET payment_status = ? WHERE appointment_id = ?`,
     ["paid", appointment_id]
-  )
+  );
+
+  await sendNotification({
+    userData: user,
+    type: "APPOINTMENT",
+    type_id: appointment_id,
+    notification_type: NOTIFICATION_MESSAGES.payment_success_booking_confirmed,
+    receiver_id: appointment.user_id,
+    receiver_type: "USER"
+  })
 
   console.log(`PaymentIntent succeeded for appointment ${appointment_id}`);
 };
@@ -683,11 +698,30 @@ export const handlePaymentIntentFailed = async (paymentIntent) => {
     return;
   };
 
+  const [appointment] = await db.query(
+    `SELECT user_id FROM tbl_appointments WHERE appointment_id = ?`,
+    [appointment_id]
+  );
+  let [user] = await get_user_by_user_id(appointment.user_id);
+
   // Mark payment failed
   const update = await db.query(
     `UPDATE tbl_appointments SET payment_status = ? WHERE appointment_id = ?`,
     ["failed", appointment_id]
-  )
+  );
+  const failureReason =
+    paymentIntent?.last_payment_error?.message ||
+    'insufficient funds';
+
+  await sendNotification({
+    userData: user,
+    type: "APPOINTMENT",
+    type_id: appointment_id,
+    notification_type: NOTIFICATION_MESSAGES.payment_failed_pay_later,
+    receiver_id: appointment.user_id,
+    receiver_type: "USER",
+    params: failureReason,
+  });
 
   console.log(`PaymentIntent failed for appointment ${appointment_id}`);
 };
