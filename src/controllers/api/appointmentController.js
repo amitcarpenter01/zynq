@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
 import { sendEmail } from '../../services/send_email.js';
-import { appointmentBookedTemplate, appointmentReceiptTemplate, appointmentReceiptTemplateSwedish } from '../../utils/templates.js';
+import { appointmentBookedTemplate, appointmentBookingConfirmationTemplate, appointmentBookingConfirmationTemplateSwedish, appointmentReceiptTemplate, appointmentReceiptTemplateSwedish } from '../../utils/templates.js';
 import { getAdminCommissionRatesModel } from '../../models/admin.js';
 import { createPayLaterSetupSession, createPaymentSessionForAppointment, getOrCreateStripeCustomerId, handleCheckoutSessionCompleted, handlePaymentIntentFailed, handlePaymentIntentSucceeded, handleSetupIntentSucceeded, updateAuthorizationSetupIntentIdOfAppointment, verifyStripeWebhook } from '../../models/payment.js';
 import { booleanValidation } from '../../utils/joi.util.js';
@@ -1689,7 +1689,6 @@ export const markAppointmentAsPaid = async (req, res) => {
             appointment_id
         } = value;
 
-        await appointmentModel.updateAppointmentAsPaid(appointment_id, 'paid');
 
         const language = req?.user?.language || 'en';
 
@@ -1701,6 +1700,10 @@ export const markAppointmentAsPaid = async (req, res) => {
         const start_time = appointmentDetails.start_time;
         const total_price = appointmentDetails.total_price
         const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
+
+        if (appointmentDetails.payment_timing === "PAY_NOW") {
+            await appointmentModel.updateAppointmentAsPaid(appointment_id, 'paid');
+        }
 
         const doctor = await getDocterByDocterId(doctor_id);
         let chatId = await getChatBetweenUsers(user_id, doctor[0].zynq_user_id);
@@ -1738,6 +1741,98 @@ export const markAppointmentAsPaid = async (req, res) => {
         else {
             chat_id = chatId[0].id
         }
+
+
+        const appointments = await appointmentModel.getAppointmentsById(user_id, appointment_id, language);
+
+        const result = await Promise.all(
+            appointments.map(async (app) => {
+                const doctor = await getDocterByDocterId(app.doctor_id);
+
+                if (app.profile_image && !app.profile_image.startsWith("http")) {
+                    app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
+                }
+
+                if (app.pdf && !app.pdf.startsWith("http")) {
+                    app.pdf = `${APP_URL}${app.pdf}`;
+                }
+
+                const treatments = await appointmentModel.getAppointmentTreatments(appointment_id, language);
+
+                return {
+                    ...app,
+                    treatments,
+                };
+            })
+        );
+
+        // ----------------- Send single appointment response -----------------
+        // return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", result[0]);
+        const data = result[0];
+
+
+        const [totalAppointmentBooked] = await appointmentModel.getNumberOfAppointments(user_id);
+        const formattedAppointmentCount = formatAppointmentCount(totalAppointmentBooked.count);
+
+
+        if (language == "en") {
+
+            await sendEmail({
+                to: req.user.email,
+                subject: appointmentBookingConfirmationTemplate.subject(data.payment_timing),
+                html: appointmentBookingConfirmationTemplate.body({
+                    doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
+                    doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
+                    clinic_name: data.clinic_name,
+                    visit_link: "#",
+                    refund_policy: "This appointment can be cancelled and will be fully refunded up to  24 hours before the schedule time.",
+                    subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
+                    vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25)).toFixed(2)}` : "SEK 0.00",
+                    vat_percentage: (() => {
+                        const total = parseFloat(data.total_price) || 0;
+                        const vat = parseFloat(data.vat_amount) || 0;
+                        const base = total - vat;
+
+                        return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
+                    })(),
+
+                    treatments: data.treatments,
+                    start_time: formatDate(data.start_time),
+                    end_time: formatDate(data.end_time),
+                    order_number: `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
+                    payment_timing: data.payment_timing
+                }),
+            });
+        } else {
+
+            await sendEmail({
+                to: req.user.email,
+                subject: appointmentBookingConfirmationTemplateSwedish.subject(data.payment_timing),
+                html: appointmentBookingConfirmationTemplateSwedish.body({
+                    doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
+                    doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
+                    clinic_name: data.clinic_name,
+                    visit_link: "#",
+                    refund_policy: "Denna bokade tid kan avbokas och återbetalas i sin helhet upp till 24 timmar före den schemalagda tiden.",
+                    subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
+                    vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25))}` : "SEK 0.00",
+                    vat_percentage: (() => {
+                        const total = parseFloat(data.total_price) || 0;
+                        const vat = parseFloat(data.vat_amount) || 0;
+                        const base = total - vat;
+
+                        return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
+                    })(),
+
+                    treatments: data.treatments,
+                    start_time: formatDate(data.start_time),
+                    end_time: formatDate(data.end_time),
+                    order_number: `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
+                    payment_timing: data.payment_timing
+                }),
+            });
+        }
+
 
         return handleSuccess(
             res,

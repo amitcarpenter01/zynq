@@ -6,7 +6,9 @@ import { authenticate } from '../middleware/web_user_auth.js';;
 import { authenticateUser } from '../middleware/auth.js'; import { deleteNotifications, deleteSingleNotification, getNotifications } from '../controllers/api/notificationController.js';
 import { deleteSingleNotificationSchema } from '../validations/notification.validation.js';
 import { validate } from '../middleware/validation.middleware.js';
-import { add_clinic_managment } from '../controllers/admin/clinicController.js';
+import { add_clinic_managment, add_clinic_with_onboarding } from '../controllers/admin/clinicController.js';
+import { uploadDynamicClinicFiles } from '../services/clinic_multer.js';
+import { getFieldsFn } from './clinic.js';
 ;
 // router.get("/get_profile", authenticate(['CLINIC','DOCTOR']), webControllers.getProfile);
 
@@ -50,6 +52,8 @@ router.patch('/toggle-language', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC'
 
 
 router.post('/add-clinic-managment',add_clinic_managment);
+
+router.post("/add-clinic-onboarding",uploadDynamicClinicFiles(getFieldsFn),add_clinic_with_onboarding);
 
 
 
