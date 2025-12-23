@@ -695,7 +695,7 @@ export const handlePaymentIntentFailed = async (paymentIntent) => {
 export const processDueAuthorizedAppointments = async () => {
   // Get all appointments with status 'authorized' and due for payment
   const appointments = await db.query(
-    `SELECT t.*,u.stripe_customer_id FROM tbl_appointments t JOIN tbl_users u ON t.user_id = u.user_id WHERE payment_status = 'authorized' AND start_time < NOW()`
+    `SELECT t.*,u.stripe_customer_id FROM tbl_appointments t JOIN tbl_users u ON t.user_id = u.user_id WHERE t.payment_status = 'authorized' AND t.start_time BETWEEN DATE_SUB(NOW(), INTERVAL 24 HOUR) AND NOW()`
   );
 
   console.log(`Found ${appointments.length} appointments due for payment`);

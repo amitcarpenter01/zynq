@@ -549,6 +549,7 @@ export const add_clinic_with_onboarding = async (req, res) => {
             clinic_name: Joi.string().required(),
             org_number: Joi.string().required(),
             email: Joi.string().email().required(),
+            slot_time : Joi.string().required(),
             mobile_number: Joi.string().required(),
             address: Joi.string().required(),
             city: Joi.string().required(),
@@ -705,6 +706,7 @@ export const add_clinic_with_onboarding = async (req, res) => {
             surgeries,
             aestheticDevices,
             skin_Conditions,
+            slot_time
         } = value;
 
 
@@ -778,6 +780,8 @@ export const add_clinic_with_onboarding = async (req, res) => {
 
             delete clinicDataV2.city;
             delete clinicDataV2.state;
+
+            clinicDataV2.slot_time = slot_time;
 
 
             if (clinic_data) {
