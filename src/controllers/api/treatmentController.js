@@ -23,7 +23,11 @@ import {
     addTreatmentSubTreatmentUserModel,
     getUserSubTreatmentsByTreatmentId,
     getTreatmentsByZynqUserId,
-    addUserMappedSubTreatmentsToMaster
+    addUserMappedSubTreatmentsToMaster,
+    getTreatmentByIdModel,
+    getTreatmentConcernsModel,
+    getTreatmentDevicesModel,
+    getTreatmentSubTreatmentsModel
 } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
@@ -848,3 +852,63 @@ export const import_treatments_from_CSV = async (req, res) => {
         return handleError(res, 500, language, "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
+
+export const cloneTreatment = asyncHandler(async (req, res) => {
+  const { treatment_id } = req.params;
+  const role = req.user?.role;
+  const language = req.user?.language || 'en';
+
+
+  // 1️⃣ Fetch original treatment
+  const original = await getTreatmentByIdModel(treatment_id);
+  if (!original) {
+    return handleError(res, 404, language, "TREATMENT_NOT_FOUND");
+  }
+
+
+  // 2️⃣ Fetch relations
+  const [concerns, devices, subTreatments] = await Promise.all([
+    getTreatmentConcernsModel(treatment_id),
+    getTreatmentDevicesModel(treatment_id),
+    getTreatmentSubTreatmentsModel(treatment_id)
+  ]);
+
+  // 3️⃣ Create new treatment
+  const newTreatmentId = uuidv4();
+
+  const clonedTreatment = {
+    treatment_id: newTreatmentId,
+    name: `${original.name}`,
+    swedish: original.swedish,
+    device_name: original.device_name,
+    like_wise_terms: original.like_wise_terms,
+    classification_type: original.classification_type,
+    benefits_en: original.benefits_en,
+    benefits_sv: original.benefits_sv,
+    description_en: original.description_en,
+    description_sv: original.description_sv,
+    source: original.source,
+    is_device: original.is_device,
+    is_admin_created: true,
+    created_by_zynq_user_id: null,
+    approval_status: "APPROVED",
+  };
+
+  await addTreatmentModel(clonedTreatment);
+
+
+  // 4️⃣ Insert relations
+  if (concerns.length)
+    await addTreatmentConcernsModel(newTreatmentId, concerns);
+
+  if (devices.length)
+    await addTreatmentDeviceNameModel(newTreatmentId, devices);
+
+  if (subTreatments.length)
+    await addTreatmentSubTreatmentModel(newTreatmentId, subTreatments);
+
+  // 5️⃣ Response
+  handleSuccess(res, 201, language, "TREATMENT_CLONED_SUCCESSFULLY", {
+    treatment_id: newTreatmentId
+  });
+});

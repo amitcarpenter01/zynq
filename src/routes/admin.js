@@ -25,7 +25,7 @@ import { addEditFAQ, addEditFAQCategory, deleteFAQ, deleteFAQCategory, getAllFAQ
 import { getContactUs } from '../controllers/api/authController.js';
 import { updateProductApprovalStatusSchema } from '../validations/product.validation.js';
 import { addEditConcernSchema, addEditTreatmentSchema, addEditSubtreatmentSchema, deleteConcernSchema, deleteTreatmentSchema, updateConcernApprovalStatusSchema, updateTreatmentApprovalStatusSchema, deleteSubTreatmentSchema, addEditSubtreatmentMasterSchema } from '../validations/treatment.validation.js';
-import { get_all_concerns, addEditConcern, getAllTreatments, getAllTreatmentById, addEditTreatment, addEditSubtreatment, deleteConcern, deleteTreatment, updateConcernApprovalStatus, updateTreatmentApprovalStatus, deleteSubTreatment, addEditSubTreatmentMaster, deleteSubTreatmentMaster,  getAllSubTreatmentMasters } from '../controllers/api/treatmentController.js';
+import { get_all_concerns, addEditConcern, getAllTreatments, getAllTreatmentById, addEditTreatment, addEditSubtreatment, deleteConcern, deleteTreatment, updateConcernApprovalStatus, updateTreatmentApprovalStatus, deleteSubTreatment, addEditSubTreatmentMaster, deleteSubTreatmentMaster,  getAllSubTreatmentMasters, cloneTreatment } from '../controllers/api/treatmentController.js';
 import { uploadDynamicClinicFiles } from '../services/clinic_multer.js';
 import { updateClinicAdmin } from '../controllers/clinic/authController.js';
 import * as clinicModels from '../models/clinic.js';
@@ -232,11 +232,11 @@ const uploadVariousFieldsForSoloDoctor = uploadCertificationFieldsTo([
 router.post("/add-doctor-onboarding",authenticateAdmin,uploadVariousFields,doctorControllers.sendDoctorOnaboardingInvitation);
 
 router.post("/add-solo-doctor-onboarding",authenticateAdmin,uploadVariousFieldsForSoloDoctor,doctorControllers.sendSoloDoctorOnaboardingInvitation);
-
 router.get("/get-surgery",authenticateAdmin, authControllersClinic.getAllSurgery)
 router.get("/get-devices", authControllersClinic.getAllDevices);
 router.get("/get-treatments", authControllersClinic.getAllTreatments);
 router.get("/get-skin-types",authenticateAdmin, authControllersClinic.getClinicSkinTypes);
+router.post("/clone-treatment/:treatment_id",authenticateAdmin, cloneTreatment);
 
 
 export default router;

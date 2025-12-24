@@ -3325,4 +3325,37 @@ export const getUserLanguageModel = async (user_id) => {
         console.error("getUserLanguageModel error:", error);
         throw error;
     }
-}
+};
+
+export const getTreatmentByIdModel = async (treatment_id) => {
+  const rows = await db.query(
+    `SELECT * FROM tbl_treatments WHERE treatment_id = ?`,
+    [treatment_id]
+  );
+  return rows[0];
+};
+
+export const getTreatmentConcernsModel = async (treatment_id) => {
+  const rows = await db.query(
+    `SELECT concern_id FROM tbl_treatment_concerns WHERE treatment_id = ?`,
+    [treatment_id]
+  );
+  return rows.map(r => r.concern_id);
+};
+
+export const getTreatmentDevicesModel = async (treatment_id) => {
+  const rows = await db.query(
+    `SELECT device_name FROM tbl_treatment_devices WHERE treatment_id = ?`,
+    [treatment_id]
+  );
+  return rows.map(r => r.device_name);
+};
+
+export const getTreatmentSubTreatmentsModel = async (treatment_id) => {
+  const rows = await db.query(
+    `SELECT sub_treatment_id FROM tbl_treatment_sub_treatments WHERE treatment_id = ?`,
+    [treatment_id]
+  );
+  return rows.map(r => r.sub_treatment_id);
+};
+

@@ -320,5 +320,6 @@
   "SUB_TREATMENT_MASTER_ADDED_SUCCESSFULLY": "Sub Treatment Master Added Successfully",
   "SUB_TREATMENT_MASTER_DELETED_SUCCESSFULLY": "Sub Treatment Master Deleted Successfully",
   "RECIEPT_SENT_SUCCESSFULLY": "Receipt sent successfully on your registered email",
-  "CLINIC_CREATED_SUCCESSFULLY": "Clinic Created Successfully"
+  "CLINIC_CREATED_SUCCESSFULLY": "Clinic Created Successfully",
+  "TREATMENT_CLONED_SUCCESSFULLY" : "Treatment Cloned Successfully"
 }
