@@ -729,7 +729,7 @@ export const handlePaymentIntentFailed = async (paymentIntent) => {
 export const processDueAuthorizedAppointments = async () => {
   // Get all appointments with status 'authorized' and due for payment
   const appointments = await db.query(
-    `SELECT t.*,u.stripe_customer_id FROM tbl_appointments t JOIN tbl_users u ON t.user_id = u.user_id WHERE t.payment_status = 'authorized' AND t.start_time BETWEEN DATE_SUB(NOW(), INTERVAL 24 HOUR) AND NOW()`
+    `SELECT t.*,u.stripe_customer_id FROM tbl_appointments t JOIN tbl_users u ON t.user_id = u.user_id WHERE t.payment_status = 'authorized' AND t.start_time BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 24 HOUR)`
   );
 
   console.log(`Found ${appointments.length} appointments due for payment`);
@@ -785,12 +785,23 @@ export const handleCheckoutSessionCompleted = async (session) => {
   // Fetch SetupIntent to get payment_method
   const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
 
-  await db.query(
+  const [appointment] = await db.query(
+    `SELECT user_id FROM tbl_appointments WHERE appointment_id = ?`,
+    [appointment_id]
+  );
+
+  if(!appointment) return;
+
+  if(appointment.payment_timing == "PAY_LATER"){
+      await db.query(
     `UPDATE tbl_appointments 
      SET stripe_payment_method_id = ?, stripe_setup_intent_id = ? , payment_status = 'authorized'
      WHERE appointment_id = ?`,
     [setupIntent.payment_method, setupIntent.id, appointment_id]
   );
+  }
+
+
 
   console.log(`✅ Card authorized for appointment ${appointment_id}`);
 };
