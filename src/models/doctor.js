@@ -393,7 +393,7 @@ export const get_doctor_consultation_fee = async (doctorId) => {
 
 export const update_availability = async (doctorId, availabilityData, clinic_id) => {
     try {
-        // await db.query(`DELETE FROM tbl_doctor_availability WHERE doctor_id = ?`, [doctorId]);
+        await db.query(`DELETE FROM tbl_doctor_availability WHERE doctor_id = ? AND clinic_id = ?`, [doctorId,clinic_id]);
         const values = availabilityData.map(avail => [doctorId, avail.day_of_week, avail.start_time, avail.end_time, avail.closed, avail.fee_per_session, clinic_id]);
         if (values.length > 0) {
             return await db.query(`INSERT INTO tbl_doctor_availability (doctor_id, day_of_week, start_time, end_time,closed,fee_per_session, clinic_id) VALUES ?`, [values]);
