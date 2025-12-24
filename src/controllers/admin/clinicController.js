@@ -549,7 +549,7 @@ export const add_clinic_with_onboarding = async (req, res) => {
             clinic_name: Joi.string().optional().allow("", null),
             org_number: Joi.string().optional().allow("", null),
             email: Joi.string().email().required(),
-            slot_time : Joi.string().required(),
+            slot_time: Joi.string().required(),
             mobile_number: Joi.string().optional().allow("", null),
             address: Joi.string().optional().allow("", null),
             city: Joi.string().optional().allow("", null),
@@ -982,63 +982,355 @@ export const get_Clinic_Mapped_treatments = async (req, res) => {
 };
 
 export const getAllSurgeryOfClinicController = async (req, res) => {
-  try {
-    const language = req?.user?.language || "en";
-    const { clinic_id } = req.params;
-    const surgery = await clinicModels.getAllSurgeriesOfClinic(language,clinic_id);
-    if (!surgery.length) {
-      return handleError(res, 400, language, "NO_SURGERY_FOUND");
+    try {
+        const language = req?.user?.language || "en";
+        const { clinic_id } = req.params;
+        const surgery = await clinicModels.getAllSurgeriesOfClinic(language, clinic_id);
+        if (!surgery.length) {
+            return handleError(res, 400, language, "NO_SURGERY_FOUND");
+        }
+        return handleSuccess(
+            res,
+            200,
+            language,
+            "SURGERY_FETCHED_SUCCESSFULLY",
+            surgery
+        );
+    } catch (error) {
+        console.error("Error in getAllSurgery:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
-    return handleSuccess(
-      res,
-      200,
-      language,
-      "SURGERY_FETCHED_SUCCESSFULLY",
-      surgery
-    );
-  } catch (error) {
-    console.error("Error in getAllSurgery:", error);
-    return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
-  }
 };
 
 export const getAllDevicesOfClinicController = async (req, res) => {
-  try {
-    const language = "en";
-    const { clinic_id } = req.params;
-    const devices = await clinicModels.getAllDevicesOfClinic(clinic_id);
-    if (!devices.length) {
-      return handleError(res, 400, language, "NO_DEVICES_FOUND");
+    try {
+        const language = "en";
+        const { clinic_id } = req.params;
+        const devices = await clinicModels.getAllDevicesOfClinic(clinic_id);
+        if (!devices.length) {
+            return handleError(res, 400, language, "NO_DEVICES_FOUND");
+        }
+        return handleSuccess(
+            res,
+            200,
+            language,
+            "DEVICES_FETCHED_SUCCESSFULLY",
+            devices
+        );
+    } catch (error) {
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
-    return handleSuccess(
-      res,
-      200,
-      language,
-      "DEVICES_FETCHED_SUCCESSFULLY",
-      devices
-    );
-  } catch (error) {
-    return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
-  }
 };
 
 export const getClinicSkinTypesOfClinicController = async (req, res) => {
-  try {
-    const language = req.user.language || "en";
-    const { clinic_id } = req.params;
-    const skinTypes = await clinicModels.getAllSkinTypesOfClinic(language,clinic_id);
-    if (!skinTypes.length) {
-      return handleError(res, 404, language, "NO_SKIN_TYPES_FOUND");
+    try {
+        const language = req.user.language || "en";
+        const { clinic_id } = req.params;
+        const skinTypes = await clinicModels.getAllSkinTypesOfClinic(language, clinic_id);
+        if (!skinTypes.length) {
+            return handleError(res, 404, language, "NO_SKIN_TYPES_FOUND");
+        }
+        return handleSuccess(
+            res,
+            200,
+            language,
+            "SKIN_TYPES_FETCHED_SUCCESSFULLY",
+            skinTypes
+        );
+    } catch (error) {
+        console.error("Error in getClinicSkinTypes:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
-    return handleSuccess(
-      res,
-      200,
-      language,
-      "SKIN_TYPES_FETCHED_SUCCESSFULLY",
-      skinTypes
-    );
-  } catch (error) {
-    console.error("Error in getClinicSkinTypes:", error);
-    return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
-  }
+};
+
+export const updateClinicController = async (req, res) => {
+    try {
+        const schema = Joi.object({
+            zynq_user_id : Joi.string().uuid().required(),
+            clinic_name: Joi.string().optional().allow(null),
+            org_number: Joi.string().optional().allow(null),
+            email: Joi.string().email().optional().allow(null),
+            mobile_number: Joi.string().optional().allow(null),
+            address: Joi.string().optional().allow(null),
+            fee_range: Joi.string().optional().allow(null),
+            website_url: Joi.string().uri().allow(null).optional(),
+            clinic_description: Joi.string().allow(null).optional(),
+            street_address: Joi.string().optional().allow(null),
+            city: Joi.string().optional().allow(null),
+            state: Joi.string().optional().allow(null),
+            zip_code: Joi.string().optional().allow(null),
+            latitude: Joi.number().optional().allow(null),
+            longitude: Joi.number().optional().allow(null),
+            treatments: Joi.array()
+                .items(
+                    Joi.object({
+                        treatment_id: Joi.string().uuid().required(),
+                        total_price: Joi.number().precision(2).required(),
+
+                        sub_treatments: Joi.array()
+                            .items(
+                                Joi.object({
+                                    sub_treatment_id: Joi.string().uuid().required(),
+                                    price: Joi.number().precision(2).required(),
+                                })
+                            )
+                            .optional()
+                            .allow(null)
+                    })
+                )
+                .optional()
+                .allow(null),
+            clinic_timing: Joi.object({
+                monday: daySchema.optional().allow("", null),
+                tuesday: daySchema.optional().allow("", null),
+                wednesday: daySchema.optional().allow("", null),
+                thursday: daySchema.optional().allow("", null),
+                friday: daySchema.optional().allow("", null),
+                saturday: daySchema.optional().allow("", null),
+                sunday: daySchema.optional().allow("", null),
+            }).optional(),
+            equipments: Joi.array().items(Joi.string()).optional().allow(null),
+            skin_types: Joi.array().items(Joi.string()).optional().allow(null),
+            skin_Conditions: Joi.array().items(Joi.string()).optional().allow(null),
+            surgeries: Joi.array().items(Joi.string()).optional().allow(null),
+            aestheticDevices: Joi.array().items(Joi.string()).optional().allow(null),
+            severity_levels: Joi.array().items(Joi.string()).optional().allow(null),
+            language: Joi.string().valid("en", "sv").optional().allow(null),
+            ivo_registration_number: Joi.string().optional().allow(null),
+            hsa_id: Joi.string().optional().allow(null),
+            slot_time: Joi.string().optional().allow(null),
+        });
+
+
+        if (typeof req.body.clinic_timing === "string") {
+            try {
+                req.body.clinic_timing = JSON.parse(req.body.clinic_timing);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_CLINIC_TIMING");
+            }
+        }
+
+        if (typeof req.body.treatments === "string") {
+            try {
+                req.body.treatments = JSON.parse(req.body.treatments);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_TREATMENTS");
+            }
+        }
+
+        if (typeof req.body.surgeries === "string") {
+            try {
+                req.body.surgeries = JSON.parse(req.body.surgeries);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SURGERIES");
+            }
+        }
+
+        if (typeof req.body.skin_Conditions === "string") {
+            try {
+                req.body.skin_Conditions = JSON.parse(req.body.skin_Conditions);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SKIN_CONDITIONS");
+            }
+        }
+
+        if (typeof req.body.aestheticDevices === "string") {
+            try {
+                req.body.aestheticDevices = JSON.parse(req.body.aestheticDevices);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_ASTHETIC_DEVICES");
+            }
+        }
+
+        if (typeof req.body.equipments === "string") {
+            try {
+                req.body.equipments = JSON.parse(req.body.equipments);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_EQUIPMENTS");
+            }
+        }
+
+        if (typeof req.body.skin_types === "string") {
+            try {
+                req.body.skin_types = JSON.parse(req.body.skin_types);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SKIN_TYPES");
+            }
+        }
+
+        if (typeof req.body.severity_levels === "string") {
+            try {
+                req.body.severity_levels = JSON.parse(req.body.severity_levels);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SEVERITY_LEVELS");
+            }
+        }
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const {
+            clinic_name,
+            org_number,
+            email,
+            mobile_number,
+            address,
+            fee_range,
+            website_url,
+            clinic_description,
+            street_address,
+            city,
+            state,
+            zip_code,
+            latitude,
+            longitude,
+            treatments,
+            clinic_timing,
+            equipments,
+            skin_types,
+            severity_levels,
+            language,
+            ivo_registration_number,
+            hsa_id,
+            skin_Conditions,
+            surgeries,
+            aestheticDevices,
+            zynq_user_id
+        } = value;
+
+        const uploadedFiles = req.files;
+        const logoFile = uploadedFiles.find((file) => file.fieldname === "logo");
+        const clinic_logo = logoFile?.filename;
+
+
+        const [clinic] = await clinicModels.get_clinic_by_zynq_user_id(
+            zynq_user_id
+        );
+        if (!clinic) {
+            return handleError(res, 404, language, "CLINIC_NOT_FOUND");
+        }
+
+        const clinic_id = clinic.clinic_id;
+
+        const clinicData = buildClinicData({
+            zynq_user_id: zynq_user_id ? zynq_user_id : clinic.zynq_user_id,
+            clinic_name: clinic_name ? clinic_name : clinic.clinic_name,
+            org_number: org_number ? org_number : clinic.org_number,
+            email: clinic.email,
+            mobile_number: mobile_number ? mobile_number : clinic.mobile_number,
+            address: address ? address : clinic.address,
+            fee_range: fee_range ? fee_range : clinic.fee_range,
+            website_url: website_url ? website_url : clinic.website_url,
+            clinic_description: clinic_description ? clinic_description : clinic.clinic_description,
+            language: language ? language : clinic.language,
+            clinic_logo: clinic_logo ? clinic_logo : clinic.clinic_logo,
+            ivo_registration_number: ivo_registration_number ? ivo_registration_number : clinic.ivo_registration_number,
+            hsa_id: hsa_id ? hsa_id : clinic.hsa_id,
+            is_onboarded: true,
+        });
+
+        await clinicModels.updateClinicData(clinicData, clinic_id);
+
+
+        const [clinicLocation] = await clinicModels.getClinicLocation(clinic_id);
+
+        await clinicModels.updateClinicLocation({
+            clinic_id,
+            street_address: street_address ? street_address : clinicLocation.street_address,
+            city: city ? city : clinicLocation.city,
+            state: state ? state : clinicLocation.state,
+            zip_code: zip_code ? zip_code : clinicLocation.zip_code,
+            latitude: latitude ? latitude : clinicLocation.latitude,
+            longitude: longitude ? longitude : clinicLocation.longitude,
+        });
+
+        const updatePromises = [];
+
+        if (Array.isArray(treatments) && treatments.length > 0) {
+            updatePromises.push(
+                clinicModels.updateClinicMappedTreatments(clinic_id, treatments)
+            );
+        }
+
+        if (
+            clinic_timing &&
+            typeof clinic_timing === "object" &&
+            Object.keys(clinic_timing).length > 0
+        ) {
+            updatePromises.push(
+                clinicModels.updateClinicOperationHours(clinic_timing, clinic_id)
+            );
+        }
+
+        if (Array.isArray(equipments) && equipments.length > 0) {
+            updatePromises.push(
+                clinicModels.updateClinicEquipments(equipments, clinic_id)
+            );
+        }
+
+        if (Array.isArray(skin_types) && skin_types.length > 0) {
+            updatePromises.push(
+                clinicModels.updateClinicSkinTypes(skin_types, clinic_id)
+            );
+        }
+
+        if (Array.isArray(severity_levels) && severity_levels.length > 0) {
+            updatePromises.push(
+                clinicModels.updateClinicSeverityLevels(severity_levels, clinic_id)
+            );
+        }
+
+        if (Array.isArray(skin_Conditions) && skin_Conditions.length > 0) {
+            updatePromises.push(
+                clinicModels.updateClinicSkinConditionsLevel(skin_Conditions, clinic_id)
+            );
+        }
+
+        if (Array.isArray(surgeries) && surgeries.length > 0) {
+            updatePromises.push(
+                clinicModels.updateClinicSurgeriesLevel(surgeries, clinic_id)
+            );
+        }
+
+        if (Array.isArray(aestheticDevices) && aestheticDevices.length > 0) {
+            updatePromises.push(
+                clinicModels.updateClinicAestheticDevicesLevel(
+                    aestheticDevices,
+                    clinic_id
+                )
+            );
+        }
+
+        await Promise.all(updatePromises);
+
+
+        if (uploadedFiles.length > 0) {
+            uploadedFiles.forEach(async (file) => {
+                const [certificationType] =
+                    await clinicModels.getCertificateTypeByFileName(file.fieldname);
+                let certification_type_id = certificationType
+                    ? certificationType.certification_type_id
+                    : null;
+                if (certification_type_id) {
+                    const fileName = file.filename;
+                    await clinicModels.updateClinicDocuments(
+                        clinic_id,
+                        certification_type_id,
+                        file.fieldname,
+                        fileName
+                    );
+                }
+            });
+        }
+        await generateClinicsEmbeddingsV2(zynq_user_id);
+        return handleSuccess(
+            res,
+            200,
+            language,
+            "CLINIC_PROFILE_UPDATED_SUCCESSFULLY"
+        );
+    } catch (error) {
+        console.error("Error in updateClinic:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
 };
