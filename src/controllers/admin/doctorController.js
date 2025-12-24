@@ -145,7 +145,16 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             surgery_ids: Joi.string().allow(null).optional(),
 
             // UPDATED: device ids instead of aesthetic devices
-            device_ids: Joi.string().allow(null).optional()
+            device_ids: Joi.string().allow(null).optional(),
+            availability: Joi.array().items(
+                Joi.object({
+                    day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                    start_time: Joi.string().required().allow(''),
+                    end_time: Joi.string().required().allow(''),
+                    closed: Joi.number().integer().optional(),
+                })
+            ).optional(),
+            slot_time: Joi.string().optional().allow("", null),
         });
 
         if (typeof req.body.treatments === "string") {
@@ -153,6 +162,14 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 req.body.treatments = JSON.parse(req.body.treatments);
             } catch (err) {
                 return handleError(res, 400, "en", "INVALID_JSON_FOR_TREATMENTS");
+            }
+        }
+
+        if (typeof req.body.availability === "string") {
+            try {
+                req.body.availability = JSON.parse(req.body.availability);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_AVAILABILITY");
             }
         }
 
@@ -190,7 +207,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
 
             skin_type_ids,
             surgery_ids,
-            device_ids } = value;
+            device_ids, availability, slot_time } = value;
 
         let language = req.user.language || "en";
         const emailTemplatePath = path.resolve(__dirname, "../../views/doctor_invite/en.ejs");
@@ -260,6 +277,10 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                     doctor_id,
                     clinic_id
                 );
+
+                if (availability?.length > 0) {
+                    await doctorModels.update_availability(doctor_id, availability, clinic_id);
+                }
 
                 if (existingMap) {
                     return handleError(
@@ -334,6 +355,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             const doctorTableData = {
                 zynq_user_id: newWebUser.id,
                 created_at: new Date(),
+                slot_time: slot_time || null,
             };
             await clinicModels.create_doctor(doctorTableData);
             const [createdDoctor] = await clinicModels.get_doctor_by_zynq_user_id(newWebUser.id);
@@ -448,6 +470,9 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             }
         }
 
+        if (availability?.length > 0) {
+            await doctorModels.update_availability(doctor_id, availability, clinic_id);
+        }
 
         // Convert CSV strings into arrays
         const skinTypeIds = skin_type_ids ? skin_type_ids.split(',').map(id => id.trim()) : [];
@@ -505,7 +530,7 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
 
         const schema = Joi.object({
             email: Joi.string().email().min(1).required(),
-            slot_time : Joi.string().required(),
+            slot_time: Joi.string().required(),
             name: Joi.string().max(255).optional().allow('', null),
             last_name: Joi.string().max(255).optional().allow('', null),
             age: Joi.string().optional().allow('', null),
@@ -693,7 +718,7 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
             form_stage: form_stage === "" ? null : form_stage,
             ivo_registration_number: ivo_registration_number === "" ? null : ivo_registration_number,
             hsa_id: hsa_id === "" ? null : hsa_id,
-            is_onboarded:  0 ,
+            is_onboarded: 0,
             city: city === "" ? null : city,
             state: state === "" ? null : state,
         };
