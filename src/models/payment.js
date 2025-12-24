@@ -672,6 +672,8 @@ export const handlePaymentIntentSucceeded = async (paymentIntent) => {
   );
   let [user] = await get_user_by_user_id(appointment.user_id);
 
+  user.role = "USER";
+
   // Mark appointment as paid
   const update = await db.query(
     `UPDATE tbl_appointments SET payment_status = ? WHERE appointment_id = ?`,
@@ -703,6 +705,8 @@ export const handlePaymentIntentFailed = async (paymentIntent) => {
     [appointment_id]
   );
   let [user] = await get_user_by_user_id(appointment.user_id);
+
+    user.role = "USER";
 
   // Mark payment failed
   const update = await db.query(
