@@ -107,7 +107,7 @@ export const send_clinic_email_cron = async () => {
 // };
 export const appointmentReminderCron = () => {
     cron.schedule('*/10 * * * *', sendAppointmentNotifications);
-    cron.schedule('0 * * * *', processDueAuthorizedAppointments);
+    cron.schedule('* * * * *', processDueAuthorizedAppointments);
 };
 
 export const invitationReminderCron = () => {
