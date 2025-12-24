@@ -980,3 +980,65 @@ export const get_Clinic_Mapped_treatments = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
+
+export const getAllSurgeryOfClinicController = async (req, res) => {
+  try {
+    const language = req?.user?.language || "en";
+    const { clinic_id } = req.params;
+    const surgery = await clinicModels.getAllSurgeriesOfClinic(language,clinic_id);
+    if (!surgery.length) {
+      return handleError(res, 400, language, "NO_SURGERY_FOUND");
+    }
+    return handleSuccess(
+      res,
+      200,
+      language,
+      "SURGERY_FETCHED_SUCCESSFULLY",
+      surgery
+    );
+  } catch (error) {
+    console.error("Error in getAllSurgery:", error);
+    return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+  }
+};
+
+export const getAllDevicesOfClinicController = async (req, res) => {
+  try {
+    const language = "en";
+    const { clinic_id } = req.params;
+    const devices = await clinicModels.getAllDevicesOfClinic(clinic_id);
+    if (!devices.length) {
+      return handleError(res, 400, language, "NO_DEVICES_FOUND");
+    }
+    return handleSuccess(
+      res,
+      200,
+      language,
+      "DEVICES_FETCHED_SUCCESSFULLY",
+      devices
+    );
+  } catch (error) {
+    return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+  }
+};
+
+export const getClinicSkinTypesOfClinicController = async (req, res) => {
+  try {
+    const language = req.user.language || "en";
+    const { clinic_id } = req.params;
+    const skinTypes = await clinicModels.getAllSkinTypesOfClinic(language,clinic_id);
+    if (!skinTypes.length) {
+      return handleError(res, 404, language, "NO_SKIN_TYPES_FOUND");
+    }
+    return handleSuccess(
+      res,
+      200,
+      language,
+      "SKIN_TYPES_FETCHED_SUCCESSFULLY",
+      skinTypes
+    );
+  } catch (error) {
+    console.error("Error in getClinicSkinTypes:", error);
+    return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+  }
+};

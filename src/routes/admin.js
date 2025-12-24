@@ -238,5 +238,10 @@ router.get("/get-treatments", authControllersClinic.getAllTreatments);
 router.get("/get-skin-types",authenticateAdmin, authControllersClinic.getClinicSkinTypes);
 router.post("/clone-treatment/:treatment_id",authenticateAdmin, cloneTreatment);
 
+router.get("/get-surgery/:clinic_id",authenticateAdmin,clinicControllers.getAllSurgeryOfClinicController)
+router.get("/get-devices/:clinic_id", clinicControllers.getAllDevicesOfClinicController);
+router.get("/get-skin-types/:clinic_id",authenticateAdmin, clinicControllers.getClinicSkinTypesOfClinicController);
+
+
 
 export default router;

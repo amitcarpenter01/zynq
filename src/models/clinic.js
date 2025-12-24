@@ -3115,3 +3115,76 @@ export async function getClinicMappedTreatments(clinicId) {
     throw error; // let controller handle response
   }
 }
+
+
+export const getAllSurgeriesOfClinic = async (language, clinic_id) => {
+    try {
+        const sql = `
+            SELECT s.*
+            FROM tbl_clinic_surgery cs
+            INNER JOIN tbl_surgery s
+                ON cs.surgery_id = s.surgery_id 
+            WHERE cs.clinic_id = ?
+        `;
+
+        const surgeries = await db.query(sql, [clinic_id]);
+
+        surgeries?.forEach(item => {
+            if (language === "sv") {
+                item.english = item.swedish;
+            }
+        });
+
+        return surgeries;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch surgeries.");
+    }
+};
+
+
+export const getAllDevicesOfClinic = async (clinic_id) => {
+    try {
+        const sql = `
+            SELECT DISTINCT d.*
+            FROM tbl_clinic_aesthetic_devices cad
+            INNER JOIN tbl_treatment_devices d
+                ON cad.aesthetic_devices_id = d.id
+            WHERE cad.clinic_id = ?
+        `;
+
+        const devices = await db.query(sql, [clinic_id]);
+        return devices;
+
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch clinic devices.");
+    }
+};
+
+
+export const getAllSkinTypesOfClinic = async (language, clinic_id) => {
+    try {
+        const sql = `
+            SELECT st.*
+            FROM tbl_clinic_skin_types csc
+            INNER JOIN tbl_skin_types st
+                ON csc.skin_type_id  = st.skin_type_id  
+            WHERE csc.clinic_id = ?
+            ORDER BY st.created_at DESC
+        `;
+
+        const skinTypes = await db.query(sql, [clinic_id]);
+
+        skinTypes?.forEach(item => {
+            if (language === "sv") {
+                item.name = item.Swedish;
+            }
+        });
+
+        return skinTypes;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch skin types.");
+    }
+};
