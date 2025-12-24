@@ -417,8 +417,8 @@ export const createPaymentSession = async ({ payment_gateway, metadata, redirect
           quantity: line.quantity,
         }));
 
-        const success_url = `https://getzynq.io/payment-success/?session_id={CHECKOUT_SESSION_ID}&redirect_url=${redirect_url}`;
-        const redirect_cancel_url = `https://getzynq.io/payment-cancel/?redirect_url=${cancel_url}`;
+        const success_url = `https://getzynq.io/zynq/payment-success/?session_id={CHECKOUT_SESSION_ID}&redirect_url=${redirect_url}`;
+        const redirect_cancel_url = `https://getzynq.io/zynq/payment-cancel/?redirect_url=${cancel_url}`;
 
         return await stripe.checkout.sessions.create({
           payment_method_types: payment_types,
@@ -547,8 +547,8 @@ export const createPaymentSessionForAppointment = async ({ metadata }) => {
       ],
 
       line_items,
-      success_url: `https://getzynq.io/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
-      cancel_url: `https://getzynq.io/payment-cancel/?redirect_url=${metadata.cancel_url}`,
+      success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
+      cancel_url: `https://getzynq.io/zynq/payment-cancel/?redirect_url=${metadata.cancel_url}`,
       metadata: {},
     });
 
@@ -566,8 +566,8 @@ export const createPayLaterSetupSession = async ({ metadata }) => {
       customer: metadata.stripe_customer_id, // existing Stripe customer
       client_reference_id: metadata.appointment_id, // optional but useful
       metadata: { appointment_id: metadata.appointment_id },
-      success_url: `https://getzynq.io/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}&type=PAY_LATER`,
-      cancel_url: `https://getzynq.io/payment-cancel/?redirect_url=${metadata.cancel_url}&type=PAY_LATER`,
+      success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}&type=PAY_LATER`,
+      cancel_url: `https://getzynq.io/zynq/payment-cancel/?redirect_url=${metadata.cancel_url}&type=PAY_LATER`,
     });
   } catch (error) {
     console.error("Failed to create PAY_LATER setup session:", error);
