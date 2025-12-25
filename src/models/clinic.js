@@ -667,11 +667,11 @@ export const getClinicAestheticDevicesLevel = async (clinic_id) => {
     try {
         const devices = await db.query(
             `SELECT ad.* 
-             FROM tbl_aesthetic_devices ad 
-             INNER JOIN tbl_clinic_aesthetic_devices cad 
-             ON ad.aesthetic_device_id = cad.aesthetic_devices_id 
+             FROM tbl_clinic_aesthetic_devices cad  
+             INNER JOIN tbl_treatment_devices ad
+             ON ad.id = cad.aesthetic_devices_id 
              WHERE cad.clinic_id = ? 
-             ORDER BY ad.created_at DESC`,
+             ORDER BY ad.created_at DESC;`,
             [clinic_id]
         );
         return devices;
