@@ -320,5 +320,6 @@
   "SUB_TREATMENT_MASTER_DELETED_SUCCESSFULLY": "Huvuddelbehandling raderad framgångsrikt",
   "RECIEPT_SENT_SUCCESSFULLY": "Kvitto skickat till din registrerade e-postadress",
   "CLINIC_CREATED_SUCCESSFULLY": "Clinic Created Successfully",
-  "TREATMENT_CLONED_SUCCESSFULLY" : "Behandling klonad framgångsrikt"
+  "TREATMENT_CLONED_SUCCESSFULLY" : "Behandling klonad framgångsrikt",
+  "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY" : "Expert uppdaterad framgångsrikt"
 }

@@ -231,6 +231,7 @@ const uploadVariousFieldsForSoloDoctor = uploadCertificationFieldsTo([
 
 
 router.post("/add-doctor-onboarding",authenticateAdmin,uploadVariousFields,doctorControllers.sendDoctorOnaboardingInvitation);
+router.post("/update-doctor", authenticateAdmin, uploadVariousFields,doctorControllers.updateDoctorController);
 
 router.post("/add-solo-doctor-onboarding",authenticateAdmin,uploadVariousFieldsForSoloDoctor,doctorControllers.sendSoloDoctorOnaboardingInvitation);
 router.get("/get-surgery",authenticateAdmin, authControllersClinic.getAllSurgery)

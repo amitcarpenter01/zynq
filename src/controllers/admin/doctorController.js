@@ -63,7 +63,13 @@ export const get_doctors_management = async (req, res) => {
                 // const skinConditions = await adminModels.get_doctor_skin_conditions(doctor.doctor_id);
                 const surgeries = await adminModels.get_doctor_surgeries(doctor.doctor_id);
                 // const aestheticDevices = await adminModels.get_doctor_aesthetic_devices(doctor.doctor_id);
-                const completionPercantage = await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id)
+                const completionPercantage = await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id);
+                
+                let clinicTiming = [];
+                if (doctor.user_type == "Doctor") {
+                    const [clinicData] = await doctorModels.get_clinics_data_by_doctor_id(doctor.doctor_id);
+                    clinicTiming = await doctorModels.clinicTiming(clinicData.clinic_id);
+                }
 
                 return {
                     ...doctor,
@@ -75,7 +81,8 @@ export const get_doctors_management = async (req, res) => {
                     severityLevels,
                     // skinConditions,
                     surgeries,
-                    // aestheticDevices
+                    // aestheticDevices,
+                    clinicTiming
                 };
             })
         );
@@ -524,6 +531,34 @@ export const mapTreatmentsForClinic = (treatments = []) => {
     }));
 };
 
+export const mapAvailabilityToClinicTiming = (availability = []) => {
+    if (!Array.isArray(availability) || availability.length === 0) {
+        return null;
+    }
+
+    const clinicTiming = {
+        monday: null,
+        tuesday: null,
+        wednesday: null,
+        thursday: null,
+        friday: null,
+        saturday: null,
+        sunday: null,
+    };
+
+    availability.forEach(item => {
+        const dayKey = item.day_of_week.toLowerCase();
+
+        clinicTiming[dayKey] = {
+            open: item.closed === 1 ? "" : item.start_time,
+            close: item.closed === 1 ? "" : item.end_time,
+            is_closed: item.closed === 1
+        };
+    });
+
+    return clinicTiming;
+};
+
 
 export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
     try {
@@ -880,7 +915,9 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
         }
 
         if (availability?.length > 0) {
-            await doctorModels.update_availability(doctorId, availability);
+            await doctorModels.update_availability(doctorId, availability, clinic_id);
+            const clinic_timing = mapAvailabilityToClinicTiming(availability);
+            await clinicModels.updateClinicOperationHours(clinic_timing, clinic_id);
         }
 
         // Convert CSV strings into arrays
@@ -952,6 +989,218 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
 
 
         return handleSuccess(res, 200, language, "INVITATION_SENT_SUCCESSFULLY");
+
+    } catch (error) {
+        console.error("Error sending doctor invitation:", error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const updateDoctorController = async (req, res) => {
+    try {
+
+        const schema = Joi.object({
+            zynq_user_id: Joi.string().uuid().required(),
+            name: Joi.string().max(255).optional().allow('', null),
+            phone: Joi.string().max(255).optional().allow('', null),
+            age: Joi.string().optional().allow('', null),
+            address: Joi.string().max(255).optional().allow('', null),
+            gender: Joi.string().optional().allow('', null),
+            biography: Joi.string().optional().allow(''),
+            last_name: Joi.string().optional().allow('', null),
+            education: Joi.array().items(Joi.object({
+                institute: Joi.string().required(),
+                degree: Joi.string().required(),
+                start_year: Joi.string().required(),
+                end_year: Joi.string().required()
+            })).optional().allow(null),   // will be JSON
+            experience: Joi.array().items(
+                Joi.object({
+                    organization: Joi.string().required(),
+                    designation: Joi.string().required(),
+                    start_date: Joi.string().required(),
+                    end_date: Joi.string().required()
+                })
+            ).optional().allow(null),// will be JSON
+            treatments: Joi.array().items(
+                Joi.object({
+                    treatment_id: Joi.string().required(),
+                    price: Joi.number().optional(),
+                    sub_treatments: Joi.array().items(
+                        Joi.object({
+                            sub_treatment_id: Joi.string().required(),
+                            sub_treatment_price: Joi.number().required()
+                        })
+                    ).optional()
+                })
+            ).min(1).required(),
+
+            skin_type_ids: Joi.string().allow(null).optional(),
+            // skin_condition_ids: Joi.string().allow("", null).optional(),
+            surgery_ids: Joi.string().allow(null).optional(),
+
+            // UPDATED: device ids instead of aesthetic devices
+            device_ids: Joi.string().allow(null).optional(),
+            availability: Joi.array().items(
+                Joi.object({
+                    day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                    start_time: Joi.string().required().allow(''),
+                    end_time: Joi.string().required().allow(''),
+                    closed: Joi.number().integer().optional(),
+                })
+            ).optional(),
+            slot_time: Joi.string().optional().allow("", null),
+        });
+
+        if (typeof req.body.treatments === "string") {
+            try {
+                req.body.treatments = JSON.parse(req.body.treatments);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_TREATMENTS");
+            }
+        }
+
+        if (typeof req.body.availability === "string") {
+            try {
+                req.body.availability = JSON.parse(req.body.availability);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_AVAILABILITY");
+            }
+        }
+
+        if (typeof req.body.education === "string") {
+            try {
+                req.body.education = JSON.parse(req.body.education);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_EDUCATION");
+            }
+        }
+
+        if (typeof req.body.experience === "string") {
+            try {
+                req.body.experience = JSON.parse(req.body.experience);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_EXPERIENCE");
+            }
+        }
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const {
+            zynq_user_id,
+            name,
+            phone,
+            age,
+            address,
+            gender,
+            biography,
+            last_name,
+            education,   // will be JSON
+            experience, // will be JSON
+            treatments,
+            skin_type_ids,
+            surgery_ids,
+            device_ids, availability, slot_time } = value;
+
+        let language = req.user.language || "en";
+
+        const [doctorData] = await doctorModels.get_doctor_by_zynquser_id(zynq_user_id);
+
+        if (!doctorData) {
+            return handleError(res, 404, language, "DOCTOR_NOT_FOUND");
+        }
+        let doctorId = doctorData.doctor_id;
+        let filename = doctorData.profile_image;
+        if (req.files?.profile?.length > 0) {
+            filename = req.files.profile[0].filename
+        }
+        // await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
+        const result = await doctorModels.add_personal_details(zynq_user_id, name ? name : doctorData?.name, phone ? phone : doctorData?.phone, age ? age : doctorData?.age, address ? address : doctorData?.address, gender ? gender : doctorData?.gender, filename, biography ? biography : doctorData?.biography, last_name ? last_name : doctorData.last_name, slot_time ? slot_time : doctorData?.slot_time);
+
+
+        const files = req.files || {};
+        if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
+            for (const key in files) { // 'key' is like 'medical_council', 'deramatology_board', etc.
+                const certTypeFromDb = await doctorModels.get_certification_type_by_filename(key);
+
+                if (certTypeFromDb.length > 0) {
+                    const certification_type_id = certTypeFromDb[0].certification_type_id;
+
+                    for (const file of files[key]) { // Loop through potential multiple files for the same field name
+                        const newUploadPath = file.filename; // This is the new path
+
+                        // Check if this certification type already exists for the doctor
+                        const existingCert = await doctorModels.get_doctor_certification_by_type(doctorId, certification_type_id);
+
+                        if (existingCert.length > 0) {
+                            // Certification already exists, update its file path
+                            await doctorModels.update_certification_upload_path(doctorId, certification_type_id, newUploadPath);
+
+                        } else {
+                            // Certification does not exist, add it
+                            await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath); // Add other metadata if available from req.body
+
+                        }
+                    }
+                } else {
+                    console.warn(`Certification type with filename key '${key}' not found in tbl_certification_type. Skipping file processing.`);
+                }
+            }
+        }
+
+        const eduArray = Array.isArray(education) ? education : [];
+        const expArray = Array.isArray(experience) ? experience : [];
+
+
+        if (eduArray.length > 0) {
+            await doctorModels.delete_all_education(doctorId);
+            for (let edu of eduArray) {
+                await doctorModels.add_education(doctorId, edu.institute, edu.degree, edu.start_year, edu.end_year);
+            }
+        }
+
+        if (expArray.length > 0) {
+            await doctorModels.delete_all_experience(doctorId);
+            for (let exp of expArray) {
+                await doctorModels.add_experience(doctorId, exp.organization, exp.designation, exp.start_date, exp.end_date);
+            }
+        }
+
+        const [clinicData] = await doctorModels.get_clinics_data_by_doctor_id(doctorId);
+
+        if (clinicData.clinic_id && availability?.length > 0) {
+            await doctorModels.update_availability(doctorId, availability, clinicData.clinic_id);
+        }
+
+        // Convert CSV strings into arrays
+        const skinTypeIds = skin_type_ids ? skin_type_ids.split(',').map(id => id.trim()) : [];
+        // const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
+        const surgeryIds = surgery_ids ? surgery_ids.split(',').map(id => id.trim()) : [];
+        const deviceIds = device_ids ? device_ids.split(',').map(id => id.trim()) : [];
+
+        // Save expertis
+        if (treatments.length > 0) {
+            await doctorModels.update_doctor_treatments(doctorId, treatments);
+        }
+        if (skinTypeIds.length > 0) {
+            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
+        }
+        if (surgeryIds.length > 0) {
+            await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
+        }
+
+        // NEW: Save treatment → user → device mapping
+        if (deviceIds.length > 0) {
+            await doctorModels.update_doctor_treatment_devices(
+                zynq_user_id,       // zynq_user_id
+                treatments, // treatments array
+                deviceIds         // device ids
+            );
+        }
+
+
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY");
 
     } catch (error) {
         console.error("Error sending doctor invitation:", error);
