@@ -47,34 +47,34 @@ export const getProfile = async (req, res) => {
     );
     clinic.location = clinicLocation;
 
-    // const treatments = await clinicModels.getClinicTreatments(clinic.clinic_id);
-    // clinic.treatments = treatments;
+    const treatments = await clinicModels.getClinicMappedTreatments(clinic.clinic_id);
+    clinic.treatments = treatments;
 
     const operationHours = await clinicModels.getClinicOperationHours(
       clinic.clinic_id
     );
     clinic.operation_hours = operationHours;
 
-    // const equipments = await clinicModels.getClinicEquipments(clinic.clinic_id);
-    // clinic.equipments = equipments;
+    const equipments = await clinicModels.getClinicEquipments(clinic.clinic_id);
+    clinic.equipments = equipments;
 
     const skinTypes = await clinicModels.getClinicSkinTypes(clinic.clinic_id);
     clinic.skin_types = skinTypes;
 
-    // const severityLevels = await clinicModels.getClinicSeverityLevels(
-    //   clinic.clinic_id
-    // );
-    // clinic.severity_levels = severityLevels;
+    const severityLevels = await clinicModels.getClinicSeverityLevels(
+      clinic.clinic_id
+    );
+    clinic.severity_levels = severityLevels;
 
     const surgeries = await clinicModels.getClinicSurgeriesLevels(
       clinic.clinic_id
     );
     clinic.surgeries_level = surgeries;
 
-    // const aestheticDevices = await clinicModels.getClinicAestheticDevicesLevel(
-    //   clinic.clinic_id
-    // );
-    // clinic.aestheticDevices = aestheticDevices;
+    const aestheticDevices = await clinicModels.getClinicAestheticDevicesLevel(
+      clinic.clinic_id
+    );
+    clinic.aestheticDevices = aestheticDevices;
 
     const skin_Conditions = await clinicModels.getClinicSkinConditionsLevel(
       clinic.clinic_id
