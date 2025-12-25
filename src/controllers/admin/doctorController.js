@@ -64,11 +64,13 @@ export const get_doctors_management = async (req, res) => {
                 const surgeries = await adminModels.get_doctor_surgeries(doctor.doctor_id);
                 // const aestheticDevices = await adminModels.get_doctor_aesthetic_devices(doctor.doctor_id);
                 const completionPercantage = await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id);
-                
+
                 let clinicTiming = [];
                 if (doctor.user_type == "Doctor") {
                     const [clinicData] = await doctorModels.get_clinics_data_by_doctor_id(doctor.doctor_id);
-                    clinicTiming = await doctorModels.clinicTiming(clinicData.clinic_id);
+                    clinicTiming = await clinicModels.getClinicOperationHours(
+                        clinicData.clinic_id
+                    );
                 }
 
                 return {
