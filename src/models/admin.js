@@ -959,21 +959,6 @@ export const get_doctor_skin_types = async (doctorId) => {
     }
 };
 
-export const get_Clinic_Operational_Hours = async (clinicId) => {
-    try {
-        return await db.query(`
-            SELECT 
-                *
-            FROM 
-                tbl_clinic_operation_hours  
-            WHERE 
-                clinic_id = ?`, [clinicId]);
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to get clinic's operational hours.");
-    }
-}
-
 export const get_doctor_severity_levels = async (doctorId) => {
     try {
         return await db.query(`
