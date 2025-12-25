@@ -1053,7 +1053,7 @@ export const updateClinicController = async (req, res) => {
             mobile_number: Joi.string().optional().allow(null),
             address: Joi.string().optional().allow(null),
             fee_range: Joi.string().optional().allow(null),
-            website_url: Joi.string().uri().allow(null).optional(),
+            website_url: Joi.string().allow(null).optional(),
             clinic_description: Joi.string().allow(null).optional(),
             street_address: Joi.string().optional().allow(null),
             city: Joi.string().optional().allow(null),
@@ -1228,6 +1228,9 @@ export const updateClinicController = async (req, res) => {
             hsa_id: hsa_id ? hsa_id : clinic.hsa_id,
             is_onboarded: true,
         });
+
+        delete clinicData.state;
+        delete clinicData.city;
 
         await clinicModels.updateClinicData(clinicData, clinic_id);
 
