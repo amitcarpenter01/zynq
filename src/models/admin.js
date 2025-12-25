@@ -737,25 +737,27 @@ export const get_doctors_management = async (limit, offset, search = "", type = 
                     WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
                     WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
                 END AS user_type,
-                IFNULL(
-                    JSON_ARRAYAGG(
-                        JSON_OBJECT(
-                            'day_of_week', da.day_of_week,
-                            'start_time', da.start_time,
-                            'end_time', da.end_time,
-                            'closed', da.closed,
-                            'clinic_id', da.clinic_id
-                        )
-                    ),
-                    JSON_ARRAY()
-                ) AS availability
+              (
+    SELECT IFNULL(
+        JSON_ARRAYAGG(
+            JSON_OBJECT(
+                'day_of_week', da.day_of_week,
+                'start_time', da.start_time,
+                'end_time', da.end_time,
+                'closed', da.closed,
+                'clinic_id', da.clinic_id
+            )
+        ),
+        JSON_ARRAY()
+    )
+    FROM tbl_doctor_availability da
+    WHERE da.doctor_id = d.doctor_id
+) AS availability
             FROM tbl_doctors d
             LEFT JOIN tbl_zqnq_users u 
                 ON u.id = d.zynq_user_id
             LEFT JOIN tbl_appointment_ratings ar
                 ON ar.doctor_id = d.doctor_id
-            LEFT JOIN tbl_doctor_availability da
-                ON da.doctor_id = d.doctor_id
 
             WHERE ${conditions}
 
