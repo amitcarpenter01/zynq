@@ -328,6 +328,9 @@ export const get_clinic_managment = async (req, res) => {
                     : [];
                 // skinConditionsLevel: await adminModels.get_clinic_skin_conditions(clinic.clinic_id),
 
+                // ✅ Fetch clinic location (default to empty object)
+                const [clinicLocation = {}] = await clinicModels.getClinicLocation(clinic.clinic_id);
+
                 // ✅ Run ALL remaining queries in parallel
                 const [
                     treatments,
@@ -353,7 +356,8 @@ export const get_clinic_managment = async (req, res) => {
                     surgeriesLevel,
                     aestheticDevicesLevel,
                     operationHours,
-                    images : formattedImages
+                    images: formattedImages,
+                    clinicLocation
 
                 };
             })
@@ -1260,8 +1264,10 @@ export const updateClinicController = async (req, res) => {
         } = value;
 
         const uploadedFiles = req.files;
-        const logoFile = uploadedFiles.find((file) => file.fieldname === "logo");
-        const clinic_logo = logoFile?.filename;
+
+        const clinic_logo = Array.isArray(uploadedFiles)
+            ? uploadedFiles.find(file => file.fieldname === "logo")?.filename
+            : null;
 
 
         const [clinic] = await clinicModels.get_clinic_by_zynq_user_id(
@@ -1368,7 +1374,7 @@ export const updateClinicController = async (req, res) => {
         await Promise.all(updatePromises);
 
 
-        if (uploadedFiles.length > 0) {
+        if (uploadedFiles?.length > 0) {
             uploadedFiles.forEach(async (file) => {
                 const [certificationType] =
                     await clinicModels.getCertificateTypeByFileName(file.fieldname);

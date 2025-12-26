@@ -664,8 +664,10 @@ export const updateClinic = async (req, res) => {
     } = value;
 
     const uploadedFiles = req.files;
-    const logoFile = uploadedFiles.find((file) => file.fieldname === "logo");
-    const clinic_logo = logoFile?.filename;
+
+    const clinic_logo = Array.isArray(uploadedFiles)
+      ? uploadedFiles.find(file => file.fieldname === "logo")?.filename
+      : null;
 
     const zynq_user_id = req.user.id;
 
