@@ -306,6 +306,10 @@ export const get_clinic_managment = async (req, res) => {
                     ? process.env.APP_URL + 'clinic/logo/' + clinic.clinic_logo
                     : null;
 
+                operationHours = await clinicModels.getClinicOperationHours(
+                    clinic.clinic_id
+                );
+
                 return {
                     ...clinic,
                     treatments: await adminModels.get_clinic_treatments(clinic.clinic_id),
@@ -313,7 +317,10 @@ export const get_clinic_managment = async (req, res) => {
                     severityLevels: await adminModels.get_clinic_serveritylevel(clinic.clinic_id),
                     // skinConditionsLevel: await adminModels.get_clinic_skin_conditions(clinic.clinic_id),
                     surgeriesLevel: await adminModels.get_clinic_surgeries(clinic.clinic_id),
-                    // aestheticDevicesLevel: await adminModels.get_clinic_aesthetic_devices(clinic.clinic_id)
+                    // aestheticDevicesLevel: await adminModels.get_clinic_aesthetic_devices(clinic.clinic_id),
+                    operationHours : await clinicModels.getClinicOperationHours(
+                        clinic.clinic_id
+                    )
                 };
             })
         );
