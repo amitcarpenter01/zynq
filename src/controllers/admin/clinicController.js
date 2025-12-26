@@ -1142,7 +1142,7 @@ export const updateClinicController = async (req, res) => {
                                     price: Joi.number().precision(2).required(),
                                     name: Joi.string().optional().allow(null),
                                     swedish: Joi.string().optional().allow(null),
-                                    clinic_sub_treatment_id : Joi.string().optional().allow(null),
+                                    clinic_sub_treatment_id: Joi.string().optional().allow(null),
                                 })
                             )
                             .optional()
@@ -1170,6 +1170,7 @@ export const updateClinicController = async (req, res) => {
             ivo_registration_number: Joi.string().optional().allow(null),
             hsa_id: Joi.string().optional().allow(null),
             slot_time: Joi.string().optional().allow(null),
+            removed_file_ids: Joi.array().items(Joi.string()).optional().allow(null),
         });
 
 
@@ -1178,6 +1179,14 @@ export const updateClinicController = async (req, res) => {
                 req.body.clinic_timing = JSON.parse(req.body.clinic_timing);
             } catch (err) {
                 return handleError(res, 400, "en", "INVALID_JSON_FOR_CLINIC_TIMING");
+            }
+        }
+
+        if (typeof req.body.removed_file_ids === "string") {
+            try {
+                req.body.removed_file_ids = JSON.parse(req.body.removed_file_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_REMOVED_IDS");
             }
         }
 
@@ -1266,7 +1275,8 @@ export const updateClinicController = async (req, res) => {
             skin_Conditions,
             surgeries,
             aestheticDevices,
-            zynq_user_id
+            zynq_user_id,
+            removed_file_ids
         } = value;
 
         const uploadedFiles = req.files;
@@ -1365,6 +1375,12 @@ export const updateClinicController = async (req, res) => {
         if (Array.isArray(surgeries) && surgeries.length > 0) {
             updatePromises.push(
                 clinicModels.updateClinicSurgeriesLevel(surgeries, clinic_id)
+            );
+        }
+
+        if (Array.isArray(removed_file_ids) && removed_file_ids.length > 0) {
+            updatePromises.push(
+                clinicModels.deleteClinicImageModel(removed_file_ids)
             );
         }
 
