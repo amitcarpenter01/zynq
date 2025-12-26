@@ -306,10 +306,6 @@ export const get_clinic_managment = async (req, res) => {
                     ? process.env.APP_URL + 'clinic/logo/' + clinic.clinic_logo
                     : null;
 
-                operationHours = await clinicModels.getClinicOperationHours(
-                    clinic.clinic_id
-                );
-
                 return {
                     ...clinic,
                     treatments: await adminModels.get_clinic_treatments(clinic.clinic_id),
