@@ -247,7 +247,7 @@ router.get("/get-surgery/:clinic_id",authenticateAdmin,clinicControllers.getAllS
 router.get("/get-devices/:clinic_id", clinicControllers.getAllDevicesOfClinicController);
 router.get("/get-skin-types/:clinic_id",authenticateAdmin, clinicControllers.getClinicSkinTypesOfClinicController);
 router.delete("/clinin-images/:clinic_image_id", authenticateAdmin ,validate(deleteClinicImageSchema, "params"),authControllersClinic.deleteClinicImage);
-
+router.post("/generate-slots",authenticateAdmin,doctorControllers.generateAvailabilityFromOperationHours);
 
 
 export default router;
