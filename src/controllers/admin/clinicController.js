@@ -719,7 +719,7 @@ export const add_clinic_with_onboarding = async (req, res) => {
         // Check if email already exists
         const existingUser = await adminModels.findClinicEmail(email);
         if (existingUser?.length > 0) {
-            return handleError(res, 409, 'en', "Email already exists", {
+            return handleError(res, 400, 'en', "Email already exists", {
                 email: email
             });
         }
