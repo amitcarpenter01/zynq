@@ -684,7 +684,7 @@ export const getFutureDoctorSlots = async (req, res) => {
         let allSlotData = [];
 
         for (const availability of availabilityRows) {
-            const rruleDay = weekdayMap[availability.day.toLowerCase()];
+            const rruleDay = weekdayMap[availability?.day_of_week?.toLowerCase()];
             if (!rruleDay) continue;
 
             const rule = new RRule({
@@ -712,7 +712,7 @@ export const getFutureDoctorSlots = async (req, res) => {
                 slots.forEach(slot => {
                     allSlotData.push({
                         date: formattedDate,
-                        day: availability.day.toLowerCase(),
+                        day: availability?.day_of_week?.toLowerCase(),
                         ...slot
                     });
                 });
