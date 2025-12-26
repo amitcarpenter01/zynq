@@ -735,9 +735,11 @@ export const add_clinic_with_onboarding = async (req, res) => {
             language = language || "en";
 
             const uploadedFiles = req.files;
-            const clinic_logo = uploadedFiles.find(
-                (file) => file.fieldname === "logo"
-            )?.filename;
+
+            const clinic_logo = Array.isArray(uploadedFiles)
+                ? uploadedFiles.find(file => file.fieldname === "logo")?.filename
+                : null;
+
 
             const [clinic_data] = await clinicModels.get_clinic_by_zynq_user_id(zynq_user_id);
 
@@ -1046,7 +1048,7 @@ export const getClinicSkinTypesOfClinicController = async (req, res) => {
 export const updateClinicController = async (req, res) => {
     try {
         const schema = Joi.object({
-            zynq_user_id : Joi.string().uuid().required(),
+            zynq_user_id: Joi.string().uuid().required(),
             clinic_name: Joi.string().optional().allow(null),
             org_number: Joi.string().optional().allow(null),
             email: Joi.string().email().optional().allow(null),
