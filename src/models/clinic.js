@@ -2703,12 +2703,12 @@ export const getClinicImages = async (clinic_id) => {
     }
 };
 
-export const deleteClinicImageById = async (clinic_image_id, clinic_id) => {
+export const deleteClinicImageById = async (clinic_image_id, clinic_id= null) => {
     try {
         // 1. Get image_url first
         const rows = await db.query(
-            `SELECT image_url FROM tbl_clinic_images WHERE clinic_image_id = ? AND clinic_id = ?`,
-            [clinic_image_id, clinic_id]
+            `SELECT image_url FROM tbl_clinic_images WHERE clinic_image_id = ? `,
+            [clinic_image_id]
         );
 
         if (rows.length === 0) return null;
@@ -2721,8 +2721,8 @@ export const deleteClinicImageById = async (clinic_image_id, clinic_id) => {
         }
 
         const result = await db.query(
-            `DELETE FROM tbl_clinic_images WHERE clinic_image_id = ? AND clinic_id = ?`,
-            [clinic_image_id, clinic_id]
+            `DELETE FROM tbl_clinic_images WHERE clinic_image_id = ? `,
+            [clinic_image_id]
         );
 
         return result;
