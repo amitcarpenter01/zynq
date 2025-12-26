@@ -549,7 +549,7 @@ export const add_clinic_with_onboarding = async (req, res) => {
             clinic_name: Joi.string().optional().allow("", null),
             org_number: Joi.string().optional().allow("", null),
             email: Joi.string().email().required(),
-            slot_time: Joi.string().required(),
+            slot_time: Joi.string().optional().allow("", null),
             mobile_number: Joi.string().optional().allow("", null),
             address: Joi.string().optional().allow("", null),
             city: Joi.string().optional().allow("", null),
