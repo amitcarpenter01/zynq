@@ -210,7 +210,7 @@ router.patch("/update-doctor", authenticateAdmin, uploadFileTo('profile_images')
 
 
 router.post("/add-clinic-onboarding",authenticateAdmin,uploadDynamicClinicFiles(getFieldsFn),clinicControllers.add_clinic_with_onboarding);
-router.get("/get-clinic-mapped-treatments/:clinic_id",authenticateAdmin,clinicControllers.get_Clinic_Mapped_treatments);
+router.get("/get-treatments/:clinic_id",authenticateAdmin,clinicControllers.get_Clinic_Mapped_treatments);
 router.post("/update-clinic", authenticateAdmin, uploadDynamicClinicFiles(getFieldsFn), clinicControllers.updateClinicController);
 
 const uploadVariousFields = uploadCertificationFieldsTo([
