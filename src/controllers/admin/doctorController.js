@@ -1331,7 +1331,8 @@ export const updateSoloDoctorController = async (req, res) => {
             surgery_ids: Joi.string().allow(null).optional(),
 
             // UPDATED: device ids instead of aesthetic devices
-            device_ids: Joi.string().allow(null).optional()
+            device_ids: Joi.string().allow(null).optional(),
+            removed_file_ids: Joi.array().items(Joi.string()).optional().allow(null),
         });
 
         if (typeof req.body.treatments === "string") {
@@ -1339,6 +1340,14 @@ export const updateSoloDoctorController = async (req, res) => {
                 req.body.treatments = JSON.parse(req.body.treatments);
             } catch (err) {
                 return handleError(res, 400, "en", "INVALID_JSON_FOR_TREATMENTS");
+            }
+        }
+
+        if (typeof req.body.removed_file_ids === "string") {
+            try {
+                req.body.removed_file_ids = JSON.parse(req.body.removed_file_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_REMOVED_IDS");
             }
         }
 
@@ -1400,7 +1409,8 @@ export const updateSoloDoctorController = async (req, res) => {
             hsa_id,
             fee_range,
             slot_time,
-            zynq_user_id
+            zynq_user_id,
+            removed_file_ids
         } = value;
 
         const language = req.user.language || "en";
@@ -1427,7 +1437,7 @@ export const updateSoloDoctorController = async (req, res) => {
                 clinic_logo: clinic_logo ? clinic_logo : clinic.clinic_logo,
                 ivo_registration_number: ivo_registration_number ? ivo_registration_number : clinic.ivo_registration_number,
                 hsa_id: hsa_id ? hsa_id : clinic.hsa_id,
-                is_onboarded : clinic.is_onboarded
+                is_onboarded: clinic.is_onboarded
             });
 
             delete clinicData.state;
@@ -1469,7 +1479,7 @@ export const updateSoloDoctorController = async (req, res) => {
             };
 
 
-           let update_doctor = await dbOperations.updateData('tbl_doctors', doctorData, `WHERE zynq_user_id = '${zynq_user_id}' `);
+            let update_doctor = await dbOperations.updateData('tbl_doctors', doctorData, `WHERE zynq_user_id = '${zynq_user_id}' `);
 
         }
 
@@ -1562,6 +1572,11 @@ export const updateSoloDoctorController = async (req, res) => {
             await doctorModels.update_doctor_treatments(doctorId, treatments);
         }
 
+        if (Array.isArray(removed_file_ids) && removed_file_ids.length > 0) {
+
+            await clinicModels.deleteClinicImageModel(removed_file_ids);
+        }
+
         if (skinTypeIds.length > 0) {
             await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
             await clinicModels.updateClinicSkinTypes(skinTypeIds, clinic_id);
@@ -1590,5 +1605,88 @@ export const updateSoloDoctorController = async (req, res) => {
     } catch (error) {
         console.error("Error sending doctor invitation:", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
+const generateSessions = (start, end, slotMinutes) => {
+    const sessions = [];
+
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+
+    let startMinutes = sh * 60 + sm;
+    const endMinutes = eh * 60 + em;
+
+    while (startMinutes + slotMinutes <= endMinutes) {
+        const sH = String(Math.floor(startMinutes / 60)).padStart(2, '0');
+        const sM = String(startMinutes % 60).padStart(2, '0');
+        const eH = String(Math.floor((startMinutes + slotMinutes) / 60)).padStart(2, '0');
+        const eM = String((startMinutes + slotMinutes) % 60).padStart(2, '0');
+
+        sessions.push({
+            start_time: `${sH}:${sM}:00`,
+            end_time: `${eH}:${eM}:00`
+        });
+
+        startMinutes += slotMinutes;
+    }
+
+    return sessions;
+};
+
+
+export const generateAvailabilityFromOperationHours = async (req, res) => {
+    try {
+        const language = req?.user?.language || "en";
+        const schema = Joi.object({
+            slot_time: Joi.number().integer().positive().required(),
+
+            operationHours: Joi.array().items(
+                Joi.object({
+                    day_of_week: Joi.string()
+                        .valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
+                        .required(),
+                    open_time: Joi.string().required(),
+                    close_time: Joi.string().required(),
+                    is_closed: Joi.number().integer().valid(0, 1).required()
+                })
+            ).required()
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        let { slot_time, operationHours } = value;
+
+        const availability = [];
+        const slotSummary = {};
+
+        for (const dayData of operationHours) {
+            const { day_of_week, open_time, close_time, is_closed } = dayData;
+
+            let sessions = [];
+
+            if (!is_closed) {
+                sessions = generateSessions(open_time, close_time, slot_time);
+            }
+
+            availability.push({
+                day: day_of_week,
+                session: sessions
+            });
+
+            slotSummary[day_of_week] = sessions.length;
+        }
+
+        return handleSuccess(
+            res,
+            200,
+            language,
+            "SLOT_GENERATED_SUCCESSFULLY",
+            surgery
+        );
+    } catch (error) {
+        console.error("Error in getAllSurgery:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };

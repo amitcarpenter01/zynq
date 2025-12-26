@@ -2733,6 +2733,20 @@ export const deleteClinicImageById = async (clinic_image_id, clinic_id= null) =>
 };
 
 
+export const deleteClinicImageModel = async (clinic_image_ids) => {
+    try {
+        const result = await db.query(
+            `DELETE FROM tbl_clinic_images WHERE clinic_image_id IN (?) `,
+            [clinic_image_ids]
+        );
+        return result;
+    } catch (error) {
+        console.error("Error in deleteClinicImageById:", error);
+        throw error;
+    }
+}
+
+
 export const calculateAndUpdateClinicProfileCompletion = async (clinic) => {
     try {
         let filledFieldsCount = 0;
