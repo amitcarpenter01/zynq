@@ -1131,12 +1131,18 @@ export const updateClinicController = async (req, res) => {
                     Joi.object({
                         treatment_id: Joi.string().uuid().required(),
                         total_price: Joi.number().precision(2).required(),
+                        name: Joi.string().optional().allow(null),
+                        swedish: Joi.string().optional().allow(null),
+                        clinic_treatment_id: Joi.string().optional().allow(null),
 
                         sub_treatments: Joi.array()
                             .items(
                                 Joi.object({
                                     sub_treatment_id: Joi.string().uuid().required(),
                                     price: Joi.number().precision(2).required(),
+                                    name: Joi.string().optional().allow(null),
+                                    swedish: Joi.string().optional().allow(null),
+                                    clinic_sub_treatment_id : Joi.string().optional().allow(null),
                                 })
                             )
                             .optional()
