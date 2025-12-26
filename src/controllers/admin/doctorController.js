@@ -1683,7 +1683,7 @@ export const generateAvailabilityFromOperationHours = async (req, res) => {
             200,
             language,
             "SLOT_GENERATED_SUCCESSFULLY",
-            surgery
+            availability
         );
     } catch (error) {
         console.error("Error in getAllSurgery:", error);
