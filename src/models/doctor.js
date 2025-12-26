@@ -425,6 +425,7 @@ export const updateDoctorSessionSlots = async (doctorId, availabilityData) => {
                 [doctorSlotDayId, doctorId, avail.day]
             );
 
+
             // 3. Insert sessions for each day
             if (avail.session && avail.session.length > 0) {
                 const sessionValues = avail.session.map(s => [uuidv4(), doctorSlotDayId, s.start_time, s.end_time]);
