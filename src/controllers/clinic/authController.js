@@ -48,7 +48,7 @@ export const getProfile = async (req, res) => {
     clinic.location = clinicLocation;
 
     const treatments = await clinicModels.getClinicMappedTreatments(clinic.clinic_id);
-    clinic.treatments = treatments;
+    clinic.treatments = treatments?.treatments || [];
 
     const operationHours = await clinicModels.getClinicOperationHours(
       clinic.clinic_id
