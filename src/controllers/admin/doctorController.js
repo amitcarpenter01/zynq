@@ -160,9 +160,9 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                     day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
                     session: Joi.array().items(
                         Joi.object({
-                        start_time: Joi.string().required(),
-                        end_time: Joi.string().required(),
-                    })).optional().allow(null),
+                            start_time: Joi.string().required(),
+                            end_time: Joi.string().required(),
+                        })).optional().allow(null),
                 })
             ).optional().allow(null),
             slot_time: Joi.string().optional().allow("", null),
@@ -563,6 +563,48 @@ export const mapAvailabilityToClinicTiming = (availability = []) => {
     return clinicTiming;
 };
 
+export const convertAvailability = (flatAvailability, slotMinutes = 15) => {
+    const result = [];
+
+    // Group by day
+    const grouped = flatAvailability.reduce((acc, item) => {
+        if (!acc[item.day_of_week]) acc[item.day_of_week] = [];
+        acc[item.day_of_week].push(item);
+        return acc;
+    }, {});
+
+    for (const day in grouped) {
+        const sessions = [];
+
+        for (const slot of grouped[day]) {
+            if (slot.closed) continue; // skip closed slots
+
+            if (!slot.start_time || !slot.end_time) continue; // skip empty times
+
+            let start = slot.start_time.split(':').map(Number);
+            let end = slot.end_time.split(':').map(Number);
+
+            let startMinutes = start[0] * 60 + start[1];
+            let endMinutes = end[0] * 60 + end[1];
+
+            while (startMinutes + slotMinutes <= endMinutes) {
+                const sH = String(Math.floor(startMinutes / 60)).padStart(2, '0');
+                const sM = String(startMinutes % 60).padStart(2, '0');
+                const eH = String(Math.floor((startMinutes + slotMinutes) / 60)).padStart(2, '0');
+                const eM = String((startMinutes + slotMinutes) % 60).padStart(2, '0');
+
+                sessions.push({ start_time: `${sH}:${sM}:00`, end_time: `${eH}:${eM}:00` });
+
+                startMinutes += slotMinutes;
+            }
+        }
+
+        result.push({ day, session: sessions });
+    }
+
+    return result;
+}
+
 
 export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
     try {
@@ -919,7 +961,8 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
         }
 
         if (availability?.length > 0) {
-            await doctorModels.update_availability(doctorId, availability, clinic_id);
+            const doctorSession = convertAvailability(availability, Number(slot_time));
+            await doctorModels.updateDoctorSessionSlots(doctorId, doctorSession);
             const clinic_timing = mapAvailabilityToClinicTiming(availability);
             await clinicModels.updateClinicOperationHours(clinic_timing, clinic_id);
         }
@@ -944,9 +987,11 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
 
         if (skinTypeIds.length > 0) {
             await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
+            await clinicModels.updateClinicSkinTypes(skinTypeIds, clinic_id);
         }
         if (surgeryIds.length > 0) {
             await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
+            await clinicModels.updateClinicSurgeries(surgeryIds, clinic_id);
         }
 
         // NEW: Save treatment → user → device mapping
@@ -955,6 +1000,10 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
                 zynq_user_id,       // zynq_user_id
                 treatments, // treatments array
                 deviceIds         // device ids
+            );
+            await clinicModels.updateClinicAestheticDevices(
+                deviceIds,
+                clinic_id
             );
         };
 
@@ -1216,7 +1265,7 @@ export const updateSoloDoctorController = async (req, res) => {
     try {
 
         const schema = Joi.object({
-            email: Joi.string().email().min(1).required(),
+            zynq_user_id: Joi.string().uuid().required(),
             slot_time: Joi.string().required(),
             name: Joi.string().max(255).optional().allow('', null),
             last_name: Joi.string().max(255).optional().allow('', null),
@@ -1321,7 +1370,6 @@ export const updateSoloDoctorController = async (req, res) => {
         if (error) return joiErrorHandle(res, error);
 
         const {
-            email,
             name,
             last_name,
             age,
@@ -1348,160 +1396,83 @@ export const updateSoloDoctorController = async (req, res) => {
             skin_type_ids,
             surgery_ids,
             device_ids,
-            is_onboarded,
             ivo_registration_number,
             hsa_id,
             fee_range,
-            form_stage,
-            slot_time
+            slot_time,
+            zynq_user_id
         } = value;
 
+        const language = req.user.language || "en";
 
-        let language = req.user.language || "en";
+        const [clinic] = await clinicModels.get_clinic_by_zynq_user_id(
+            zynq_user_id
+        );
+        const clinic_id = clinic.clinic_id;
 
-        const existingUser = await adminModels.findClinicEmail(email);
-        if (existingUser?.length > 0) {
-            return handleError(res, 409, 'en', "Email already exists", {
-                email: email
+        const clinic_logo = req?.files?.logo ? req?.files?.logo[0]?.filename : null;
+
+        if (clinic_id) {
+            const clinicData = buildClinicData({
+                zynq_user_id: zynq_user_id ? zynq_user_id : clinic.zynq_user_id,
+                clinic_name: clinic_name ? clinic_name : clinic.clinic_name,
+                org_number: org_number ? org_number : clinic.org_number,
+                email: clinic.email,
+                mobile_number: mobile_number ? mobile_number : clinic.mobile_number,
+                address: address ? address : clinic.address,
+                fee_range: fee_range ? fee_range : clinic.fee_range,
+                website_url: website_url ? website_url : clinic.website_url,
+                clinic_description: clinic_description ? clinic_description : clinic.clinic_description,
+                language: language ? language : clinic.language,
+                clinic_logo: clinic_logo ? clinic_logo : clinic.clinic_logo,
+                ivo_registration_number: ivo_registration_number ? ivo_registration_number : clinic.ivo_registration_number,
+                hsa_id: hsa_id ? hsa_id : clinic.hsa_id,
+                is_onboarded : clinic.is_onboarded
+            });
+
+            delete clinicData.state;
+            delete clinicData.city;
+
+            await clinicModels.updateClinicData(clinicData, clinic_id);
+
+            const [clinicLocation] = await clinicModels.getClinicLocation(clinic_id);
+
+            await clinicModels.updateClinicLocation({
+                clinic_id,
+                street_address: street_address ? street_address : clinicLocation.street_address,
+                city: city ? city : clinicLocation.city,
+                state: state ? state : clinicLocation.state,
+                zip_code: zip_code ? zip_code : clinicLocation.zip_code,
+                latitude: latitude ? latitude : clinicLocation.latitude,
+                longitude: longitude ? longitude : clinicLocation.longitude,
             });
         }
 
-        const findRole = await adminModels.findRole('SOLO_DOCTOR');
-        if (!findRole) return handleError(res, 404, 'en', "Role 'SOLO_DOCTOR' not found");
+        const [doctorResult] = await dbOperations.getData('tbl_doctors', `where zynq_user_id = '${zynq_user_id}' `);
 
-        const roleId = findRole.id;
-        const password = await generatePassword(email);
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const doctorId = doctorResult?.doctor_id;
 
-        await adminModels.addZynqUsers({ email, role_id: roleId, password: hashedPassword, show_password: password });
-
-        const [newUser] = await adminModels.findClinicEmail(email);
-
-        let zynq_user_id = newUser.id;
-
-        language = language || "en";
-
-        const clinic_logo = req?.files?.logo ? req?.files?.logo[0]?.filename : null
-
-        const clinicData = {
-            zynq_user_id:
-                zynq_user_id === "" ? null : zynq_user_id,
-            clinic_name:
-                clinic_name === "" ? null : clinic_name,
-            org_number:
-                org_number === "" ? null : org_number,
-            email: email === "" ? null : email,
-            // email: email === "" ? null : email || clinic_data.email,
-            mobile_number:
-                mobile_number === ""
-                    ? null
-                    : mobile_number,
-            address: address === "" ? null : address,
-            fee_range: fee_range === "" ? null : fee_range,
-            website_url: website_url === "" ? null : website_url,
-            clinic_description: clinic_description === "" ? null : clinic_description,
-            language: language === "" ? null : language,
-            clinic_logo: clinic_logo === "" ? null : clinic_logo,
-            form_stage: form_stage === "" ? null : form_stage,
-            ivo_registration_number: ivo_registration_number === "" ? null : ivo_registration_number,
-            hsa_id: hsa_id === "" ? null : hsa_id,
-            is_onboarded: 0,
-            city: city === "" ? null : city,
-            state: state === "" ? null : state,
-        };
-
-        delete clinicData.city;
-        delete clinicData.state;
-
-        let profile_status = "ONBOARDING";
-
-        if (!isEmpty(form_stage)) {
-            clinicData.profile_status = profile_status;
-        }
-
-        const clinicDataV2 = buildClinicData(clinicData);
-
-        delete clinicDataV2.city;
-        delete clinicDataV2.state;
-
-        clinicDataV2.slot_time = slot_time
-
-        await clinicModels.insertClinicData(clinicDataV2);
-
-
-        const [clinic] = await dbOperations.getSelectedColumn(
-            "clinic_id",
-            "tbl_clinics",
-            `WHERE zynq_user_id='${zynq_user_id}'`
-        );
-
-        const clinic_id = clinic?.clinic_id;
-
-
-        const [clinicLocation] = await clinicModels.getClinicLocation(clinic_id);
-        if (clinicLocation) {
-            const update_data = {
-                clinic_id: clinic_id,
-                street_address:
-                    street_address === ""
-                        ? null
-                        : street_address || clinicLocation.street_address,
-                city: city === "" ? null : city || clinicLocation.city,
-                state: state === "" ? null : state || clinicLocation.state,
-                zip_code: zip_code === "" ? null : zip_code || clinicLocation.zip_code,
-                latitude: latitude || clinicLocation.latitude,
-                longitude: longitude || clinicLocation.longitude,
+        if (doctorResult) {
+            let doctorData = {
+                name: name ? name : doctorResult.name,
+                last_name: last_name ? last_name : doctorResult.last_name,
+                gender: gender ? gender : doctorResult.gender,
+                age: age ? age : doctorResult.age,
+                biography: clinic_description ? clinic_description : doctorResult.biography,
+                fee_per_session: fee_per_session ? fee_per_session : doctorResult.fee_per_session,
+                address: address ? address : doctorResult.address,
+                longitude: longitude ? longitude : doctorResult.longitude,
+                profile_image: req?.files?.profile ? req?.files?.profile[0]?.filename : doctorResult.profile_image,
+                phone: mobile_number ? mobile_number : doctorResult.phone,
+                currency: currency ? currency : doctorResult.currency,
+                session_duration: session_duration ? session_duration : doctorResult.session_duration,
             };
 
-            await clinicModels.updateClinicLocation(update_data, clinic_id);
-        } else {
-            const insert_data = {
-                clinic_id: clinic_id,
-                street_address: street_address,
-                city: city,
-                state: state,
-                zip_code: zip_code,
-                latitude: latitude,
-                longitude: longitude,
-            };
-            await clinicModels.insertClinicLocation(insert_data);
+
+           let update_doctor = await dbOperations.updateData('tbl_doctors', doctorData, `WHERE zynq_user_id = '${zynq_user_id}' `);
+
         }
 
-
-
-        await dbOperations.insertData("tbl_doctors", {
-            zynq_user_id: zynq_user_id,
-            name,
-            last_name,
-            gender: gender,
-            age: age,
-            biography: clinic_description,
-            profile_image: req?.files?.profile ? req?.files?.profile[0]?.filename : null,
-            phone: mobile_number,
-            address: address,
-            fee_per_session: fee_per_session,
-            currency: currency,
-            session_duration: session_duration,
-            slot_time: slot_time || null
-        });
-
-
-        const [doctor] = await dbOperations.getSelectedColumn(
-            "doctor_id",
-            "tbl_doctors",
-            `WHERE zynq_user_id='${zynq_user_id}'`
-        );
-
-        const doctorId = doctor.doctor_id;
-
-
-
-        if (doctor && clinic) {
-            await dbOperations.insertData("tbl_doctor_clinic_map", {
-                doctor_id: doctorId,
-                clinic_id: clinic_id,
-            });
-        }
 
         const uploadedFiles = req.files || {};
         const clinicImageFiles = [];
@@ -1567,7 +1538,8 @@ export const updateSoloDoctorController = async (req, res) => {
         }
 
         if (availability?.length > 0) {
-            await doctorModels.update_availability(doctorId, availability, clinic_id);
+            const doctorSession = convertAvailability(availability, Number(slot_time));
+            await doctorModels.updateDoctorSessionSlots(doctorId, doctorSession);
             const clinic_timing = mapAvailabilityToClinicTiming(availability);
             await clinicModels.updateClinicOperationHours(clinic_timing, clinic_id);
         }
@@ -1592,9 +1564,11 @@ export const updateSoloDoctorController = async (req, res) => {
 
         if (skinTypeIds.length > 0) {
             await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
+            await clinicModels.updateClinicSkinTypes(skinTypeIds, clinic_id);
         }
         if (surgeryIds.length > 0) {
             await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
+            await clinicModels.updateClinicSurgeries(surgeryIds, clinic_id);
         }
 
         // NEW: Save treatment → user → device mapping
@@ -1604,43 +1578,14 @@ export const updateSoloDoctorController = async (req, res) => {
                 treatments, // treatments array
                 deviceIds         // device ids
             );
+            await clinicModels.updateClinicAestheticDevices(
+                deviceIds,
+                clinic_id
+            );
         };
 
 
-        const updatedEmailCount = 1;
-
-        await adminModels.updateClinicCountAndEmailSent(
-            clinic_id,
-            updatedEmailCount,
-            moment().format('YYYY-MM-DD HH:mm:ss')
-        );
-        const is_subscribed = clinic_id;
-
-        const html = await ejs.renderFile(
-            path.join(__dirname, "../../views/invitation-mail.ejs"),
-            {
-                clinic_name: clinic_name || "#N/A",
-                organization_number: org_number || "#N/A",
-                email: email,
-                phone: mobile_number || "#N/A",
-                city: city || "#N/A",
-                postal_code: zip_code || "#N/A",
-                address: address || "#N/A",
-                password: password,
-                logo: image_logo,
-                invitationLink: `${APP_URL}admin/subscribed/${is_subscribed}`,
-            }
-        );
-
-        await sendEmail({
-            to: email,
-            subject: "You're One Step Away from Joining ZYNQ – Accept Your Invite",
-            html,
-        });
-
-
-
-        return handleSuccess(res, 200, language, "INVITATION_SENT_SUCCESSFULLY");
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY");
 
     } catch (error) {
         console.error("Error sending doctor invitation:", error);

@@ -236,6 +236,7 @@ router.post("/add-doctor-onboarding",authenticateAdmin,uploadVariousFields,docto
 router.post("/update-doctor", authenticateAdmin, uploadVariousFields,doctorControllers.updateDoctorController);
 
 router.post("/add-solo-doctor-onboarding",authenticateAdmin,uploadVariousFieldsForSoloDoctor,doctorControllers.sendSoloDoctorOnaboardingInvitation);
+router.post("/update-solo-doctor",authenticateAdmin,uploadVariousFieldsForSoloDoctor,doctorControllers.updateSoloDoctorController);
 router.get("/get-surgery",authenticateAdmin, authControllersClinic.getAllSurgery)
 router.get("/get-devices", authControllersClinic.getAllDevices);
 router.get("/get-treatments", authControllersClinic.getAllTreatments);

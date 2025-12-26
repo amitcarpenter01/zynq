@@ -604,11 +604,11 @@ export const get_clinic_equipments = async (clinic_id) => {
 };
 
 export const get_clinic_skintype = async (clinic_id) => {
-    return await db.query('SELECT tbl_clinic_skin_types.clinic_skin_type_id, tbl_clinic_skin_types.clinic_id, tbl_skin_types.name FROM tbl_clinic_skin_types LEFT JOIN tbl_skin_types ON tbl_skin_types.skin_type_id = tbl_clinic_skin_types.skin_type_id WHERE tbl_clinic_skin_types.clinic_id = ? ORDER BY tbl_clinic_skin_types.created_at DESC;', [clinic_id])
+    return await db.query('SELECT tst.* FROM tbl_clinic_skin_types tcst LEFT JOIN tbl_skin_types tst ON tst.skin_type_id = tcst.skin_type_id WHERE tcst.clinic_id = ? ORDER BY tcst.created_at DESC;', [clinic_id])
 };
 
 export const get_clinic_serveritylevel = async (clinic_id) => {
-    return await db.query('SELECT tbl_clinic_severity_levels.clinic_severity_level_id, tbl_clinic_severity_levels.clinic_id, tbl_severity_levels.level FROM tbl_clinic_severity_levels LEFT JOIN tbl_severity_levels ON tbl_severity_levels.severity_level_id = tbl_clinic_severity_levels.severity_id WHERE tbl_clinic_severity_levels.clinic_id = ? ORDER BY tbl_clinic_severity_levels.created_at DESC;', [clinic_id])
+    return await db.query('SELECT tbl_severity_levels.* FROM tbl_clinic_severity_levels LEFT JOIN tbl_severity_levels ON tbl_severity_levels.severity_level_id = tbl_clinic_severity_levels.severity_id WHERE tbl_clinic_severity_levels.clinic_id = ? ORDER BY tbl_clinic_severity_levels.created_at DESC', [clinic_id])
 }
 
 export const get_clinic_skin_conditions = async (clinic_id) => {
@@ -631,7 +631,8 @@ export const get_clinic_surgeries = async (clinic_id) => {
             tbl_clinic_surgery.clinic_surgery_id, 
             tbl_clinic_surgery.clinic_id, 
             tbl_surgery.type,
-            tbl_surgery.swedish AS name 
+            tbl_surgery.swedish AS name,
+            tbl_surgery.surgery_id 
         FROM tbl_clinic_surgery 
         LEFT JOIN tbl_surgery 
             ON tbl_surgery.surgery_id = tbl_clinic_surgery.surgery_id 
