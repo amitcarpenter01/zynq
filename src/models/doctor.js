@@ -15,9 +15,9 @@ export const get_doctor_by_zynquser_id = async (zynqUserId) => {
     }
 };
 
-export const add_personal_details = async (zynqUserId, name, phone, age, address, gender, profile_image, biography,last_name,slot_time = null) => {
+export const add_personal_details = async (zynqUserId, name, phone, age, address, gender, profile_image, biography, last_name, slot_time = null) => {
     try {
-        return await db.query(`UPDATE tbl_doctors SET profile_status = ?, name = ?, phone=? , age=?, address=?, gender=?, profile_image=?,biography=?,last_name = ?,slot_time = ? where zynq_user_id = ? `, ["ONBOARDING", name, phone, age, address, gender, profile_image, biography,last_name,slot_time, zynqUserId]);
+        return await db.query(`UPDATE tbl_doctors SET profile_status = ?, name = ?, phone=? , age=?, address=?, gender=?, profile_image=?,biography=?,last_name = ?,slot_time = ? where zynq_user_id = ? `, ["ONBOARDING", name, phone, age, address, gender, profile_image, biography, last_name, slot_time, zynqUserId]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to add doctor personal details.");
@@ -313,7 +313,7 @@ export const update_doctor_treatments = async (doctorId, treatments) => {
 
                 // Calculate total once
                 const totalPrice = subs.reduce(
-                    (sum, item) => sum + Number(item.sub_treatment_price || 0), 
+                    (sum, item) => sum + Number(item.sub_treatment_price || 0),
                     0
                 );
 
@@ -393,7 +393,7 @@ export const get_doctor_consultation_fee = async (doctorId) => {
 
 export const update_availability = async (doctorId, availabilityData, clinic_id = null) => {
     try {
-        await db.query(`DELETE FROM tbl_doctor_availability WHERE doctor_id = ? AND clinic_id = ?`, [doctorId,clinic_id]);
+        await db.query(`DELETE FROM tbl_doctor_availability WHERE doctor_id = ? AND clinic_id = ?`, [doctorId, clinic_id]);
         const values = availabilityData.map(avail => [doctorId, avail.day_of_week, avail.start_time, avail.end_time, avail.closed, clinic_id]);
         if (values.length > 0) {
             return await db.query(`INSERT INTO tbl_doctor_availability (doctor_id, day_of_week, start_time, end_time,closed, clinic_id) VALUES ?`, [values]);
@@ -445,43 +445,56 @@ export const updateDoctorSessionSlots = async (doctorId, availabilityData) => {
 
 export const getDoctorSlotSessionsModel = async (doctorId) => {
     try {
+
         const rows = await db.query(
-            `SELECT 
-    JSON_ARRAYAGG(
-        JSON_OBJECT(
-            'day', day,
-            'session', sessions
-        )
-    ) AS availability
-FROM (
-    SELECT 
-        dsd.day AS day,
-        IFNULL(
-            JSON_ARRAYAGG(
-                JSON_OBJECT(
-                    'start_time', TIME_FORMAT(dst.start_time, '%H:%i:%s'),
-                    'end_time', TIME_FORMAT(dst.end_time, '%H:%i:%s')
-                )
-            ),
-            JSON_ARRAY()
-        ) AS sessions
-    FROM tbl_doctor_slot_day dsd
-    LEFT JOIN tbl_doctor_session_time dst
-        ON dsd.doctor_slot_day_id = dst.doctor_slot_day_id
-    WHERE dsd.doctor_id = ?
-    GROUP BY dsd.doctor_slot_day_id, dsd.day
-    ORDER BY 
-        FIELD(dsd.day, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')
-) t;`,
+            `
+            SELECT 
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'day', day,
+                        'session', sessions
+                    )
+                ) AS availability
+            FROM (
+                SELECT 
+                    LOWER(dsd.day) AS day,
+                    IFNULL(
+                        JSON_ARRAYAGG(
+                            JSON_OBJECT(
+                                'start_time', TIME_FORMAT(dst.start_time, '%H:%i:%s'),
+                                'end_time', TIME_FORMAT(dst.end_time, '%H:%i:%s')
+                            )
+                        ),
+                        JSON_ARRAY()
+                    ) AS sessions
+                FROM tbl_doctor_slot_day dsd
+                LEFT JOIN tbl_doctor_session_time dst
+                    ON dsd.doctor_slot_day_id = dst.doctor_slot_day_id
+                WHERE dsd.doctor_id = ?
+                GROUP BY dsd.doctor_slot_day_id, dsd.day
+                ORDER BY 
+                    FIELD(dsd.day, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')
+            ) t;
+            `,
             [doctorId]
         );
 
-        return rows;
+        // ✅ rows = [ { availability: ... } ]
+        const availability = rows?.[0]?.availability;
+
+        // ✅ Normalize null → []
+        if (!availability) {
+            return [];
+        }
+
+        return availability;
+
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor's availability.");
     }
-}
+};
+
 
 export const update_docter_availability = async (updatedFields, id) => {
     const keys = Object.keys(updatedFields);
@@ -1096,8 +1109,8 @@ export const fetchDoctorFeeModel = async (doctorId) => {
             WHERE doctor_id = ?
             LIMIT 1
         `;
-        
-        return await db.query(query, [doctorId]); 
+
+        return await db.query(query, [doctorId]);
 
     } catch (error) {
         console.error("DB Error in fetchDoctorFeeModel:", error);
