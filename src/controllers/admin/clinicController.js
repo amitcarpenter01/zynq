@@ -353,7 +353,7 @@ export const get_clinic_managment = async (req, res) => {
                     surgeriesLevel,
                     aestheticDevicesLevel,
                     operationHours,
-                    images
+                    images : formattedImages
 
                 };
             })
