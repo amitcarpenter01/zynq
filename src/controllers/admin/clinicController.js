@@ -796,7 +796,7 @@ export const add_clinic_with_onboarding = async (req, res) => {
             const clinic_id = clinic.clinic_id;
             const clinicImageFiles = [];
 
-            if (uploadedFiles.length > 0) {
+            if (uploadedFiles?.length > 0) {
                 for (const file of uploadedFiles) {
                     const fileName = file.filename;
 
