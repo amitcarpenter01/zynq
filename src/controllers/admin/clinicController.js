@@ -22,6 +22,11 @@ import { updateDoctorClinicClaimedProfile } from '../../models/api.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const APP_URL = process.env.APP_URL;
 
 // export const import_clinics_from_CSV = async (req, res) => {
 //     const filePath = req.file?.path;
@@ -302,24 +307,58 @@ export const get_clinic_managment = async (req, res) => {
 
         const fullClinicData = await Promise.all(
             clinics.map(async (clinic) => {
+
+                // ✅ Logo handling (sync, cheap)
                 clinic.clinic_logo = clinic.clinic_logo
-                    ? process.env.APP_URL + 'clinic/logo/' + clinic.clinic_logo
+                    ? `${process.env.APP_URL}clinic/logo/${clinic.clinic_logo}`
                     : null;
+
+                // ✅ Fetch clinic images
+                const images = await clinicModels.getClinicImages(clinic.clinic_id);
+
+                const formattedImages = Array.isArray(images)
+                    ? images
+                        .filter(img => img?.image_url)
+                        .map(img => ({
+                            clinic_image_id: img.clinic_image_id,
+                            url: img.image_url.startsWith("http")
+                                ? img.image_url
+                                : `${APP_URL}clinic/files/${img.image_url}`,
+                        }))
+                    : [];
+                // skinConditionsLevel: await adminModels.get_clinic_skin_conditions(clinic.clinic_id),
+
+                // ✅ Run ALL remaining queries in parallel
+                const [
+                    treatments,
+                    skinTypes,
+                    severityLevels,
+                    surgeriesLevel,
+                    aestheticDevicesLevel,
+                    operationHours
+                ] = await Promise.all([
+                    clinicModels.getClinicMappedTreatments(clinic.clinic_id),
+                    adminModels.get_clinic_skintype(clinic.clinic_id),
+                    adminModels.get_clinic_serveritylevel(clinic.clinic_id),
+                    adminModels.get_clinic_surgeries(clinic.clinic_id),
+                    clinicModels.getClinicAestheticDevicesLevel(clinic.clinic_id),
+                    clinicModels.getClinicOperationHours(clinic.clinic_id)
+                ]);
 
                 return {
                     ...clinic,
-                    treatments: await adminModels.get_clinic_treatments(clinic.clinic_id),
-                    skinTypes: await adminModels.get_clinic_skintype(clinic.clinic_id),
-                    severityLevels: await adminModels.get_clinic_serveritylevel(clinic.clinic_id),
-                    // skinConditionsLevel: await adminModels.get_clinic_skin_conditions(clinic.clinic_id),
-                    surgeriesLevel: await adminModels.get_clinic_surgeries(clinic.clinic_id),
-                    // aestheticDevicesLevel: await adminModels.get_clinic_aesthetic_devices(clinic.clinic_id),
-                    operationHours: await clinicModels.getClinicOperationHours(
-                        clinic.clinic_id
-                    )
+                    treatments,
+                    skinTypes,
+                    severityLevels,
+                    surgeriesLevel,
+                    aestheticDevicesLevel,
+                    operationHours,
+                    images
+
                 };
             })
         );
+
 
         await calculateAndUpdateBulkClinicProfileCompletion(fullClinicData);
 
