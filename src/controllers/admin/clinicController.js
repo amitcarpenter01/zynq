@@ -613,6 +613,7 @@ export const add_clinic_with_onboarding = async (req, res) => {
             org_number: Joi.string().optional().allow("", null),
             email: Joi.string().email().required(),
             slot_time: Joi.string().optional().allow("", null),
+            same_for_all: Joi.string().valid("1", "2").optional().allow("", null),
             mobile_number: Joi.string().optional().allow("", null),
             address: Joi.string().optional().allow("", null),
             city: Joi.string().optional().allow("", null),
@@ -769,7 +770,8 @@ export const add_clinic_with_onboarding = async (req, res) => {
             surgeries,
             aestheticDevices,
             skin_Conditions,
-            slot_time
+            slot_time,
+            same_for_all
         } = value;
 
 
@@ -847,6 +849,7 @@ export const add_clinic_with_onboarding = async (req, res) => {
             delete clinicDataV2.state;
 
             clinicDataV2.slot_time = slot_time;
+            clinicDataV2.same_for_all = same_for_all;
 
 
             if (clinic_data) {
@@ -1171,6 +1174,7 @@ export const updateClinicController = async (req, res) => {
             hsa_id: Joi.string().optional().allow(null),
             slot_time: Joi.string().optional().allow(null),
             removed_file_ids: Joi.array().items(Joi.string()).optional().allow(null),
+            same_for_all: Joi.string().valid("1", "2").optional().allow(null),
         });
 
 
@@ -1276,7 +1280,9 @@ export const updateClinicController = async (req, res) => {
             surgeries,
             aestheticDevices,
             zynq_user_id,
-            removed_file_ids
+            removed_file_ids,
+            same_for_all,
+            slot_time
         } = value;
 
         const uploadedFiles = req.files;
@@ -1314,6 +1320,10 @@ export const updateClinicController = async (req, res) => {
 
         delete clinicData.state;
         delete clinicData.city;
+
+        clinicData.same_for_all = same_for_all ? same_for_all : clinic.same_for_all;
+        clinicData.slot_time = slot_time ? slot_time : clinic.slot_time;
+
 
         await clinicModels.updateClinicData(clinicData, clinic_id);
 

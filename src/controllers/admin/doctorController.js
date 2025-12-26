@@ -66,11 +66,13 @@ export const get_doctors_management = async (req, res) => {
                 const completionPercantage = await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id);
 
                 let clinicTiming = [];
+                let slots = [];
                 if (doctor.user_type == "Doctor") {
                     const [clinicData] = await doctorModels.get_clinics_data_by_doctor_id(doctor.doctor_id);
                     clinicTiming = await clinicModels.getClinicOperationHours(
                         clinicData.clinic_id
                     );
+                    slots = await adminModels.getDoctorSlotSessionsModel(doctor.doctor_id);
                 }
 
                 return {
@@ -84,7 +86,8 @@ export const get_doctors_management = async (req, res) => {
                     // skinConditions,
                     surgeries,
                     // aestheticDevices,
-                    clinicTiming
+                    clinicTiming,
+                    slots
                 };
             })
         );
@@ -612,6 +615,7 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
         const schema = Joi.object({
             email: Joi.string().email().min(1).required(),
             slot_time: Joi.string().required(),
+            same_for_all : Joi.string().valid("1","2").optional().allow(null),
             name: Joi.string().max(255).optional().allow('', null),
             last_name: Joi.string().max(255).optional().allow('', null),
             age: Joi.string().optional().allow('', null),
@@ -747,7 +751,8 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
             hsa_id,
             fee_range,
             form_stage,
-            slot_time
+            slot_time,
+            same_for_all
         } = value;
 
 
@@ -802,6 +807,7 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
             is_onboarded: 0,
             city: city === "" ? null : city,
             state: state === "" ? null : state,
+            same_for_all : same_for_all ? same_for_all : 0
         };
 
         delete clinicData.city;
@@ -1267,6 +1273,7 @@ export const updateSoloDoctorController = async (req, res) => {
         const schema = Joi.object({
             zynq_user_id: Joi.string().uuid().required(),
             slot_time: Joi.string().required(),
+            same_for_all : Joi.string().valid("1","2").optional().allow(null),
             name: Joi.string().max(255).optional().allow('', null),
             last_name: Joi.string().max(255).optional().allow('', null),
             age: Joi.string().optional().allow('', null),
@@ -1410,7 +1417,8 @@ export const updateSoloDoctorController = async (req, res) => {
             fee_range,
             slot_time,
             zynq_user_id,
-            removed_file_ids
+            removed_file_ids,
+            same_for_all
         } = value;
 
         const language = req.user.language || "en";
@@ -1442,6 +1450,9 @@ export const updateSoloDoctorController = async (req, res) => {
 
             delete clinicData.state;
             delete clinicData.city;
+
+            clinicData.same_for_all = same_for_all ? same_for_all : clinic.same_for_all;
+            clinicData.slot_time = slot_time ? slot_time : clinic.slot_time;
 
             await clinicModels.updateClinicData(clinicData, clinic_id);
 
@@ -1639,24 +1650,26 @@ export const generateAvailabilityFromOperationHours = async (req, res) => {
     try {
         const language = req?.user?.language || "en";
         const schema = Joi.object({
-            slot_time: Joi.number().integer().positive().required(),
-
-            operationHours: Joi.array().items(
-                Joi.object({
-                    day_of_week: Joi.string()
-                        .valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
-                        .required(),
-                    open_time: Joi.string().required(),
-                    close_time: Joi.string().required(),
-                    is_closed: Joi.number().integer().valid(0, 1).required()
-                })
-            ).required()
+            slot_time: Joi.number().integer().positive().optional().allow(null),
+            clinic_id : Joi.string().uuid().required()
         });
 
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        let { slot_time, operationHours } = value;
+        let { slot_time, clinic_id } = value;
+
+        const [clinic] = await clinicModels.get_clinic_by_id(clinic_id);
+
+        if(!clinic) return handleError(res, 404, language, "CLINIC_NOT_FOUND");
+
+        if(!slot_time) {
+            slot_time = clinic.slot_time || 30;
+        }
+
+        const operationHours = await clinicModels.getClinicOperationHours(clinic_id);
+
+        if(!operationHours) return handleError(res, 404, language, "OPERATION_HOURS_NOT_FOUND");
 
         const availability = [];
         const slotSummary = {};
@@ -1683,7 +1696,7 @@ export const generateAvailabilityFromOperationHours = async (req, res) => {
             200,
             language,
             "SLOT_GENERATED_SUCCESSFULLY",
-            availability
+            availability ? clinic.same_for_all == 1 ? availability[0].session : availability : [],
         );
     } catch (error) {
         console.error("Error in getAllSurgery:", error);

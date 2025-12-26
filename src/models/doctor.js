@@ -443,6 +443,46 @@ export const updateDoctorSessionSlots = async (doctorId, availabilityData) => {
     }
 };
 
+export const getDoctorSlotSessionsModel = async (doctorId) => {
+    try {
+        const rows = await db.query(
+            `SELECT 
+    JSON_ARRAYAGG(
+        JSON_OBJECT(
+            'day', day,
+            'session', sessions
+        )
+    ) AS availability
+FROM (
+    SELECT 
+        dsd.day AS day,
+        IFNULL(
+            JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'start_time', TIME_FORMAT(dst.start_time, '%H:%i:%s'),
+                    'end_time', TIME_FORMAT(dst.end_time, '%H:%i:%s')
+                )
+            ),
+            JSON_ARRAY()
+        ) AS sessions
+    FROM tbl_doctor_slot_day dsd
+    LEFT JOIN tbl_doctor_session_time dst
+        ON dsd.doctor_slot_day_id = dst.doctor_slot_day_id
+    WHERE dsd.doctor_id = ?
+    GROUP BY dsd.doctor_slot_day_id, dsd.day
+    ORDER BY 
+        FIELD(dsd.day, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')
+) t;`,
+            [doctorId]
+        );
+
+        return rows;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's availability.");
+    }
+}
+
 export const update_docter_availability = async (updatedFields, id) => {
     const keys = Object.keys(updatedFields);
     const values = Object.values(updatedFields);
