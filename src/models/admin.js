@@ -413,6 +413,7 @@ export const get_clinic_managment = async (limit, offset, search = "", status = 
                 c.ivo_registration_number, 
                 c.hsa_id,
                 c.slot_time,
+                c.same_for_all,
 
                 CASE 
                     WHEN zu.role_id = '2fc0b43c-3196-11f0-9e07-0e8e5d906eef' THEN 'Clinic'
