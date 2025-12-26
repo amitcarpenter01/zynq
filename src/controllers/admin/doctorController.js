@@ -72,7 +72,7 @@ export const get_doctors_management = async (req, res) => {
                     clinicTiming = await clinicModels.getClinicOperationHours(
                         clinicData.clinic_id
                     );
-                    slots = await adminModels.getDoctorSlotSessionsModel(doctor.doctor_id);
+                    slots = await doctorModels.getDoctorSlotSessionsModel(doctor.doctor_id);
                 }
 
                 return {
