@@ -321,9 +321,7 @@ export const get_clinic_managment = async (req, res) => {
                         .filter(img => img?.image_url)
                         .map(img => ({
                             clinic_image_id: img.clinic_image_id,
-                            url: img.image_url.startsWith("http")
-                                ? img.image_url
-                                : `${APP_URL}clinic/files/${img.image_url}`,
+                            url: `${APP_URL}clinic/files/${img.image_url}`,
                         }))
                     : [];
                 // skinConditionsLevel: await adminModels.get_clinic_skin_conditions(clinic.clinic_id),
