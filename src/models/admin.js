@@ -438,6 +438,89 @@ export const get_clinic_managment = async (limit, offset, search = "", status = 
     }
 };
 
+
+export const getClinicListForDoctorOnboardingModel = async (status = "") => {
+    try {
+        let conditions = `
+      c.is_deleted = 0
+      AND zu.role_id = '2fc0b43c-3196-11f0-9e07-0e8e5d906eef'
+    `;
+
+        const params = [];
+
+        if (status) {
+            conditions += ` AND c.profile_status = ?`;
+            params.push(status);
+        }
+
+        const query = `
+      SELECT 
+        c.zynq_user_id,
+        c.clinic_id,
+        c.clinic_name,
+        c.email,
+        c.mobile_number,
+        'Clinic' AS user_type,
+        COALESCE(
+          JSON_ARRAYAGG(
+            CASE 
+              WHEN coh.clinic_id IS NOT NULL THEN JSON_OBJECT(
+                'day_of_week', coh.day_of_week,
+                'open_time', coh.open_time,
+                'close_time', coh.close_time,
+                'is_closed', coh.is_closed
+              )
+            END
+          ),
+          JSON_ARRAY()
+        ) AS clinic_timing
+      FROM tbl_clinics c
+      LEFT JOIN tbl_zqnq_users zu 
+        ON zu.id = c.zynq_user_id
+      LEFT JOIN tbl_clinic_operation_hours coh 
+        ON coh.clinic_id = c.clinic_id
+      WHERE ${conditions}
+      GROUP BY 
+        c.clinic_id,
+        c.zynq_user_id,
+        c.clinic_name,
+        c.email,
+        c.mobile_number
+      ORDER BY c.created_at DESC
+    `;
+
+        const clinics = await db.query(query, params);
+
+        // 🔒 Ensure clinic_timing is parsed JSON
+        return clinics.map(item => {
+            let clinicTiming = [];
+
+            if (item.clinic_timing) {
+                const parsed =
+                    Array.isArray(item.clinic_timing)
+                        ? item.clinic_timing
+                        : JSON.parse(item.clinic_timing);
+
+                // ✅ Remove null entries
+                clinicTiming = parsed.filter(t => t !== null);
+            }
+
+            return {
+                ...item,
+                clinic_timing: clinicTiming
+            };
+        });
+
+
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get clinic management data.");
+    }
+};
+
+
+
+
 export const get_clinics_count = async (search = "") => {
     try {
         const searchQuery = `%${search}%`;

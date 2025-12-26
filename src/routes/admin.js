@@ -59,6 +59,7 @@ router.post('/update-user-status', authenticateAdmin, userControllers.update_use
 router.post('/import-clinics-from-CSV', authenticateAdmin, upload.single("file"), clinicControllers.import_clinics_from_CSV);
 router.post('/add-clinic-managment', authenticateAdmin, clinicControllers.add_clinic_managment);
 router.get('/get-clinic-managment', authenticateAdmin, clinicControllers.get_clinic_managment);
+router.get('/get-clinic-list-doctor-onboarding', authenticateAdmin, clinicControllers.getClinicListForDoctorOnboardingController);
 router.post('/delete-clinic-management', authenticateAdmin, clinicControllers.delete_clinic_management);
 router.post('/send-invitation', authenticateAdmin, clinicControllers.send_invitation);
 router.get('/subscribed/:is_subscribed', clinicControllers.subscribed);
