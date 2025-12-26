@@ -4,7 +4,7 @@ import { extractUserData } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
 import { get_product_images_by_product_ids } from "./api.js";
 import { getBookedAppointmentsModelForIds, getPurchasedProductModelForIds } from "./admin.js";
-
+import { v4 as uuidv4 } from 'uuid';
 
 export const get_doctor_by_zynquser_id = async (zynqUserId) => {
     try {
@@ -399,6 +399,43 @@ export const update_availability = async (doctorId, availabilityData, clinic_id 
             return await db.query(`INSERT INTO tbl_doctor_availability (doctor_id, day_of_week, start_time, end_time,closed, clinic_id) VALUES ?`, [values]);
         }
         return null;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update availability.");
+    }
+};
+
+export const updateDoctorSessionSlots = async (doctorId, availabilityData) => {
+    try {
+        // 1. Delete existing slots
+        await db.query(
+            `DELETE t1, t2 
+             FROM tbl_doctor_slot_day t1
+             LEFT JOIN tbl_doctor_session_time t2 
+             ON t1.doctor_slot_day_id = t2.doctor_slot_day_id
+             WHERE t1.doctor_id = ? `,
+            [doctorId]
+        );
+
+        // 2. Insert new slot days
+        for (const avail of availabilityData) {
+            const doctorSlotDayId = uuidv4();
+            await db.query(
+                `INSERT INTO tbl_doctor_slot_day (doctor_slot_day_id, doctor_id, day) VALUES (?, ?, ?)`,
+                [doctorSlotDayId, doctorId, avail.day]
+            );
+
+            // 3. Insert sessions for each day
+            if (avail.session && avail.session.length > 0) {
+                const sessionValues = avail.session.map(s => [uuidv4(), doctorSlotDayId, s.start_time, s.end_time]);
+                await db.query(
+                    `INSERT INTO tbl_doctor_session_time (doctor_session_time_id, doctor_slot_day_id, start_time, end_time) VALUES ?`,
+                    [sessionValues]
+                );
+            }
+        }
+
+        return { success: true };
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update availability.");
