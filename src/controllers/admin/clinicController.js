@@ -314,7 +314,7 @@ export const get_clinic_managment = async (req, res) => {
                     // skinConditionsLevel: await adminModels.get_clinic_skin_conditions(clinic.clinic_id),
                     surgeriesLevel: await adminModels.get_clinic_surgeries(clinic.clinic_id),
                     // aestheticDevicesLevel: await adminModels.get_clinic_aesthetic_devices(clinic.clinic_id),
-                    operationHours : await clinicModels.getClinicOperationHours(
+                    operationHours: await clinicModels.getClinicOperationHours(
                         clinic.clinic_id
                     )
                 };
@@ -336,6 +336,23 @@ export const get_clinic_managment = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
+
+export const getClinicListForDoctorOnboardingController = async (req, res) => {
+    try {
+        const status = req.query.status || "";
+        const language = req?.user?.language || 'en';
+
+        // Fetch filtered clinics
+        const clinics = await adminModels.getClinicListForDoctorOnboardingModel(status);
+
+        return handleSuccess(res, 200, language, "Fetch clinic management successfully", clinics);
+
+    } catch (error) {
+        console.error("internal E", error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
+    }
+};
+
 
 export const delete_clinic_management = async (req, res) => {
     try {
