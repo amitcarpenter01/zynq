@@ -32,6 +32,7 @@ import * as clinicModels from '../models/clinic.js';
 import { uploadCertificationFieldsTo, uploadFileTo } from '../services/doctor_multer.js';
 import { updateDoctorAdminController } from '../controllers/doctor/profileController.js';
 import { deleteClinicImageSchema } from '../validations/clinic.validation.js';
+import { uploadVariousFieldsForSoloDoctorDynamic } from '../services/dynamic_uploaded_multer.js';
 
 const router = express.Router();
 
@@ -232,11 +233,11 @@ const uploadVariousFieldsForSoloDoctor = uploadCertificationFieldsTo([
 ]);
 
 
-router.post("/add-doctor-onboarding",authenticateAdmin,uploadVariousFields,doctorControllers.sendDoctorOnaboardingInvitation);
-router.post("/update-doctor", authenticateAdmin, uploadVariousFields,doctorControllers.updateDoctorController);
+router.post("/add-doctor-onboarding",authenticateAdmin,uploadVariousFieldsForSoloDoctorDynamic,doctorControllers.sendDoctorOnaboardingInvitation);
+router.post("/update-doctor", authenticateAdmin, uploadVariousFieldsForSoloDoctorDynamic,doctorControllers.updateDoctorController);
 
-router.post("/add-solo-doctor-onboarding",authenticateAdmin,uploadVariousFieldsForSoloDoctor,doctorControllers.sendSoloDoctorOnaboardingInvitation);
-router.post("/update-solo-doctor",authenticateAdmin,uploadVariousFieldsForSoloDoctor,doctorControllers.updateSoloDoctorController);
+router.post("/add-solo-doctor-onboarding",authenticateAdmin,uploadVariousFieldsForSoloDoctorDynamic,doctorControllers.sendSoloDoctorOnaboardingInvitation);
+router.post("/update-solo-doctor",authenticateAdmin,uploadVariousFieldsForSoloDoctorDynamic,doctorControllers.updateSoloDoctorController);
 router.get("/get-surgery",authenticateAdmin, authControllersClinic.getAllSurgery)
 router.get("/get-devices", authControllersClinic.getAllDevices);
 router.get("/get-treatments", authControllersClinic.getAllTreatments);
