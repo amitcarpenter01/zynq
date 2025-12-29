@@ -1405,25 +1405,36 @@ export const updateClinicController = async (req, res) => {
 
         await Promise.all(updatePromises);
 
+        let clinicImageFiles = [];
 
-        if (uploadedFiles?.length > 0) {
-            uploadedFiles.forEach(async (file) => {
-                const [certificationType] =
-                    await clinicModels.getCertificateTypeByFileName(file.fieldname);
-                let certification_type_id = certificationType
-                    ? certificationType.certification_type_id
-                    : null;
-                if (certification_type_id) {
+            if (uploadedFiles?.length > 0) {
+                for (const file of uploadedFiles) {
                     const fileName = file.filename;
-                    await clinicModels.updateClinicDocuments(
-                        clinic_id,
-                        certification_type_id,
-                        file.fieldname,
-                        fileName
-                    );
+
+                    if (file.fieldname === "files") {
+                        clinicImageFiles.push(fileName);
+                        continue;
+                    }
+
+                    const [certificationType] =
+                        await clinicModels.getCertificateTypeByFileName(file.fieldname);
+                    const certification_type_id =
+                        certificationType?.certification_type_id || null;
+
+                    if (certification_type_id) {
+                        await clinicModels.insertClinicDocuments(
+                            clinic_id,
+                            certification_type_id,
+                            file.fieldname,
+                            fileName
+                        );
+                    }
                 }
-            });
-        }
+
+                if (clinicImageFiles.length > 0) {
+                    await clinicModels.insertClinicImages(clinic_id, clinicImageFiles);
+                }
+            }
         await generateClinicsEmbeddingsV2(zynq_user_id);
         return handleSuccess(
             res,
