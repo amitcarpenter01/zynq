@@ -646,9 +646,9 @@ export const cancelAppointment = async (req, res) => {
             return handleError(res, 400, language, "CANCELLATION_NOT_ALLOWED_WITHIN_24_HOURS");
         }
 
-        if (appointment.is_paid) {
-            return handleError(res, 404, language, "NOT_ALLOWED");
-        }
+        // if (appointment.is_paid) {
+        //     return handleError(res, 404, language, "NOT_ALLOWED");
+        // }
 
 
         await appointmentModel.cancelAppointment(appointment_id, {
