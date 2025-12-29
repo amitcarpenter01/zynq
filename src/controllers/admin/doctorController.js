@@ -629,7 +629,7 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
             latitude: Joi.string().optional().allow('', null),
             longitude: Joi.string().optional().allow('', null),
             mobile_number: Joi.string().optional().allow('', null),
-            website_url: Joi.string().optional().allow(null),
+            website_url: Joi.string().optional().allow('',null),
             address: Joi.string().optional().allow('', null),
             is_onboarded: Joi.number().integer().optional(),
             ivo_registration_number: Joi.string().optional().allow('', null),
