@@ -614,7 +614,7 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
         const schema = Joi.object({
             email: Joi.string().email().min(1).required(),
             slot_time: Joi.string().required(),
-            same_for_all: Joi.string().valid("1", "2").optional().allow(null),
+            same_for_all: Joi.string().valid("1", "0").optional().allow(null),
             name: Joi.string().max(255).optional().allow('', null),
             last_name: Joi.string().max(255).optional().allow('', null),
             age: Joi.string().optional().allow('', null),
@@ -1272,7 +1272,7 @@ export const updateSoloDoctorController = async (req, res) => {
         const schema = Joi.object({
             zynq_user_id: Joi.string().uuid().required(),
             slot_time: Joi.string().required(),
-            same_for_all: Joi.string().valid("1", "2").optional().allow(null),
+            same_for_all: Joi.string().valid("1", "0").optional().allow(null),
             name: Joi.string().max(255).optional().allow('', null),
             last_name: Joi.string().max(255).optional().allow('', null),
             age: Joi.string().optional().allow('', null),
