@@ -66,11 +66,35 @@ export const get_doctors_management = async (req, res) => {
                 const completionPercantage = await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id);
 
                 let clinicTiming = [];
+                let images = [];
+                let [clinic = {}] = await doctorModels.get_clinics_data_by_doctor_id(doctor.doctor_id);
+                console.log("clinic", clinic);
                 let slots = await doctorModels.getDoctorSlotSessionsModel(doctor.doctor_id);
+                // ✅ Fetch clinic images
+                if (doctor.user_type == "Solo Doctor") {
+
+                    delete clinic?.embeddings;
+
+                    clinic.clinic_logo = clinic?.clinic_logo
+                        ? `${process.env.APP_URL}clinic/logo/${clinic?.clinic_logo}`
+                        : null;
+                    images = await clinicModels.getClinicImages(clinic?.clinic_id);
+                    const formattedImages = Array.isArray(images)
+                        ? images
+                            .filter(img => img?.image_url)
+                            .map(img => ({
+                                clinic_image_id: img.clinic_image_id,
+                                url: img.image_url.startsWith("http")
+                                    ? img.image_url
+                                    : `${APP_URL}clinic/files/${img.image_url}`,
+                            }))
+                        : [];
+                }
                 if (doctor.user_type == "Doctor") {
-                    const [clinicData] = await doctorModels.get_clinics_data_by_doctor_id(doctor.doctor_id);
+                    delete clinic?.embeddings;
+
                     clinicTiming = await clinicModels.getClinicOperationHours(
-                        clinicData.clinic_id
+                        clinic.clinic_id
                     );
                 }
 
@@ -86,7 +110,9 @@ export const get_doctors_management = async (req, res) => {
                     surgeries,
                     // aestheticDevices,
                     clinicTiming,
-                    slots
+                    slots,
+                    images,
+                    clinic
                 };
             })
         );
@@ -629,7 +655,7 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
             latitude: Joi.string().optional().allow('', null),
             longitude: Joi.string().optional().allow('', null),
             mobile_number: Joi.string().optional().allow('', null),
-            website_url: Joi.string().optional().allow('',null),
+            website_url: Joi.string().optional().allow('', null),
             address: Joi.string().optional().allow('', null),
             is_onboarded: Joi.number().integer().optional(),
             ivo_registration_number: Joi.string().optional().allow('', null),
