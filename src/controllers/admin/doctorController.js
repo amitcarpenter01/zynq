@@ -639,14 +639,14 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
                 institute: Joi.string().required(),
                 degree: Joi.string().required(),
                 start_year: Joi.string().required(),
-                end_year: Joi.string().required()
+                end_year: Joi.string().optional().allow(null)
             })).optional().allow(null),   // will be JSON
             experience: Joi.array().items(
                 Joi.object({
                     organization: Joi.string().required(),
                     designation: Joi.string().required(),
                     start_date: Joi.string().required(),
-                    end_date: Joi.string().required()
+                    end_date: Joi.string().optional().allow(null)
                 })
             ).optional().allow(null),
             fee_per_session: Joi.number().positive().optional(),
@@ -1297,14 +1297,14 @@ export const updateSoloDoctorController = async (req, res) => {
                 institute: Joi.string().required(),
                 degree: Joi.string().required(),
                 start_year: Joi.string().required(),
-                end_year: Joi.string().required()
+                end_year: Joi.string().optional().allow(null)
             })).optional().allow(null),   // will be JSON
             experience: Joi.array().items(
                 Joi.object({
                     organization: Joi.string().required(),
                     designation: Joi.string().required(),
                     start_date: Joi.string().required(),
-                    end_date: Joi.string().required()
+                    end_date: Joi.string().optional().allow(null)
                 })
             ).optional().allow(null),
             fee_per_session: Joi.number().positive().optional(),
