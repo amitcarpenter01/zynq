@@ -185,6 +185,7 @@ export const onboardClinic = async (req, res) => {
   try {
     const clinicSchema = Joi.object({
       zynq_user_id: Joi.string().required(),
+      same_for_all: Joi.string().valid("1", "0").optional().allow(null),
       slot_time: Joi.string().optional().allow("", null),
       clinic_name: Joi.string().optional().allow("", null),
       clinic_description: Joi.string().optional().allow("", null),
@@ -345,7 +346,8 @@ export const onboardClinic = async (req, res) => {
       surgeries,
       aestheticDevices,
       skin_Conditions,
-      slot_time
+      slot_time,
+      same_for_all
     } = value;
 
     language = language || "en";
@@ -409,6 +411,7 @@ export const onboardClinic = async (req, res) => {
     delete clinicDataV2.state;
 
     clinicDataV2.slot_time = slot_time || null;
+    clinicDataV2.same_for_all = same_for_all ? same_for_all : clinic_data.same_for_all;
 
     if (clinic_data) {
       await clinicModels.updateClinicData(clinicDataV2, clinic_data.clinic_id);
