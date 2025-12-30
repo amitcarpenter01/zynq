@@ -668,12 +668,9 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
                 })
             ).optional(),
 
-            skin_type_ids: Joi.string().allow(null).optional(),
-            // skin_condition_ids: Joi.string().allow("", null).optional(),
-            surgery_ids: Joi.string().allow(null).optional(),
-
-            // UPDATED: device ids instead of aesthetic devices
-            device_ids: Joi.string().allow(null).optional()
+            skin_type_ids: Joi.array().items(Joi.string().uuid()).optional().allow(null),
+            surgery_ids: Joi.array().items(Joi.string().uuid()).optional().allow(null),
+            device_ids: Joi.array().items(Joi.string().uuid()).optional().allow(null)
         });
 
         if (typeof req.body.treatments === "string") {
@@ -681,6 +678,30 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
                 req.body.treatments = JSON.parse(req.body.treatments);
             } catch (err) {
                 return handleError(res, 400, "en", "INVALID_JSON_FOR_TREATMENTS");
+            }
+        }
+
+        if (typeof req.body.skin_type_ids === "string") {
+            try {
+                req.body.skin_type_ids = JSON.parse(req.body.skin_type_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SKINTYPEID");
+            }
+        }
+
+        if (typeof req.body.surgery_ids === "string") {
+            try {
+                req.body.surgery_ids = JSON.parse(req.body.surgery_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SURGERYID");
+            }
+        }
+
+        if (typeof req.body.device_ids === "string") {
+            try {
+                req.body.device_ids = JSON.parse(req.body.device_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_DEVICEID");
             }
         }
 
@@ -967,9 +988,9 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
         }
 
         // Convert CSV strings into arrays
-        const skinTypeIds = skin_type_ids ? skin_type_ids.split(',').map(id => id.trim()) : [];
-        const surgeryIds = surgery_ids ? surgery_ids.split(',').map(id => id.trim()) : [];
-        const deviceIds = device_ids ? device_ids.split(',').map(id => id.trim()) : [];
+        const skinTypeIds = skin_type_ids ? skin_type_ids : [];
+        const surgeryIds = surgery_ids ? surgery_ids : [];
+        const deviceIds = device_ids ? device_ids : [];
 
         // Save expertis
         if (Array.isArray(treatments) && treatments.length > 0) {
@@ -985,11 +1006,11 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
         }
 
         if (skinTypeIds.length > 0) {
-            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
+            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds, clinic_id);
             await clinicModels.updateClinicSkinTypes(skinTypeIds, clinic_id);
         }
         if (surgeryIds.length > 0) {
-            await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
+            await doctorModels.update_doctor_surgery(doctorId, surgeryIds, clinic_id);
             await clinicModels.updateClinicSurgeries(surgeryIds, clinic_id);
         }
 
@@ -998,7 +1019,8 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
             await doctorModels.update_doctor_treatment_devices(
                 zynq_user_id,       // zynq_user_id
                 treatments, // treatments array
-                deviceIds         // device ids
+                deviceIds,         // device ids
+                clinic_id
             );
             await clinicModels.updateClinicAestheticDevices(
                 deviceIds,
@@ -1326,12 +1348,10 @@ export const updateSoloDoctorController = async (req, res) => {
                 })
             ).optional(),
 
-            skin_type_ids: Joi.string().allow(null).optional(),
-            // skin_condition_ids: Joi.string().allow("", null).optional(),
-            surgery_ids: Joi.string().allow(null).optional(),
+            skin_type_ids: Joi.array().items(Joi.string().uuid()).optional().allow(null),
+            surgery_ids: Joi.array().items(Joi.string().uuid()).optional().allow(null),
 
-            // UPDATED: device ids instead of aesthetic devices
-            device_ids: Joi.string().allow(null).optional(),
+            device_ids: Joi.array().items(Joi.string().uuid()).optional(),
             removed_file_ids: Joi.array().items(Joi.string()).optional().allow(null),
         });
 
@@ -1340,6 +1360,30 @@ export const updateSoloDoctorController = async (req, res) => {
                 req.body.treatments = JSON.parse(req.body.treatments);
             } catch (err) {
                 return handleError(res, 400, "en", "INVALID_JSON_FOR_TREATMENTS");
+            }
+        }
+
+        if (typeof req.body.skin_type_ids === "string") {
+            try {
+                req.body.skin_type_ids = JSON.parse(req.body.skin_type_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SKINTYPEID");
+            }
+        }
+
+        if (typeof req.body.surgery_ids === "string") {
+            try {
+                req.body.surgery_ids = JSON.parse(req.body.surgery_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SURGERYID");
+            }
+        }
+
+        if (typeof req.body.device_ids === "string") {
+            try {
+                req.body.device_ids = JSON.parse(req.body.device_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_DEVICEID");
             }
         }
 
@@ -1559,9 +1603,9 @@ export const updateSoloDoctorController = async (req, res) => {
         }
 
         // Convert CSV strings into arrays
-        const skinTypeIds = skin_type_ids ? skin_type_ids.split(',').map(id => id.trim()) : [];
-        const surgeryIds = surgery_ids ? surgery_ids.split(',').map(id => id.trim()) : [];
-        const deviceIds = device_ids ? device_ids.split(',').map(id => id.trim()) : [];
+        const skinTypeIds = skin_type_ids ? skin_type_ids : [];
+        const surgeryIds = surgery_ids ? surgery_ids : [];
+        const deviceIds = device_ids ? device_ids: [];
 
         // Save expertis
         if (Array.isArray(treatments) && treatments.length > 0) {
@@ -1573,7 +1617,7 @@ export const updateSoloDoctorController = async (req, res) => {
                     mappedTreatments
                 );
 
-            await doctorModels.update_doctor_treatments(doctorId, treatments,clinic_id);
+            await doctorModels.update_doctor_treatments(doctorId, treatments, clinic_id);
         }
 
         if (Array.isArray(removed_file_ids) && removed_file_ids.length > 0) {
@@ -1582,11 +1626,11 @@ export const updateSoloDoctorController = async (req, res) => {
         }
 
         if (skinTypeIds.length > 0) {
-            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds,clinic_id);
+            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds, clinic_id);
             await clinicModels.updateClinicSkinTypes(skinTypeIds, clinic_id);
         }
         if (surgeryIds.length > 0) {
-            await doctorModels.update_doctor_surgery(doctorId, surgeryIds,clinic_id);
+            await doctorModels.update_doctor_surgery(doctorId, surgeryIds, clinic_id);
             await clinicModels.updateClinicSurgeries(surgeryIds, clinic_id);
         }
 
