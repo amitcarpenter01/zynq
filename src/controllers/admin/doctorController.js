@@ -1074,6 +1074,7 @@ export const updateDoctorController = async (req, res) => {
     try {
 
         const schema = Joi.object({
+            clinic_id: Joi.string().uuid().required(),
             zynq_user_id: Joi.string().uuid().required(),
             name: Joi.string().max(255).optional().allow('', null),
             phone: Joi.string().max(255).optional().allow('', null),
@@ -1109,12 +1110,18 @@ export const updateDoctorController = async (req, res) => {
                 })
             ).min(1).required(),
 
-            skin_type_ids: Joi.string().allow(null).optional(),
-            // skin_condition_ids: Joi.string().allow("", null).optional(),
-            surgery_ids: Joi.string().allow(null).optional(),
+            skin_type_ids: Joi.array().items(
+                Joi.string().uuid().optional().allow(null)
+            ).optional().allow(null),
 
-            // UPDATED: device ids instead of aesthetic devices
-            device_ids: Joi.string().allow(null).optional(),
+            surgery_ids: Joi.array().items(
+                Joi.string().uuid().optional().allow(null)
+            ).optional().allow(null),
+
+            device_ids: Joi.array().items(
+                Joi.string().uuid().optional().allow(null)
+            ).optional().allow(null),
+
             availability: Joi.array().items(
                 Joi.object({
                     day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
@@ -1158,10 +1165,35 @@ export const updateDoctorController = async (req, res) => {
             }
         }
 
+        if (typeof req.body.skin_type_ids === "string") {
+            try {
+                req.body.skin_type_ids = JSON.parse(req.body.skin_type_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SKINTYPEID");
+            }
+        }
+
+        if (typeof req.body.surgery_ids === "string") {
+            try {
+                req.body.surgery_ids = JSON.parse(req.body.surgery_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SURGERYID");
+            }
+        }
+
+        if (typeof req.body.device_ids === "string") {
+            try {
+                req.body.device_ids = JSON.parse(req.body.device_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_DEVICEID");
+            }
+        }
+
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
         const {
+            clinic_id,
             zynq_user_id,
             name,
             phone,
@@ -1241,27 +1273,25 @@ export const updateDoctorController = async (req, res) => {
             }
         }
 
-        const [clinicData] = await doctorModels.get_clinics_data_by_doctor_id(doctorId);
 
-        if (clinicData.clinic_id && availability?.length > 0) {
-            await doctorModels.update_availability(doctorId, availability, clinicData.clinic_id);
+        if (clinic_id && availability?.length > 0) {
+            await doctorModels.update_availability(doctorId, availability, clinic_id);
         }
 
         // Convert CSV strings into arrays
-        const skinTypeIds = skin_type_ids ? skin_type_ids.split(',').map(id => id.trim()) : [];
-        // const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
-        const surgeryIds = surgery_ids ? surgery_ids.split(',').map(id => id.trim()) : [];
-        const deviceIds = device_ids ? device_ids.split(',').map(id => id.trim()) : [];
+        const skinTypeIds = skin_type_ids ? skin_type_ids : [];
+        const surgeryIds = surgery_ids ? surgery_ids : [];
+        const deviceIds = device_ids ? device_ids : [];
 
         // Save expertis
         if (treatments.length > 0) {
-            await doctorModels.update_doctor_treatments(doctorId, treatments);
+            await doctorModels.update_doctor_treatments(doctorId, treatments, clinic_id);
         }
         if (skinTypeIds.length > 0) {
-            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
+            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds, clinic_id);
         }
         if (surgeryIds.length > 0) {
-            await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
+            await doctorModels.update_doctor_surgery(doctorId, surgeryIds, clinic_id);
         }
 
         // NEW: Save treatment → user → device mapping
@@ -1269,7 +1299,8 @@ export const updateDoctorController = async (req, res) => {
             await doctorModels.update_doctor_treatment_devices(
                 zynq_user_id,       // zynq_user_id
                 treatments, // treatments array
-                deviceIds         // device ids
+                deviceIds,         // device ids
+                clinic_id
             );
         }
 
@@ -1605,7 +1636,7 @@ export const updateSoloDoctorController = async (req, res) => {
         // Convert CSV strings into arrays
         const skinTypeIds = skin_type_ids ? skin_type_ids : [];
         const surgeryIds = surgery_ids ? surgery_ids : [];
-        const deviceIds = device_ids ? device_ids: [];
+        const deviceIds = device_ids ? device_ids : [];
 
         // Save expertis
         if (Array.isArray(treatments) && treatments.length > 0) {
