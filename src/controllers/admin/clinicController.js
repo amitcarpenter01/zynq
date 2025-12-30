@@ -1315,7 +1315,7 @@ export const updateClinicController = async (req, res) => {
             clinic_logo: clinic_logo ? clinic_logo : clinic.clinic_logo,
             ivo_registration_number: ivo_registration_number ? ivo_registration_number : clinic.ivo_registration_number,
             hsa_id: hsa_id ? hsa_id : clinic.hsa_id,
-            is_onboarded: true,
+            is_onboarded : clinic.is_onboarded
         });
 
         delete clinicData.state;

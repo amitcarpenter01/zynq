@@ -142,7 +142,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
 
         const schema = Joi.object({
             email: Joi.string().email().min(1).required(),
-            clinic_id: Joi.string().uuid().required(),
+            clinic_id: Joi.array().items(Joi.string().uuid()).min(1).required(),
             name: Joi.string().max(255).optional().allow('', null),
             phone: Joi.string().max(255).optional().allow('', null),
             age: Joi.string().optional().allow('', null),
@@ -150,12 +150,14 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             gender: Joi.string().optional().allow('', null),
             biography: Joi.string().optional().allow(''),
             last_name: Joi.string().optional().allow('', null),
+
             education: Joi.array().items(Joi.object({
                 institute: Joi.string().required(),
                 degree: Joi.string().required(),
                 start_year: Joi.string().required(),
                 end_year: Joi.string().optional().allow(null)
             })).optional().allow(null),   // will be JSON
+
             experience: Joi.array().items(
                 Joi.object({
                     organization: Joi.string().required(),
@@ -164,35 +166,54 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                     end_date: Joi.string().optional().allow(null)
                 })
             ).optional().allow(null),// will be JSON
+
             treatments: Joi.array().items(
-                Joi.object({
-                    treatment_id: Joi.string().required(),
-                    price: Joi.number().optional(),
-                    sub_treatments: Joi.array().items(
-                        Joi.object({
-                            sub_treatment_id: Joi.string().required(),
-                            sub_treatment_price: Joi.number().required()
-                        })
-                    ).optional()
-                })
+                Joi.array().items(
+                    Joi.object({
+                        treatment_id: Joi.string().required(),
+                        price: Joi.number().optional(),
+                        sub_treatments: Joi.array().items(
+                            Joi.object({
+                                sub_treatment_id: Joi.string().required(),
+                                sub_treatment_price: Joi.number().required()
+                            })
+                        ).optional()
+                    })
+                ).min(1).required()
             ).min(1).required(),
 
-            skin_type_ids: Joi.string().allow(null).optional(),
-            // skin_condition_ids: Joi.string().allow("", null).optional(),
-            surgery_ids: Joi.string().allow(null).optional(),
 
-            // UPDATED: device ids instead of aesthetic devices
-            device_ids: Joi.string().allow(null).optional(),
-            availability: Joi.array().items(
-                Joi.object({
-                    day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
-                    session: Joi.array().items(
-                        Joi.object({
-                            start_time: Joi.string().required(),
-                            end_time: Joi.string().required(),
-                        })).optional().allow(null),
-                })
+            skin_type_ids: Joi.array().items(
+                Joi.array().items(
+                    Joi.string().uuid().optional().allow(null)
+                ).optional().allow(null)
             ).optional().allow(null),
+
+            surgery_ids: Joi.array().items(
+                Joi.array().items(
+                    Joi.string().uuid().optional().allow(null)
+                ).optional().allow(null)
+            ).optional().allow(null),
+
+            device_ids: Joi.array().items(
+                Joi.array().items(
+                    Joi.string().uuid().optional().allow(null)
+                ).optional().allow(null)
+            ).optional().allow(null),
+
+            availability: Joi.array().items(
+                Joi.array().items(
+                    Joi.object({
+                        day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                        session: Joi.array().items(
+                            Joi.object({
+                                start_time: Joi.string().required(),
+                                end_time: Joi.string().required(),
+                            })).optional().allow(null),
+                    })
+                ).optional().allow(null)
+            ).optional(),
+
             slot_time: Joi.string().optional().allow("", null),
         });
 
@@ -203,6 +224,40 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 return handleError(res, 400, "en", "INVALID_JSON_FOR_TREATMENTS");
             }
         }
+
+        if (typeof req.body.clinic_id === "string") {
+            try {
+                req.body.clinic_id = JSON.parse(req.body.clinic_id);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_CLICICID");
+            }
+        }
+
+        if (typeof req.body.skin_type_ids === "string") {
+            try {
+                req.body.skin_type_ids = JSON.parse(req.body.skin_type_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SKINTYPEID");
+            }
+        }
+
+        if (typeof req.body.surgery_ids === "string") {
+            try {
+                req.body.surgery_ids = JSON.parse(req.body.surgery_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_SURGERYID");
+            }
+        }
+
+        if (typeof req.body.device_ids === "string") {
+            try {
+                req.body.device_ids = JSON.parse(req.body.device_ids);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_DEVICEID");
+            }
+        }
+
+
 
         if (typeof req.body.availability === "string") {
             try {
@@ -248,127 +303,35 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             surgery_ids,
             device_ids, availability, slot_time } = value;
 
+        console.log("req.body value", value)
+
         let language = req.user.language || "en";
         const emailTemplatePath = path.resolve(__dirname, "../../views/doctor_invite/en.ejs");
 
         const emailTemplatePath2 = path.resolve(__dirname, "../../views/doctor_invite/enn.ejs");
 
-        const [existingUser] = await webModels.get_web_user_by_email(email);
-        const [clinicData] = await clinicModels.getClinicProfile(clinic_id);
-
-        if (!clinicData) {
-            return handleError(res, 401, language, "CLINIC_NOT_FOUND");
+        if (treatments.length !== clinic_id.length) {
+            return handleError(res, 400, language, "CLINIC_TREATMENT_MISMATCH");
         }
 
-        const [get_location] = await clinicModels.get_clinic_location_by_clinic_id(clinic_id);
+        const [existingUser] = await webModels.get_web_user_by_email(email);
 
+        for (const item of clinic_id) {
+            const [clinicData] = await clinicModels.getClinicProfile(item);
+            if (!clinicData) {
+                return handleError(res, 401, language, "CLINIC_NOT_FOUND");
+            }
+        }
 
-
-        let doctor, doctor_id, password, newWebUser;
 
 
         if (existingUser) {
-
-            const roles = await clinicModels.getAllRoles();
-            const userRole = roles.find(role => role.id === existingUser.role_id);
-
-            // Helpful readable names
-            const roleLabelMap = {
-                CLINIC: "Clinic",
-                DOCTOR: "Doctor",
-                SOLO_DOCTOR: "Solo Doctor"
-            };
-
-            // ========== 1️⃣ CLINIC ROLE - NOT ALLOWED ==========
-            if (userRole.role === "CLINIC") {
-                return handleError(
-                    res,
-                    400,
-                    language,
-                    "This user already has a Clinic account."
-                );
-            }
-
-            // ========== 2️⃣ SOLO DOCTOR ROLE - NOT ALLOWED ==========
-            if (userRole.role === "SOLO_DOCTOR") {
-                return handleError(
-                    res,
-                    400,
-                    language,
-                    "This email already belongs to a Solo Doctor. It cannot be mapped with a clinic."
-                );
-            }
-
-            // ========== 3️⃣ DOCTOR ROLE - ALLOWED (MAP TO CLINIC) ==========
-            if (userRole.role === "DOCTOR") {
-
-                // Get doctor record
-                const [existingDoctor] = await clinicModels.get_doctor_by_zynq_user_id(existingUser.id);
-
-                if (!existingDoctor) {
-                    return handleError(res, 400, language, "Doctor record not found.");
-                }
-
-                doctor_id = existingDoctor.doctor_id;
-
-                // Check mapping
-                const [existingMap] = await clinicModels.get_doctor_clinic_map_by_both(
-                    doctor_id,
-                    clinic_id
-                );
-
-                if (availability?.length > 0) {
-                    await doctorModels.updateDoctorSessionSlots(doctor_id, availability);
-                }
-
-                if (existingMap) {
-                    return handleError(
-                        res,
-                        400,
-                        language,
-                        "This doctor is already mapped to this clinic."
-                    );
-                }
-
-
-                // Create map
-                const clinicMapData = {
-                    doctor_id,
-                    clinic_id: clinic_id,
-                    assigned_at: new Date(),
-                };
-                await clinicModels.create_doctor_clinic_map(clinicMapData);
-
-
-                const [doctorClinicMap] = await clinicModels.get_doctor_clinic_map_by_both(doctor_id, clinic_id);
-
-
-                const invitation_id = doctorClinicMap?.map_id;
-
-                // Send invitation WITHOUT password → use enn.ejs
-                const emailHtml = await ejs.renderFile(emailTemplatePath2,
-                    {
-                        clinic_name: clinicData.clinic_name,
-                        clinic_org_number: clinicData.org_number,
-                        clinic_city: get_location.city,
-                        clinic_street_address: get_location.street_address,
-                        clinic_state: get_location.state,
-                        clinic_zip: get_location.zip_code,
-                        clinic_phone: clinicData.mobile_number,
-                        clinic_email: clinicData.email,
-                        image_logo,
-                        invitation_id,
-                        invitation_link: `${APP_URL}clinic/accept-invitation?invitation_id=${invitation_id}`,
-                    }
-                );
-
-                await sendEmail({
-                    to: email,
-                    subject: "Expert Invitation",
-                    html: emailHtml,
-                });
-
-            }
+            return handleError(
+                res,
+                400,
+                language,
+                "EMAIL_ALREADY"
+            );
         }
         else {
             const roles = await clinicModels.getAllRoles();
@@ -377,10 +340,10 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 return handleError(res, 400, language, "DOCTOR_ROLE_NOT_FOUND");
             }
 
-            password = generatePassword(email);
+            let password = generatePassword(email);
             const hashedPassword = await bcrypt.hash(password, 10);
 
-            const doctorData = {
+            const insertdoctorData = {
                 email,
                 password: hashedPassword,
                 show_password: password,
@@ -388,8 +351,11 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 created_at: new Date(),
             };
 
-            await webModels.create_web_user(doctorData);
-            [newWebUser] = await webModels.get_web_user_by_email(email);
+            await webModels.create_web_user(insertdoctorData);
+            let [newWebUser] = await webModels.get_web_user_by_email(email);
+
+
+            const zynqUserId = newWebUser.id;
 
             const doctorTableData = {
                 zynq_user_id: newWebUser.id,
@@ -398,150 +364,152 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             };
             await clinicModels.create_doctor(doctorTableData);
             const [createdDoctor] = await clinicModels.get_doctor_by_zynq_user_id(newWebUser.id);
-            doctor = createdDoctor;
-            doctor_id = doctor.doctor_id;
+            let doctor = createdDoctor;
+            let doctor_id = doctor.doctor_id;
 
-            const [doctorClinicMapForCreate] = await clinicModels.get_doctor_clinic_map_by_both(doctor_id, clinic_id);
-            if (!doctorClinicMapForCreate) {
-                const clinicMapData = {
-                    doctor_id,
-                    clinic_id: clinic_id,
-                    assigned_at: new Date(),
-                };
-                await clinicModels.create_doctor_clinic_map(clinicMapData);
+
+            let filename = '';
+            if (req.files?.profile?.length > 0) {
+                filename = req.files.profile[0].filename
             }
 
-            const [doctorClinicMap] = await clinicModels.get_doctor_clinic_map_by_both(doctor_id, clinic_id);
-            const invitation_id = doctorClinicMap?.map_id;
 
-            let sendPassword = password;
-            if (!password && existingUser) {
-                sendPassword = existingUser.show_password;
-            }
+            const result = await doctorModels.add_personal_details(zynqUserId, name, phone, age, address, gender, filename, biography, last_name);
 
-            const emailHtml = await ejs.renderFile(emailTemplatePath, {
-                clinic_name: clinicData.clinic_name,
-                clinic_org_number: clinicData.org_number,
-                clinic_city: get_location.city,
-                clinic_street_address: get_location.street_address,
-                clinic_state: get_location.state,
-                clinic_zip: get_location.zip_code,
-                clinic_phone: clinicData.mobile_number,
-                clinic_email: clinicData.email,
-                email,
-                password: sendPassword,
-                image_logo,
-                invitation_id,
-                invitation_link: `${APP_URL}clinic/accept-invitation?invitation_id=${invitation_id}`,
-            });
+            const files = req.files;
+            if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
+                for (const key in files) { // 'key' is like 'medical_council', 'deramatology_board', etc.
+                    const certTypeFromDb = await doctorModels.get_certification_type_by_filename(key);
 
-            const emailOptions = {
-                to: email,
-                subject: "Expert Invitation",
-                html: emailHtml,
-            };
-            await sendEmail(emailOptions);
-        }
+                    if (certTypeFromDb.length > 0) {
+                        const certification_type_id = certTypeFromDb[0].certification_type_id;
 
-        const [checkexistingUser] = await webModels.get_web_user_by_email(email);
-        const [doctorData] = await doctorModels.get_doctor_by_zynquser_id(checkexistingUser.id);
+                        for (const file of files[key]) { // Loop through potential multiple files for the same field name
+                            const newUploadPath = file.filename; // This is the new path
 
+                            // Check if this certification type already exists for the doctor
+                            const existingCert = await doctorModels.get_doctor_certification_by_type(doctor_id, certification_type_id);
 
-        if (!doctorData) {
-            return handleError(res, 401, 'en', "DOCTOR_NOT_FOUND");
-        }
+                            if (existingCert.length > 0) {
+                                // Certification already exists, update its file path
+                                await doctorModels.update_certification_upload_path(doctor_id, certification_type_id, newUploadPath);
 
-        const doctorId = doctorData.doctor_id;
-        const zynqUserId = checkexistingUser.id;
+                            } else {
+                                // Certification does not exist, add it
+                                await doctorModels.add_certification(doctor_id, certification_type_id, newUploadPath); // Add other metadata if available from req.body
 
-        let filename = '';
-        if (req.files?.profile?.length > 0) {
-            filename = req.files.profile[0].filename
-        }
-
-
-        const result = await doctorModels.add_personal_details(zynqUserId, name, phone, age, address, gender, filename, biography, last_name);
-
-        const files = req.files;
-        if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
-            for (const key in files) { // 'key' is like 'medical_council', 'deramatology_board', etc.
-                const certTypeFromDb = await doctorModels.get_certification_type_by_filename(key);
-
-                if (certTypeFromDb.length > 0) {
-                    const certification_type_id = certTypeFromDb[0].certification_type_id;
-
-                    for (const file of files[key]) { // Loop through potential multiple files for the same field name
-                        const newUploadPath = file.filename; // This is the new path
-
-                        // Check if this certification type already exists for the doctor
-                        const existingCert = await doctorModels.get_doctor_certification_by_type(doctorId, certification_type_id);
-
-                        if (existingCert.length > 0) {
-                            // Certification already exists, update its file path
-                            await doctorModels.update_certification_upload_path(doctorId, certification_type_id, newUploadPath);
-
-                        } else {
-                            // Certification does not exist, add it
-                            await doctorModels.add_certification(doctorId, certification_type_id, newUploadPath); // Add other metadata if available from req.body
-
+                            }
                         }
+                    } else {
+                        console.warn(`Certification type with filename key '${key}' not found in tbl_certification_type. Skipping file processing.`);
                     }
-                } else {
-                    console.warn(`Certification type with filename key '${key}' not found in tbl_certification_type. Skipping file processing.`);
                 }
             }
-        }
 
-        const eduArray = Array.isArray(education) ? education : [];
-        const expArray = Array.isArray(experience) ? experience : [];
 
-        if (eduArray.length > 0) {
-            await doctorModels.delete_all_education(doctorId);
-            for (let edu of eduArray) {
-                await doctorModels.add_education(doctorId, edu.institute, edu.degree, edu.start_year, edu.end_year);
+            const eduArray = Array.isArray(education) ? education : [];
+            const expArray = Array.isArray(experience) ? experience : [];
+
+            if (eduArray.length > 0) {
+                await doctorModels.delete_all_education(doctor_id);
+                for (let edu of eduArray) {
+                    await doctorModels.add_education(doctor_id, edu.institute, edu.degree, edu.start_year, edu.end_year);
+                }
             }
-        }
 
-        if (expArray.length > 0) {
-            await doctorModels.delete_all_experience(doctorId);
-            for (let exp of expArray) {
-                await doctorModels.add_experience(doctorId, exp.organization, exp.designation, exp.start_date, exp.end_date);
+            if (expArray.length > 0) {
+                await doctorModels.delete_all_experience(doctor_id);
+                for (let exp of expArray) {
+                    await doctorModels.add_experience(doctor_id, exp.organization, exp.designation, exp.start_date, exp.end_date);
+                }
             }
+
+            await Promise.all(
+                clinic_id.map(async (item, index) => {
+                    const clinicMapData = {
+                        doctor_id,
+                        clinic_id: item,
+                        assigned_at: new Date(),
+                    };
+                    await clinicModels.create_doctor_clinic_map(clinicMapData);
+
+
+                    const [doctorClinicMap] = await clinicModels.get_doctor_clinic_map_by_both(doctor_id, item);
+                    const invitation_id = doctorClinicMap?.map_id;
+
+                    let sendPassword = password;
+                    if (!password && existingUser) {
+                        sendPassword = existingUser.show_password;
+                    };
+
+
+                    const [clinicData] = await clinicModels.getClinicProfile(item);
+
+                    const [get_location] = await clinicModels.get_clinic_location_by_clinic_id(item);
+
+                    const emailHtml = await ejs.renderFile(language == "en" ? emailTemplatePath : emailTemplatePath2, {
+                        clinic_name: clinicData?.clinic_name || "#N/A",
+                        clinic_org_number: clinicData?.org_number || "#N/A",
+                        clinic_city: get_location?.city || "#N/A",
+                        clinic_street_address: get_location?.street_address || "#N/A",
+                        clinic_state: get_location?.state || "#N/A",
+                        clinic_zip: get_location?.zip_code || "#N/A",
+                        clinic_phone: clinicData?.mobile_number || "#N/A",
+                        clinic_email: clinicData?.email,
+                        email,
+                        password: sendPassword,
+                        image_logo,
+                        invitation_id,
+                        invitation_link: `${APP_URL}clinic/accept-invitation?invitation_id=${invitation_id}`,
+                    });
+
+                    const emailOptions = {
+                        to: email,
+                        subject: "Expert Invitation",
+                        html: emailHtml,
+                    };
+                    await sendEmail(emailOptions);
+
+
+                    const availabilityArray = availability ? availability[index] : [];
+
+                    if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
+                        await doctorModels.update_availability(doctor_id, availabilityArray, item);
+                    }
+
+                    // Convert CSV strings into arrays
+                    const skinTypeIds = skin_type_ids ? skin_type_ids[index] : [];
+                    const surgeryIds = surgery_ids ? surgery_ids[index] : [];
+                    const deviceIds = device_ids ? device_ids[index] : [];
+                    const clinicTreatments = treatments?.[index] || [];
+
+                    // Save expertis
+                    if (Array.isArray(clinicTreatments) && clinicTreatments.length > 0) {
+                        await doctorModels.update_doctor_treatments(doctor_id, clinicTreatments, item);
+                    }
+                    if (Array.isArray(skinTypeIds) && skinTypeIds.length > 0) {
+                        console.log("skinTypeIds inserted");
+                        await doctorModels.update_doctor_skin_types(doctor_id, skinTypeIds, item);
+                    }
+                    if (Array.isArray(surgeryIds) && surgeryIds.length > 0) {
+                        console.log("surgeryIds inserted");
+                        await doctorModels.update_doctor_surgery(doctor_id, surgeryIds, item);
+                    }
+
+                    if (Array.isArray(deviceIds) && deviceIds.length > 0) {
+                        console.log("deviceIds inserted");
+                        await doctorModels.update_doctor_treatment_devices(
+                            zynqUserId,       // zynq_user_id
+                            clinicTreatments, // treatments array
+                            deviceIds,       // device ids
+                            item
+                        );
+                    }
+                }))
+
+            return handleSuccess(res, 200, language, "INVITATION_SENT_SUCCESSFULLY");
+
         }
-
-        if (availability?.length > 0) {
-            await doctorModels.update_availability(doctor_id, availability, clinic_id);
-        }
-
-        // Convert CSV strings into arrays
-        const skinTypeIds = skin_type_ids ? skin_type_ids.split(',').map(id => id.trim()) : [];
-        // const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
-        const surgeryIds = surgery_ids ? surgery_ids.split(',').map(id => id.trim()) : [];
-        const deviceIds = device_ids ? device_ids.split(',').map(id => id.trim()) : [];
-
-        // Save expertis
-        if (treatments.length > 0) {
-            await doctorModels.update_doctor_treatments(doctorId, treatments);
-        }
-        if (skinTypeIds.length > 0) {
-            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
-        }
-        if (surgeryIds.length > 0) {
-            await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
-        }
-
-        // NEW: Save treatment → user → device mapping
-        if (deviceIds.length > 0) {
-            await doctorModels.update_doctor_treatment_devices(
-                zynqUserId,       // zynq_user_id
-                treatments, // treatments array
-                deviceIds         // device ids
-            );
-        }
-
-
-        return handleSuccess(res, 200, language, "INVITATION_SENT_SUCCESSFULLY");
-
     } catch (error) {
         console.error("Error sending doctor invitation:", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
@@ -1605,7 +1573,7 @@ export const updateSoloDoctorController = async (req, res) => {
                     mappedTreatments
                 );
 
-            await doctorModels.update_doctor_treatments(doctorId, treatments);
+            await doctorModels.update_doctor_treatments(doctorId, treatments,clinic_id);
         }
 
         if (Array.isArray(removed_file_ids) && removed_file_ids.length > 0) {
@@ -1614,11 +1582,11 @@ export const updateSoloDoctorController = async (req, res) => {
         }
 
         if (skinTypeIds.length > 0) {
-            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
+            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds,clinic_id);
             await clinicModels.updateClinicSkinTypes(skinTypeIds, clinic_id);
         }
         if (surgeryIds.length > 0) {
-            await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
+            await doctorModels.update_doctor_surgery(doctorId, surgeryIds,clinic_id);
             await clinicModels.updateClinicSurgeries(surgeryIds, clinic_id);
         }
 
@@ -1627,7 +1595,8 @@ export const updateSoloDoctorController = async (req, res) => {
             await doctorModels.update_doctor_treatment_devices(
                 zynq_user_id,       // zynq_user_id
                 treatments, // treatments array
-                deviceIds         // device ids
+                deviceIds,         // device ids
+                clinic_id
             );
             await clinicModels.updateClinicAestheticDevices(
                 deviceIds,

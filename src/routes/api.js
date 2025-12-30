@@ -45,6 +45,7 @@ import { deleteSingleNotificationSchema } from '../validations/notification.vali
 import { getAllFAQCategories, getAllFAQs } from '../controllers/api/FAQController.js';
 import { getAllFAQSchema } from '../validations/faq.validation.js';
 import { addConsentSchema, openAIBackendEndpointSchema } from '../validations/legal.validation.js';
+import { analyzeImageController, uploadImageToMemory } from '../services/aws_recognition.js';
 
 const router = express.Router();
 
@@ -277,6 +278,6 @@ router.post("/get-devices-by-name",authenticateUser, validate(getAllDoctorsSchem
 router.post("/get-treatments-by-search",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.gettreatmentsBySearchOnlyController);
 router.post("/get-sub-treatments-by-search",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.getSubtreatmentsBySearchOnlyController);
 
-
+router.post("/aws-image-recognition",uploadImageToMemory , analyzeImageController);
 
 export default router;
