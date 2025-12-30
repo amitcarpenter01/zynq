@@ -46,7 +46,8 @@ export const get_clinic_by_zynq_user_id = async (zynq_user_id) => {
                 tc.is_unsubscribed,
                 tcl.city,
                 tcl.state,
-                tc.same_for_all
+                tc.same_for_all,
+                tc.slot_time
             FROM tbl_clinics tc
             LEFT JOIN tbl_clinic_locations tcl ON tc.clinic_id = tcl.clinic_id
             WHERE zynq_user_id = ?`, [zynq_user_id]
