@@ -230,12 +230,12 @@ export const get_all_services = async () => {
     }
 };
 
-export const update_doctor_skin_types = async (doctorId, skinTypeIds) => {
+export const update_doctor_skin_types = async (doctorId, skinTypeIds,clinic_id) => {
     try {
-        await db.query(`DELETE FROM tbl_doctor_skin_types WHERE doctor_id = ?`, [doctorId]);
-        const values = skinTypeIds.map(skinTypeId => [doctorId, skinTypeId]);
+        await db.query(`DELETE FROM tbl_doctor_skin_types WHERE doctor_id = ? AND clinic_id = ?`, [doctorId,clinic_id]);
+        const values = skinTypeIds.map(skinTypeId => [doctorId,clinic_id, skinTypeId]);
         if (values.length > 0) {
-            return await db.query(`INSERT INTO tbl_doctor_skin_types (doctor_id, skin_type_id) VALUES ?`, [values]);
+            return await db.query(`INSERT INTO tbl_doctor_skin_types (doctor_id,clinic_id, skin_type_id) VALUES ?`, [values]);
         }
         return null;
     } catch (error) {
@@ -299,10 +299,10 @@ export const update_doctor_severity_levels = async (doctorId, severityLevelIds) 
 //     }
 // };
 
-export const update_doctor_treatments = async (doctorId, treatments) => {
+export const update_doctor_treatments = async (doctorId, treatments,clinic_id) => {
     try {
         // Delete existing rows
-        await db.query(`DELETE FROM tbl_doctor_treatments WHERE doctor_id = ?`, [doctorId]);
+        await db.query(`DELETE FROM tbl_doctor_treatments WHERE doctor_id = ? AND clinic_id = ?`, [doctorId,clinic_id]);
 
         let values = [];
 
@@ -321,6 +321,7 @@ export const update_doctor_treatments = async (doctorId, treatments) => {
                 for (const sub of subs) {
                     values.push([
                         doctorId,
+                        clinic_id,
                         t.treatment_id,
                         totalPrice,                 // same total price in all rows
                         sub.sub_treatment_id,
@@ -332,6 +333,7 @@ export const update_doctor_treatments = async (doctorId, treatments) => {
                 // No sub-treatment → insert single row
                 values.push([
                     doctorId,
+                    clinic_id,
                     t.treatment_id,
                     t.price || 0,
                     null,
@@ -344,6 +346,7 @@ export const update_doctor_treatments = async (doctorId, treatments) => {
             const insertQuery = `
                 INSERT INTO tbl_doctor_treatments (
                     doctor_id,
+                    clinic_id,
                     treatment_id,
                     price,
                     sub_treatment_id,
@@ -836,12 +839,12 @@ WHERE
 };
 
 
-export const update_doctor_surgery = async (doctorId, surgeryIds) => {
+export const update_doctor_surgery = async (doctorId, surgeryIds,clinic_id) => {
     try {
-        await db.query(`DELETE FROM tbl_doctor_surgery WHERE doctor_id = ?`, [doctorId]);
-        const values = surgeryIds.map(surgeryId => [doctorId, surgeryId]);
+        await db.query(`DELETE FROM tbl_doctor_surgery WHERE doctor_id = ? AND clinic_id = ?`, [doctorId,clinic_id]);
+        const values = surgeryIds.map(surgeryId => [doctorId,clinic_id, surgeryId]);
         if (values.length > 0) {
-            return await db.query(`INSERT INTO tbl_doctor_surgery (doctor_id, surgery_id) VALUES ?`, [values]);
+            return await db.query(`INSERT INTO tbl_doctor_surgery (doctor_id,clinic_id, surgery_id) VALUES ?`, [values]);
         }
         return null;
     } catch (error) {
@@ -913,12 +916,12 @@ export const update_doctor_aesthetic_devices = async (doctorId, aestheticDevices
 //     }
 // };
 
-export const update_doctor_treatment_devices = async (zynqUserId, treatments, deviceIds) => {
+export const update_doctor_treatment_devices = async (zynqUserId, treatments, deviceIds,clinic_id) => {
     try {
         // Remove previous mappings
         await db.query(
-            `DELETE FROM tbl_treatment_device_user_maps WHERE zynq_user_id = ?`,
-            [zynqUserId]
+            `DELETE FROM tbl_treatment_device_user_maps WHERE zynq_user_id = ? AND clinic_id = ?`,
+            [,clinic_id]
         );
 
         let data = [];
@@ -932,12 +935,12 @@ export const update_doctor_treatment_devices = async (zynqUserId, treatments, de
 
         // Insert one row per device_id
         deviceIds.forEach(deviceId => {
-            data.push([treatmentId, zynqUserId, deviceId]);
+            data.push([treatmentId, zynqUserId,clinic_id, deviceId]);
         });
 
         if (data.length > 0) {
             await db.query(
-                `INSERT INTO tbl_treatment_device_user_maps (treatment_id, zynq_user_id, device_id) VALUES ?`,
+                `INSERT INTO tbl_treatment_device_user_maps (treatment_id, zynq_user_id,clinic_id, device_id) VALUES ?`,
                 [data]
             );
         }
