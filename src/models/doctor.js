@@ -15,9 +15,9 @@ export const get_doctor_by_zynquser_id = async (zynqUserId) => {
     }
 };
 
-export const add_personal_details = async (zynqUserId, name, phone, age, address, gender, profile_image, biography, last_name, slot_time = null) => {
+export const add_personal_details = async (zynqUserId, name, phone, age, address, city, zip_code, latitude, longitude, gender, profile_image, biography, last_name, slot_time = null) => {
     try {
-        return await db.query(`UPDATE tbl_doctors SET profile_status = ?, name = ?, phone=? , age=?, address=?, gender=?, profile_image=?,biography=?,last_name = ?,slot_time = ? where zynq_user_id = ? `, ["ONBOARDING", name, phone, age, address, gender, profile_image, biography, last_name, slot_time, zynqUserId]);
+        return await db.query(`UPDATE tbl_doctors SET profile_status = ?, name = ?, phone=? , age=?, address=?, city=?, zip_code=?, latitude=?, longitude=?, gender=?, profile_image=?,biography=?,last_name = ?,slot_time = ? where zynq_user_id = ? `, ["ONBOARDING", name, phone, age, address, city, zip_code, latitude, longitude, gender, profile_image, biography, last_name, slot_time, zynqUserId]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to add doctor personal details.");
@@ -394,14 +394,61 @@ export const get_doctor_consultation_fee = async (doctorId) => {
     }
 };
 
-export const update_availability = async (doctorId, availabilityData, clinic_id = null) => {
+// export const update_availability = async (doctorId, availabilityData, clinic_id = null) => {
+//     try {
+//         await db.query(`DELETE FROM tbl_doctor_availability WHERE doctor_id = ? AND clinic_id = ?`, [doctorId, clinic_id]);
+//         const values = availabilityData.map(avail => [doctorId, avail.day_of_week, avail.start_time, avail.end_time, avail.closed, clinic_id]);
+//         if (values.length > 0) {
+//             return await db.query(`INSERT INTO tbl_doctor_availability (doctor_id, day_of_week, start_time, end_time,closed, clinic_id) VALUES ?`, [values]);
+//         }
+//         return null;
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to update availability.");
+//     }
+// };
+
+export const update_availability = async (
+    doctorId,
+    availabilityData,
+    clinic_id = null
+) => {
     try {
-        await db.query(`DELETE FROM tbl_doctor_availability WHERE doctor_id = ? AND clinic_id = ?`, [doctorId, clinic_id]);
-        const values = availabilityData.map(avail => [doctorId, avail.day_of_week, avail.start_time, avail.end_time, avail.closed, clinic_id]);
-        if (values.length > 0) {
-            return await db.query(`INSERT INTO tbl_doctor_availability (doctor_id, day_of_week, start_time, end_time,closed, clinic_id) VALUES ?`, [values]);
+        // Delete old availability for this doctor + clinic
+        await db.query(
+            `DELETE FROM tbl_doctor_availability 
+             WHERE doctor_id = ? AND clinic_id = ?`,
+            [doctorId, clinic_id]
+        );
+
+        const values = [];
+
+        for (const dayItem of availabilityData) {
+            const dayOfWeek = dayItem.day;
+
+            if (!Array.isArray(dayItem.session)) continue;
+
+            for (const session of dayItem.session) {
+                values.push([
+                    doctorId,
+                    dayOfWeek,
+                    session.start_time,
+                    session.end_time,
+                    0, // closed
+                    clinic_id
+                ]);
+            }
         }
-        return null;
+
+        if (values.length === 0) return null;
+
+        return await db.query(
+            `INSERT INTO tbl_doctor_availability 
+            (doctor_id, day_of_week, start_time, end_time, closed, clinic_id) 
+            VALUES ?`,
+            [values]
+        );
+
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update availability.");
@@ -661,21 +708,21 @@ export const get_clinics_data_by_doctor_id = async (doctorId) => {
     try {
         return await db.query(`
             SELECT
-    c.*,
-    cl.*,
-    u.email
-FROM
-    tbl_doctor_clinic_map dcm
-JOIN
-    tbl_clinics c ON dcm.clinic_id = c.clinic_id
-LEFT JOIN
-    tbl_clinic_locations cl ON cl.clinic_id = c.clinic_id
-LEFT JOIN
-    tbl_zqnq_users u ON c.zynq_user_id = u.id
-WHERE
-    dcm.doctor_id = ?
-ORDER BY
-    dcm.assigned_at DESC;
+                c.*,
+                cl.*,
+                u.email
+            FROM
+                tbl_doctor_clinic_map dcm
+            JOIN
+                tbl_clinics c ON dcm.clinic_id = c.clinic_id
+            LEFT JOIN
+                tbl_clinic_locations cl ON cl.clinic_id = c.clinic_id
+            LEFT JOIN
+                tbl_zqnq_users u ON c.zynq_user_id = u.id
+            WHERE
+                dcm.doctor_id = ?
+            ORDER BY
+                dcm.assigned_at DESC;
         `, [doctorId]);
     } catch (error) {
         console.error("Database Error:", error.message);
