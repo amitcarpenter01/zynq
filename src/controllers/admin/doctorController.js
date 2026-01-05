@@ -144,6 +144,7 @@ export const get_doctors_management = async (req, res) => {
 
         const search = req.query.search || "";
         const type = req.query.type || "";
+        let zync_user_id = req.query.zync_user_id || null;
 
         // 1. Total doctor count
         const totalRecords = await adminModels.get_doctors_count(search, type);
@@ -153,7 +154,8 @@ export const get_doctors_management = async (req, res) => {
             limit,
             offset,
             search,
-            type
+            type,
+            zync_user_id
         );
 
         if (!doctors || doctors.length === 0) {
@@ -398,18 +400,6 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 ).optional().allow(null)
             ).optional(),
 
-            // availability: Joi.array().items(
-            //     Joi.object({
-            //         day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
-            //         session: Joi.array().items(
-            //             Joi.object({
-            //                 start_time: Joi.string().required(),
-            //                 end_time: Joi.string().required(),
-            //             })
-            //         ).optional().allow(null),
-            //     })
-            // ).optional().allow(null),
-
             slot_time: Joi.string().optional().allow("", null),
         });
 
@@ -612,6 +602,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
 
             if (eduArray.length > 0) {
                 await doctorModels.delete_all_education(doctor_id);
+                console.log("eduArray", eduArray);
                 for (let edu of eduArray) {
                     await doctorModels.add_education(doctor_id, edu.institute, edu.degree, edu.start_year, edu.end_year);
                 }
@@ -1286,7 +1277,7 @@ export const updateDoctorController = async (req, res) => {
     try {
 
         const schema = Joi.object({
-            clinic_id: Joi.string().uuid().required(),
+            clinic_id: Joi.array().items(Joi.string().uuid()).min(1).required(),
             zynq_user_id: Joi.string().uuid().required(),
             name: Joi.string().max(255).optional().allow('', null),
             phone: Joi.string().max(255).optional().allow('', null),
@@ -1309,41 +1300,43 @@ export const updateDoctorController = async (req, res) => {
                     end_date: Joi.string().optional().allow(null)
                 })
             ).optional().allow(null),// will be JSON
+
+
             treatments: Joi.array().items(
-                Joi.object({
-                    treatment_id: Joi.string().required(),
-                    price: Joi.number().optional(),
-                    sub_treatments: Joi.array().items(
-                        Joi.object({
-                            sub_treatment_id: Joi.string().required(),
-                            sub_treatment_price: Joi.number().required()
-                        })
-                    ).optional()
-                })
+                Joi.array().items(
+                    Joi.object({
+                        treatment_id: Joi.string().required(),
+                        price: Joi.number().optional(),
+                        sub_treatments: Joi.array().items(
+                            Joi.object({
+                                sub_treatment_id: Joi.string().required(),
+                                sub_treatment_price: Joi.number().required()
+                            })
+                        ).optional()
+                    })
+                ).min(1).required()
             ).min(1).required(),
 
+
             skin_type_ids: Joi.array().items(
-                Joi.string().uuid().optional().allow(null)
+                Joi.array().items(
+                    Joi.string().uuid().optional().allow(null)
+                ).optional().allow(null)
             ).optional().allow(null),
 
             surgery_ids: Joi.array().items(
-                Joi.string().uuid().optional().allow(null)
+                Joi.array().items(
+                    Joi.string().uuid().optional().allow(null)
+                ).optional().allow(null)
             ).optional().allow(null),
 
             device_ids: Joi.array().items(
-                Joi.string().uuid().optional().allow(null)
+                Joi.array().items(
+                    Joi.string().uuid().optional().allow(null)
+                ).optional().allow(null)
             ).optional().allow(null),
 
-            // availability: Joi.array().items(
-            //     Joi.object({
-            //         day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
-            //         start_time: Joi.string().required().allow(''),
-            //         end_time: Joi.string().required().allow(''),
-            //         closed: Joi.number().integer().optional(),
-            //     })
-            // ).optional(),
-
-            availability:
+            availability: Joi.array().items(
                 Joi.array().items(
                     Joi.object({
                         day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
@@ -1353,9 +1346,20 @@ export const updateDoctorController = async (req, res) => {
                                 end_time: Joi.string().required(),
                             })).optional().allow(null),
                     })
-                ).optional().allow(null),
+                ).optional().allow(null)
+            ).optional(),
+
+
             slot_time: Joi.string().optional().allow("", null),
         });
+
+        if (typeof req.body.clinic_id === "string") {
+            try {
+                req.body.clinic_id = JSON.parse(req.body.clinic_id);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_CLICICID");
+            }
+        }
 
         if (typeof req.body.treatments === "string") {
             try {
@@ -1497,36 +1501,45 @@ export const updateDoctorController = async (req, res) => {
             }
         }
 
+        await Promise.all(
+            clinic_id.map(async (item, index) => {
 
-        if (clinic_id && availability?.length > 0) {
-            await doctorModels.updateDoctorSessionSlots(doctorId, availability, clinic_id);
-        }
+                const availabilityArray = availability ? availability[index] : [];
+                console.log("availabilityArray=>", availabilityArray)
 
-        // Convert CSV strings into arrays
-        const skinTypeIds = skin_type_ids ? skin_type_ids : [];
-        const surgeryIds = surgery_ids ? surgery_ids : [];
-        const deviceIds = device_ids ? device_ids : [];
+                if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
+                    const data = await doctorModels.updateDoctorSessionSlots(doctorId, availabilityArray, item);
+                    console.log("data=>", data);
+                }
 
-        // Save expertis
-        if (treatments.length > 0) {
-            await doctorModels.update_doctor_treatments(doctorId, treatments, clinic_id);
-        }
-        if (skinTypeIds.length > 0) {
-            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds, clinic_id);
-        }
-        if (surgeryIds.length > 0) {
-            await doctorModels.update_doctor_surgery(doctorId, surgeryIds, clinic_id);
-        }
+                // Convert CSV strings into arrays
+                const skinTypeIds = skin_type_ids ? skin_type_ids[index] : [];
+                const surgeryIds = surgery_ids ? surgery_ids[index] : [];
+                const deviceIds = device_ids ? device_ids[index] : [];
+                const clinicTreatments = treatments?.[index] || [];
 
-        // NEW: Save treatment → user → device mapping
-        if (deviceIds.length > 0) {
-            await doctorModels.update_doctor_treatment_devices(
-                zynq_user_id,       // zynq_user_id
-                treatments, // treatments array
-                deviceIds,         // device ids
-                clinic_id
-            );
-        }
+                // Save expertis
+                if (Array.isArray(clinicTreatments) && clinicTreatments.length > 0) {
+                    await doctorModels.update_doctor_treatments(doctorId, clinicTreatments, item);
+                }
+                if (Array.isArray(skinTypeIds) && skinTypeIds.length > 0) {
+                    console.log("skinTypeIds inserted");
+                    await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds, item);
+                }
+                if (Array.isArray(surgeryIds) && surgeryIds.length > 0) {
+                    console.log("surgeryIds inserted");
+                    await doctorModels.update_doctor_surgery(doctorId, surgeryIds, item);
+                }
+                if (Array.isArray(deviceIds) && deviceIds.length > 0) {
+                    console.log("deviceIds inserted");
+                    await doctorModels.update_doctor_treatment_devices(
+                        zynq_user_id,       // zynq_user_id
+                        clinicTreatments, // treatments array
+                        deviceIds,       // device ids
+                        item
+                    );
+                }
+            }))
 
 
         return handleSuccess(res, 200, language, "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY");

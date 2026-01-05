@@ -772,7 +772,7 @@ export const clinicUnsubscribed = async (clinic_id) => {
 //     }
 // };
 
-export const get_doctors_management = async (limit, offset, search = "", type = "") => {
+export const get_doctors_management = async (limit, offset, search = "", type = "",zync_user_id) => {
     try {
         const searchQuery = `%${search}%`;
 
@@ -797,6 +797,11 @@ export const get_doctors_management = async (limit, offset, search = "", type = 
             } else if (type === "Doctor") {
                 conditions += ` AND u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef'`;
             }
+        }
+
+        if(zync_user_id) {
+            conditions += ` AND u.id = ?`;
+            params.push(zync_user_id);
         }
 
         params.push(limit, offset);
