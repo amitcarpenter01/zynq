@@ -230,6 +230,16 @@ export const get_doctors_management = async (req, res) => {
                         clinic.clinic_id
                     );
 
+                    const documents = await clinicModels.getClinicDocumentsLevel(
+                        clinic.clinic_id
+                    );
+                    documents.forEach((document) => {
+                        if (document.file_url && !document.file_url.startsWith("http")) {
+                            document.file_url = `${APP_URL}${document.file_url}`;
+                        }
+                    });
+                    clinic.documents = documents;
+
                     /* ---- SOLO DOCTOR → CLINIC IMAGES ---- */
                     if (doctor.user_type === "Solo Doctor") {
                         const images = await clinicModels.getClinicImages(clinic.clinic_id);
@@ -253,7 +263,8 @@ export const get_doctors_management = async (req, res) => {
                         clinic.clinicTiming =
                             await clinicModels.getClinicOperationHours(clinic.clinic_id);
                     } else {
-                        clinic.clinicTiming = [];
+                        clinic.clinicTiming =
+                            await clinicModels.getClinicOperationHours(clinic.clinic_id);
                     }
                 }
 
