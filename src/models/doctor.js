@@ -751,7 +751,7 @@ export const get_clinics_data_by_doctor_id = async (doctorId) => {
             LEFT JOIN
                 tbl_zqnq_users u ON c.zynq_user_id = u.id
             WHERE
-                dcm.doctor_id = ?
+                dcm.doctor_id = ? AND dcm.is_unsync = 0
             ORDER BY
                 dcm.assigned_at DESC;
         `, [doctorId]);
@@ -1112,7 +1112,7 @@ export const get_clinics = async (doctorId) => {
             LEFT JOIN tbl_clinics c
                 ON dc.clinic_id = c.clinic_id
             WHERE dc.doctor_id = ?
-            AND dc.is_invitation_accepted = 1
+            AND dc.is_invitation_accepted = 1 AND dc.is_unsync = 0
         `, [doctorId]);
     } catch (error) {
         console.error("Database Error:", error.message);

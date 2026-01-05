@@ -250,5 +250,7 @@ router.get("/get-skin-types/:clinic_id",authenticateAdmin, clinicControllers.get
 router.delete("/clinin-images/:clinic_image_id", authenticateAdmin ,validate(deleteClinicImageSchema, "params"),authControllersClinic.deleteClinicImage);
 router.post("/generate-slots",authenticateAdmin,doctorControllers.generateAvailabilityFromOperationHours);
 
+router.post("/clinic-unlinck",authenticateAdmin,doctorControllers.unsyncClinicController);
+
 
 export default router;

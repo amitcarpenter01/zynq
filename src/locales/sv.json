@@ -323,5 +323,6 @@
   "TREATMENT_CLONED_SUCCESSFULLY" : "Behandling klonad framgångsrikt",
   "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY" : "Expert uppdaterad framgångsrikt",
   "AWS_RECOGNITION_RESULT" : "AWS-igenkänningsresultat",
-  "FILE_NOT_FOUND" : "Filen hittades inte"
+  "FILE_NOT_FOUND" : "Filen hittades inte",
+  "CLINIC_UNSYNCED_SUCCESSFULLY" : "Kliniken har kopplats bort"
 }

@@ -1461,7 +1461,7 @@ export const updateDoctorController = async (req, res) => {
             filename = req.files.profile[0].filename
         }
         // await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
-        const result = await doctorModels.add_personal_details(zynq_user_id, name ? name : doctorData?.name, phone ? phone : doctorData?.phone, age ? age : doctorData?.age, address ? address : doctorData?.address,city ? city : doctorData?.city,zip_code ? zip_code : doctorData?.zip_code,latitude ? latitude : doctorData?.latitude,longitude ? longitude : doctorData?.longitude, gender ? gender : doctorData?.gender, filename, biography ? biography : doctorData?.biography, last_name ? last_name : doctorData.last_name, slot_time ? slot_time : doctorData?.slot_time,doctorData.profile_status);
+        const result = await doctorModels.add_personal_details(zynq_user_id, name ? name : doctorData?.name, phone ? phone : doctorData?.phone, age ? age : doctorData?.age, address ? address : doctorData?.address, city ? city : doctorData?.city, zip_code ? zip_code : doctorData?.zip_code, latitude ? latitude : doctorData?.latitude, longitude ? longitude : doctorData?.longitude, gender ? gender : doctorData?.gender, filename, biography ? biography : doctorData?.biography, last_name ? last_name : doctorData.last_name, slot_time ? slot_time : doctorData?.slot_time, doctorData.profile_status);
 
 
         const files = req.files || {};
@@ -2017,6 +2017,33 @@ export const generateAvailabilityFromOperationHours = async (req, res) => {
         );
     } catch (error) {
         console.error("Error in getAllSurgery:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+    }
+};
+
+export const unsyncClinicController = async (req, res) => {
+    try {
+         const language = req?.user?.language || "en";
+        const schema = Joi.object({
+            clinic_id: Joi.string().uuid().required(),
+            doctor_id: Joi.string().uuid().required()
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        let { clinic_id, doctor_id } = value;
+
+        let clinics = await clinicModels.getDoctorClinicMappedDataModel(doctor_id, clinic_id);
+
+        if(clinics.length == 0) return handleError(res, 404, "en", "CLINIC_NOT_FOUND");
+
+        await clinicModels.unsynkClinicModel(doctor_id, clinic_id);
+
+
+        return handleSuccess(res, 200, language, "CLINIC_UNSYNCED_SUCCESSFULLY");
+    } catch (error) {
+        console.error("Error in unsyncClinicController:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
