@@ -968,7 +968,7 @@ export const update_doctor_treatment_devices = async (zynqUserId, treatments, de
         // Remove previous mappings
         await db.query(
             `DELETE FROM tbl_treatment_device_user_maps WHERE zynq_user_id = ? AND clinic_id = ?`,
-            [,clinic_id]
+            [zynqUserId,clinic_id]
         );
 
         let data = [];
