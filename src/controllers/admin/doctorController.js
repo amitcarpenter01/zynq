@@ -1286,6 +1286,10 @@ export const updateDoctorController = async (req, res) => {
             gender: Joi.string().optional().allow('', null),
             biography: Joi.string().optional().allow(''),
             last_name: Joi.string().optional().allow('', null),
+            city: Joi.string().max(255).optional().allow('', null),
+            zip_code: Joi.string().max(255).optional().allow('', null),
+            latitude: Joi.number().optional().allow(null).empty('').default(null),
+            longitude: Joi.number().optional().allow(null).empty('').default(null),
             education: Joi.array().items(Joi.object({
                 institute: Joi.string().required(),
                 degree: Joi.string().required(),
@@ -1435,7 +1439,14 @@ export const updateDoctorController = async (req, res) => {
             treatments,
             skin_type_ids,
             surgery_ids,
-            device_ids, availability, slot_time } = value;
+            device_ids,
+            availability,
+            slot_time,
+            longitude,
+            latitude,
+            city,
+            zip_code
+        } = value;
 
         let language = req.user.language || "en";
 
@@ -1450,7 +1461,7 @@ export const updateDoctorController = async (req, res) => {
             filename = req.files.profile[0].filename
         }
         // await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
-        const result = await doctorModels.add_personal_details(zynq_user_id, name ? name : doctorData?.name, phone ? phone : doctorData?.phone, age ? age : doctorData?.age, address ? address : doctorData?.address, gender ? gender : doctorData?.gender, filename, biography ? biography : doctorData?.biography, last_name ? last_name : doctorData.last_name, slot_time ? slot_time : doctorData?.slot_time);
+        const result = await doctorModels.add_personal_details(zynq_user_id, name ? name : doctorData?.name, phone ? phone : doctorData?.phone, age ? age : doctorData?.age, address ? address : doctorData?.address,city ? city : doctorData?.city,zip_code ? zip_code : doctorData?.zip_code,latitude ? latitude : doctorData?.latitude,longitude ? longitude : doctorData?.longitude, gender ? gender : doctorData?.gender, filename, biography ? biography : doctorData?.biography, last_name ? last_name : doctorData.last_name, slot_time ? slot_time : doctorData?.slot_time,doctorData.profile_status);
 
 
         const files = req.files || {};

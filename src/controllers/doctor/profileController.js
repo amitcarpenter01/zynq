@@ -47,7 +47,7 @@ export const addPersonalInformation = async (req, res) => {
         const zynqUserId = req.user.id
 
 
-        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography,value.last_name);
+        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography, value.last_name);
 
         if (result.affectedRows) {
             await update_onboarding_status(1, zynqUserId)
@@ -300,7 +300,7 @@ export const getDoctorProfile = async (req, res) => {
                 }
             });
         }
-// applyLanguageOverwrite({ ...profileData, completionPercentage }, language)
+        // applyLanguageOverwrite({ ...profileData, completionPercentage }, language)
         return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, completionPercentage });
     } catch (error) {
         console.error(error);
@@ -318,6 +318,10 @@ export const editPersonalInformation = async (req, res) => {
             gender: Joi.string().max(255).optional(),
             biography: Joi.string().optional().allow(''),
             last_name: Joi.string().optional().allow('', null),
+            city: Joi.string().max(255).optional().allow('', null),
+            zip_code: Joi.string().max(255).optional().allow('', null),
+            latitude: Joi.number().optional().allow(null).empty('').default(null),
+            longitude: Joi.number().optional().allow(null).empty('').default(null),
         });
         let language = req?.user?.language || 'en';
 
@@ -337,7 +341,7 @@ export const editPersonalInformation = async (req, res) => {
             filename = req.file.filename
         }
         // await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
-        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography,value.last_name);
+        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address,value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name, value.slot_time, "ONBOARDING");
         // await generateDoctorsEmbeddingsV2(zynqUserId)
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", result.affectedRows);
@@ -1052,7 +1056,7 @@ export const updateDoctorAvailability = async (req, res) => {
         const doctor_id = req.user.doctorData.doctor_id;
         const language = req?.user?.language || 'en';
         const { days, fee_per_session, dr_type } = req.body;
-            await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
+        await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
         await doctorModels.deleteDoctorAvailabilityByDoctorId(doctor_id);
         await Promise.all(
             days.map(dayObj => {
