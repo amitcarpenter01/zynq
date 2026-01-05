@@ -225,10 +225,10 @@ export const get_doctors_management = async (req, res) => {
                         clinic.clinic_id
                     );
 
-                    clinic.doctorAvailabilities = await adminModels.getDoctorClinicAvailabilities(
-                        doctor.doctor_id,
-                        clinic.clinic_id
-                    );
+                    // clinic.doctorAvailabilities = await adminModels.getDoctorClinicAvailabilities(
+                    //     doctor.doctor_id,
+                    //     clinic.clinic_id
+                    // );
 
                     const documents = await clinicModels.getClinicDocumentsLevel(
                         clinic.clinic_id
@@ -662,21 +662,24 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                     await sendEmail(emailOptions);
 
 
-                    // const availabilityArray = availability ? availability[index] : [];
-                    // console.log("availabilityArray=>", availabilityArray)
+                    const availabilityArray = availability ? availability[index] : [];
+                    console.log("availabilityArray=>", availabilityArray)
 
-                    // if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
-                    //     await doctorModels.update_availability(doctor_id, availabilityArray, item);
-                    // }
-
-                    if (Array.isArray(availability) && availability.length > 0) {
-                        console.log("availabilityArray=>", availability);
-
-                        await doctorModels.updateDoctorSessionSlots(
-                            doctor_id,
-                            availability,
-                        );
+                    if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
+                        const data = await doctorModels.updateDoctorSessionSlots(doctor_id, availabilityArray);
+                        console.log("data=>", data);
                     }
+
+                    // if (Array.isArray(availability) && availability.length > 0) {
+                    //     console.log("availabilityArray=>", availability);
+
+                    //  const data =   await doctorModels.updateDoctorSessionSlots(
+                    //         doctor_id,
+                    //         availability,
+                    //     );
+
+                    //     console.log("data=>", data);
+                    // }
 
                     // Convert CSV strings into arrays
                     const skinTypeIds = skin_type_ids ? skin_type_ids[index] : [];
@@ -1322,14 +1325,26 @@ export const updateDoctorController = async (req, res) => {
                 Joi.string().uuid().optional().allow(null)
             ).optional().allow(null),
 
-            availability: Joi.array().items(
-                Joi.object({
-                    day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
-                    start_time: Joi.string().required().allow(''),
-                    end_time: Joi.string().required().allow(''),
-                    closed: Joi.number().integer().optional(),
-                })
-            ).optional(),
+            // availability: Joi.array().items(
+            //     Joi.object({
+            //         day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+            //         start_time: Joi.string().required().allow(''),
+            //         end_time: Joi.string().required().allow(''),
+            //         closed: Joi.number().integer().optional(),
+            //     })
+            // ).optional(),
+
+            availability: 
+                Joi.array().items(
+                    Joi.object({
+                        day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                        session: Joi.array().items(
+                            Joi.object({
+                                start_time: Joi.string().required(),
+                                end_time: Joi.string().required(),
+                            })).optional().allow(null),
+                    })
+                ).optional().allow(null),
             slot_time: Joi.string().optional().allow("", null),
         });
 
@@ -1475,7 +1490,7 @@ export const updateDoctorController = async (req, res) => {
 
 
         if (clinic_id && availability?.length > 0) {
-            await doctorModels.update_availability(doctorId, availability, clinic_id);
+            await doctorModels.updateDoctorSessionSlots(doctorId, availability);
         }
 
         // Convert CSV strings into arrays
