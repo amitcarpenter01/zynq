@@ -410,7 +410,7 @@ export const onboardClinic = async (req, res) => {
     delete clinicDataV2.city;
     delete clinicDataV2.state;
 
-    clinicDataV2.slot_time = slot_time || null;
+    clinicDataV2.slot_time = slot_time || clinic_data.slot_time;
     clinicDataV2.same_for_all = same_for_all ? same_for_all : clinic_data.same_for_all;
 
     if (clinic_data) {

@@ -25,6 +25,117 @@ dotenv.config();
 const APP_URL = process.env.APP_URL;
 const image_logo = process.env.LOGO_URL_PNG;
 
+// export const get_doctors_management = async (req, res) => {
+//     try {
+//         const page = parseInt(req.query.page) || 1;
+//         const limit = parseInt(req.query.limit) || 10;
+//         const offset = (page - 1) * limit;
+
+//         const search = req.query.search || "";
+//         const type = req.query.type || "";
+
+//         // 1. Get total doctor count
+//         const totalRecords = await adminModels.get_doctors_count(search, type);
+
+//         // 2. Fetch doctors with LIMIT & OFFSET
+//         const doctors = await adminModels.get_doctors_management(limit, offset, search, type)
+
+//         if (!doctors || doctors.length === 0) {
+//             return handleSuccess(res, 200, 'en', "No doctors found", {
+//                 Doctors: [],
+//                 totalRecords,
+//                 totalPages: 0,
+//                 currentPage: page
+//             });
+//         }
+
+//         const fullDoctorData = await Promise.all(
+//             doctors.map(async (doctor) => {
+//                 doctor.profile_image = doctor.profile_image == null || doctor.profile_image == ''
+//                     ? null
+//                     : process.env.APP_URL + 'doctor/profile_images/' + doctor.profile_image;
+
+//                 const experince = await adminModels.get_doctor_experience(doctor.doctor_id);
+//                 const education = await adminModels.get_doctor_education(doctor.doctor_id);
+//                 const treatments = await adminModels.get_doctor_treatments(doctor.doctor_id);
+//                 const skinTypes = await adminModels.get_doctor_skin_types(doctor.doctor_id);
+//                 const severityLevels = await adminModels.get_doctor_severity_levels(doctor.doctor_id);
+//                 // const skinConditions = await adminModels.get_doctor_skin_conditions(doctor.doctor_id);
+//                 const surgeries = await adminModels.get_doctor_surgeries(doctor.doctor_id);
+//                 // const aestheticDevices = await adminModels.get_doctor_aesthetic_devices(doctor.doctor_id);
+//                 const completionPercantage = await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id);
+
+//                 let clinicTiming = [];
+//                 let images = [];
+//                 let [clinic = {}] = await doctorModels.get_clinics_data_by_doctor_id(doctor.doctor_id);
+//                 console.log("clinic", clinic);
+//                 let slots = await doctorModels.getDoctorSlotSessionsModel(doctor.doctor_id);
+//                 // ✅ Fetch clinic images
+//                 if (doctor.user_type == "Solo Doctor") {
+
+//                     delete clinic?.embeddings;
+
+//                     clinic.clinic_logo = clinic?.clinic_logo
+//                         ? `${process.env.APP_URL}clinic/logo/${clinic?.clinic_logo}`
+//                         : null;
+//                     images = await clinicModels.getClinicImages(clinic?.clinic_id);
+//                     const formattedImages = Array.isArray(images)
+//                         ? images
+//                             .filter(img => img?.image_url)
+//                             .map(img => ({
+//                                 clinic_image_id: img.clinic_image_id,
+//                                 url: img.image_url.startsWith("http")
+//                                     ? img.image_url
+//                                     : `${APP_URL}clinic/files/${img.image_url}`,
+//                             }))
+//                         : [];
+//                 }
+//                 if (doctor.user_type == "Doctor") {
+//                     delete clinic?.embeddings;
+
+//                     clinicTiming = await clinicModels.getClinicOperationHours(
+//                         clinic.clinic_id
+//                     );
+//                 }
+
+//                 return {
+//                     ...doctor,
+//                     onboarding_progress: completionPercantage,
+//                     experince,
+//                     education,
+//                     treatments,
+//                     skinTypes,
+//                     severityLevels,
+//                     // skinConditions,
+//                     surgeries,
+//                     // aestheticDevices,
+//                     clinicTiming,
+//                     slots,
+//                     images,
+//                     clinic
+//                 };
+//             })
+//         );
+
+//         fullDoctorData.map((item) => {
+//             if (item.onboarding_progress == 100 && item.profile_status != 'VERIFIED') {
+//                 item.profile_status = 'ONBOARDING'
+//             }
+//         })
+
+//         return handleSuccess(res, 200, 'en', "Fetch doctor management successfully", {
+//             Doctors: fullDoctorData,
+//             totalRecords,
+//             totalPages: Math.ceil(totalRecords / limit),
+//             currentPage: page
+//         });
+
+//     } catch (error) {
+//         console.error("internal E", error);
+//         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
+//     }
+// };
+
 export const get_doctors_management = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -34,14 +145,19 @@ export const get_doctors_management = async (req, res) => {
         const search = req.query.search || "";
         const type = req.query.type || "";
 
-        // 1. Get total doctor count
+        // 1. Total doctor count
         const totalRecords = await adminModels.get_doctors_count(search, type);
 
-        // 2. Fetch doctors with LIMIT & OFFSET
-        const doctors = await adminModels.get_doctors_management(limit, offset, search, type)
+        // 2. Fetch doctors with pagination
+        const doctors = await adminModels.get_doctors_management(
+            limit,
+            offset,
+            search,
+            type
+        );
 
         if (!doctors || doctors.length === 0) {
-            return handleSuccess(res, 200, 'en', "No doctors found", {
+            return handleSuccess(res, 200, "en", "No doctors found", {
                 Doctors: [],
                 totalRecords,
                 totalPages: 0,
@@ -51,79 +167,120 @@ export const get_doctors_management = async (req, res) => {
 
         const fullDoctorData = await Promise.all(
             doctors.map(async (doctor) => {
-                doctor.profile_image = doctor.profile_image == null || doctor.profile_image == ''
-                    ? null
-                    : process.env.APP_URL + 'doctor/profile_images/' + doctor.profile_image;
 
+                /* ---------------- PROFILE IMAGE ---------------- */
+                doctor.profile_image =
+                    doctor.profile_image
+                        ? `${process.env.APP_URL}doctor/profile_images/${doctor.profile_image}`
+                        : null;
+
+                /* ---------------- BASIC DATA ---------------- */
                 const experince = await adminModels.get_doctor_experience(doctor.doctor_id);
                 const education = await adminModels.get_doctor_education(doctor.doctor_id);
                 const treatments = await adminModels.get_doctor_treatments(doctor.doctor_id);
                 const skinTypes = await adminModels.get_doctor_skin_types(doctor.doctor_id);
                 const severityLevels = await adminModels.get_doctor_severity_levels(doctor.doctor_id);
-                // const skinConditions = await adminModels.get_doctor_skin_conditions(doctor.doctor_id);
                 const surgeries = await adminModels.get_doctor_surgeries(doctor.doctor_id);
-                // const aestheticDevices = await adminModels.get_doctor_aesthetic_devices(doctor.doctor_id);
-                const completionPercantage = await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id);
+                const aestheticDevices = await adminModels.get_doctor_aesthetic_devices(doctor.doctor_id);
+                const onboarding_progress =
+                    await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id);
 
-                let clinicTiming = [];
-                let images = [];
-                let [clinic = {}] = await doctorModels.get_clinics_data_by_doctor_id(doctor.doctor_id);
-                console.log("clinic", clinic);
-                let slots = await doctorModels.getDoctorSlotSessionsModel(doctor.doctor_id);
-                // ✅ Fetch clinic images
-                if (doctor.user_type == "Solo Doctor") {
+                const slots = await doctorModels.getDoctorSlotSessionsModel(
+                    doctor.doctor_id
+                );
 
-                    delete clinic?.embeddings;
+                /* ---------------- CLINICS (ARRAY) ---------------- */
+                let clinics = await doctorModels.get_clinics_data_by_doctor_id(
+                    doctor.doctor_id
+                );
 
-                    clinic.clinic_logo = clinic?.clinic_logo
-                        ? `${process.env.APP_URL}clinic/logo/${clinic?.clinic_logo}`
+                clinics = Array.isArray(clinics) ? clinics : [];
+
+                for (const clinic of clinics) {
+                    delete clinic.embeddings;
+
+                    clinic.clinic_logo = clinic.clinic_logo
+                        ? `${process.env.APP_URL}clinic/logo/${clinic.clinic_logo}`
                         : null;
-                    images = await clinicModels.getClinicImages(clinic?.clinic_id);
-                    const formattedImages = Array.isArray(images)
-                        ? images
-                            .filter(img => img?.image_url)
-                            .map(img => ({
-                                clinic_image_id: img.clinic_image_id,
-                                url: img.image_url.startsWith("http")
-                                    ? img.image_url
-                                    : `${APP_URL}clinic/files/${img.image_url}`,
-                            }))
-                        : [];
-                }
-                if (doctor.user_type == "Doctor") {
-                    delete clinic?.embeddings;
 
-                    clinicTiming = await clinicModels.getClinicOperationHours(
+                    /* ================= CLINIC BASED DATA ================= */
+
+                    clinic.treatments = await adminModels.getDoctorClinicTreatments(
+                        doctor.doctor_id,
                         clinic.clinic_id
                     );
+
+                    clinic.surgeries = await adminModels.getDoctorClinicSurgeries(
+                        doctor.doctor_id,
+                        clinic.clinic_id
+                    );
+
+                    clinic.skinTypes = await adminModels.getDoctorClinicSkinTypes(
+                        doctor.doctor_id,
+                        clinic.clinic_id
+                    );
+
+                    clinic.devices = await adminModels.getDoctorClinicDevices(
+                        doctor.zynq_user_id,
+                        clinic.clinic_id
+                    );
+
+                    clinic.doctorAvailabilities = await adminModels.getDoctorClinicAvailabilities(
+                        doctor.doctor_id,
+                        clinic.clinic_id
+                    );
+
+                    /* ---- SOLO DOCTOR → CLINIC IMAGES ---- */
+                    if (doctor.user_type === "Solo Doctor") {
+                        const images = await clinicModels.getClinicImages(clinic.clinic_id);
+
+                        clinic.images = Array.isArray(images)
+                            ? images
+                                .filter(img => img?.image_url)
+                                .map(img => ({
+                                    clinic_image_id: img.clinic_image_id,
+                                    url: img.image_url.startsWith("http")
+                                        ? img.image_url
+                                        : `${process.env.APP_URL}clinic/files/${img.image_url}`
+                                }))
+                            : [];
+                    } else {
+                        clinic.images = [];
+                    }
+
+                    /* ---- DOCTOR → CLINIC TIMING ---- */
+                    if (doctor.user_type === "Doctor") {
+                        clinic.clinicTiming =
+                            await clinicModels.getClinicOperationHours(clinic.clinic_id);
+                    } else {
+                        clinic.clinicTiming = [];
+                    }
+                }
+
+                /* ---------------- PROFILE STATUS FIX ---------------- */
+                let profile_status = doctor.profile_status;
+                if (onboarding_progress === 100 && profile_status !== "VERIFIED") {
+                    profile_status = "ONBOARDING";
                 }
 
                 return {
                     ...doctor,
-                    onboarding_progress: completionPercantage,
+                    profile_status,
+                    onboarding_progress,
                     experince,
                     education,
                     treatments,
                     skinTypes,
                     severityLevels,
-                    // skinConditions,
                     surgeries,
-                    // aestheticDevices,
-                    clinicTiming,
+                    aestheticDevices,
                     slots,
-                    images,
-                    clinic
+                    clinics
                 };
             })
         );
 
-        fullDoctorData.map((item) => {
-            if (item.onboarding_progress == 100 && item.profile_status != 'VERIFIED') {
-                item.profile_status = 'ONBOARDING'
-            }
-        })
-
-        return handleSuccess(res, 200, 'en', "Fetch doctor management successfully", {
+        return handleSuccess(res, 200, "en", "Fetch doctor management successfully", {
             Doctors: fullDoctorData,
             totalRecords,
             totalPages: Math.ceil(totalRecords / limit),
@@ -131,8 +288,9 @@ export const get_doctors_management = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("internal E", error);
-        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
+        console.error("get_doctors_management error:", error);
+        return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR " + error.message
+        );
     }
 };
 
@@ -147,6 +305,12 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             phone: Joi.string().max(255).optional().allow('', null),
             age: Joi.string().optional().allow('', null),
             address: Joi.string().max(255).optional().allow('', null),
+            city: Joi.string().max(255).optional().allow('', null),
+            zip_code: Joi.string().max(255).optional().allow('', null),
+            // latitude: Joi.number().optional().allow('', null),
+            // longitude: Joi.number().optional().allow('', null),
+            latitude: Joi.number().optional().allow(null).empty('').default(null),
+            longitude: Joi.number().optional().allow(null).empty('').default(null),
             gender: Joi.string().optional().allow('', null),
             biography: Joi.string().optional().allow(''),
             last_name: Joi.string().optional().allow('', null),
@@ -201,18 +365,30 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 ).optional().allow(null)
             ).optional().allow(null),
 
+            // availability: Joi.array().items(
+            //     Joi.array().items(
+            //         Joi.object({
+            //             day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+            //             session: Joi.array().items(
+            //                 Joi.object({
+            //                     start_time: Joi.string().required(),
+            //                     end_time: Joi.string().required(),
+            //                 })).optional().allow(null),
+            //         })
+            //     ).optional().allow(null)
+            // ).optional(),
+
             availability: Joi.array().items(
-                Joi.array().items(
-                    Joi.object({
-                        day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
-                        session: Joi.array().items(
-                            Joi.object({
-                                start_time: Joi.string().required(),
-                                end_time: Joi.string().required(),
-                            })).optional().allow(null),
-                    })
-                ).optional().allow(null)
-            ).optional(),
+                Joi.object({
+                    day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                    session: Joi.array().items(
+                        Joi.object({
+                            start_time: Joi.string().required(),
+                            end_time: Joi.string().required(),
+                        })
+                    ).optional().allow(null),
+                })
+            ).optional().allow(null),
 
             slot_time: Joi.string().optional().allow("", null),
         });
@@ -292,6 +468,10 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             phone,
             age,
             address,
+            city,
+            zip_code,
+            latitude,
+            longitude,
             gender,
             biography,
             last_name,
@@ -374,7 +554,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             }
 
 
-            const result = await doctorModels.add_personal_details(zynqUserId, name, phone, age, address, gender, filename, biography, last_name);
+            const result = await doctorModels.add_personal_details(zynqUserId, name, phone, age, address, city, zip_code, latitude, longitude, gender, filename, biography, last_name);
 
             const files = req.files;
             if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
@@ -471,10 +651,21 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                     await sendEmail(emailOptions);
 
 
-                    const availabilityArray = availability ? availability[index] : [];
+                    // const availabilityArray = availability ? availability[index] : [];
+                    // console.log("availabilityArray=>", availabilityArray)
 
-                    if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
-                        await doctorModels.update_availability(doctor_id, availabilityArray, item);
+                    // if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
+                    //     await doctorModels.update_availability(doctor_id, availabilityArray, item);
+                    // }
+
+                    if (Array.isArray(availability) && availability.length > 0) {
+                        console.log("availabilityArray=>", availability);
+
+                        await doctorModels.update_availability(
+                            doctor_id,
+                            availability, // ✅ full array
+                            item           // clinic_id
+                        );
                     }
 
                     // Convert CSV strings into arrays
@@ -495,7 +686,6 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                         console.log("surgeryIds inserted");
                         await doctorModels.update_doctor_surgery(doctor_id, surgeryIds, item);
                     }
-
                     if (Array.isArray(deviceIds) && deviceIds.length > 0) {
                         console.log("deviceIds inserted");
                         await doctorModels.update_doctor_treatment_devices(

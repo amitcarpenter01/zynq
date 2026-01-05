@@ -805,7 +805,8 @@ export const get_doctors_management = async (limit, offset, search = "", type = 
             SELECT 
                 d.zynq_user_id,
                 d.doctor_id, 
-                d.name, 
+                d.name,
+                d.last_name,
                 d.specialization, 
                 d.fee_per_session, 
                 d.phone, 
@@ -823,22 +824,22 @@ export const get_doctors_management = async (limit, offset, search = "", type = 
                     WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
                     WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
                 END AS user_type,
-              (
-    SELECT IFNULL(
-        JSON_ARRAYAGG(
-            JSON_OBJECT(
-                'day_of_week', da.day_of_week,
-                'start_time', da.start_time,
-                'end_time', da.end_time,
-                'closed', da.closed,
-                'clinic_id', da.clinic_id
-            )
-        ),
-        JSON_ARRAY()
-    )
-    FROM tbl_doctor_availability da
-    WHERE da.doctor_id = d.doctor_id
-) AS availability
+                        (
+                SELECT IFNULL(
+                    JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'day_of_week', da.day_of_week,
+                            'start_time', da.start_time,
+                            'end_time', da.end_time,
+                            'closed', da.closed,
+                            'clinic_id', da.clinic_id
+                        )
+                    ),
+                    JSON_ARRAY()
+                )
+                FROM tbl_doctor_availability da
+                WHERE da.doctor_id = d.doctor_id
+            ) AS availability
             FROM tbl_doctors d
             LEFT JOIN tbl_zqnq_users u 
                 ON u.id = d.zynq_user_id
@@ -1027,6 +1028,71 @@ export const get_doctor_treatments = async (doctorId) => {
     }
 };
 
+export const getDoctorClinicTreatments = async (doctorId, clinicId) => {
+    try {
+        const rows = await db.query(`
+            SELECT 
+                dt.doctor_id,
+                dt.treatment_id,
+                dt.price,
+                dt.sub_treatment_id,
+                dt.sub_treatment_price,
+                
+                tt.name AS treatment_name_en,
+                tt.swedish AS treatment_name_sv,
+
+                st.name AS sub_treatment_name_en,
+                st.swedish AS sub_treatment_name_sv
+
+            FROM 
+                tbl_doctor_treatments dt
+            INNER JOIN
+                tbl_treatments tt 
+                ON dt.treatment_id = tt.treatment_id
+            LEFT JOIN 
+                tbl_sub_treatment_master st
+                ON dt.sub_treatment_id = st.sub_treatment_id
+
+            WHERE 
+                dt.doctor_id = ?
+                AND dt.clinic_id = ?
+            ORDER BY tt.name, st.name
+        `, [doctorId, clinicId]);
+
+        // ---- GROUPING LOGIC ----
+        const grouped = {};
+
+        rows.forEach(row => {
+            if (!grouped[row.treatment_id]) {
+                grouped[row.treatment_id] = {
+                    doctor_id: row.doctor_id,
+                    treatment_id: row.treatment_id,
+                    name: row.treatment_name_en,
+                    swedish: row.treatment_name_sv,
+                    price: row.price,
+                    sub_treatments: []
+                };
+            }
+
+            // Add sub-treatment only if exists
+            if (row.sub_treatment_id) {
+                grouped[row.treatment_id].sub_treatments.push({
+                    sub_treatment_id: row.sub_treatment_id,
+                    sub_treatment_price: row.sub_treatment_price,
+                    sub_treatment_name_en: row.sub_treatment_name_en,
+                    sub_treatment_name_sv: row.sub_treatment_name_sv
+                });
+            }
+        });
+
+        return Object.values(grouped);
+
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's treatments.");
+    }
+};
+
 export const get_doctor_skin_types = async (doctorId) => {
     try {
         return await db.query(`
@@ -1041,6 +1107,26 @@ export const get_doctor_skin_types = async (doctorId) => {
                 dst.skin_type_id = tst.skin_type_id  
             WHERE 
                 dst.doctor_id = ?`, [doctorId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's skin types.");
+    }
+};
+
+export const getDoctorClinicSkinTypes = async (doctorId, clinicId) => {
+    try {
+        return await db.query(`
+            SELECT 
+                dst.*,
+                tst.*
+            FROM 
+                tbl_doctor_skin_types dst
+            INNER JOIN 
+                tbl_skin_types tst
+            ON 
+                dst.skin_type_id = tst.skin_type_id  
+            WHERE 
+                dst.doctor_id = ? AND dst.clinic_id = ?`, [doctorId, clinicId]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor's skin types.");
@@ -1107,6 +1193,26 @@ export const get_doctor_surgeries = async (doctorId) => {
     }
 };
 
+export const getDoctorClinicSurgeries = async (doctorId, clinicId) => {
+    try {
+        return await db.query(`
+            SELECT 
+                ds.*,
+                s.type 
+            FROM 
+                tbl_doctor_surgery ds
+            INNER JOIN 
+                tbl_surgery s 
+            ON 
+                ds.surgery_id = s.surgery_id
+            WHERE 
+                ds.doctor_id = ? AND ds.clinic_id = ?`, [doctorId, clinicId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's surgeries.");
+    }
+};
+
 export const get_doctor_aesthetic_devices = async (doctorId) => {
     try {
         return await db.query(`
@@ -1126,6 +1232,39 @@ export const get_doctor_aesthetic_devices = async (doctorId) => {
         throw new Error("Failed to get doctor's aesthetic devices.");
     }
 };
+
+export const getDoctorClinicDevices = async (zynqUserId, clinicId) => {
+    try {
+        return await db.query(`
+            SELECT 
+                tdum.*, td.device_name
+            FROM 
+                tbl_treatment_device_user_maps tdum
+            JOIN 
+                tbl_treatment_devices td 
+            ON 
+                tdum.device_id = td.id
+            WHERE 
+                tdum.zynq_user_id = ? AND tdum.clinic_id = ?`, [zynqUserId, clinicId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's aesthetic devices.");
+    }
+};
+
+export const getDoctorClinicAvailabilities = async (doctorId, clinicId) => {
+    try {
+        return await db.query(`
+            SELECT *
+            FROM 
+                tbl_doctor_availability
+            WHERE 
+                doctor_id = ? AND clinic_id = ?`, [doctorId, clinicId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor's availabilities.");
+    }
+}
 
 
 //======================================= Support Managment =========================================
