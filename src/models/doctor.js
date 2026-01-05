@@ -230,10 +230,10 @@ export const get_all_services = async () => {
     }
 };
 
-export const update_doctor_skin_types = async (doctorId, skinTypeIds,clinic_id) => {
+export const update_doctor_skin_types = async (doctorId, skinTypeIds, clinic_id) => {
     try {
-        await db.query(`DELETE FROM tbl_doctor_skin_types WHERE doctor_id = ? AND clinic_id = ?`, [doctorId,clinic_id]);
-        const values = skinTypeIds.map(skinTypeId => [doctorId,clinic_id, skinTypeId]);
+        await db.query(`DELETE FROM tbl_doctor_skin_types WHERE doctor_id = ? AND clinic_id = ?`, [doctorId, clinic_id]);
+        const values = skinTypeIds.map(skinTypeId => [doctorId, clinic_id, skinTypeId]);
         if (values.length > 0) {
             return await db.query(`INSERT INTO tbl_doctor_skin_types (doctor_id,clinic_id, skin_type_id) VALUES ?`, [values]);
         }
@@ -299,10 +299,10 @@ export const update_doctor_severity_levels = async (doctorId, severityLevelIds) 
 //     }
 // };
 
-export const update_doctor_treatments = async (doctorId, treatments,clinic_id) => {
+export const update_doctor_treatments = async (doctorId, treatments, clinic_id) => {
     try {
         // Delete existing rows
-        await db.query(`DELETE FROM tbl_doctor_treatments WHERE doctor_id = ? AND clinic_id = ?`, [doctorId,clinic_id]);
+        await db.query(`DELETE FROM tbl_doctor_treatments WHERE doctor_id = ? AND clinic_id = ?`, [doctorId, clinic_id]);
 
         let values = [];
 
@@ -455,7 +455,7 @@ export const update_availability = async (
     }
 };
 
-export const updateDoctorSessionSlots = async (doctorId, availabilityData) => {
+export const updateDoctorSessionSlots = async (doctorId, availabilityData, clinic_id) => {
     try {
         // 1. Delete existing slots
         await db.query(
@@ -463,16 +463,16 @@ export const updateDoctorSessionSlots = async (doctorId, availabilityData) => {
              FROM tbl_doctor_slot_day t1
              LEFT JOIN tbl_doctor_session_time t2 
              ON t1.doctor_slot_day_id = t2.doctor_slot_day_id
-             WHERE t1.doctor_id = ? `,
-            [doctorId]
+             WHERE t1.doctor_id = ? AND t1.clinic_id = ?`,
+            [doctorId, clinic_id]
         );
 
         // 2. Insert new slot days
         for (const avail of availabilityData) {
             const doctorSlotDayId = uuidv4();
             await db.query(
-                `INSERT INTO tbl_doctor_slot_day (doctor_slot_day_id, doctor_id, day) VALUES (?, ?, ?)`,
-                [doctorSlotDayId, doctorId, avail.day]
+                `INSERT INTO tbl_doctor_slot_day (doctor_slot_day_id, doctor_id, day,clinic_id) VALUES (?, ?, ?,?)`,
+                [doctorSlotDayId, doctorId, avail.day, clinic_id]
             );
 
 
@@ -493,7 +493,7 @@ export const updateDoctorSessionSlots = async (doctorId, availabilityData) => {
     }
 };
 
-export const getDoctorSlotSessionsModel = async (doctorId) => {
+export const getDoctorSlotSessionsModel = async (doctorId, clinic_id) => {
     try {
 
         const rows = await db.query(
@@ -520,13 +520,13 @@ export const getDoctorSlotSessionsModel = async (doctorId) => {
                 FROM tbl_doctor_slot_day dsd
                 LEFT JOIN tbl_doctor_session_time dst
                     ON dsd.doctor_slot_day_id = dst.doctor_slot_day_id
-                WHERE dsd.doctor_id = ?
+                WHERE dsd.doctor_id = ? AND dsd.clinic_id = ?
                 GROUP BY dsd.doctor_slot_day_id, dsd.day
                 ORDER BY 
                     FIELD(dsd.day, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')
             ) t;
             `,
-            [doctorId]
+            [doctorId, clinic_id]
         );
 
         // ✅ rows = [ { availability: ... } ]
@@ -708,8 +708,8 @@ export const get_clinics_data_by_doctor_id = async (doctorId) => {
     try {
         return await db.query(`
             SELECT
-                c.*,
                 cl.*,
+                c.*,
                 u.email
             FROM
                 tbl_doctor_clinic_map dcm
@@ -886,10 +886,10 @@ WHERE
 };
 
 
-export const update_doctor_surgery = async (doctorId, surgeryIds,clinic_id) => {
+export const update_doctor_surgery = async (doctorId, surgeryIds, clinic_id) => {
     try {
-        await db.query(`DELETE FROM tbl_doctor_surgery WHERE doctor_id = ? AND clinic_id = ?`, [doctorId,clinic_id]);
-        const values = surgeryIds.map(surgeryId => [doctorId,clinic_id, surgeryId]);
+        await db.query(`DELETE FROM tbl_doctor_surgery WHERE doctor_id = ? AND clinic_id = ?`, [doctorId, clinic_id]);
+        const values = surgeryIds.map(surgeryId => [doctorId, clinic_id, surgeryId]);
         if (values.length > 0) {
             return await db.query(`INSERT INTO tbl_doctor_surgery (doctor_id,clinic_id, surgery_id) VALUES ?`, [values]);
         }
@@ -963,12 +963,12 @@ export const update_doctor_aesthetic_devices = async (doctorId, aestheticDevices
 //     }
 // };
 
-export const update_doctor_treatment_devices = async (zynqUserId, treatments, deviceIds,clinic_id) => {
+export const update_doctor_treatment_devices = async (zynqUserId, treatments, deviceIds, clinic_id) => {
     try {
         // Remove previous mappings
         await db.query(
             `DELETE FROM tbl_treatment_device_user_maps WHERE zynq_user_id = ? AND clinic_id = ?`,
-            [zynqUserId,clinic_id]
+            [zynqUserId, clinic_id]
         );
 
         let data = [];
@@ -982,7 +982,7 @@ export const update_doctor_treatment_devices = async (zynqUserId, treatments, de
 
         // Insert one row per device_id
         deviceIds.forEach(deviceId => {
-            data.push([treatmentId, zynqUserId,clinic_id, deviceId]);
+            data.push([treatmentId, zynqUserId, clinic_id, deviceId]);
         });
 
         if (data.length > 0) {

@@ -185,10 +185,6 @@ export const get_doctors_management = async (req, res) => {
                 const onboarding_progress =
                     await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id);
 
-                const slots = await doctorModels.getDoctorSlotSessionsModel(
-                    doctor.doctor_id
-                );
-
                 /* ---------------- CLINICS (ARRAY) ---------------- */
                 let clinics = await doctorModels.get_clinics_data_by_doctor_id(
                     doctor.doctor_id
@@ -223,6 +219,10 @@ export const get_doctors_management = async (req, res) => {
                     clinic.devices = await adminModels.getDoctorClinicDevices(
                         doctor.zynq_user_id,
                         clinic.clinic_id
+                    );
+
+                    clinic.slots = await doctorModels.getDoctorSlotSessionsModel(
+                        doctor.doctor_id,clinic.clinic_id
                     );
 
                     // clinic.doctorAvailabilities = await adminModels.getDoctorClinicAvailabilities(
@@ -666,7 +666,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                     console.log("availabilityArray=>", availabilityArray)
 
                     if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
-                        const data = await doctorModels.updateDoctorSessionSlots(doctor_id, availabilityArray);
+                        const data = await doctorModels.updateDoctorSessionSlots(doctor_id, availabilityArray, item);
                         console.log("data=>", data);
                     }
 
@@ -1185,7 +1185,7 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
 
         if (availability?.length > 0) {
             const doctorSession = convertAvailability(availability, Number(slot_time));
-            await doctorModels.updateDoctorSessionSlots(doctorId, doctorSession);
+            await doctorModels.updateDoctorSessionSlots(doctorId, doctorSession, clinic_id);
             const clinic_timing = mapAvailabilityToClinicTiming(availability);
             await clinicModels.updateClinicOperationHours(clinic_timing, clinic_id);
         }
@@ -1334,7 +1334,7 @@ export const updateDoctorController = async (req, res) => {
             //     })
             // ).optional(),
 
-            availability: 
+            availability:
                 Joi.array().items(
                     Joi.object({
                         day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
@@ -1490,7 +1490,7 @@ export const updateDoctorController = async (req, res) => {
 
 
         if (clinic_id && availability?.length > 0) {
-            await doctorModels.updateDoctorSessionSlots(doctorId, availability);
+            await doctorModels.updateDoctorSessionSlots(doctorId, availability, clinic_id);
         }
 
         // Convert CSV strings into arrays
@@ -1843,7 +1843,7 @@ export const updateSoloDoctorController = async (req, res) => {
 
         if (availability?.length > 0) {
             const doctorSession = convertAvailability(availability, Number(slot_time));
-            await doctorModels.updateDoctorSessionSlots(doctorId, doctorSession);
+            await doctorModels.updateDoctorSessionSlots(doctorId, doctorSession, clinic_id);
             const clinic_timing = mapAvailabilityToClinicTiming(availability);
             await clinicModels.updateClinicOperationHours(clinic_timing, clinic_id);
         }
