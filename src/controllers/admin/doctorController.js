@@ -285,7 +285,7 @@ export const get_doctors_management = async (req, res) => {
                     severityLevels,
                     surgeries,
                     aestheticDevices,
-                    slots,
+                    // slots,
                     clinics
                 };
             })
