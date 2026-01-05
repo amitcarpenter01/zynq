@@ -3204,3 +3204,45 @@ export const getAllSkinTypesOfClinic = async (language, clinic_id) => {
         throw new Error("Failed to fetch skin types.");
     }
 };
+
+
+export const unsynkClinicModel = async (doctor_id ,clinic_id ) => {
+    try {
+        const sql = `
+            UPDATE tbl_doctor_clinic_map
+            SET is_unsync = 1
+            WHERE doctor_id = ? AND clinic_id = ?
+        `;
+        const result = await db.query(sql, [doctor_id ,clinic_id]);
+        return result;
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to unsink clinic.");
+    }
+};
+
+export const getDoctorClinicMappedDataModel = async (doctor_id ,clinic_id) => {
+    try {
+        return await db.query(`
+            SELECT
+                cl.*,
+                c.*,
+                u.email
+            FROM
+                tbl_doctor_clinic_map dcm
+            JOIN
+                tbl_clinics c ON dcm.clinic_id = c.clinic_id
+            LEFT JOIN
+                tbl_clinic_locations cl ON cl.clinic_id = c.clinic_id
+            LEFT JOIN
+                tbl_zqnq_users u ON c.zynq_user_id = u.id
+            WHERE
+                dcm.doctor_id = ? AND dcm.clinic_id = ? AND dcm.is_unsync = 0
+            ORDER BY
+                dcm.assigned_at DESC;
+        `, [doctor_id ,clinic_id]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to fetch clinic data by doctor ID.");
+    }
+};

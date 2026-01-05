@@ -324,5 +324,6 @@
   "TREATMENT_CLONED_SUCCESSFULLY" : "Treatment Cloned Successfully",
   "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY" : "Expert Updated Successfully",
   "AWS_RECOGNITION_RESULT" : "AWS Recognition Result",
-  "FILE_NOT_FOUND" : "File Not Found"
+  "FILE_NOT_FOUND" : "File Not Found",
+  "CLINIC_UNSYNCED_SUCCESSFULLY" : "Clinic Unlinked Successfully"
 }
