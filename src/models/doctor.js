@@ -654,6 +654,7 @@ export const get_doctor_profile = async (doctorId, language) => {
         const surgery = await get_doctor_surgeries(doctorId);
         // const aestheticDevices = await get_doctor_aesthetic_devices(doctorId);
         const devices = await get_doctor_devices(doctor.zynq_user_id);
+        const clinics = await get_clinics(doctorId);
 
         return {
             ...mainUser,
@@ -668,7 +669,8 @@ export const get_doctor_profile = async (doctorId, language) => {
             skinCondition,
             surgery,
             // aestheticDevices,
-            devices
+            devices,
+            clinics
         };
 
     } catch (error) {
@@ -1072,6 +1074,22 @@ export const get_doctor_devices = async (zynqUserId) => {
         throw new Error("Failed to get doctor's aesthetic devices.");
     }
 };
+
+export const get_clinics = async (doctorId) => {
+    try {
+        return await db.query(`
+            SELECT dc.clinic_id, c.clinic_name
+            FROM tbl_doctor_clinic_map dc
+            LEFT JOIN tbl_clinics c
+                ON dc.clinic_id = c.clinic_id
+            WHERE dc.doctor_id = ?
+            AND dc.is_invitation_accepted = 1
+        `, [doctorId]);
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get clinics.");
+    }
+}
 
 export const fetchDocterAvibilityById = async (doctor_id) => {
     try {
