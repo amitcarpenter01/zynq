@@ -182,6 +182,15 @@ export const get_doctors_management = async (req, res) => {
                 const severityLevels = await adminModels.get_doctor_severity_levels(doctor.doctor_id);
                 const surgeries = await adminModels.get_doctor_surgeries(doctor.doctor_id);
                 const aestheticDevices = await adminModels.get_doctor_aesthetic_devices(doctor.doctor_id);
+                let certifications = await doctorModels.get_doctor_certifications(doctor.doctor_id);
+
+                if (certifications && Array.isArray(certifications)) {
+                    certifications.forEach(certification => {
+                        if (certification.upload_path && !certification.upload_path.startsWith("http")) {
+                            certification.upload_path = `${APP_URL}doctor/certifications/${certification.upload_path}`;
+                        }
+                    });
+                }
                 const onboarding_progress =
                     await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id);
 
@@ -222,7 +231,7 @@ export const get_doctors_management = async (req, res) => {
                     );
 
                     clinic.slots = await doctorModels.getDoctorSlotSessionsModel(
-                        doctor.doctor_id,clinic.clinic_id
+                        doctor.doctor_id, clinic.clinic_id
                     );
 
                     // clinic.doctorAvailabilities = await adminModels.getDoctorClinicAvailabilities(
@@ -285,7 +294,7 @@ export const get_doctors_management = async (req, res) => {
                     severityLevels,
                     surgeries,
                     aestheticDevices,
-                    // slots,
+                    certifications,
                     clinics
                 };
             })
