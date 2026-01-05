@@ -33,6 +33,11 @@ export const addPersonalInformation = async (req, res) => {
             gender: Joi.string().optional().allow('', null),
             biography: Joi.string().optional().allow(''),
             last_name: Joi.string().optional().allow('', null),
+            city: Joi.string().max(255).optional().allow('', null),
+            zip_code: Joi.string().max(255).optional().allow('', null),
+            latitude: Joi.number().optional().allow(null).empty('').default(null),
+            longitude: Joi.number().optional().allow(null).empty('').default(null),
+            slot_time : Joi.number().optional(),
         });
 
         let language = req?.user?.language || 'en';
@@ -47,7 +52,7 @@ export const addPersonalInformation = async (req, res) => {
         const zynqUserId = req.user.id
 
 
-        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.gender, filename, value.biography, value.last_name);
+        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address,value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name,value.slot_time, "ONBOARDING");
 
         if (result.affectedRows) {
             await update_onboarding_status(1, zynqUserId)
@@ -322,6 +327,7 @@ export const editPersonalInformation = async (req, res) => {
             zip_code: Joi.string().max(255).optional().allow('', null),
             latitude: Joi.number().optional().allow(null).empty('').default(null),
             longitude: Joi.number().optional().allow(null).empty('').default(null),
+            slot_time : Joi.number().optional(),
         });
         let language = req?.user?.language || 'en';
 
