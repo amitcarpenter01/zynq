@@ -376,30 +376,30 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 ).optional().allow(null)
             ).optional().allow(null),
 
-            // availability: Joi.array().items(
-            //     Joi.array().items(
-            //         Joi.object({
-            //             day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
-            //             session: Joi.array().items(
-            //                 Joi.object({
-            //                     start_time: Joi.string().required(),
-            //                     end_time: Joi.string().required(),
-            //                 })).optional().allow(null),
-            //         })
-            //     ).optional().allow(null)
-            // ).optional(),
-
             availability: Joi.array().items(
-                Joi.object({
-                    day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
-                    session: Joi.array().items(
-                        Joi.object({
-                            start_time: Joi.string().required(),
-                            end_time: Joi.string().required(),
-                        })
-                    ).optional().allow(null),
-                })
-            ).optional().allow(null),
+                Joi.array().items(
+                    Joi.object({
+                        day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                        session: Joi.array().items(
+                            Joi.object({
+                                start_time: Joi.string().required(),
+                                end_time: Joi.string().required(),
+                            })).optional().allow(null),
+                    })
+                ).optional().allow(null)
+            ).optional(),
+
+            // availability: Joi.array().items(
+            //     Joi.object({
+            //         day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+            //         session: Joi.array().items(
+            //             Joi.object({
+            //                 start_time: Joi.string().required(),
+            //                 end_time: Joi.string().required(),
+            //             })
+            //         ).optional().allow(null),
+            //     })
+            // ).optional().allow(null),
 
             slot_time: Joi.string().optional().allow("", null),
         });
@@ -672,10 +672,9 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                     if (Array.isArray(availability) && availability.length > 0) {
                         console.log("availabilityArray=>", availability);
 
-                        await doctorModels.update_availability(
+                        await doctorModels.updateDoctorSessionSlots(
                             doctor_id,
-                            availability, // ✅ full array
-                            item           // clinic_id
+                            availability,
                         );
                     }
 
