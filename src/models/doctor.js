@@ -3,7 +3,7 @@ import { get_web_user_by_id } from "./web_user.js";
 import { extractUserData } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
 import { get_product_images_by_product_ids } from "./api.js";
-import { getBookedAppointmentsModelForIds, getPurchasedProductModelForIds } from "./admin.js";
+import { getBookedAppointmentsModelForIds, getDoctorClinicDevices, getDoctorClinicSkinTypes, getDoctorClinicSurgeries, getDoctorClinicTreatments, getPurchasedProductModelForIds } from "./admin.js";
 import { v4 as uuidv4 } from 'uuid';
 
 export const get_doctor_by_zynquser_id = async (zynqUserId) => {
@@ -15,7 +15,7 @@ export const get_doctor_by_zynquser_id = async (zynqUserId) => {
     }
 };
 
-export const add_personal_details = async (zynqUserId, name, phone, age, address, city, zip_code, latitude, longitude, gender, profile_image, biography, last_name, slot_time = null,profile_status) => {
+export const add_personal_details = async (zynqUserId, name, phone, age, address, city, zip_code, latitude, longitude, gender, profile_image, biography, last_name, slot_time = null, profile_status) => {
     try {
         return await db.query(`UPDATE tbl_doctors SET profile_status = ?, name = ?, phone=? , age=?, address=?, city=?, zip_code=?, latitude=?, longitude=?, gender=?, profile_image=?,biography=?,last_name = ?,slot_time = ? where zynq_user_id = ? `, [profile_status, name, phone, age, address, city, zip_code, latitude, longitude, gender, profile_image, biography, last_name, slot_time, zynqUserId]);
     } catch (error) {
@@ -645,31 +645,60 @@ export const get_doctor_profile = async (doctorId, language) => {
         const [mainUser] = await get_web_user_by_id(doctor.zynq_user_id);
         const education = await get_doctor_education(doctorId);
         const experience = await get_doctor_experience(doctorId);
-        const treatments = await get_doctor_treatments(doctorId, language);
-        const skinTypes = await get_doctor_skin_types(doctorId);
-        const severityLevels = await get_doctor_severity_levels(doctorId);
-        const availability = await get_doctor_availability(doctorId);
+        // const treatments = await get_doctor_treatments(doctorId, language);
+        // const skinTypes = await get_doctor_skin_types(doctorId);
+        // const severityLevels = await get_doctor_severity_levels(doctorId);
+        // const availability = await get_doctor_availability(doctorId);
         const certifications = await get_doctor_certifications(doctorId);
-        const skinCondition = await get_doctor_skin_condition(doctorId);
-        const surgery = await get_doctor_surgeries(doctorId);
+        // const skinCondition = await get_doctor_skin_condition(doctorId);
+        // const surgery = await get_doctor_surgeries(doctorId);
         // const aestheticDevices = await get_doctor_aesthetic_devices(doctorId);
-        const devices = await get_doctor_devices(doctor.zynq_user_id);
+        // const devices = await get_doctor_devices(doctor.zynq_user_id);
         const clinics = await get_clinics(doctorId);
+
+        if(clinics.length > 0){
+            
+        await Promise.all(clinics.map(async (clinic) => {
+            clinic.treatments = await getDoctorClinicTreatments(
+                doctorId,
+                clinic.clinic_id
+            );
+
+            clinic.surgeries = await getDoctorClinicSurgeries(
+                doctorId,
+                clinic.clinic_id
+            );
+
+            clinic.skinTypes = await getDoctorClinicSkinTypes(
+                doctorId,
+                clinic.clinic_id
+            );
+
+            clinic.devices = await getDoctorClinicDevices(
+                doctorId,
+                clinic.clinic_id
+            );
+
+            clinic.slots = await getDoctorSlotSessionsModel(
+                doctorId, clinic.clinic_id
+            );
+        }));
+        }
 
         return {
             ...mainUser,
             ...doctor,
             education,
             experience,
-            treatments,
-            skinTypes,
-            severityLevels,
-            availability,
+            // treatments,
+            // skinTypes,
+            // severityLevels,
+            // availability,
             certifications,
-            skinCondition,
-            surgery,
+            // skinCondition,
+            // surgery,
             // aestheticDevices,
-            devices,
+            // devices,
             clinics
         };
 

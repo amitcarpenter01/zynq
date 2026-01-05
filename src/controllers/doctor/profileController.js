@@ -37,7 +37,7 @@ export const addPersonalInformation = async (req, res) => {
             zip_code: Joi.string().max(255).optional().allow('', null),
             latitude: Joi.number().optional().allow(null).empty('').default(null),
             longitude: Joi.number().optional().allow(null).empty('').default(null),
-            slot_time : Joi.number().optional(),
+            slot_time: Joi.number().optional(),
         });
 
         let language = req?.user?.language || 'en';
@@ -52,7 +52,7 @@ export const addPersonalInformation = async (req, res) => {
         const zynqUserId = req.user.id
 
 
-        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address,value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name,value.slot_time, "ONBOARDING");
+        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name, value.slot_time, "ONBOARDING");
 
         if (result.affectedRows) {
             await update_onboarding_status(1, zynqUserId)
@@ -158,52 +158,103 @@ export const addEducationAndExperienceInformation = async (req, res) => {
 export const addExpertise = async (req, res) => {
     try {
         const schema = Joi.object({
+            clinic_id: Joi.array().items(Joi.string().uuid()).min(1).required(),
             treatments: Joi.array().items(
-                Joi.object({
-                    treatment_id: Joi.string().required(),
-                    price: Joi.number().optional(),
-                    sub_treatments: Joi.array().items(
-                        Joi.object({
-                            sub_treatment_id: Joi.string().required(),
-                            sub_treatment_price: Joi.number().required()
-                        })
-                    ).optional()
-                })
+                Joi.array().items(
+                    Joi.object({
+                        treatment_id: Joi.string().required(),
+                        price: Joi.number().optional(),
+                        sub_treatments: Joi.array().items(
+                            Joi.object({
+                                sub_treatment_id: Joi.string().required(),
+                                sub_treatment_price: Joi.number().required()
+                            })
+                        ).optional()
+                    })
+                ).min(1).required()
             ).min(1).required(),
 
-            skin_type_ids: Joi.string().allow("", null).optional(),
-            // skin_condition_ids: Joi.string().allow("", null).optional(),
-            surgery_ids: Joi.string().allow("", null).optional(),
 
-            // UPDATED: device ids instead of aesthetic devices
-            device_ids: Joi.string().allow("", null).optional()
+            skin_type_ids: Joi.array().items(
+                Joi.array().items(
+                    Joi.string().uuid().optional().allow(null)
+                ).optional().allow(null)
+            ).optional().allow(null),
+
+            surgery_ids: Joi.array().items(
+                Joi.array().items(
+                    Joi.string().uuid().optional().allow(null)
+                ).optional().allow(null)
+            ).optional().allow(null),
+
+            device_ids: Joi.array().items(
+                Joi.array().items(
+                    Joi.string().uuid().optional().allow(null)
+                ).optional().allow(null)
+            ).optional().allow(null),
+
+            availability: Joi.array().items(
+                Joi.array().items(
+                    Joi.object({
+                        day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                        session: Joi.array().items(
+                            Joi.object({
+                                start_time: Joi.string().required(),
+                                end_time: Joi.string().required(),
+                            })).optional().allow(null),
+                    })
+                ).optional().allow(null)
+            ).optional(),
         });
 
         let language = req?.user?.language || 'en';
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
+        const {clinic_id, treatments, skin_type_ids, surgery_ids, device_ids, availability} =  value;
+
         const doctorId = req.user.doctorData.doctor_id;
         const zynqUserId = req.user.id;
 
-        // Convert CSV strings into arrays
-        const skinTypeIds = value.skin_type_ids.split(',').map(id => id.trim());
-        // const skinConditionIds = value.skin_condition_ids.split(',').map(id => id.trim());
-        const surgeryIds = value.surgery_ids.split(',').map(id => id.trim());
-        const deviceIds = value.device_ids.split(',').map(id => id.trim());
-
-        // Save expertise
-        await doctorModels.update_doctor_treatments(doctorId, value.treatments);
-        await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
-        // await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
-        await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
-
-        // NEW: Save treatment → user → device mapping
-        await doctorModels.update_doctor_treatment_devices(
-            zynqUserId,       // zynq_user_id
-            value.treatments, // treatments array
-            deviceIds         // device ids
-        );
+               await Promise.all(
+                   clinic_id.map(async (item, index) => {
+       
+                       const availabilityArray = availability ? availability[index] : [];
+                       console.log("availabilityArray=>", availabilityArray)
+       
+                       if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
+                           const data = await doctorModels.updateDoctorSessionSlots(doctorId, availabilityArray, item);
+                           console.log("data=>", data);
+                       }
+       
+                       // Convert CSV strings into arrays
+                       const skinTypeIds = skin_type_ids ? skin_type_ids[index] : [];
+                       const surgeryIds = surgery_ids ? surgery_ids[index] : [];
+                       const deviceIds = device_ids ? device_ids[index] : [];
+                       const clinicTreatments = treatments?.[index] || [];
+       
+                       // Save expertis
+                       if (Array.isArray(clinicTreatments) && clinicTreatments.length > 0) {
+                           await doctorModels.update_doctor_treatments(doctorId, clinicTreatments, item);
+                       }
+                       if (Array.isArray(skinTypeIds) && skinTypeIds.length > 0) {
+                           console.log("skinTypeIds inserted");
+                           await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds, item);
+                       }
+                       if (Array.isArray(surgeryIds) && surgeryIds.length > 0) {
+                           console.log("surgeryIds inserted");
+                           await doctorModels.update_doctor_surgery(doctorId, surgeryIds, item);
+                       }
+                       if (Array.isArray(deviceIds) && deviceIds.length > 0) {
+                           console.log("deviceIds inserted");
+                           await doctorModels.update_doctor_treatment_devices(
+                               zynqUserId,       // zynq_user_id
+                               clinicTreatments, // treatments array
+                               deviceIds,       // device ids
+                               item
+                           );
+                       }
+                   }));
 
         await update_onboarding_status(3, zynqUserId);
         return handleSuccess(res, 200, language, "EXPERTISE_UPDATED", {});
@@ -327,7 +378,7 @@ export const editPersonalInformation = async (req, res) => {
             zip_code: Joi.string().max(255).optional().allow('', null),
             latitude: Joi.number().optional().allow(null).empty('').default(null),
             longitude: Joi.number().optional().allow(null).empty('').default(null),
-            slot_time : Joi.number().optional(),
+            slot_time: Joi.number().optional(),
         });
         let language = req?.user?.language || 'en';
 
@@ -347,7 +398,7 @@ export const editPersonalInformation = async (req, res) => {
             filename = req.file.filename
         }
         // await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
-        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address,value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name, value.slot_time, "ONBOARDING");
+        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name, value.slot_time, "ONBOARDING");
         // await generateDoctorsEmbeddingsV2(zynqUserId)
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", result.affectedRows);
