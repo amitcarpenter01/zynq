@@ -49,10 +49,11 @@ export const addPersonalInformation = async (req, res) => {
         if (req.file) {
             filename = req.file.filename
         }
-        const zynqUserId = req.user.id
+        const zynqUserId = req.user.id;
+        const [doctorData] = await doctorModels.get_doctor_by_zynquser_id(zynqUserId);
 
 
-        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name, value.slot_time, "ONBOARDING");
+        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name, value.slot_time, "ONBOARDING", doctorData?.fee_per_session, doctorData?.session_duration, "USD");
 
         if (result.affectedRows) {
             await update_onboarding_status(1, zynqUserId)
@@ -211,50 +212,50 @@ export const addExpertise = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const {clinic_id, treatments, skin_type_ids, surgery_ids, device_ids, availability} =  value;
+        const { clinic_id, treatments, skin_type_ids, surgery_ids, device_ids, availability } = value;
 
         const doctorId = req.user.doctorData.doctor_id;
         const zynqUserId = req.user.id;
 
-               await Promise.all(
-                   clinic_id.map(async (item, index) => {
-       
-                       const availabilityArray = availability ? availability[index] : [];
-                       console.log("availabilityArray=>", availabilityArray)
-       
-                       if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
-                           const data = await doctorModels.updateDoctorSessionSlots(doctorId, availabilityArray, item);
-                           console.log("data=>", data);
-                       }
-       
-                       // Convert CSV strings into arrays
-                       const skinTypeIds = skin_type_ids ? skin_type_ids[index] : [];
-                       const surgeryIds = surgery_ids ? surgery_ids[index] : [];
-                       const deviceIds = device_ids ? device_ids[index] : [];
-                       const clinicTreatments = treatments?.[index] || [];
-       
-                       // Save expertis
-                       if (Array.isArray(clinicTreatments) && clinicTreatments.length > 0) {
-                           await doctorModels.update_doctor_treatments(doctorId, clinicTreatments, item);
-                       }
-                       if (Array.isArray(skinTypeIds) && skinTypeIds.length > 0) {
-                           console.log("skinTypeIds inserted");
-                           await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds, item);
-                       }
-                       if (Array.isArray(surgeryIds) && surgeryIds.length > 0) {
-                           console.log("surgeryIds inserted");
-                           await doctorModels.update_doctor_surgery(doctorId, surgeryIds, item);
-                       }
-                       if (Array.isArray(deviceIds) && deviceIds.length > 0) {
-                           console.log("deviceIds inserted");
-                           await doctorModels.update_doctor_treatment_devices(
-                               zynqUserId,       // zynq_user_id
-                               clinicTreatments, // treatments array
-                               deviceIds,       // device ids
-                               item
-                           );
-                       }
-                   }));
+        await Promise.all(
+            clinic_id.map(async (item, index) => {
+
+                const availabilityArray = availability ? availability[index] : [];
+                console.log("availabilityArray=>", availabilityArray)
+
+                if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
+                    const data = await doctorModels.updateDoctorSessionSlots(doctorId, availabilityArray, item);
+                    console.log("data=>", data);
+                }
+
+                // Convert CSV strings into arrays
+                const skinTypeIds = skin_type_ids ? skin_type_ids[index] : [];
+                const surgeryIds = surgery_ids ? surgery_ids[index] : [];
+                const deviceIds = device_ids ? device_ids[index] : [];
+                const clinicTreatments = treatments?.[index] || [];
+
+                // Save expertis
+                if (Array.isArray(clinicTreatments) && clinicTreatments.length > 0) {
+                    await doctorModels.update_doctor_treatments(doctorId, clinicTreatments, item);
+                }
+                if (Array.isArray(skinTypeIds) && skinTypeIds.length > 0) {
+                    console.log("skinTypeIds inserted");
+                    await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds, item);
+                }
+                if (Array.isArray(surgeryIds) && surgeryIds.length > 0) {
+                    console.log("surgeryIds inserted");
+                    await doctorModels.update_doctor_surgery(doctorId, surgeryIds, item);
+                }
+                if (Array.isArray(deviceIds) && deviceIds.length > 0) {
+                    console.log("deviceIds inserted");
+                    await doctorModels.update_doctor_treatment_devices(
+                        zynqUserId,       // zynq_user_id
+                        clinicTreatments, // treatments array
+                        deviceIds,       // device ids
+                        item
+                    );
+                }
+            }));
 
         await update_onboarding_status(3, zynqUserId);
         return handleSuccess(res, 200, language, "EXPERTISE_UPDATED", {});
@@ -270,25 +271,12 @@ export const addConsultationFeeAndAvailability = async (req, res) => {
             fee_per_session: Joi.number().positive().optional(),
             currency: Joi.string().min(1).max(10).default('USD').optional(),
             session_duration: Joi.string().optional(),
-            clinic_id: Joi.string().required(),
-            availability: Joi.array().items(
-                Joi.object({
-                    day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
-                    start_time: Joi.string().required().allow(''),
-                    end_time: Joi.string().required().allow(''),
-                    closed: Joi.number().integer().optional(),
-                    fee_per_session: Joi.number().positive().optional(),
-                })
-            ).optional(),
         });
         let language = req?.user?.language || 'en';
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
         const doctorId = req.user.doctorData.doctor_id;
-        // await doctorModels.update_consultation_fee(doctorId, value.fee_per_session, "USD", value.session_duration);
-        if (value.availability?.length > 0) {
-            await doctorModels.update_availability(doctorId, value.availability, clinic_id);
-        }
+        await doctorModels.update_consultation_fee(doctorId, value.fee_per_session, "USD", value.session_duration);
 
         const zynqUserId = req.user.id
         await update_onboarding_status(4, zynqUserId)
@@ -398,7 +386,7 @@ export const editPersonalInformation = async (req, res) => {
             filename = req.file.filename
         }
         // await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
-        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name, value.slot_time, "ONBOARDING");
+        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name, value.slot_time, "ONBOARDING", doctorData.fee_per_session, doctorData?.session_duration, "USD");
         // await generateDoctorsEmbeddingsV2(zynqUserId)
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", result.affectedRows);

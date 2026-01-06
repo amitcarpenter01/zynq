@@ -9,7 +9,7 @@ import dbOperations from '../../models/common.js';
 import { fetchZynqUserByUserId } from "../../models/api.js";
 import { generateDoctorsEmbeddingsV2 } from "../api/embeddingsController.js";
 import { applyLanguageOverwrite } from "../../utils/misc.util.js";
-import { mapTreatmentsForClinic } from "../admin/doctorController.js";
+import { convertAvailability, mapAvailabilityToClinicTiming, mapTreatmentsForClinic } from "../admin/doctorController.js";
 
 dotenv.config();
 
@@ -383,7 +383,6 @@ export const addExpertise = async (req, res) => {
             ).min(1).required(),
 
             skin_type_ids: Joi.string().allow("", null).optional(),
-            // skin_condition_ids: Joi.string().allow("", null).optional(),
             surgery_ids: Joi.string().allow("", null).optional(),
             device_ids: Joi.string().allow("", null).optional()
         });
@@ -407,20 +406,6 @@ export const addExpertise = async (req, res) => {
         const surgeryIds = parseIDs(value.surgery_ids);
         const deviceIds = parseIDs(value.device_ids);
 
-        // ---------- UPDATE DOCTOR EXPERTISE ----------
-        await doctorModels.update_doctor_treatments(doctorId, value.treatments);
-        await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds);
-        // await doctorModels.update_doctor_skin_conditions(doctorId, skinConditionIds);
-        await doctorModels.update_doctor_surgery(doctorId, surgeryIds);
-
-        await doctorModels.update_doctor_treatment_devices(
-            zynqUserId,
-            value.treatments,
-            deviceIds
-        );
-
-        // ---------- UPDATE CLINIC TREATMENTS ----------
-        const treatmentIds = value.treatments.map((item) => item.treatment_id);
 
         if (Array.isArray(value.treatments) && value.treatments.length > 0) {
             const mappedTreatments = mapTreatmentsForClinic(value.treatments);
@@ -430,11 +415,13 @@ export const addExpertise = async (req, res) => {
                     clinic_id,
                     mappedTreatments
                 );
-            await doctorModels.update_doctor_treatments(doctorId, value.treatments);
+            await doctorModels.update_doctor_treatments(doctorId, value.treatments, clinic_id);
         }
 
         // ---------- UPDATE CLINIC SURGERIES ----------
-        if (surgeryIds.length > 0) {
+        if (Array.isArray(surgeryIds) && surgeryIds.length > 0) {
+
+            await doctorModels.update_doctor_surgery(doctorId, surgeryIds, clinic_id);
             const clinicSurgeries = await clinicModels.getClinicSurgeries(clinic_id);
 
             if (clinicSurgeries && clinicSurgeries.length > 0) {
@@ -444,19 +431,10 @@ export const addExpertise = async (req, res) => {
             }
         }
 
-        // ---------- UPDATE CLINIC SKIN CONDITIONS ----------
-        // if (skinConditionIds.length > 0) {
-        //     const clinicSkinConditions = await clinicModels.getClinicSkinConditions(clinic_id);
-
-        //     if (clinicSkinConditions && clinicSkinConditions.length > 0) {
-        //         await clinicModels.updateClinicSkinConditions(skinConditionIds, clinic_id);
-        //     } else {
-        //         await clinicModels.insertClinicSkinConditions(skinConditionIds, clinic_id);
-        //     }
-        // }
-
         // ---------- UPDATE CLINIC SKIN TYPES ----------
-        if (skinTypeIds.length > 0) {
+        if (Array.isArray(skinTypeIds) && skinTypeIds.length > 0) {
+
+            await doctorModels.update_doctor_skin_types(doctorId, skinTypeIds, clinic_id);
             const clinicSkinTypes = await clinicModels.getClinicSkinTypes(clinic_id);
 
             if (clinicSkinTypes && clinicSkinTypes.length > 0) {
@@ -465,6 +443,19 @@ export const addExpertise = async (req, res) => {
                 await clinicModels.insertClinicSkinTypes(skinTypeIds, clinic_id);
             }
         }
+
+        if (deviceIds.length > 0 && Array.isArray(value.treatments)) {
+            await doctorModels.update_doctor_treatment_devices(
+                zynqUserId,       // zynq_user_id
+                value.treatments, // treatments array
+                deviceIds,         // device ids
+                clinic_id
+            );
+            await clinicModels.updateClinicAestheticDevices(
+                deviceIds,
+                clinic_id
+            );
+        };
 
         // ---------- ONBOARDING ----------
         await update_onboarding_status(4, zynqUserId);
@@ -496,9 +487,15 @@ export const addConsultationFeeAndAvailability = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
         const doctorId = req.user.doctorData.doctor_id;
+        const clinic_id = req.user.clinicData.clinic_id;
+        const slot_time = req.user.clinicData.slot_time || 30;
         await doctorModels.update_consultation_fee(doctorId, value.fee_per_session, "USD", value.session_duration);
         if (value.availability?.length > 0) {
-            await doctorModels.update_availability(doctorId, value.availability);
+            // await doctorModels.update_availability(doctorId, value.availability);
+            const doctorSession = convertAvailability(value.availability, Number(slot_time));
+            await doctorModels.updateDoctorSessionSlots(doctorId, doctorSession, clinic_id);
+            const clinic_timing = mapAvailabilityToClinicTiming(value.availability);
+            await clinicModels.updateClinicOperationHours(clinic_timing, clinic_id);
         }
 
         const zynqUserId = req.user.id
