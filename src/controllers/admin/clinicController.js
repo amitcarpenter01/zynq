@@ -1074,7 +1074,9 @@ export const getAllDevicesOfClinicController = async (req, res) => {
     try {
         const language = "en";
         const { clinic_id } = req.params;
-        const devices = await clinicModels.getAllDevicesOfClinic(clinic_id);
+        const { treatment_ids } = req.query;
+        const ids = treatment_ids ? treatment_ids.split(',') : [];
+        const devices = await clinicModels.getAllDevicesOfClinic(clinic_id,ids);
         if (!devices.length) {
             return handleError(res, 400, language, "NO_DEVICES_FOUND");
         }
@@ -1315,7 +1317,7 @@ export const updateClinicController = async (req, res) => {
             clinic_logo: clinic_logo ? clinic_logo : clinic.clinic_logo,
             ivo_registration_number: ivo_registration_number ? ivo_registration_number : clinic.ivo_registration_number,
             hsa_id: hsa_id ? hsa_id : clinic.hsa_id,
-            is_onboarded : clinic.is_onboarded
+            is_onboarded: clinic.is_onboarded
         });
 
         delete clinicData.state;
@@ -1407,34 +1409,34 @@ export const updateClinicController = async (req, res) => {
 
         let clinicImageFiles = [];
 
-            if (uploadedFiles?.length > 0) {
-                for (const file of uploadedFiles) {
-                    const fileName = file.filename;
+        if (uploadedFiles?.length > 0) {
+            for (const file of uploadedFiles) {
+                const fileName = file.filename;
 
-                    if (file.fieldname === "files") {
-                        clinicImageFiles.push(fileName);
-                        continue;
-                    }
-
-                    const [certificationType] =
-                        await clinicModels.getCertificateTypeByFileName(file.fieldname);
-                    const certification_type_id =
-                        certificationType?.certification_type_id || null;
-
-                    if (certification_type_id) {
-                        await clinicModels.insertClinicDocuments(
-                            clinic_id,
-                            certification_type_id,
-                            file.fieldname,
-                            fileName
-                        );
-                    }
+                if (file.fieldname === "files") {
+                    clinicImageFiles.push(fileName);
+                    continue;
                 }
 
-                if (clinicImageFiles.length > 0) {
-                    await clinicModels.insertClinicImages(clinic_id, clinicImageFiles);
+                const [certificationType] =
+                    await clinicModels.getCertificateTypeByFileName(file.fieldname);
+                const certification_type_id =
+                    certificationType?.certification_type_id || null;
+
+                if (certification_type_id) {
+                    await clinicModels.insertClinicDocuments(
+                        clinic_id,
+                        certification_type_id,
+                        file.fieldname,
+                        fileName
+                    );
                 }
             }
+
+            if (clinicImageFiles.length > 0) {
+                await clinicModels.insertClinicImages(clinic_id, clinicImageFiles);
+            }
+        }
         await generateClinicsEmbeddingsV2(zynq_user_id);
         return handleSuccess(
             res,
