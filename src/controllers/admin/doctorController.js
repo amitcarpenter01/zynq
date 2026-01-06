@@ -338,6 +338,9 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             biography: Joi.string().optional().allow(''),
             last_name: Joi.string().optional().allow('', null),
 
+            fee_per_session: Joi.string().optional().allow('', null),
+            session_duration: Joi.string().optional().allow('', null),
+
             education: Joi.array().items(Joi.object({
                 institute: Joi.string().required(),
                 degree: Joi.string().required(),
@@ -496,7 +499,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
 
             skin_type_ids,
             surgery_ids,
-            device_ids, availability, slot_time } = value;
+            device_ids, availability, slot_time, fee_per_session, session_duration } = value;
 
         console.log("req.body value", value)
 
@@ -556,6 +559,9 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 zynq_user_id: newWebUser.id,
                 created_at: new Date(),
                 slot_time: slot_time || null,
+                fee_per_session: fee_per_session || null,
+                session_duration: session_duration || null,
+                currency: "USD",
             };
             await clinicModels.create_doctor(doctorTableData);
             const [createdDoctor] = await clinicModels.get_doctor_by_zynq_user_id(newWebUser.id);
@@ -569,7 +575,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             }
 
 
-            const result = await doctorModels.add_personal_details(zynqUserId, name, phone, age, address, city, zip_code, latitude, longitude, gender, filename, biography, last_name);
+            const result = await doctorModels.add_personal_details(zynqUserId, name, phone, age, address, city, zip_code, latitude, longitude, gender, filename, biography, last_name,slot_time,"INVITED",fee_per_session,session_duration,"USD");
 
             const files = req.files;
             if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
@@ -815,7 +821,7 @@ export const convertAvailability = (flatAvailability, slotMinutes = 15) => {
             }
         }
 
-        result.push({ day, session: sessions });
+        result.push({ day, session: sessions, slot_time: slotMinutes });
     }
 
     return result;
@@ -1307,6 +1313,8 @@ export const updateDoctorController = async (req, res) => {
             zip_code: Joi.string().max(255).optional().allow('', null),
             latitude: Joi.number().optional().allow(null).empty('').default(null),
             longitude: Joi.number().optional().allow(null).empty('').default(null),
+            fee_per_session: Joi.string().optional().allow('', null),
+            session_duration: Joi.string().optional().allow('', null),
             education: Joi.array().items(Joi.object({
                 institute: Joi.string().required(),
                 degree: Joi.string().required(),
@@ -1466,7 +1474,9 @@ export const updateDoctorController = async (req, res) => {
             longitude,
             latitude,
             city,
-            zip_code
+            zip_code,
+            fee_per_session,
+            session_duration
         } = value;
 
         let language = req.user.language || "en";
@@ -1482,8 +1492,7 @@ export const updateDoctorController = async (req, res) => {
             filename = req.files.profile[0].filename
         }
         // await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
-        const result = await doctorModels.add_personal_details(zynq_user_id, name ? name : doctorData?.name, phone ? phone : doctorData?.phone, age ? age : doctorData?.age, address ? address : doctorData?.address, city ? city : doctorData?.city, zip_code ? zip_code : doctorData?.zip_code, latitude ? latitude : doctorData?.latitude, longitude ? longitude : doctorData?.longitude, gender ? gender : doctorData?.gender, filename, biography ? biography : doctorData?.biography, last_name ? last_name : doctorData.last_name, slot_time ? slot_time : doctorData?.slot_time, doctorData.profile_status);
-
+        const result = await doctorModels.add_personal_details(zynq_user_id, name ? name : doctorData?.name, phone ? phone : doctorData?.phone, age ? age : doctorData?.age, address ? address : doctorData?.address, city ? city : doctorData?.city, zip_code ? zip_code : doctorData?.zip_code, latitude ? latitude : doctorData?.latitude, longitude ? longitude : doctorData?.longitude, gender ? gender : doctorData?.gender, filename, biography ? biography : doctorData?.biography, last_name ? last_name : doctorData.last_name, slot_time ? slot_time : doctorData?.slot_time, doctorData.profile_status, fee_per_session ? fee_per_session : doctorData?.fee_per_session, session_duration ? session_duration : doctorData?.session_duration,"USD");
 
         const files = req.files || {};
         if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
