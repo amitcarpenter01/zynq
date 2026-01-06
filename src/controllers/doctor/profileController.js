@@ -175,6 +175,15 @@ export const addExpertise = async (req, res) => {
                 ).min(1).required()
             ).min(1).required(),
 
+            fee_per_session: Joi.array().items(Joi.alternatives()
+                .try(Joi.string(), Joi.number())
+                .optional()
+                .allow(null)).optional().allow(null),
+            doctor_slot_time: Joi.array().items(Joi.alternatives()
+                .try(Joi.string(), Joi.number())
+                .optional()
+                .allow(null)).optional().allow(null),
+
 
             skin_type_ids: Joi.array().items(
                 Joi.array().items(
@@ -198,6 +207,10 @@ export const addExpertise = async (req, res) => {
                 Joi.array().items(
                     Joi.object({
                         day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                        slot_time: Joi.alternatives()
+                            .try(Joi.string(), Joi.number())
+                            .optional()
+                            .allow("", null),
                         session: Joi.array().items(
                             Joi.object({
                                 start_time: Joi.string().required(),
@@ -212,13 +225,23 @@ export const addExpertise = async (req, res) => {
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
-        const { clinic_id, treatments, skin_type_ids, surgery_ids, device_ids, availability } = value;
+        const { clinic_id, treatments, skin_type_ids, surgery_ids, device_ids, availability, doctor_slot_time, fee_per_session } = value;
 
         const doctorId = req.user.doctorData.doctor_id;
         const zynqUserId = req.user.id;
 
         await Promise.all(
             clinic_id.map(async (item, index) => {
+
+                if (Array.isArray(doctor_slot_time) && doctor_slot_time.length > 0 || Array.isArray(fee_per_session) && fee_per_session.length > 0) {
+                    const data = await doctorModels.updateDoctorSlotTimeAndCunsultationFeeOfClinicModel({ doctor_id: doctorId, clinic_id: item, doctor_slot_time: doctor_slot_time[index], fee_per_session: fee_per_session[index] });
+                    console.log("data=>", fee_per_session[index], doctor_slot_time[index]);
+                }
+
+                if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
+                    const data = await doctorModels.updateDoctorSessionSlots(doctorId, availabilityArray, item);
+                    console.log("data=>", data);
+                }
 
                 const availabilityArray = availability ? availability[index] : [];
                 console.log("availabilityArray=>", availabilityArray)
