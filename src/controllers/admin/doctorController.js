@@ -338,8 +338,14 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             biography: Joi.string().optional().allow(''),
             last_name: Joi.string().optional().allow('', null),
 
-            fee_per_session: Joi.array().items(Joi.number().required()).optional().allow(null),
-            doctor_slot_time: Joi.array().items(Joi.number().required()).optional().allow(null),
+            fee_per_session: Joi.array().items(Joi.alternatives()
+                            .try(Joi.string(), Joi.number())
+                            .optional()
+                            .allow(null)).optional().allow(null),
+            doctor_slot_time: Joi.array().items(Joi.alternatives()
+                            .try(Joi.string(), Joi.number())
+                            .optional()
+                            .allow(null)).optional().allow(null),
 
             education: Joi.array().items(Joi.object({
                 institute: Joi.string().required(),
@@ -1328,8 +1334,14 @@ export const updateDoctorController = async (req, res) => {
             zip_code: Joi.string().max(255).optional().allow('', null),
             latitude: Joi.number().optional().allow(null).empty('').default(null),
             longitude: Joi.number().optional().allow(null).empty('').default(null),
-            fee_per_session: Joi.array().items(Joi.number().required()).optional().allow(null),
-            doctor_slot_time: Joi.array().items(Joi.number().required()).optional().allow(null),
+            fee_per_session: Joi.array().items(Joi.alternatives()
+                            .try(Joi.string(), Joi.number())
+                            .optional()
+                            .allow(null)).optional().allow(null),
+            doctor_slot_time: Joi.array().items(Joi.alternatives()
+                            .try(Joi.string(), Joi.number())
+                            .optional()
+                            .allow(null)).optional().allow(null),
             education: Joi.array().items(Joi.object({
                 institute: Joi.string().required(),
                 degree: Joi.string().required(),
