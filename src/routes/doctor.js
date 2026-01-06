@@ -13,7 +13,8 @@ import { getAllFAQSchema } from '../validations/faq.validation.js';
 import { getAllFAQCategories, getAllFAQs } from '../controllers/api/FAQController.js';
 import { addAppointmentDraftSchema, addEditConcernSchema, addEditSubtreatmentSchema, addEditTreatmentSchema, deleteConcernSchema, deleteTreatmentSchema } from '../validations/treatment.validation.js';
 import { get_all_concerns, addEditConcern, addEditSubtreatment, getAllTreatments, getAllTreatmentById, addEditTreatment, deleteConcern, deleteTreatment, getAllSubTreatmentMasters } from '../controllers/api/treatmentController.js';
-import { get_Clinic_Mapped_treatments } from '../controllers/admin/clinicController.js';
+import { get_Clinic_Mapped_treatments, getAllDevicesOfClinicController, getAllSurgeryOfClinicController, getClinicSkinTypesOfClinicController } from '../controllers/admin/clinicController.js';
+import { generateAvailabilityFromOperationHours } from '../controllers/admin/doctorController.js';
 
 
 router.get("/get_profile", authenticate(['DOCTOR']), doctorController.getDoctorProfile);
@@ -135,7 +136,7 @@ router.get('/faq-categories', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']),
 
 router.get('/wallet-history', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), doctorController.getWalletHistory);
 
-router.post('/appointment-draft', authenticate(['DOCTOR', 'SOLO_DOCTOR']),validate(addAppointmentDraftSchema, "body") ,appointmentControllers.addAppointmentDraft);
+router.post('/appointment-draft', authenticate(['DOCTOR', 'SOLO_DOCTOR']), validate(addAppointmentDraftSchema, "body"), appointmentControllers.addAppointmentDraft);
 router.get('/get-recommended-treatments/:user_id', authenticate(['DOCTOR', 'SOLO_DOCTOR']), appointmentControllers.getRecommendedTreatmentsForUser);
 
 router.get('/get-all-treatments', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getAllTreatments);
@@ -157,7 +158,11 @@ router.delete('/concern/:concern_id', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CL
 
 
 
-router.get("/get-clinic-mapped-treatments/:clinic_id",authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']),get_Clinic_Mapped_treatments);
+router.get("/get-clinic-mapped-treatments/:clinic_id", authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), get_Clinic_Mapped_treatments);
+router.get("/get-surgery/:clinic_id", authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getAllSurgeryOfClinicController)
+router.get("/get-devices/:clinic_id",authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getAllDevicesOfClinicController);
+router.get("/get-skin-types/:clinic_id", authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getClinicSkinTypesOfClinicController);
+router.post("/generate-slots",authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']),generateAvailabilityFromOperationHours);
 
 
 export default router;
