@@ -235,7 +235,7 @@ export const get_doctors_management = async (req, res) => {
                     clinic.slots = await doctorModels.getDoctorSlotSessionsModel(
                         doctor.doctor_id, clinic.clinic_id
                     );
-                    clinic.doctor_slot_time = clinic.slots[0]?.slot_time || null;
+                    // clinic.doctor_slot_time = clinic.slots[0]?.slot_time || null;
 
                     // clinic.doctorAvailabilities = await adminModels.getDoctorClinicAvailabilities(
                     //     doctor.doctor_id,
@@ -338,8 +338,8 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             biography: Joi.string().optional().allow(''),
             last_name: Joi.string().optional().allow('', null),
 
-            fee_per_session: Joi.string().optional().allow('', null),
-            session_duration: Joi.string().optional().allow('', null),
+            fee_per_session: Joi.array().items(Joi.number().required()).optional().allow(null),
+            doctor_slot_time: Joi.array().items(Joi.number().required()).optional().allow(null),
 
             education: Joi.array().items(Joi.object({
                 institute: Joi.string().required(),
@@ -418,6 +418,22 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 return handleError(res, 400, "en", "INVALID_JSON_FOR_TREATMENTS");
             }
         }
+
+        if (typeof req.body.fee_per_session === "string") {
+            try {
+                req.body.fee_per_session = JSON.parse(req.body.fee_per_session);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_FEEPERSESSION");
+            }
+        }
+        if (typeof req.body.doctor_slot_time === "string") {
+            try {
+                req.body.doctor_slot_time = JSON.parse(req.body.doctor_slot_time);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_DOCTORSLOTTIME");
+            }
+        }
+
 
         if (typeof req.body.clinic_id === "string") {
             try {
@@ -499,7 +515,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
 
             skin_type_ids,
             surgery_ids,
-            device_ids, availability, slot_time, fee_per_session, session_duration } = value;
+            device_ids, availability, slot_time, fee_per_session, doctor_slot_time } = value;
 
         console.log("req.body value", value)
 
@@ -558,10 +574,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             const doctorTableData = {
                 zynq_user_id: newWebUser.id,
                 created_at: new Date(),
-                slot_time: slot_time || null,
-                fee_per_session: fee_per_session || null,
-                session_duration: session_duration || null,
-                currency: "USD",
+                slot_time: slot_time || null
             };
             await clinicModels.create_doctor(doctorTableData);
             const [createdDoctor] = await clinicModels.get_doctor_by_zynq_user_id(newWebUser.id);
@@ -575,7 +588,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             }
 
 
-            const result = await doctorModels.add_personal_details(zynqUserId, name, phone, age, address, city, zip_code, latitude, longitude, gender, filename, biography, last_name,slot_time,"INVITED",fee_per_session,session_duration,"USD");
+            const result = await doctorModels.add_personal_details(zynqUserId, name, phone, age, address, city, zip_code, latitude, longitude, gender, filename, biography, last_name, slot_time,createdDoctor.profile_status);
 
             const files = req.files;
             if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
@@ -632,6 +645,8 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                         doctor_id,
                         clinic_id: item,
                         assigned_at: new Date(),
+                        fee_per_session: fee_per_session[index] || null,
+                        doctor_slot_time: doctor_slot_time[index] || null,
                     };
                     await clinicModels.create_doctor_clinic_map(clinicMapData);
 
@@ -1313,8 +1328,8 @@ export const updateDoctorController = async (req, res) => {
             zip_code: Joi.string().max(255).optional().allow('', null),
             latitude: Joi.number().optional().allow(null).empty('').default(null),
             longitude: Joi.number().optional().allow(null).empty('').default(null),
-            fee_per_session: Joi.string().optional().allow('', null),
-            session_duration: Joi.string().optional().allow('', null),
+            fee_per_session: Joi.array().items(Joi.number().required()).optional().allow(null),
+            doctor_slot_time: Joi.array().items(Joi.number().required()).optional().allow(null),
             education: Joi.array().items(Joi.object({
                 institute: Joi.string().required(),
                 degree: Joi.string().required(),
@@ -1385,6 +1400,21 @@ export const updateDoctorController = async (req, res) => {
 
             slot_time: Joi.string().optional().allow("", null),
         });
+
+        if (typeof req.body.fee_per_session === "string") {
+            try {
+                req.body.fee_per_session = JSON.parse(req.body.fee_per_session);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_FEEPERSESSION");
+            }
+        }
+        if (typeof req.body.doctor_slot_time === "string") {
+            try {
+                req.body.doctor_slot_time = JSON.parse(req.body.doctor_slot_time);
+            } catch (err) {
+                return handleError(res, 400, "en", "INVALID_JSON_FOR_DOCTORSLOTTIME");
+            }
+        }
 
         if (typeof req.body.clinic_id === "string") {
             try {
@@ -1476,7 +1506,7 @@ export const updateDoctorController = async (req, res) => {
             city,
             zip_code,
             fee_per_session,
-            session_duration
+            doctor_slot_time
         } = value;
 
         let language = req.user.language || "en";
@@ -1492,7 +1522,7 @@ export const updateDoctorController = async (req, res) => {
             filename = req.files.profile[0].filename
         }
         // await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
-        const result = await doctorModels.add_personal_details(zynq_user_id, name ? name : doctorData?.name, phone ? phone : doctorData?.phone, age ? age : doctorData?.age, address ? address : doctorData?.address, city ? city : doctorData?.city, zip_code ? zip_code : doctorData?.zip_code, latitude ? latitude : doctorData?.latitude, longitude ? longitude : doctorData?.longitude, gender ? gender : doctorData?.gender, filename, biography ? biography : doctorData?.biography, last_name ? last_name : doctorData.last_name, slot_time ? slot_time : doctorData?.slot_time, doctorData.profile_status, fee_per_session ? fee_per_session : doctorData?.fee_per_session, session_duration ? session_duration : doctorData?.session_duration,"USD");
+        const result = await doctorModels.add_personal_details(zynq_user_id, name ? name : doctorData?.name, phone ? phone : doctorData?.phone, age ? age : doctorData?.age, address ? address : doctorData?.address, city ? city : doctorData?.city, zip_code ? zip_code : doctorData?.zip_code, latitude ? latitude : doctorData?.latitude, longitude ? longitude : doctorData?.longitude, gender ? gender : doctorData?.gender, filename, biography ? biography : doctorData?.biography, last_name ? last_name : doctorData.last_name, slot_time ? slot_time : doctorData?.slot_time, doctorData.profile_status);
 
         const files = req.files || {};
         if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
@@ -1548,6 +1578,12 @@ export const updateDoctorController = async (req, res) => {
                 const availabilityArray = availability ? availability[index] : [];
                 console.log("availabilityArray=>", availabilityArray)
 
+
+                if (Array.isArray(doctor_slot_time) && doctor_slot_time.length > 0 || Array.isArray(fee_per_session) && fee_per_session.length > 0) {
+                    const data = await doctorModels.updateDoctorSlotTimeAndCunsultationFeeOfClinicModel({ doctor_id: doctorId, clinic_id: item, doctor_slot_time: doctor_slot_time[index], fee_per_session: fee_per_session[index] });
+                    console.log("data=>", fee_per_session[index], doctor_slot_time[index]);
+                }
+
                 if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
                     const data = await doctorModels.updateDoctorSessionSlots(doctorId, availabilityArray, item);
                     console.log("data=>", data);
@@ -1558,6 +1594,8 @@ export const updateDoctorController = async (req, res) => {
                 const surgeryIds = surgery_ids ? surgery_ids[index] : [];
                 const deviceIds = device_ids ? device_ids[index] : [];
                 const clinicTreatments = treatments?.[index] || [];
+                
+                await doctorModels.deleteDoctorClincData({doctor_id : doctorId, clinic_id :item,zynq_user_id : zynq_user_id});
 
                 // Save expertis
                 if (Array.isArray(clinicTreatments) && clinicTreatments.length > 0) {

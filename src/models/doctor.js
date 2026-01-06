@@ -15,9 +15,9 @@ export const get_doctor_by_zynquser_id = async (zynqUserId) => {
     }
 };
 
-export const add_personal_details = async (zynqUserId, name, phone, age, address, city, zip_code, latitude, longitude, gender, profile_image, biography, last_name, slot_time = null, profile_status,fee_per_session,session_duration,currency) => {
+export const add_personal_details = async (zynqUserId, name, phone, age, address, city, zip_code, latitude, longitude, gender, profile_image, biography, last_name, slot_time = null, profile_status) => {
     try {
-        return await db.query(`UPDATE tbl_doctors SET profile_status = ?, name = ?, phone=? , age=?, address=?, city=?, zip_code=?, latitude=?, longitude=?, gender=?, profile_image=?,biography=?,last_name = ?,slot_time = ?,fee_per_session = ?,session_duration = ?,currency = ? where zynq_user_id = ? `, [profile_status, name, phone, age, address, city, zip_code, latitude, longitude, gender, profile_image, biography, last_name, slot_time,fee_per_session,session_duration,currency, zynqUserId]);
+        return await db.query(`UPDATE tbl_doctors SET profile_status = ?, name = ?, phone=? , age=?, address=?, city=?, zip_code=?, latitude=?, longitude=?, gender=?, profile_image=?,biography=?,last_name = ?,slot_time = ? where zynq_user_id = ? `, [profile_status, name, phone, age, address, city, zip_code, latitude, longitude, gender, profile_image, biography, last_name, slot_time, zynqUserId]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to add doctor personal details.");
@@ -658,33 +658,33 @@ export const get_doctor_profile = async (doctorId, language) => {
         // const devices = await get_doctor_devices(doctor.zynq_user_id);
         const clinics = await get_clinics(doctorId);
 
-        if(clinics.length > 0){
-            
-        await Promise.all(clinics.map(async (clinic) => {
-            clinic.treatments = await getDoctorClinicTreatments(
-                doctorId,
-                clinic.clinic_id
-            );
+        if (clinics.length > 0) {
 
-            clinic.surgeries = await getDoctorClinicSurgeries(
-                doctorId,
-                clinic.clinic_id
-            );
+            await Promise.all(clinics.map(async (clinic) => {
+                clinic.treatments = await getDoctorClinicTreatments(
+                    doctorId,
+                    clinic.clinic_id
+                );
 
-            clinic.skinTypes = await getDoctorClinicSkinTypes(
-                doctorId,
-                clinic.clinic_id
-            );
+                clinic.surgeries = await getDoctorClinicSurgeries(
+                    doctorId,
+                    clinic.clinic_id
+                );
 
-            clinic.devices = await getDoctorClinicDevices(
-                doctorId,
-                clinic.clinic_id
-            );
+                clinic.skinTypes = await getDoctorClinicSkinTypes(
+                    doctorId,
+                    clinic.clinic_id
+                );
 
-            clinic.slots = await getDoctorSlotSessionsModel(
-                doctorId, clinic.clinic_id
-            );
-        }));
+                clinic.devices = await getDoctorClinicDevices(
+                    doctorId,
+                    clinic.clinic_id
+                );
+
+                clinic.slots = await getDoctorSlotSessionsModel(
+                    doctorId, clinic.clinic_id
+                );
+            }));
         }
 
         return {
@@ -743,7 +743,9 @@ export const get_clinics_data_by_doctor_id = async (doctorId) => {
             SELECT
                 cl.*,
                 c.*,
-                u.email
+                u.email,
+                dcm.doctor_slot_time,
+                dcm.fee_per_session
             FROM
                 tbl_doctor_clinic_map dcm
             JOIN
@@ -1882,6 +1884,47 @@ export const updateDoctorAdmindetails = async (
                 zynqUserId
             ]
         );
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update doctor personal details.");
+    }
+};
+
+export const updateDoctorSlotTimeAndCunsultationFeeOfClinicModel = async ({
+    clinic_id,
+    doctor_id,
+    doctor_slot_time,
+    fee_per_session
+}) => {
+    try {
+
+        const [mappedDoctorClinic] = await db.query(
+            `SELECT * FROM tbl_doctor_clinic_map WHERE clinic_id = ? AND doctor_id = ?`,
+            [clinic_id, doctor_id]
+        );
+
+        return await db.query(
+            `UPDATE tbl_doctor_clinic_map 
+             SET doctor_slot_time = ?, 
+                 fee_per_session = ?
+             WHERE clinic_id = ? AND doctor_id = ?`,
+            [doctor_slot_time ? doctor_slot_time : mappedDoctorClinic?.doctor_slot_time, fee_per_session ? fee_per_session : mappedDoctorClinic?.fee_per_session, clinic_id, doctor_id]
+        );
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to update doctor personal details.");
+    }
+};
+
+export const deleteDoctorClincData = async ({clinic_id, doctor_id,zynq_user_id}) => {
+    try {
+        await db.query(`DELETE FROM tbl_doctor_skin_types WHERE doctor_id = ? AND clinic_id = ?`, [doctor_id, clinic_id]);
+        await db.query(`DELETE FROM tbl_doctor_surgery WHERE doctor_id = ? AND clinic_id = ?`, [doctor_id, clinic_id]);
+        await db.query(
+            `DELETE FROM tbl_treatment_device_user_maps WHERE zynq_user_id = ? AND clinic_id = ?`,
+            [zynq_user_id, clinic_id]
+        );
+        return ;
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update doctor personal details.");

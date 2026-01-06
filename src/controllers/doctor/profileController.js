@@ -53,7 +53,7 @@ export const addPersonalInformation = async (req, res) => {
         const [doctorData] = await doctorModels.get_doctor_by_zynquser_id(zynqUserId);
 
 
-        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name, value.slot_time, "ONBOARDING", doctorData?.fee_per_session, doctorData?.session_duration, "USD");
+        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name, value.slot_time, "ONBOARDING");
 
         if (result.affectedRows) {
             await update_onboarding_status(1, zynqUserId)
@@ -386,7 +386,7 @@ export const editPersonalInformation = async (req, res) => {
             filename = req.file.filename
         }
         // await generateDoctorsEmbeddingsV2(doctorData.doctor_id)
-        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name, value.slot_time, "ONBOARDING", doctorData.fee_per_session, doctorData?.session_duration, "USD");
+        const result = await doctorModels.add_personal_details(zynqUserId, value.name, value.phone, value.age, value.address, value.city, value.zip_code, value.latitude, value.longitude, value.gender, filename, value.biography, value.last_name, value.slot_time, "ONBOARDING");
         // await generateDoctorsEmbeddingsV2(zynqUserId)
         if (result.affectedRows > 0) {
             return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", result.affectedRows);
