@@ -392,7 +392,10 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 Joi.array().items(
                     Joi.object({
                         day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
-                        slot_time: Joi.string().optional().allow("", null),
+                        slot_time: Joi.alternatives()
+                            .try(Joi.string(), Joi.number())
+                            .optional()
+                            .allow("", null),
                         session: Joi.array().items(
                             Joi.object({
                                 start_time: Joi.string().required(),
@@ -1358,7 +1361,10 @@ export const updateDoctorController = async (req, res) => {
                 Joi.array().items(
                     Joi.object({
                         day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
-                        slot_time: Joi.string().optional().allow("", null),
+                        slot_time: Joi.alternatives()
+                            .try(Joi.string(), Joi.number())
+                            .optional()
+                            .allow("", null),
                         session: Joi.array().items(
                             Joi.object({
                                 start_time: Joi.string().required(),
