@@ -235,6 +235,7 @@ export const get_doctors_management = async (req, res) => {
                     clinic.slots = await doctorModels.getDoctorSlotSessionsModel(
                         doctor.doctor_id, clinic.clinic_id
                     );
+                    clinic.doctor_slot_time = clinic.slots[0]?.slot_time || null;
 
                     // clinic.doctorAvailabilities = await adminModels.getDoctorClinicAvailabilities(
                     //     doctor.doctor_id,
@@ -391,6 +392,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 Joi.array().items(
                     Joi.object({
                         day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                        slot_time: Joi.string().optional().allow("", null),
                         session: Joi.array().items(
                             Joi.object({
                                 start_time: Joi.string().required(),
@@ -669,6 +671,18 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                         const data = await doctorModels.updateDoctorSessionSlots(doctor_id, availabilityArray, item);
                         console.log("data=>", data);
                     }
+
+                    // const availabilityArray = availability || [];
+                    // const weeklySlotTime = req.body.slot_time; // ONE slot_time for week
+
+                    // if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
+                    //     const data = await doctorModels.updateDoctorSessionSlots(
+                    //         doctor_id,
+                    //         availabilityArray,
+                    //         item,
+                    //         weeklySlotTime
+                    //     );
+                    // }
 
                     // if (Array.isArray(availability) && availability.length > 0) {
                     //     console.log("availabilityArray=>", availability);
@@ -1344,6 +1358,7 @@ export const updateDoctorController = async (req, res) => {
                 Joi.array().items(
                     Joi.object({
                         day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                        slot_time: Joi.string().optional().allow("", null),
                         session: Joi.array().items(
                             Joi.object({
                                 start_time: Joi.string().required(),
@@ -2023,7 +2038,7 @@ export const generateAvailabilityFromOperationHours = async (req, res) => {
 
 export const unsyncClinicController = async (req, res) => {
     try {
-         const language = req?.user?.language || "en";
+        const language = req?.user?.language || "en";
         const schema = Joi.object({
             clinic_id: Joi.string().uuid().required(),
             doctor_id: Joi.string().uuid().required()
@@ -2036,7 +2051,7 @@ export const unsyncClinicController = async (req, res) => {
 
         let clinics = await clinicModels.getDoctorClinicMappedDataModel(doctor_id, clinic_id);
 
-        if(clinics.length == 0) return handleError(res, 404, "en", "CLINIC_NOT_FOUND");
+        if (clinics.length == 0) return handleError(res, 404, "en", "CLINIC_NOT_FOUND");
 
         await clinicModels.unsynkClinicModel(doctor_id, clinic_id);
 

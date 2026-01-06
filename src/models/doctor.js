@@ -471,8 +471,8 @@ export const updateDoctorSessionSlots = async (doctorId, availabilityData, clini
         for (const avail of availabilityData) {
             const doctorSlotDayId = uuidv4();
             await db.query(
-                `INSERT INTO tbl_doctor_slot_day (doctor_slot_day_id, doctor_id, day,clinic_id) VALUES (?, ?, ?,?)`,
-                [doctorSlotDayId, doctorId, avail.day, clinic_id]
+                `INSERT INTO tbl_doctor_slot_day (doctor_slot_day_id, doctor_id, day, slot_time, clinic_id) VALUES (?, ?, ?, ?, ?)`,
+                [doctorSlotDayId, doctorId, avail.day, avail.slot_time, clinic_id]
             );
 
 
@@ -502,12 +502,14 @@ export const getDoctorSlotSessionsModel = async (doctorId, clinic_id) => {
                 JSON_ARRAYAGG(
                     JSON_OBJECT(
                         'day', day,
+                        'slot_time', slot_time,
                         'session', sessions
                     )
                 ) AS availability
             FROM (
                 SELECT 
                     LOWER(dsd.day) AS day,
+                    dsd.slot_time,
                     IFNULL(
                         JSON_ARRAYAGG(
                             JSON_OBJECT(
