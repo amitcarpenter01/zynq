@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { formatImagePath } from "../utils/user_helper.js";
-import { getTopSimilarRows ,translator } from "../utils/misc.util.js";
+import { getTopSimilarRows, translator } from "../utils/misc.util.js";
 import { getTreatmentsAIResult } from "../utils/global_search.js";
 import { v4 as uuidv4 } from "uuid";
 
@@ -758,7 +758,7 @@ export const getAllSkinTypes = async (language) => {
     try {
         const skinTypes = await db.query('SELECT * FROM tbl_skin_types WHERE name IS NOT NULL ORDER BY created_at DESC');
         skinTypes?.map((item) => {
-            if(language == "sv"){
+            if (language == "sv") {
                 item.name = item.Swedish
             }
         })
@@ -1647,8 +1647,8 @@ export const getAllSkinCondition = async () => {
 export const getAllsurgery = async (language) => {
     try {
         const surgeries = await db.query('SELECT * FROM tbl_surgery');
-        surgeries?.map((item)=> {
-            if(language == "sv"){
+        surgeries?.map((item) => {
+            if (language == "sv") {
                 item.english = item.swedish
             }
         })
@@ -1669,7 +1669,7 @@ export const getAllDevices = async (ids) => {
 
         // MySQL expects an array inside array → [[]]
         const devices = await db.query(sql, [ids]);
-        
+
         return devices;
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -2399,14 +2399,14 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, lang = 'en', search = 
 
             // results = await getTopSimilarRows(results, search);
         }
-        
+
         // TRANSLATE FIELDS
         results = results.map(row => ({
             ...row,
             treatment_name: lang === 'sv' ? row.swedish : row.name,
             sub_treatment_name: lang === 'sv' ? row.sub_treatment_name_sv : row.sub_treatment_name_en
         }));
-        
+
         // GROUP DATA: treatment → sub_treatments
         const grouped = {};
 
@@ -2705,7 +2705,7 @@ export const getClinicImages = async (clinic_id) => {
     }
 };
 
-export const deleteClinicImageById = async (clinic_image_id, clinic_id= null) => {
+export const deleteClinicImageById = async (clinic_image_id, clinic_id = null) => {
     try {
         // 1. Get image_url first
         const rows = await db.query(
@@ -2925,150 +2925,150 @@ export const getProductByProductAndClinicId = async (product_id, clinic_id) => {
 }
 
 export async function createClinicMappedTreatments(clinicId, treatments = []) {
-  const connection = await db.getConnection();
+    const connection = await db.getConnection();
 
-  try {
-    await connection.beginTransaction();
+    try {
+        await connection.beginTransaction();
 
-    for (const treatment of treatments) {
-      const clinicTreatmentId = uuidv4();
+        for (const treatment of treatments) {
+            const clinicTreatmentId = uuidv4();
 
-      /** Insert clinic treatment */
-      await connection.query(
-        `
+            /** Insert clinic treatment */
+            await connection.query(
+                `
         INSERT INTO tbl_mapped_clinic_treatments
         (clinic_treatment_id, clinic_id, treatment_id, total_price)
         VALUES (?, ?, ?, ?)
         `,
-        [
-          clinicTreatmentId,
-          clinicId,
-          treatment.treatment_id,
-          treatment.total_price,
-        ]
-      );
+                [
+                    clinicTreatmentId,
+                    clinicId,
+                    treatment.treatment_id,
+                    treatment.total_price,
+                ]
+            );
 
-      /** Insert sub-treatments (BULK INSERT) */
-      if (treatment.sub_treatments?.length) {
-        const subValues = treatment.sub_treatments.map((sub) => [
-          uuidv4(),
-          clinicTreatmentId,
-          sub.sub_treatment_id,
-          sub.price,
-        ]);
+            /** Insert sub-treatments (BULK INSERT) */
+            if (treatment.sub_treatments?.length) {
+                const subValues = treatment.sub_treatments.map((sub) => [
+                    uuidv4(),
+                    clinicTreatmentId,
+                    sub.sub_treatment_id,
+                    sub.price,
+                ]);
 
-        await connection.query(
-          `
+                await connection.query(
+                    `
           INSERT INTO tbl_mapped_clinic_sub_treatments
           (clinic_sub_treatment_id, clinic_treatment_id, sub_treatment_id, price)
           VALUES ?
           `,
-          [subValues]
-        );
-      }
-    }
+                    [subValues]
+                );
+            }
+        }
 
-    await connection.commit();
-    return { success: true };
-  } catch (err) {
-    await connection.rollback();
-    throw err;
-  } finally {
-    connection.release();
-  }
+        await connection.commit();
+        return { success: true };
+    } catch (err) {
+        await connection.rollback();
+        throw err;
+    } finally {
+        connection.release();
+    }
 };
 
 
 export async function updateClinicMappedTreatments(clinicId, treatments = []) {
-  const connection = await db.getConnection();
+    const connection = await db.getConnection();
 
-  try {
-    await connection.beginTransaction();
+    try {
+        await connection.beginTransaction();
 
-    /** Get existing clinic treatment IDs */
-    const existing = await connection.query(
-      `
+        /** Get existing clinic treatment IDs */
+        const existing = await connection.query(
+            `
       SELECT clinic_treatment_id
       FROM tbl_mapped_clinic_treatments
       WHERE clinic_id = ?
       `,
-      [clinicId]
-    );
+            [clinicId]
+        );
 
-    const ids = existing[0].map((r) => r.clinic_treatment_id);
+        const ids = existing[0].map((r) => r.clinic_treatment_id);
 
-    /** Delete sub-treatments first */
-    if (ids.length) {
-      await connection.query(
-        `
+        /** Delete sub-treatments first */
+        if (ids.length) {
+            await connection.query(
+                `
         DELETE FROM tbl_mapped_clinic_sub_treatments
         WHERE clinic_treatment_id IN (?)
         `,
-        [ids]
-      );
-    }
+                [ids]
+            );
+        }
 
-    /** Delete treatments */
-    await connection.query(
-      `
+        /** Delete treatments */
+        await connection.query(
+            `
       DELETE FROM tbl_mapped_clinic_treatments
       WHERE clinic_id = ?
       `,
-      [clinicId]
-    );
+            [clinicId]
+        );
 
-    /** Re-insert */
-    for (const treatment of treatments) {
-      const clinicTreatmentId = uuidv4();
+        /** Re-insert */
+        for (const treatment of treatments) {
+            const clinicTreatmentId = uuidv4();
 
-      await connection.query(
-        `
+            await connection.query(
+                `
         INSERT INTO tbl_mapped_clinic_treatments
         (clinic_treatment_id, clinic_id, treatment_id, total_price)
         VALUES (?, ?, ?, ?)
         `,
-        [
-          clinicTreatmentId,
-          clinicId,
-          treatment.treatment_id,
-          treatment.total_price,
-        ]
-      );
+                [
+                    clinicTreatmentId,
+                    clinicId,
+                    treatment.treatment_id,
+                    treatment.total_price,
+                ]
+            );
 
-      if (treatment.sub_treatments?.length) {
-        const subValues = treatment.sub_treatments.map((sub) => [
-          uuidv4(),
-          clinicTreatmentId,
-          sub.sub_treatment_id,
-          sub.price,
-        ]);
+            if (treatment.sub_treatments?.length) {
+                const subValues = treatment.sub_treatments.map((sub) => [
+                    uuidv4(),
+                    clinicTreatmentId,
+                    sub.sub_treatment_id,
+                    sub.price,
+                ]);
 
-        await connection.query(
-          `
+                await connection.query(
+                    `
           INSERT INTO tbl_mapped_clinic_sub_treatments
           (clinic_sub_treatment_id, clinic_treatment_id, sub_treatment_id, price)
           VALUES ?
           `,
-          [subValues]
-        );
-      }
-    }
+                    [subValues]
+                );
+            }
+        }
 
-    await connection.commit();
-    return { success: true };
-  } catch (err) {
-    await connection.rollback();
-    throw err;
-  } finally {
-    connection.release();
-  }
+        await connection.commit();
+        return { success: true };
+    } catch (err) {
+        await connection.rollback();
+        throw err;
+    } finally {
+        connection.release();
+    }
 }
 
 
 export async function getClinicMappedTreatments(clinicId) {
-  try {
-    const rows = await db.query(
-      `
+    try {
+        const rows = await db.query(
+            `
       SELECT
         c.clinic_id,
         c.clinic_name,
@@ -3120,16 +3120,16 @@ export async function getClinicMappedTreatments(clinicId) {
 
       GROUP BY c.clinic_id
       `,
-      [clinicId]
-    );
+            [clinicId]
+        );
 
-    if (!rows.length) return null;
+        if (!rows.length) return null;
 
-    return rows[0];
-  } catch (error) {
-    console.error("Error fetching clinic mapped treatments:", error.message);
-    throw error; // let controller handle response
-  }
+        return rows[0];
+    } catch (error) {
+        console.error("Error fetching clinic mapped treatments:", error.message);
+        throw error; // let controller handle response
+    }
 }
 
 
@@ -3159,18 +3159,23 @@ export const getAllSurgeriesOfClinic = async (language, clinic_id) => {
 };
 
 
-export const getAllDevicesOfClinic = async (clinic_id) => {
+export const getAllDevicesOfClinic = async (clinic_id, ids = []) => {
     try {
-        const sql = `
-            SELECT DISTINCT d.*
+        let sql = `
+            SELECT d.*
             FROM tbl_clinic_aesthetic_devices cad
             INNER JOIN tbl_treatment_devices d
                 ON cad.aesthetic_devices_id = d.id
             WHERE cad.clinic_id = ?
         `;
+        let params = [clinic_id];
 
-        const devices = await db.query(sql, [clinic_id]);
-        return devices;
+        if (Array.isArray(ids) && ids.length > 0) {
+            sql += ` AND d.treatment_id IN (?)`;
+            params.push(ids);
+        }
+
+        return await db.query(sql, params);
 
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -3206,14 +3211,14 @@ export const getAllSkinTypesOfClinic = async (language, clinic_id) => {
 };
 
 
-export const unsynkClinicModel = async (doctor_id ,clinic_id ) => {
+export const unsynkClinicModel = async (doctor_id, clinic_id) => {
     try {
         const sql = `
             UPDATE tbl_doctor_clinic_map
             SET is_unsync = 1
             WHERE doctor_id = ? AND clinic_id = ?
         `;
-        const result = await db.query(sql, [doctor_id ,clinic_id]);
+        const result = await db.query(sql, [doctor_id, clinic_id]);
         return result;
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -3221,7 +3226,7 @@ export const unsynkClinicModel = async (doctor_id ,clinic_id ) => {
     }
 };
 
-export const getDoctorClinicMappedDataModel = async (doctor_id ,clinic_id) => {
+export const getDoctorClinicMappedDataModel = async (doctor_id, clinic_id) => {
     try {
         return await db.query(`
             SELECT
@@ -3240,7 +3245,7 @@ export const getDoctorClinicMappedDataModel = async (doctor_id ,clinic_id) => {
                 dcm.doctor_id = ? AND dcm.clinic_id = ? AND dcm.is_unsync = 0
             ORDER BY
                 dcm.assigned_at DESC;
-        `, [doctor_id ,clinic_id]);
+        `, [doctor_id, clinic_id]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch clinic data by doctor ID.");
