@@ -1111,7 +1111,7 @@ export const get_doctor_devices = async (zynqUserId) => {
 export const get_clinics = async (doctorId) => {
     try {
         return await db.query(`
-            SELECT dc.clinic_id, c.clinic_name
+            SELECT dc.clinic_id, c.clinic_name,dc.doctor_slot_time,dc.fee_per_session
             FROM tbl_doctor_clinic_map dc
             LEFT JOIN tbl_clinics c
                 ON dc.clinic_id = c.clinic_id
