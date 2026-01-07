@@ -508,7 +508,7 @@ export const getDoctorSlotSessionsModel = async (doctorId, clinic_id) => {
                 ) AS availability
             FROM (
                 SELECT 
-                    LOWER(dsd.day) AS day,
+                    dsd.day AS day,
                     dsd.slot_time,
                     IFNULL(
                         JSON_ARRAYAGG(
