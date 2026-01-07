@@ -70,6 +70,7 @@ router.get('/unsubscribed/:is_unsubscribed', clinicControllers.unsubscribed);
 //==================================== Doctor Managment ==============================
 
 router.get('/get-dcotors-managment', authenticateAdmin, doctorControllers.get_doctors_management);
+router.get('/get-dcotors-invitation-list', authenticateAdmin, doctorControllers.getDoctorInvitationListController);
 
 //==================================== Product Managment ==============================
 router.get('/get-products-managment', authenticateAdmin, productControllers.get_products_managment);

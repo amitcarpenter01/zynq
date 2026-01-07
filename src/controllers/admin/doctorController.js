@@ -2127,3 +2127,19 @@ export const unsyncClinicController = async (req, res) => {
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
+
+
+export const getDoctorInvitationListController = async (req, res) => {
+    try {
+        const language = req?.user?.language || 'en';
+
+        // Fetch filtered clinics
+        const doctors = await adminModels.getDoctorInvitaionListModel();
+
+        return handleSuccess(res, 200, language, "Fetch doctor invitation list successfully", doctors);
+
+    } catch (error) {
+        console.error("internal E", error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
+    }
+};
