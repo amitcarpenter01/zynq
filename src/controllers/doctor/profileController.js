@@ -238,13 +238,8 @@ export const addExpertise = async (req, res) => {
                     console.log("data=>", fee_per_session[index], doctor_slot_time[index]);
                 }
 
-                if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
-                    const data = await doctorModels.updateDoctorSessionSlots(doctorId, availabilityArray, item);
-                    console.log("data=>", data);
-                }
-
                 const availabilityArray = availability ? availability[index] : [];
-                console.log("availabilityArray=>", availabilityArray)
+                console.log("availabilityArray=>", availabilityArray);
 
                 if (Array.isArray(availabilityArray) && availabilityArray.length > 0) {
                     const data = await doctorModels.updateDoctorSessionSlots(doctorId, availabilityArray, item);
