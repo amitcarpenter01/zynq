@@ -569,7 +569,7 @@ export const zynqReminderEnglishTemplate = ({
   };
 
   const { subject, intro, heroAlt } = roles[roleKey] || roles.CLINIC;
-  let onboarding_link = `https://getzynq.io/`;
+  let onboarding_link = `https://getzynq.io/zynq/`;
 
   return {
     subject,
@@ -683,7 +683,7 @@ export const zynqReminderSwedishTemplate = ({
   };
 
   const { subject, intro, heroAlt } = roles[roleKey] || roles.CLINIC;
-  let onboarding_link = `https://getzynq.io/`
+  let onboarding_link = `https://getzynq.io/zynq/`
 
   return {
     subject,

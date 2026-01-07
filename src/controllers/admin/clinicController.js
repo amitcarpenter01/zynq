@@ -572,7 +572,7 @@ export const subscribed = async (req, res) => {
 
         const data = await onboardingByRole(gwetClinic[0].zynq_user_id, getRole.role_id);
 
-        return res.redirect(`https://getzynq.io`);
+        return res.redirect(`https://getzynq.io/zynq/`);
     } catch (error) {
         console.error("clinic unsubscribed Error:", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);

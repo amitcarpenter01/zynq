@@ -444,7 +444,7 @@ export const get_clinic_managment = async (limit, offset, search = "", status = 
 export const getClinicListForDoctorOnboardingModel = async (status = "") => {
     try {
         let conditions = `
-      c.is_deleted = 0
+      c.is_deleted = 0 AND c.profile_status IN ('CLAIMED','ONBOARDING','VERIFIED')
       AND zu.role_id = '2fc0b43c-3196-11f0-9e07-0e8e5d906eef'
     `;
 
@@ -3609,3 +3609,44 @@ export const getTreatmentSubTreatmentsModel = async (treatment_id) => {
     return rows.map(r => r.sub_treatment_id);
 };
 
+export const getDoctorInvitaionListModel = async () => {
+    try {
+
+        let conditions = `
+            u.role_id IN (
+                '407595e3-3196-11f0-9e07-0e8e5d906eef',  -- Solo Doctor
+                '3677a3e6-3196-11f0-9e07-0e8e5d906eef'   -- Doctor
+            )
+                AND dcm.is_invitation_accepted = 0
+        `;
+
+        const sql = `
+            SELECT 
+                d.zynq_user_id,
+                d.doctor_id, 
+                d.name,
+                d.last_name,
+                d.phone, 
+                u.email,
+                CASE 
+                    WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+                    WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
+                END AS user_type
+            FROM tbl_doctors d
+            LEFT JOIN tbl_zqnq_users u 
+                ON u.id = d.zynq_user_id
+            LEFT JOIN tbl_doctor_clinic_map dcm 
+                ON dcm.doctor_id = d.doctor_id
+            WHERE ${conditions}
+
+            GROUP BY d.doctor_id
+            ORDER BY d.created_at DESC;
+        `;
+
+        return await db.query(sql);
+
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor management data.");
+    }
+};
