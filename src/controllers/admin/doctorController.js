@@ -193,9 +193,6 @@ export const get_doctors_management = async (req, res) => {
                         }
                     });
                 }
-                const onboarding_progress =
-                    await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id,doctor.user_type,doctor.availability);
-
                 /* ---------------- CLINICS (ARRAY) ---------------- */
                 let clinics = await doctorModels.get_clinics_data_by_doctor_id(
                     doctor.doctor_id
@@ -279,6 +276,9 @@ export const get_doctors_management = async (req, res) => {
                             await clinicModels.getClinicOperationHours(clinic.clinic_id);
                     }
                 }
+
+                const onboarding_progress =
+                    await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id, doctor.user_type, clinics?.[0]?.clinic_id);
 
                 /* ---------------- PROFILE STATUS FIX ---------------- */
                 let profile_status = doctor.profile_status;
