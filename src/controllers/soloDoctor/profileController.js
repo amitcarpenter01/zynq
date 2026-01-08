@@ -823,9 +823,12 @@ export const getDoctorProfileByStatus = async (req, res) => {
             clinic.on_boarding_status = zynqUser[0].on_boarding_status;
 
         } else if (status == 5) {
-            const operationHours = await dbOperations.getData('tbl_doctor_availability', `WHERE doctor_id = '${doctorId}' `); (clinic.clinic_id);
-            const doctorSessions = await dbOperations.getSelectedColumn('fee_per_session, session_duration', 'tbl_doctors', `WHERE doctor_id = '${doctorId}' `);
-            clinic.operation_hours = operationHours;
+            console.log("clinicId",clinicId);
+            // const operationHours = await dbOperations.getData('tbl_doctor_availability', `WHERE doctor_id = '${doctorId}' `); (clinic.clinic_id);
+
+            clinic.operation_hours = await clinicModels.getClinicOperationHours(clinicId);
+            const doctorSessions = await dbOperations.getSelectedColumn('fee_per_session, slot_time', 'tbl_doctors', `WHERE doctor_id = '${doctorId}' `);
+            // clinic.operation_hours = operationHours;
             clinic.doctorSessions = doctorSessions;
 
             const zynqUser = await fetchZynqUserByUserId(zynqUserId);
