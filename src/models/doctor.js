@@ -609,7 +609,7 @@ export const get_all_certification_types = async () => {
     }
 };
 
-export const get_doctor_profile = async (doctorId, language) => {
+export const get_doctor_profile = async (doctorId, language,zynqUserId) => {
     try {
         const [doctor] = await db.query(`
             SELECT d.doctor_id,
@@ -677,7 +677,7 @@ export const get_doctor_profile = async (doctorId, language) => {
                 );
 
                 clinic.devices = await getDoctorClinicDevices(
-                    doctorId,
+                    zynqUserId,
                     clinic.clinic_id
                 );
 
@@ -1021,7 +1021,7 @@ export const update_doctor_treatment_devices = async (zynqUserId, treatments, de
         });
 
         if (data.length > 0) {
-            await db.query(
+           await db.query(
                 `INSERT INTO tbl_treatment_device_user_maps (treatment_id, zynq_user_id,clinic_id, device_id) VALUES ?`,
                 [data]
             );
