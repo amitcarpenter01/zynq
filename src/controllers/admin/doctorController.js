@@ -194,7 +194,7 @@ export const get_doctors_management = async (req, res) => {
                     });
                 }
                 const onboarding_progress =
-                    await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id);
+                    await calculateProfileCompletionPercentageByDoctorId(doctor.doctor_id,doctor.user_type,doctor.availability);
 
                 /* ---------------- CLINICS (ARRAY) ---------------- */
                 let clinics = await doctorModels.get_clinics_data_by_doctor_id(

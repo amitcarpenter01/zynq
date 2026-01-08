@@ -312,7 +312,7 @@ export const getDoctorProfile = async (req, res) => {
         const doctorId = req.user.doctorData.doctor_id;
         const zynqUserId = req.user.id;
 
-        const profileData = await doctorModels.get_doctor_profile(doctorId, language,zynqUserId);
+        const profileData = await doctorModels.get_doctor_profile(doctorId, language, zynqUserId);
 
         let completionPercentage = 0;
         let filledFieldsCount = 0;
@@ -814,7 +814,7 @@ export const getLinkedClinics = async (req, res) => {
     }
 };
 
-export const calculateProfileCompletionPercentageByDoctorId = async (doctorId) => {
+export const calculateProfileCompletionPercentageByDoctorId = async (doctorId, user_type, availability) => {
     try {
 
         const profileData = await doctorModels.get_doctor_profile(doctorId);
@@ -855,17 +855,45 @@ export const calculateProfileCompletionPercentageByDoctorId = async (doctorId) =
         totalFieldsCount += expertiseCategories.length;
 
         const missingExpertise = [];
+        // expertiseCategories.forEach(category => {
+        //     const hasData = profileData[category] && profileData[category].length > 0;
+        //     if (hasData) filledFieldsCount++;
+        //     else missingExpertise.push(category);
+        // });
         expertiseCategories.forEach(category => {
-            const hasData = profileData[category] && profileData[category].length > 0;
-            if (hasData) filledFieldsCount++;
-            else missingExpertise.push(category);
+            const hasData =
+                Array.isArray(profileData.clinics) &&
+                profileData.clinics.some(
+                    clinic =>
+                        Array.isArray(clinic[category]) &&
+                        clinic[category].length > 0
+                );
+
+            if (hasData) {
+                filledFieldsCount++;
+            } else {
+                missingExpertise.push(category);
+            }
         });
+
         missingSummary.expertise = missingExpertise;
 
         // ---------- AVAILABILITY ----------
         totalFieldsCount += 1;
 
-        const hasAvailability = profileData.availability && profileData.availability.length > 0;
+        // const hasAvailability = hasAvailability = profileData.clinics && profileData.availability.length > 0;
+
+        let hasAvailability;
+
+        if (user_type == "Doctor") {
+            hasAvailability = Array.isArray(profileData.clinics) &&
+                profileData.clinics.some(
+                    clinic => Array.isArray(clinic.slots) && clinic.slots.length > 0
+                )
+        } else {
+            hasAvailability = availability && availability.length > 0;
+        }
+
         if (hasAvailability) filledFieldsCount++;
         else missingSummary.availability = ["availability"];
 
