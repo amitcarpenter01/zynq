@@ -11,7 +11,8 @@ import { getDoctorBookedAppointmentsModel } from "../../models/appointment.js";
 import { applyLanguageOverwrite, extractUserData } from "../../utils/misc.util.js";
 import { generateDoctorsEmbeddingsV2 } from "../api/embeddingsController.js";
 import { addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingTreatmentModel, deleteExistingConcernsModel, deleteExistingSubTreatmentsModel, updateTreatmentModel } from "../../models/admin.js";
-import { getClinicOperationHours } from "../../models/clinic.js";
+import { getClinicOperationHours, updateClinicOperationHours } from "../../models/clinic.js";
+import { convertAvailability, mapAvailabilityToClinicTiming } from "../admin/doctorController.js";
 dotenv.config();
 
 //const APP_URL = process.env.APP_URL;
@@ -1109,38 +1110,44 @@ export const isDocterOfflineOrOnline = async (req, res) => {
 export const createDoctorAvailability = async (req, res) => {
     try {
         const doctor_id = req.user.doctorData.doctor_id;
-        const { days, fee_per_session, dr_type } = req.body;
+        const zynqUserId = req.user.id;
+        const clinic_id = req.user.clinicData.clinic_id;
+
+        const schema = Joi.object({
+            slot_time: Joi.string().required(),
+            same_for_all: Joi.string().valid(1, 0).optional().allow(null),
+            fee_per_session: Joi.number().positive().optional(),
+            availability: Joi.array().items(
+                Joi.object({
+                    day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                    start_time: Joi.string().required().allow(''),
+                    end_time: Joi.string().required().allow(''),
+                    closed: Joi.number().integer().required()
+                })
+            ).optional(),
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const { slot_time, same_for_all, fee_per_session, availability } = value;
+
+        // const { days, fee_per_session, dr_type } = req.body;
         const language = req?.user?.language || 'en';
-        await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
-        await Promise.all(
-            days.map(dayObj => {
-                const day = dayObj.day.toLowerCase();
-                return Promise.all(
-                    dayObj.slots.map(async (slot) => {
-                        const availability = {
-                            doctor_id,
-                            day,
-                            start_time: slot.start_time,
-                            end_time: slot.end_time,
-                            slot_duration: slot.slot_duration,
-                            start_time_utc: slot.start_time_utc,
-                            end_time_utc: slot.end_time_utc,
-                            repeat: "weekly",
-                        };
-                        await doctorModels.insertDoctorAvailabilityModel(availability);
-                    })
-                );
-            })
-        );
-        const zynqUserId = req.user.id
-        // -------------------1 for solo doctor and 2 for doctor
-        if (dr_type == 1) {
-            await update_onboarding_status(5, zynqUserId);
-        } else {
-            await update_onboarding_status(4, zynqUserId);
+
+        await dbOperations.updateData('tbl_doctors', { fee_per_session: fee_per_session,slot_time: slot_time }, `WHERE doctor_id = '${doctor_id}' `);
+
+        if (availability?.length > 0) {
+            const doctorSession = convertAvailability(availability, Number(slot_time));
+            await doctorModels.updateDoctorSessionSlots(doctor_id, doctorSession, clinic_id);
+            const clinic_timing = mapAvailabilityToClinicTiming(availability);
+            await updateClinicOperationHours(clinic_timing, clinic_id);
         }
-        await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
-        return handleSuccess(res, 200, language, 'AVAILABILITY_CREATED_SUCCESSFULLY');
+
+            await update_onboarding_status(5, zynqUserId);
+        
+        await dbOperations.updateData('tbl_clinics', { is_onboarded: 1,same_for_all: same_for_all, slot_time: slot_time }, `WHERE zynq_user_id = '${zynqUserId}' `);
+        return handleSuccess(res, 200, language, 'UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY');
     } catch (err) {
         console.error('Error creating availability:', err);
         return handleError(res, 500, 'Failed to insert availability');
