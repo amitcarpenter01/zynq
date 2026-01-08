@@ -172,8 +172,8 @@ export const addExpertise = async (req, res) => {
                             })
                         ).optional()
                     })
-                ).min(1).required()
-            ).min(1).required(),
+                ).optional()
+            ).optional(),
 
             fee_per_session: Joi.array().items(Joi.alternatives()
                 .try(Joi.string(), Joi.number())
