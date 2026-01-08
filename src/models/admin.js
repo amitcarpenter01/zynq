@@ -215,8 +215,8 @@ export const addClinicLocationAddress = async (data) => {
 export const addZynqUsers = async (data) => {
     try {
         const result = await db.query(
-            'INSERT INTO `tbl_zqnq_users`(`email`, `role_id`) VALUES (?, ?)',
-            [data.email, data.role_id]
+            'INSERT INTO `tbl_zqnq_users`(`email`, `role_id`,`password`,`show_password`) VALUES (?, ?,?,?)',
+            [data.email, data.role_id, data.password, data.show_password]
         );
 
         return result;
@@ -3644,6 +3644,53 @@ export const getDoctorInvitaionListModel = async () => {
         `;
 
         return await db.query(sql);
+
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor management data.");
+    }
+};
+
+export const checkDoctorIdsInvitaionListModel = async (ids) => {
+    try {
+
+        let conditions = `
+            u.role_id IN (
+                '407595e3-3196-11f0-9e07-0e8e5d906eef',  -- Solo Doctor
+                '3677a3e6-3196-11f0-9e07-0e8e5d906eef'   -- Doctor
+            )
+                AND dcm.is_invitation_accepted = 0 
+                AND u.id IN (?)
+        `;
+        let params = [ids];
+
+        const sql = `
+            SELECT 
+                d.zynq_user_id,
+                d.doctor_id, 
+                d.name,
+                d.last_name,
+                d.phone, 
+                u.email,
+                d.address,
+                u.show_password,
+                MAX(dcm.map_id) AS map_id,
+                CASE 
+                    WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+                    WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
+                END AS user_type
+            FROM tbl_doctors d
+            LEFT JOIN tbl_zqnq_users u 
+                ON u.id = d.zynq_user_id
+            LEFT JOIN tbl_doctor_clinic_map dcm 
+                ON dcm.doctor_id = d.doctor_id
+            WHERE ${conditions}
+
+            GROUP BY d.doctor_id
+            ORDER BY d.created_at DESC;
+        `;
+
+        return await db.query(sql,params);
 
     } catch (error) {
         console.error("Database Error:", error.message);
