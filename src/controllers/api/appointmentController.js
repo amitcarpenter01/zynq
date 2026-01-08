@@ -14,7 +14,7 @@ import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
 import { sendEmail } from '../../services/send_email.js';
 import { appointmentBookedTemplate, appointmentBookingConfirmationTemplate, appointmentBookingConfirmationTemplateSwedish, appointmentReceiptTemplate, appointmentReceiptTemplateSwedish } from '../../utils/templates.js';
 import { getAdminCommissionRatesModel } from '../../models/admin.js';
-import { createPayLaterSetupSession, createPaymentSessionForAppointment, getOrCreateStripeCustomerId, handleCheckoutSessionCompleted, handlePaymentIntentFailed, handlePaymentIntentSucceeded, handleSetupIntentSucceeded, updateAuthorizationSetupIntentIdOfAppointment, verifyStripeWebhook } from '../../models/payment.js';
+import { createPayLaterSetupSession, createPaymentSessionForAppointment, createPaymentSessionForAppointmentPAYLATERKLARNA, getOrCreateStripeCustomerId, handleCheckoutSessionCompleted, handlePaymentIntentFailed, handlePaymentIntentSucceeded, handleSetupIntentSucceeded, updateAuthorizationSetupIntentIdOfAppointment, verifyStripeWebhook } from '../../models/payment.js';
 import { booleanValidation } from '../../utils/joi.util.js';
 import { getIO } from '../../utils/socketManager.js';
 import { onlineUsers } from "../../utils/callSocket.js";
@@ -1404,7 +1404,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             redirect_url: Joi.string().required(),
             cancel_url: Joi.string().required(),
             appointmentType: Joi.string().required(),
-            payment_timing: Joi.string().optional().valid('PAY_NOW', 'PAY_LATER'),
+            payment_timing: Joi.string().optional().valid('PAY_NOW', 'PAY_LATER', 'PAY_LATER_KLARNA'),
         });
 
         const { error, value } = schema.validate(req.body);
@@ -1555,7 +1555,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 
                 const stripe_customer_id = await getOrCreateStripeCustomerId(user_id);
 
-                 session = await createPayLaterSetupSession({
+                session = await createPayLaterSetupSession({
                     metadata: {
                         appointment_id,
                         redirect_url,
@@ -1566,6 +1566,23 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 
                 const updateStatus = await updateAuthorizationSetupIntentIdOfAppointment(session.setup_intent, appointment_id);
 
+            } else if (payment_timing === 'PAY_LATER_KLARNA') {
+                
+                session = await createPaymentSessionForAppointmentPAYLATERKLARNA({
+                    metadata: {
+                        order_lines: [
+                            {
+                                name: "Appointment",
+                                quantity: 1,
+                                unit_amount: final_total * 100,
+                            },
+                        ],
+                        appointment_id,
+                        redirect_url,
+                        cancel_url,
+                        currency: "sek",
+                    },
+                });
             } else {
                 session = await createPaymentSessionForAppointment({
                     metadata: {
@@ -1702,7 +1719,7 @@ export const markAppointmentAsPaid = async (req, res) => {
         const total_price = appointmentDetails.total_price
         const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
 
-        if (appointmentDetails.payment_timing === "PAY_NOW") {
+        if (appointmentDetails.payment_timing != "PAY_LATER") {
             await appointmentModel.updateAppointmentAsPaid(appointment_id, 'paid');
         }
 
