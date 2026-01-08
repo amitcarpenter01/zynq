@@ -54,7 +54,7 @@ export const login_web_user = async (req, res) => {
         }
         // language = existingWebUser.language;
 
-        const isPasswordValid = await bcrypt.compare(password, existingWebUser.password);
+        const isPasswordValid = await bcrypt.compare(password, existingWebUser.password || "");
         if (!isPasswordValid) {
             return handleError(res, 400, language, "INVALID_EMAIL_PASSWORD");
         }

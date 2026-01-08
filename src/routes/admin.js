@@ -253,5 +253,7 @@ router.post("/generate-slots",authenticateAdmin,doctorControllers.generateAvaila
 
 router.post("/clinic-unlinck",authenticateAdmin,doctorControllers.unsyncClinicController);
 
+router.post("/send-doctor-invitation",authenticateAdmin,doctorControllers.sendDoctorInvitationListController);
+
 
 export default router;

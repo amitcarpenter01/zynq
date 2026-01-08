@@ -324,5 +324,7 @@
   "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY" : "Expert uppdaterad framgångsrikt",
   "AWS_RECOGNITION_RESULT" : "AWS-igenkänningsresultat",
   "FILE_NOT_FOUND" : "Filen hittades inte",
-  "CLINIC_UNSYNCED_SUCCESSFULLY" : "Kliniken har kopplats bort"
+  "CLINIC_UNSYNCED_SUCCESSFULLY" : "Kliniken har kopplats bort",
+  "EXPERT_ADDED_SUCCESSFULLY" : "Expert har lagts till",
+  "SOLO_EXPERT_UPDATED_SUCCESSFULLY" : "Soloexpert har lagts till"
 }
