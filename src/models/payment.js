@@ -549,7 +549,7 @@ export const createPaymentSessionForAppointment = async ({ metadata }) => {
       line_items,
       success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
       cancel_url: `https://getzynq.io/zynq/payment-cancel/?redirect_url=${metadata.cancel_url}`,
-      metadata: {},
+      metadata: { appointment_id: metadata.appointment_id,payment_flow: "PAY_NOW"},
     });
 
   } catch (error) {
@@ -557,6 +557,39 @@ export const createPaymentSessionForAppointment = async ({ metadata }) => {
     throw error;
   }
 };
+
+export const createPaymentSessionForAppointmentPAYLATERKLARNA = async ({ metadata }) => {
+  try {
+
+    const line_items = metadata.order_lines.map((line) => ({
+      price_data: {
+        currency: metadata.currency || "sek",
+        product_data: { name: line.name },
+        unit_amount: line.unit_amount,
+      },
+      quantity: line.quantity,
+    }));
+
+    return await stripe.checkout.sessions.create({
+      mode: "payment",
+
+      // SHOW ALL PAYMENT METHODS AUTOMATICALLY
+      payment_method_types: [
+        "klarna",
+      ],
+
+      line_items,
+      success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
+      cancel_url: `https://getzynq.io/zynq/payment-cancel/?redirect_url=${metadata.cancel_url}`,
+      metadata: {appointment_id: metadata.appointment_id ,payment_flow: "PAY_LATER_KLARNA"},
+    });
+
+  } catch (error) {
+    console.error("Failed to create payment session:", error);
+    throw error;
+  }
+};
+
 
 export const createPayLaterSetupSession = async ({ metadata }) => {
   try {

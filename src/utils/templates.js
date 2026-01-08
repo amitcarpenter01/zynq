@@ -1467,7 +1467,7 @@ export const appointmentReceiptTemplateSwedish = {
 };
 
 export const appointmentBookingConfirmationTemplate = {
-  subject: (payment_timing) => `${payment_timing == "PAY_NOW" ? "Appointment Confirmed" : "Pay Later – Appointment Confirmed"}`,
+  subject: (payment_timing) => `${payment_timing === "PAY_LATER" ? "Pay Later – Appointment Confirmed" : "Appointment Confirmed" }`,
 
   body: ({
     logo = 'https://getzynq.io:4000/logo1.png',
@@ -1532,13 +1532,8 @@ export const appointmentBookingConfirmationTemplate = {
       .join("") : "";
 
     const paymentMessageHTML =
-      payment_timing == "PAY_NOW"
+      payment_timing === "PAY_LATER"
         ? `
-      <p style="font-family:'Poppins',sans-serif; font-size:15px; line-height:24px; color:#000; text-align:center;">
-        Your appointment has been successfully confirmed.
-      </p>
-    `
-        : `
       <div style="border: 1px solid #e6e6e6;background-color: #f5f5f57d;padding:15px;border-radius:6px;text-align:left">
         <p style="font-family:'Poppins',sans-serif; font-size:15px; font-weight:600; margin-top:0;">
           Your card has been added successfully.
@@ -1561,6 +1556,10 @@ export const appointmentBookingConfirmationTemplate = {
           ⚠️ If the payment fails, the appointment may be automatically cancelled.
         </p>
       </div>
+    ` : `
+      <p style="font-family:'Poppins',sans-serif; font-size:15px; line-height:24px; color:#000; text-align:center;">
+        Your appointment has been successfully confirmed.
+      </p>
     `;
 
 
@@ -1574,7 +1573,7 @@ export const appointmentBookingConfirmationTemplate = {
   <meta name="x-apple-disable-message-reformatting">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-  <title>${payment_timing == "PAY_NOW" ? "Appointment Confirmed" : "Pay Later – Appointment Confirmed"}</title>
+  <title>${payment_timing === "PAY_LATER" ?  "Pay Later – Appointment Confirmed" : "Appointment Confirmed"}</title>
 
   <style type="text/css">
     @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
@@ -1632,7 +1631,7 @@ export const appointmentBookingConfirmationTemplate = {
 
             <div style="padding-bottom:10px">
               <p style="text-align:center; margin-bottom:5px; margin-top:5px; font-size:22px; font-weight:600; line-height:30px;">
-                ${payment_timing == "PAY_NOW" ? "Appointment Confirmed" : "Pay Later – Appointment Confirmed"}
+                ${payment_timing === "PAY_LATER" ?  "Pay Later – Appointment Confirmed" : "Appointment Confirmed"}
               </p>
             </div>
 
@@ -1748,7 +1747,7 @@ export const appointmentBookingConfirmationTemplate = {
 };
 
 export const appointmentBookingConfirmationTemplateSwedish = {
-  subject: (payment_timing) => `${payment_timing == "PAY_NOW" ? "Utnämning bekräftad" : "Betala senare – Avtal bekräftat"}`,
+  subject: (payment_timing) => `${payment_timing === "PAY_LATER" ? "Betala senare – Avtal bekräftat" : "Utnämning bekräftad"}`,
 
   body: ({
     logo = 'https://getzynq.io:4000/logo1.png',
@@ -1813,13 +1812,8 @@ export const appointmentBookingConfirmationTemplateSwedish = {
       .join("") : "";
 
     const paymentMessageHTML =
-      payment_timing == "PAY_NOW"
-        ? `
-      <p style="font-family:'Poppins',sans-serif; font-size:15px; line-height:24px; color:#000; text-align:center;">
-        Din bokning har bekräftats.
-      </p>
-    `
-        : `
+      payment_timing === "PAY_LATER"
+        ?  `
       <div style="border: 1px solid #e6e6e6;background-color: #f5f5f57d;padding:15px;border-radius:6px;text-align:left">
         <p style="font-family:'Poppins',sans-serif; font-size:15px; font-weight:600; margin-top:0;">
           Ditt kort har lagts till.
@@ -1842,6 +1836,10 @@ export const appointmentBookingConfirmationTemplateSwedish = {
           ⚠️ Om betalningen misslyckas kan bokade tid automatiskt avbokas.
         </p>
       </div>
+    ` : `
+      <p style="font-family:'Poppins',sans-serif; font-size:15px; line-height:24px; color:#000; text-align:center;">
+        Din bokning har bekräftats.
+      </p>
     `;
 
 
@@ -1856,7 +1854,7 @@ export const appointmentBookingConfirmationTemplateSwedish = {
   <meta name="x-apple-disable-message-reformatting">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-  <title>${payment_timing == "PAY_NOW" ? "Utnämning bekräftad" : "Betala senare – Avtal bekräftat"}</title>
+  <title>${payment_timing === "PAY_LATER" ?  "Betala senare – Avtal bekräftat" : "Utnämning bekräftad"}</title>
 
   <style type="text/css">
     @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
@@ -1914,7 +1912,7 @@ export const appointmentBookingConfirmationTemplateSwedish = {
 
             <div style="padding-bottom:10px">
               <p style="text-align:center; margin-bottom:5px; margin-top:5px; font-size:22px; font-weight:600; line-height:30px;">
-                ${payment_timing == "PAY_NOW" ? "Utnämning bekräftad" : "Betala senare – Avtal bekräftat"}
+                ${payment_timing === "PAY_LATER" ?  "Betala senare – Avtal bekräftat" : "Utnämning bekräftad"}
               </p>
             </div>
 
