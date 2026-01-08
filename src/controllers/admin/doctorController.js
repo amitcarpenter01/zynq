@@ -339,13 +339,13 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             last_name: Joi.string().optional().allow('', null),
 
             fee_per_session: Joi.array().items(Joi.alternatives()
-                            .try(Joi.string(), Joi.number())
-                            .optional()
-                            .allow(null)).optional().allow(null),
+                .try(Joi.string(), Joi.number())
+                .optional()
+                .allow(null)).optional().allow(null),
             doctor_slot_time: Joi.array().items(Joi.alternatives()
-                            .try(Joi.string(), Joi.number())
-                            .optional()
-                            .allow(null)).optional().allow(null),
+                .try(Joi.string(), Joi.number())
+                .optional()
+                .allow(null)).optional().allow(null),
 
             education: Joi.array().items(Joi.object({
                 institute: Joi.string().required(),
@@ -594,7 +594,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             }
 
 
-            const result = await doctorModels.add_personal_details(zynqUserId, name, phone, age, address, city, zip_code, latitude, longitude, gender, filename, biography, last_name, slot_time,createdDoctor.profile_status);
+            const result = await doctorModels.add_personal_details(zynqUserId, name, phone, age, address, city, zip_code, latitude, longitude, gender, filename, biography, last_name, slot_time, createdDoctor.profile_status);
 
             const files = req.files;
             if (Object.keys(files).length > 0) { // Only process if new files are actually uploaded
@@ -691,7 +691,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                         subject: "Expert Invitation",
                         html: emailHtml,
                     };
-                    await sendEmail(emailOptions);
+                    // await sendEmail(emailOptions);
 
 
                     const availabilityArray = availability ? availability[index] : [];
@@ -754,7 +754,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                     }
                 }))
 
-            return handleSuccess(res, 200, language, "INVITATION_SENT_SUCCESSFULLY");
+            return handleSuccess(res, 200, language, "EXPERT_ADDED_SUCCESSFULLY");
 
         }
     } catch (error) {
@@ -1301,15 +1301,15 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
             }
         );
 
-        await sendEmail({
-            to: email,
-            subject: "You're One Step Away from Joining ZYNQ – Accept Your Invite",
-            html,
-        });
+        // await sendEmail({
+        //     to: email,
+        //     subject: "You're One Step Away from Joining ZYNQ – Accept Your Invite",
+        //     html,
+        // });
 
 
 
-        return handleSuccess(res, 200, language, "INVITATION_SENT_SUCCESSFULLY");
+        return handleSuccess(res, 200, language, "SOLO_EXPERT_UPDATED_SUCCESSFULLY");
 
     } catch (error) {
         console.error("Error sending doctor invitation:", error);
@@ -1335,13 +1335,13 @@ export const updateDoctorController = async (req, res) => {
             latitude: Joi.number().optional().allow(null).empty('').default(null),
             longitude: Joi.number().optional().allow(null).empty('').default(null),
             fee_per_session: Joi.array().items(Joi.alternatives()
-                            .try(Joi.string(), Joi.number())
-                            .optional()
-                            .allow(null)).optional().allow(null),
+                .try(Joi.string(), Joi.number())
+                .optional()
+                .allow(null)).optional().allow(null),
             doctor_slot_time: Joi.array().items(Joi.alternatives()
-                            .try(Joi.string(), Joi.number())
-                            .optional()
-                            .allow(null)).optional().allow(null),
+                .try(Joi.string(), Joi.number())
+                .optional()
+                .allow(null)).optional().allow(null),
             education: Joi.array().items(Joi.object({
                 institute: Joi.string().required(),
                 degree: Joi.string().required(),
@@ -1606,8 +1606,8 @@ export const updateDoctorController = async (req, res) => {
                 const surgeryIds = surgery_ids ? surgery_ids[index] : [];
                 const deviceIds = device_ids ? device_ids[index] : [];
                 const clinicTreatments = treatments?.[index] || [];
-                
-                await doctorModels.deleteDoctorClincData({doctor_id : doctorId, clinic_id :item,zynq_user_id : zynq_user_id});
+
+                await doctorModels.deleteDoctorClincData({ doctor_id: doctorId, clinic_id: item, zynq_user_id: zynq_user_id });
 
                 // Save expertis
                 if (Array.isArray(clinicTreatments) && clinicTreatments.length > 0) {
@@ -2137,6 +2137,107 @@ export const getDoctorInvitationListController = async (req, res) => {
         const doctors = await adminModels.getDoctorInvitaionListModel();
 
         return handleSuccess(res, 200, language, "Fetch doctor invitation list successfully", doctors);
+
+    } catch (error) {
+        console.error("internal E", error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
+    }
+};
+
+export const sendDoctorInvitationListController = async (req, res) => {
+    try {
+        const language = req?.user?.language || 'en';
+        const schema = Joi.object({
+            zynqUser_ids: Joi.array().items(Joi.string().uuid()).min(1).required()
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        const { zynqUser_ids } = value;
+
+        // Fetch filtered clinics
+        const doctors = await adminModels.checkDoctorIdsInvitaionListModel(zynqUser_ids);
+
+
+        if (doctors.length == 0) return handleError(res, 404, language, "DOCTOR_NOT_FOUND");
+
+
+        await Promise.all(
+            doctors?.map(async (doctor) => {
+
+
+                const [clinicData] = await clinicModels.getClinicProfile(doctor.clinic_id);
+
+                const [get_location] = await clinicModels.get_clinic_location_by_clinic_id(doctor.clinic_id);
+
+                let sendPassword = doctor?.show_password;
+
+                if (doctor.user_type == "Doctor") {
+
+                    const emailTemplatePath = path.resolve(__dirname, "../../views/doctor_invite/en.ejs");
+
+                    const emailTemplatePath2 = path.resolve(__dirname, "../../views/doctor_invite/enn.ejs");
+                    const invitation_id = doctor?.map_id;
+
+
+                    const emailHtml = await ejs.renderFile(language == "en" ? emailTemplatePath : emailTemplatePath2, {
+                        clinic_name: clinicData?.clinic_name || "#N/A",
+                        clinic_org_number: clinicData?.org_number || "#N/A",
+                        clinic_city: get_location?.city || "#N/A",
+                        clinic_street_address: get_location?.street_address || "#N/A",
+                        clinic_state: get_location?.state || "#N/A",
+                        clinic_zip: get_location?.zip_code || "#N/A",
+                        clinic_phone: clinicData?.mobile_number || "#N/A",
+                        clinic_email: clinicData?.email,
+                        email: doctor.email,
+                        password: sendPassword,
+                        image_logo,
+                        invitation_id,
+                        invitation_link: `${APP_URL}clinic/accept-invitation?invitation_id=${invitation_id}`,
+                    });
+
+                    const emailOptions = {
+                        to: doctor.email,
+                        subject: "Expert Invitation",
+                        html: emailHtml,
+                    };
+                    await sendEmail(emailOptions);
+                } else {
+
+
+                    const is_subscribed = doctor?.clinic_id;
+
+                    const html = await ejs.renderFile(
+                        path.join(__dirname, "../../views/invitation-mail.ejs"),
+                        {
+                            clinic_name: clinicData?.clinic_name || "#N/A",
+                            organization_number: clinicData?.org_number || "#N/A",
+                            email: doctor.email,
+                            phone: clinicData?.mobile_number || "#N/A",
+                            city: get_location?.city || "#N/A",
+                            postal_code: get_location?.zip_code || "#N/A",
+                            address: doctor?.address || "#N/A",
+                            password: sendPassword,
+                            logo: image_logo,
+                            invitationLink: `${APP_URL}admin/subscribed/${is_subscribed}`,
+                        }
+                    );
+
+                    await sendEmail({
+                        to: doctor.email,
+                        subject: "You're One Step Away from Joining ZYNQ – Accept Your Invite",
+                        html,
+                    });
+
+
+                }
+            })
+        );
+
+
+
+        return handleSuccess(res, 200, language, "INVITATION_SENT_SUCCESSFULLY",);
 
     } catch (error) {
         console.error("internal E", error);

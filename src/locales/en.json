@@ -325,5 +325,7 @@
   "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY" : "Expert Updated Successfully",
   "AWS_RECOGNITION_RESULT" : "AWS Recognition Result",
   "FILE_NOT_FOUND" : "File Not Found",
-  "CLINIC_UNSYNCED_SUCCESSFULLY" : "Clinic Unlinked Successfully"
+  "CLINIC_UNSYNCED_SUCCESSFULLY" : "Clinic Unlinked Successfully",
+  "EXPERT_ADDED_SUCCESSFULLY" : "Expert Added Successfully",
+  "SOLO_EXPERT_UPDATED_SUCCESSFULLY" : "Solo Expert Added Successfully"
 }
