@@ -11,6 +11,7 @@ import { getDoctorBookedAppointmentsModel } from "../../models/appointment.js";
 import { applyLanguageOverwrite, extractUserData } from "../../utils/misc.util.js";
 import { generateDoctorsEmbeddingsV2 } from "../api/embeddingsController.js";
 import { addSubTreatmentsModel, addTreatmentConcernsModel, addTreatmentModel, checkExistingTreatmentModel, deleteExistingConcernsModel, deleteExistingSubTreatmentsModel, updateTreatmentModel } from "../../models/admin.js";
+import { getClinicOperationHours } from "../../models/clinic.js";
 dotenv.config();
 
 //const APP_URL = process.env.APP_URL;
@@ -814,7 +815,7 @@ export const getLinkedClinics = async (req, res) => {
     }
 };
 
-export const calculateProfileCompletionPercentageByDoctorId = async (doctorId, user_type, availability) => {
+export const calculateProfileCompletionPercentageByDoctorId = async (doctorId, user_type, clinic_id) => {
     try {
 
         const profileData = await doctorModels.get_doctor_profile(doctorId);
@@ -891,6 +892,10 @@ export const calculateProfileCompletionPercentageByDoctorId = async (doctorId, u
                     clinic => Array.isArray(clinic.slots) && clinic.slots.length > 0
                 )
         } else {
+            let availability = []
+            if (clinic_id) {
+                availability = await getClinicOperationHours(clinic_id);
+            }
             hasAvailability = availability && availability.length > 0;
         }
 
