@@ -827,8 +827,11 @@ export const getDoctorProfileByStatus = async (req, res) => {
             // const operationHours = await dbOperations.getData('tbl_doctor_availability', `WHERE doctor_id = '${doctorId}' `); (clinic.clinic_id);
 
             clinic.operation_hours = await clinicModels.getClinicOperationHours(clinicId);
-            const doctorSessions = await dbOperations.getSelectedColumn('fee_per_session, slot_time', 'tbl_doctors', `WHERE doctor_id = '${doctorId}' `);
+            let doctorSessions = await dbOperations.getSelectedColumn('fee_per_session, slot_time', 'tbl_doctors', `WHERE doctor_id = '${doctorId}' `);
+
+            const [same_for_all] = await dbOperations.getSelectedColumn('same_for_all','tbl_clinics', `WHERE clinic_id = '${clinicId}' `)
             // clinic.operation_hours = operationHours;
+            doctorSessions[0].same_for_all = same_for_all?.same_for_all || 0 ;
             clinic.doctorSessions = doctorSessions;
 
             const zynqUser = await fetchZynqUserByUserId(zynqUserId);
