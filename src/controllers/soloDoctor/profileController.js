@@ -32,6 +32,7 @@ export const addPersonalInformation = async (req, res) => {
             // hsa_id: Joi.string().optional().allow('', null),
             org_number: Joi.string().optional().allow('', null),
             slot_time: Joi.string().optional().allow("", null),
+            last_name : Joi.string().optional().allow("", null),
         });
         let language = 'en';
 
@@ -45,6 +46,7 @@ export const addPersonalInformation = async (req, res) => {
             gender: value.gender,
             age: value.age,
             biography: value.clinic_description,
+            last_name : value.last_name,
         };
         if (req.files.profile) {
             doctorData.profile_image = req.files.profile[0].filename
