@@ -1583,7 +1583,10 @@ export const updateDoctorController = async (req, res) => {
             for (let exp of expArray) {
                 await doctorModels.add_experience(doctorId, exp.organization, exp.designation, exp.start_date, exp.end_date);
             }
-        }
+        };
+
+
+        let [user] = await webModels.get_web_user_by_id(zynq_user_id);
 
         await Promise.all(
             clinic_id.map(async (item, index) => {
@@ -1610,14 +1613,14 @@ export const updateDoctorController = async (req, res) => {
                     // Send invitation WITHOUT password → use enn.ejs
                     const emailHtml = await ejs.renderFile(emailTemplatePath2,
                         {
-                            clinic_name: clinicData.clinic_name,
-                            clinic_org_number: clinicData.org_number,
-                            clinic_city: get_location.city,
-                            clinic_street_address: get_location.street_address,
-                            clinic_state: get_location.state,
-                            clinic_zip: get_location.zip_code,
-                            clinic_phone: clinicData.mobile_number,
-                            clinic_email: clinicData.email,
+                            clinic_name: clinicData?.clinic_name || "#N/A",
+                            clinic_org_number: clinicData?.org_number || "#N/A",
+                            clinic_city: get_location?.city || "#N/A",
+                            clinic_street_address: get_location?.street_address || "#N/A",
+                            clinic_state: get_location?.state || "#N/A",
+                            clinic_zip: get_location?.zip_code || "#N/A",
+                            clinic_phone: clinicData?.mobile_number || "#N/A",
+                            clinic_email: clinicData?.email || "#N/A",
                             image_logo,
                             invitation_id,
                             invitation_link: `${APP_URL}clinic/accept-invitation?invitation_id=${invitation_id}`,
@@ -1625,7 +1628,7 @@ export const updateDoctorController = async (req, res) => {
                     );
 
                     await sendEmail({
-                        to: email,
+                        to: user.email,
                         subject: "Expert Invitation",
                         html: emailHtml,
                     });
