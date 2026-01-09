@@ -348,6 +348,10 @@ export const get_clinic_managment = async (req, res) => {
                     clinicModels.getClinicOperationHours(clinic.clinic_id)
                 ]);
 
+                if(clinic.user_type == "Solo Doctor"){
+                    clinic.user_type = "Solo Expert";
+                }
+
                 return {
                     ...clinic,
                     treatments,
