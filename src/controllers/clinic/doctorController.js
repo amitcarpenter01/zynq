@@ -156,6 +156,7 @@ const image_logo = process.env.LOGO_URL_PNG;
 // };
 
 
+
 export const sendDoctorInvitation = async (req, res) => {
     try {
 
@@ -214,7 +215,7 @@ export const sendDoctorInvitation = async (req, res) => {
                         res,
                         400,
                         "en",
-                        "This email already belongs to a Solo Doctor. It cannot be mapped with a clinic."
+                        "This email already belongs to a Solo Expert. It cannot be mapped with a clinic."
                     );
                 }
 
@@ -225,7 +226,7 @@ export const sendDoctorInvitation = async (req, res) => {
                     const [existingDoctor] = await clinicModels.get_doctor_by_zynq_user_id(existingUser.id);
 
                     if (!existingDoctor) {
-                        return handleError(res, 400, "en", "Doctor record not found.");
+                        return handleError(res, 400, "en", "Expert record not found.");
                     }
 
                     doctor_id = existingDoctor.doctor_id;
@@ -241,7 +242,7 @@ export const sendDoctorInvitation = async (req, res) => {
                             res,
                             400,
                             "en",
-                            "This doctor is already mapped to this clinic."
+                            "This expert is already mapped to this clinic."
                         );
                     }
 
