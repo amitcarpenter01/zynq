@@ -609,7 +609,7 @@ export const get_all_certification_types = async () => {
     }
 };
 
-export const get_doctor_profile = async (doctorId, language,zynqUserId) => {
+export const get_doctor_profile = async (doctorId, language, zynqUserId) => {
     try {
         const [doctor] = await db.query(`
             SELECT d.doctor_id,
@@ -1021,7 +1021,7 @@ export const update_doctor_treatment_devices = async (zynqUserId, treatments, de
         });
 
         if (data.length > 0) {
-           await db.query(
+            await db.query(
                 `INSERT INTO tbl_treatment_device_user_maps (treatment_id, zynq_user_id,clinic_id, device_id) VALUES ?`,
                 [data]
             );
@@ -1908,7 +1908,13 @@ export const updateDoctorSlotTimeAndCunsultationFeeOfClinicModel = async ({
              SET doctor_slot_time = ?, 
                  fee_per_session = ?
              WHERE clinic_id = ? AND doctor_id = ?`,
-            [doctor_slot_time ? doctor_slot_time : mappedDoctorClinic?.doctor_slot_time, fee_per_session ? fee_per_session : mappedDoctorClinic?.fee_per_session, clinic_id, doctor_id]
+            // [doctor_slot_time ? doctor_slot_time : mappedDoctorClinic?.doctor_slot_time, fee_per_session ? fee_per_session : mappedDoctorClinic?.fee_per_session, clinic_id, doctor_id]
+            [
+                doctor_slot_time ?? mappedDoctorClinic.doctor_slot_time,
+                fee_per_session ?? mappedDoctorClinic.fee_per_session,
+                clinic_id,
+                doctor_id
+            ]
         );
     } catch (error) {
         console.error("Database Error:", error.message);
@@ -1916,7 +1922,7 @@ export const updateDoctorSlotTimeAndCunsultationFeeOfClinicModel = async ({
     }
 };
 
-export const deleteDoctorClincData = async ({clinic_id, doctor_id,zynq_user_id}) => {
+export const deleteDoctorClincData = async ({ clinic_id, doctor_id, zynq_user_id }) => {
     try {
         await db.query(`DELETE FROM tbl_doctor_skin_types WHERE doctor_id = ? AND clinic_id = ?`, [doctor_id, clinic_id]);
         await db.query(`DELETE FROM tbl_doctor_surgery WHERE doctor_id = ? AND clinic_id = ?`, [doctor_id, clinic_id]);
@@ -1924,7 +1930,7 @@ export const deleteDoctorClincData = async ({clinic_id, doctor_id,zynq_user_id})
             `DELETE FROM tbl_treatment_device_user_maps WHERE zynq_user_id = ? AND clinic_id = ?`,
             [zynq_user_id, clinic_id]
         );
-        return ;
+        return;
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update doctor personal details.");
