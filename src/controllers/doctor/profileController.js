@@ -1116,7 +1116,7 @@ export const createDoctorAvailability = async (req, res) => {
 
         const schema = Joi.object({
             slot_time: Joi.string().required(),
-            same_for_all: Joi.string().valid(1, 0).optional().allow(null),
+            same_for_all: Joi.string().valid("1", "0").optional().allow(null),
             fee_per_session: Joi.number().positive().optional(),
             availability: Joi.array().items(
                 Joi.object({
