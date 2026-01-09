@@ -1117,7 +1117,7 @@ export const createDoctorAvailability = async (req, res) => {
         const schema = Joi.object({
             slot_time: Joi.string().required(),
             same_for_all: Joi.number().valid(1, 0).optional().allow(null),
-            fee_per_session: Joi.number().positive().optional(),
+            fee_per_session: Joi.number().optional(),
             availability: Joi.array().items(
                 Joi.object({
                     day_of_week: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
