@@ -40,6 +40,7 @@ export const addPersonalInformation = async (req, res) => {
             latitude: Joi.number().optional().allow(null).empty('').default(null),
             longitude: Joi.number().optional().allow(null).empty('').default(null),
             slot_time: Joi.number().optional(),
+            email : Joi.string().optional().allow('', null),
         });
 
         let language = req?.user?.language || 'en';
