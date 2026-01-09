@@ -894,7 +894,7 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
                     end_date: Joi.string().optional().allow(null)
                 })
             ).optional().allow(null),
-            fee_per_session: Joi.number().positive().optional(),
+            fee_per_session: Joi.string().optional().allow(null),
             currency: Joi.string().min(1).max(10).default('USD').optional(),
             session_duration: Joi.string().optional(),
             fee_range: Joi.string().optional().allow('', null),
@@ -1140,7 +1140,7 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
             profile_image: req?.files?.profile ? req?.files?.profile[0]?.filename : null,
             phone: mobile_number,
             address: address,
-            fee_per_session: fee_per_session,
+            fee_per_session: fee_per_session ?? null,
             currency: currency,
             session_duration: session_duration,
             slot_time: slot_time || null,
@@ -1734,7 +1734,7 @@ export const updateSoloDoctorController = async (req, res) => {
                     end_date: Joi.string().optional().allow(null)
                 })
             ).optional().allow(null),
-            fee_per_session: Joi.number().positive().optional(),
+            fee_per_session: Joi.string().optional().allow(null),
             currency: Joi.string().min(1).max(10).default('USD').optional(),
             session_duration: Joi.string().optional(),
             fee_range: Joi.string().optional().allow('', null),
@@ -1928,7 +1928,7 @@ export const updateSoloDoctorController = async (req, res) => {
                 gender: gender ? gender : doctorResult.gender,
                 age: age ? age : doctorResult.age,
                 biography: clinic_description ? clinic_description : doctorResult.biography,
-                fee_per_session: fee_per_session ? fee_per_session : doctorResult.fee_per_session,
+                fee_per_session: fee_per_session ?? doctorResult.fee_per_session,
                 address: address ? address : doctorResult.address,
                 longitude: longitude ? longitude : doctorResult.longitude,
                 profile_image: req?.files?.profile ? req?.files?.profile[0]?.filename : doctorResult.profile_image,
