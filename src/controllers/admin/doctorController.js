@@ -582,9 +582,9 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 created_at: new Date(),
                 slot_time: slot_time || null,
                 profile_status: "IMPORTED",
-                address : address || null,
-                city : city || null,
-                zip_code : zip_code || null
+                address: address || null,
+                city: city || null,
+                zip_code: zip_code || null
             };
             await clinicModels.create_doctor(doctorTableData);
             const [createdDoctor] = await clinicModels.get_doctor_by_zynq_user_id(newWebUser.id);
@@ -1587,6 +1587,20 @@ export const updateDoctorController = async (req, res) => {
 
         await Promise.all(
             clinic_id.map(async (item, index) => {
+
+                const [existingMap] = await clinicModels.get_doctor_clinic_map_by_both(
+                    doctorId,
+                    item
+                );
+
+                if (!existingMap) {
+                    const clinicMapData = {
+                        doctor_id: doctorId,
+                        clinic_id: item,
+                        assigned_at: new Date(),
+                    };
+                    await clinicModels.create_doctor_clinic_map(clinicMapData);
+                }
 
                 const availabilityArray = availability ? availability[index] : [];
                 console.log("availabilityArray=>", availabilityArray)
