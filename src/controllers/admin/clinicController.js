@@ -349,7 +349,9 @@ export const get_clinic_managment = async (req, res) => {
                 ]);
 
                 if(clinic.user_type == "Solo Doctor"){
-                    clinic.user_type = "Solo Expert";
+                    clinic.new_user_type = "Solo Expert";
+                }else{
+                    clinic.new_user_type = "Clinic";
                 }
 
                 return {
