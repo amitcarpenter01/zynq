@@ -603,7 +603,16 @@ export const getClinicAestheticDevices = async (clinic_id) => {
 
 export const getClinicOperationHours = async (clinic_id) => {
     try {
-        const operationHours = await db.query('SELECT * FROM tbl_clinic_operation_hours WHERE clinic_id = ?', [clinic_id]);
+        const operationHours = await db.query(`SELECT * FROM tbl_clinic_operation_hours WHERE clinic_id = ? ORDER BY FIELD(
+        day_of_week,
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday'
+      )`, [clinic_id]);
         return operationHours;
     } catch (error) {
         console.error("Database Error:", error.message);
