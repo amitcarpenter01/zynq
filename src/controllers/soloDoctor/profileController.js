@@ -635,6 +635,18 @@ export const getDoctorProfile = async (req, res) => {
     }
 };
 
+export const getSoloExpertOnboardingStatus = async (req, res) => {
+    try {
+
+        const on_boarding_status = req.user.on_boarding_status || 0;
+        
+        return handleSuccess(res, 200, "en", "DOCTOR_PROFILE_RETRIEVED", on_boarding_status);
+    } catch (error) {
+        console.error(error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
+    }
+};
+
 export const createDoctorAvailability = async (req, res) => {
     try {
         const doctor_id = req.user.doctorData.doctor_id;

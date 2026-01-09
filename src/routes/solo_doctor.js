@@ -93,4 +93,8 @@ router.get('/updateOnboardingStatus', authenticate(['SOLO_DOCTOR']), soloControl
 // router.get("/get_doctor_certificates_path", authenticate(['DOCTOR']), doctorController.getDoctorCertificatesWithPath);
 
 
+
+router.get("/get_onboarding_status", authenticate(['SOLO_DOCTOR']), soloController.getSoloExpertOnboardingStatus);
+
+
 export default router;
