@@ -580,7 +580,8 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             const doctorTableData = {
                 zynq_user_id: newWebUser.id,
                 created_at: new Date(),
-                slot_time: slot_time || null
+                slot_time: slot_time || null,
+                profile_status: "IMPORTED"
             };
             await clinicModels.create_doctor(doctorTableData);
             const [createdDoctor] = await clinicModels.get_doctor_by_zynq_user_id(newWebUser.id);
@@ -1074,11 +1075,7 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
         delete clinicData.city;
         delete clinicData.state;
 
-        let profile_status = "ONBOARDING";
-
-        if (!isEmpty(form_stage)) {
-            clinicData.profile_status = profile_status;
-        }
+        let profile_status = "IMPORTED";
 
         const clinicDataV2 = buildClinicData(clinicData);
 
@@ -1143,7 +1140,8 @@ export const sendSoloDoctorOnaboardingInvitation = async (req, res) => {
             fee_per_session: fee_per_session,
             currency: currency,
             session_duration: session_duration,
-            slot_time: slot_time || null
+            slot_time: slot_time || null,
+            profile_status: "IMPORTED"
         });
 
 
@@ -2203,6 +2201,9 @@ export const sendDoctorInvitationListController = async (req, res) => {
                         html: emailHtml,
                     };
                     await sendEmail(emailOptions);
+
+                    let update_doctor = await dbOperations.updateData('tbl_doctors', { profile_status: "INVITED" }, `WHERE zynq_user_id = '${doctor.zynq_user_id}' `);
+
                 } else {
 
 
@@ -2223,6 +2224,10 @@ export const sendDoctorInvitationListController = async (req, res) => {
                             invitationLink: `${APP_URL}admin/subscribed/${is_subscribed}`,
                         }
                     );
+
+                    let update_doctor = await dbOperations.updateData('tbl_doctors', { profile_status: "INVITED" }, `WHERE zynq_user_id = '${doctor.zynq_user_id}' `);
+
+                    let update_clinic = await dbOperations.updateData('tbl_clinics', { profile_status: "INVITED" }, `WHERE zynq_user_id = '${doctor.zynq_user_id}' `);
 
                     await sendEmail({
                         to: doctor.email,
