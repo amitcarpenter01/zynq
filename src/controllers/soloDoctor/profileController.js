@@ -713,6 +713,7 @@ export const getDoctorProfileByStatus = async (req, res) => {
     try {
         const status = req.params.status;
         const zynqUserId = req.user.id;
+        const email = req.user.email || "";
 
         const language = 'en';
         const doctorId = req.user.doctorData.doctor_id;
@@ -867,7 +868,7 @@ export const getDoctorProfileByStatus = async (req, res) => {
 
         // Get profile for clinic ends
 
-        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, clinic, completionPercentage });
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, clinic, completionPercentage,email });
     } catch (error) {
         console.error(error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
