@@ -1600,6 +1600,35 @@ export const updateDoctorController = async (req, res) => {
                         assigned_at: new Date(),
                     };
                     await clinicModels.create_doctor_clinic_map(clinicMapData);
+                    const [doctorClinicMap] = await clinicModels.get_doctor_clinic_map_by_both(doctorId, item);
+                    const invitation_id = doctorClinicMap?.map_id;
+
+                    const [clinicData] = await clinicModels.getClinicProfile(item);
+
+                    const [get_location] = await clinicModels.get_clinic_location_by_clinic_id(item);
+
+                    // Send invitation WITHOUT password → use enn.ejs
+                    const emailHtml = await ejs.renderFile(emailTemplatePath2,
+                        {
+                            clinic_name: clinicData.clinic_name,
+                            clinic_org_number: clinicData.org_number,
+                            clinic_city: get_location.city,
+                            clinic_street_address: get_location.street_address,
+                            clinic_state: get_location.state,
+                            clinic_zip: get_location.zip_code,
+                            clinic_phone: clinicData.mobile_number,
+                            clinic_email: clinicData.email,
+                            image_logo,
+                            invitation_id,
+                            invitation_link: `${APP_URL}clinic/accept-invitation?invitation_id=${invitation_id}`,
+                        }
+                    );
+
+                    await sendEmail({
+                        to: email,
+                        subject: "Expert Invitation",
+                        html: emailHtml,
+                    });
                 }
 
                 const availabilityArray = availability ? availability[index] : [];
