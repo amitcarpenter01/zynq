@@ -581,7 +581,10 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
                 zynq_user_id: newWebUser.id,
                 created_at: new Date(),
                 slot_time: slot_time || null,
-                profile_status: "IMPORTED"
+                profile_status: "IMPORTED",
+                address : address || null,
+                city : city || null,
+                zip_code : zip_code || null
             };
             await clinicModels.create_doctor(doctorTableData);
             const [createdDoctor] = await clinicModels.get_doctor_by_zynq_user_id(newWebUser.id);
