@@ -1610,8 +1610,13 @@ export const updateDoctorController = async (req, res) => {
 
                     const [get_location] = await clinicModels.get_clinic_location_by_clinic_id(item);
 
+
+                    const emailTemplatePath = path.resolve(__dirname, "../../views/doctor_invite/en.ejs");
+
+                    const emailTemplatePath2 = path.resolve(__dirname, "../../views/doctor_invite/enn.ejs");
+
                     // Send invitation WITHOUT password → use enn.ejs
-                    const emailHtml = await ejs.renderFile(emailTemplatePath2,
+                    const emailHtml = await ejs.renderFile(language == "en" ? emailTemplatePath : emailTemplatePath2,
                         {
                             clinic_name: clinicData?.clinic_name || "#N/A",
                             clinic_org_number: clinicData?.org_number || "#N/A",
