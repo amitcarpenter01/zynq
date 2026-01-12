@@ -117,25 +117,25 @@ export const update_clinic_location = async (locationData, clinic_id) => {
     }
 };
 
-export const update_clinic_treatments = async (treatments, clinic_id) => {
-    try {
-        // First delete existing treatments
-        await db.query('DELETE FROM tbl_clinic_treatments WHERE clinic_id = ?', [clinic_id]);
+// export const update_clinic_treatments = async (treatments, clinic_id) => {
+//     try {
+//         // First delete existing treatments
+//         await db.query('DELETE FROM tbl_clinic_treatments WHERE clinic_id = ?', [clinic_id]);
 
-        // Then insert new treatments
-        const treatmentPromises = treatments.map(treatment_id => {
-            return db.query(
-                'INSERT INTO tbl_clinic_treatments (clinic_id, treatment_id) VALUES (?, ?)',
-                [clinic_id, treatment_id]
-            );
-        });
+//         // Then insert new treatments
+//         const treatmentPromises = treatments.map(treatment_id => {
+//             return db.query(
+//                 'INSERT INTO tbl_clinic_treatments (clinic_id, treatment_id) VALUES (?, ?)',
+//                 [clinic_id, treatment_id]
+//             );
+//         });
 
-        return await Promise.all(treatmentPromises);
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to update clinic treatments.");
-    }
-};
+//         return await Promise.all(treatmentPromises);
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to update clinic treatments.");
+//     }
+// };
 
 export const update_clinic_timing = async (timing, clinic_id) => {
     try {
@@ -181,24 +181,24 @@ export const insertClinicLocation = async (locationData) => {
     }
 };
 
-export const insertClinicTreatments = async (treatments, clinic_id) => {
-    try {
-        if (!Array.isArray(treatments)) {
-            throw new Error("Treatments must be an array");
-        }
+// export const insertClinicTreatments = async (treatments, clinic_id) => {
+//     try {
+//         if (!Array.isArray(treatments)) {
+//             throw new Error("Treatments must be an array");
+//         }
 
-        const treatmentPromises = treatments.map(treatment_id => {
-            return db.query(
-                'INSERT INTO tbl_clinic_treatments (clinic_id, treatment_id) VALUES (?, ?)',
-                [clinic_id, treatment_id]
-            );
-        });
-        return await Promise.all(treatmentPromises);
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to insert clinic treatments.");
-    }
-};
+//         const treatmentPromises = treatments.map(treatment_id => {
+//             return db.query(
+//                 'INSERT INTO tbl_clinic_treatments (clinic_id, treatment_id) VALUES (?, ?)',
+//                 [clinic_id, treatment_id]
+//             );
+//         });
+//         return await Promise.all(treatmentPromises);
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to insert clinic treatments.");
+//     }
+// };
 
 export const insertClinicSurgeries = async (surgeries, clinic_id) => {
     try {
@@ -515,43 +515,6 @@ export const getAllTreatments = async () => {
     }
 };
 
-
-
-// export const getClinicTreatments = async (clinic_id) => {
-//     try {
-//         const treatments = await db.query('SELECT t.* FROM tbl_treatments t ' +
-//             'INNER JOIN tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id ' +
-//             'WHERE ct.clinic_id = ? ORDER BY t.created_at DESC', [clinic_id]);
-//         return treatments;
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to fetch treatments.");
-//     }
-// };
-
-export const getClinicTreatments = async (clinic_id) => {
-    try {
-        const treatments = await db.query(`
-            SELECT t.*
-            FROM tbl_treatments t
-            INNER JOIN tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id
-            WHERE ct.clinic_id = ?
-            ORDER BY t.created_at DESC
-        `, [clinic_id]);
-
-        // Remove embeddings dynamically
-        const cleanedTreatments = treatments.map(row => {
-            const treatmentRow = { ...row };
-            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
-            return treatmentRow;
-        });
-
-        return cleanedTreatments;
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch treatments.");
-    }
-};
 
 
 export const getClinicSurgeries = async (clinic_id) => {
@@ -873,18 +836,18 @@ export const updateClinicLocation = async (locationData, clinic_id) => {
     }
 };
 
-export const updateClinicTreatments = async (treatments, clinic_id) => {
-    try {
-        await db.query('DELETE FROM tbl_clinic_treatments WHERE clinic_id = ?', [clinic_id]);
-        if (!treatments || treatments.length === 0) return;
-        const values = treatments.map(treatment_id => [clinic_id, treatment_id]);
-        await db.query('INSERT INTO tbl_clinic_treatments (clinic_id, treatment_id) VALUES ?', [values]);
-    }
-    catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to update clinic treatments.");
-    }
-};
+// export const updateClinicTreatments = async (treatments, clinic_id) => {
+//     try {
+//         await db.query('DELETE FROM tbl_clinic_treatments WHERE clinic_id = ?', [clinic_id]);
+//         if (!treatments || treatments.length === 0) return;
+//         const values = treatments.map(treatment_id => [clinic_id, treatment_id]);
+//         await db.query('INSERT INTO tbl_clinic_treatments (clinic_id, treatment_id) VALUES ?', [values]);
+//     }
+//     catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to update clinic treatments.");
+//     }
+// };
 
 export const updateClinicSurgeries = async (surgeries, clinic_id) => {
     try {
@@ -1684,50 +1647,6 @@ export const getAllDevices = async (ids) => {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch devices.");
     }
-};
-
-
-// export const getClinicTreatmentsBulk = async (clinicIds) => {
-//     const placeholders = clinicIds.map(() => '?').join(',');
-//     //const query = `SELECT * FROM tbl_clinic_treatments WHERE clinic_id IN (${placeholders})`;
-
-//     const query = `SELECT t.*, ct.* FROM tbl_treatments t INNER JOIN  tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id WHERE ct.clinic_id IN (${placeholders})`;
-//     const results = await db.query(query, clinicIds);
-
-//     const grouped = {};
-//     results.forEach(row => {
-//         if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
-//         grouped[row.clinic_id].push(row);
-//     });
-//     return grouped;
-// };
-
-export const getClinicTreatmentsBulk = async (clinicIds) => {
-    if (!Array.isArray(clinicIds) || clinicIds.length === 0) return {};
-
-    const placeholders = clinicIds.map(() => '?').join(',');
-
-    const query = `
-        SELECT t.*, ct.*
-        FROM tbl_treatments t
-        INNER JOIN tbl_clinic_treatments ct ON t.treatment_id = ct.treatment_id
-        WHERE ct.clinic_id IN (${placeholders})
-    `;
-
-    const results = await db.query(query, clinicIds);
-
-    const grouped = {};
-    results.forEach(row => {
-        if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
-
-        // Remove embeddings from t.*
-        const treatmentRow = { ...row };
-        if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
-
-        grouped[row.clinic_id].push(treatmentRow);
-    });
-
-    return grouped;
 };
 
 

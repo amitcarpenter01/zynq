@@ -1025,7 +1025,7 @@ export const getAllClinicsForUser = async ({
             }
         };
 
-        addJoinAndFilter(treatment_ids, 'tbl_clinic_treatments', 'ct', 'treatment_id');
+        addJoinAndFilter(treatment_ids, 'tbl_mapped_clinic_treatments', 'ct', 'treatment_id');
         addJoinAndFilter(skin_condition_ids, 'tbl_clinic_skin_condition', 'csc', 'skin_condition_id');
         addJoinAndFilter(aesthetic_device_ids, 'tbl_clinic_aesthetic_devices', 'cad', 'aesthetic_devices_id');
         addJoinAndFilter(skin_type_ids, 'tbl_clinic_skin_types', 'cskt', 'skin_type_id');
@@ -1197,7 +1197,7 @@ export const getNearbyClinicsForUser = async ({
             }
         };
 
-        addJoinAndFilter(treatment_ids, 'tbl_clinic_treatments', 'ct', 'treatment_id');
+        addJoinAndFilter(treatment_ids, 'tbl_mapped_clinic_treatments', 'ct', 'treatment_id');
         addJoinAndFilter(skin_condition_ids, 'tbl_clinic_skin_condition', 'csc', 'skin_condition_id');
         addJoinAndFilter(aesthetic_device_ids, 'tbl_clinic_aesthetic_devices', 'cad', 'aesthetic_devices_id');
         addJoinAndFilter(skin_type_ids, 'tbl_clinic_skin_types', 'cskt', 'skin_type_id');
@@ -4099,174 +4099,174 @@ export const getDoctorEmbeddingTextAllV2 = async () => {
 
 
 
-export const getClinicEmbeddingTextById = async (zynq_user_id) => {
-    try {
-        if (!zynq_user_id) throw new Error("zynq_user_id ID is required");
+// export const getClinicEmbeddingTextById = async (zynq_user_id) => {
+//     try {
+//         if (!zynq_user_id) throw new Error("zynq_user_id ID is required");
 
-        return await db.query(`
-      SELECT 
-        c.clinic_id,
-        CONCAT(
-          'Clinic Name: ', IFNULL(c.clinic_name,''),
-          ', Email: ', IFNULL(c.email,''),
-          ', Mobile: ', IFNULL(c.mobile_number,''),
-          ', Address: ', IFNULL(c.address,''),
-          ', Website: ', IFNULL(c.website_url,''),
-          '; Locations: ', IFNULL(loc.locations_text,'None'),
-          '; Treatments: ', IFNULL(tagg.treatments_text,'None'),
-          '; Skin Types: ', IFNULL(stagg.skin_types_text,'None'),
-          '; Devices: ', IFNULL(devicesagg.devices_text,'None')
-        ) AS embedding_text
-      FROM tbl_clinics c
+//         return await db.query(`
+//       SELECT 
+//         c.clinic_id,
+//         CONCAT(
+//           'Clinic Name: ', IFNULL(c.clinic_name,''),
+//           ', Email: ', IFNULL(c.email,''),
+//           ', Mobile: ', IFNULL(c.mobile_number,''),
+//           ', Address: ', IFNULL(c.address,''),
+//           ', Website: ', IFNULL(c.website_url,''),
+//           '; Locations: ', IFNULL(loc.locations_text,'None'),
+//           '; Treatments: ', IFNULL(tagg.treatments_text,'None'),
+//           '; Skin Types: ', IFNULL(stagg.skin_types_text,'None'),
+//           '; Devices: ', IFNULL(devicesagg.devices_text,'None')
+//         ) AS embedding_text
+//       FROM tbl_clinics c
 
-      -- Pre-aggregate locations
-      LEFT JOIN (
-        SELECT clinic_id,
-               GROUP_CONCAT(
-                 DISTINCT CONCAT(
-                   IFNULL(street_address,''),
-                   ', ', IFNULL(city,''),
-                   ', ', IFNULL(state,''),
-                   ', ', IFNULL(zip_code,'')
-                 ) SEPARATOR '; '
-               ) AS locations_text
-        FROM tbl_clinic_locations
-        GROUP BY clinic_id
-      ) loc ON c.clinic_id = loc.clinic_id
+//       -- Pre-aggregate locations
+//       LEFT JOIN (
+//         SELECT clinic_id,
+//                GROUP_CONCAT(
+//                  DISTINCT CONCAT(
+//                    IFNULL(street_address,''),
+//                    ', ', IFNULL(city,''),
+//                    ', ', IFNULL(state,''),
+//                    ', ', IFNULL(zip_code,'')
+//                  ) SEPARATOR '; '
+//                ) AS locations_text
+//         FROM tbl_clinic_locations
+//         GROUP BY clinic_id
+//       ) loc ON c.clinic_id = loc.clinic_id
 
-      -- Pre-aggregate treatments + concerns
-      LEFT JOIN (
-        SELECT ct.clinic_id,
-               GROUP_CONCAT(
-                 DISTINCT CONCAT(
-                   IFNULL(t.name,'N/A'), ' / ', IFNULL(t.swedish,''),
-                   ' [Classification: ', IFNULL(t.classification_type,''),
-                   ', Benefits EN: ', IFNULL(t.benefits_en,''),
-                   ', Benefits SV: ', IFNULL(t.benefits_sv,''),
-                   ', Description EN: ', IFNULL(t.description_en,''),
-                   ', Description SV: ', IFNULL(t.description_sv,''),
-                   ', Concerns: ', IFNULL(tcagg.concerns_text,'None'),
-                   ']'
-                 ) SEPARATOR '; '
-               ) AS treatments_text
-        FROM tbl_clinic_treatments ct
-        JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
-        LEFT JOIN (
-          SELECT tc.treatment_id,
-                 GROUP_CONCAT(
-                   DISTINCT CONCAT(
-                     IFNULL(c.name,'N/A'),
-                     ' [EN: ', IFNULL(tc.indications_en,''),
-                     ', SV: ', IFNULL(tc.indications_sv,''),
-                     ', Likewise: ', IFNULL(tc.likewise_terms,''),
-                     ']'
-                   ) SEPARATOR ', '
-                 ) AS concerns_text
-          FROM tbl_treatment_concerns tc
-          LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
-          GROUP BY tc.treatment_id
-        ) tcagg ON t.treatment_id = tcagg.treatment_id
-        GROUP BY ct.clinic_id
-      ) tagg ON c.clinic_id = tagg.clinic_id
+//       -- Pre-aggregate treatments + concerns
+//       LEFT JOIN (
+//         SELECT ct.clinic_id,
+//                GROUP_CONCAT(
+//                  DISTINCT CONCAT(
+//                    IFNULL(t.name,'N/A'), ' / ', IFNULL(t.swedish,''),
+//                    ' [Classification: ', IFNULL(t.classification_type,''),
+//                    ', Benefits EN: ', IFNULL(t.benefits_en,''),
+//                    ', Benefits SV: ', IFNULL(t.benefits_sv,''),
+//                    ', Description EN: ', IFNULL(t.description_en,''),
+//                    ', Description SV: ', IFNULL(t.description_sv,''),
+//                    ', Concerns: ', IFNULL(tcagg.concerns_text,'None'),
+//                    ']'
+//                  ) SEPARATOR '; '
+//                ) AS treatments_text
+//         FROM tbl_clinic_treatments ct
+//         JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
+//         LEFT JOIN (
+//           SELECT tc.treatment_id,
+//                  GROUP_CONCAT(
+//                    DISTINCT CONCAT(
+//                      IFNULL(c.name,'N/A'),
+//                      ' [EN: ', IFNULL(tc.indications_en,''),
+//                      ', SV: ', IFNULL(tc.indications_sv,''),
+//                      ', Likewise: ', IFNULL(tc.likewise_terms,''),
+//                      ']'
+//                    ) SEPARATOR ', '
+//                  ) AS concerns_text
+//           FROM tbl_treatment_concerns tc
+//           LEFT JOIN tbl_concerns c ON tc.concern_id = c.concern_id
+//           GROUP BY tc.treatment_id
+//         ) tcagg ON t.treatment_id = tcagg.treatment_id
+//         GROUP BY ct.clinic_id
+//       ) tagg ON c.clinic_id = tagg.clinic_id
 
-      -- Pre-aggregate skin types
-      LEFT JOIN (
-        SELECT cst.clinic_id,
-               GROUP_CONCAT(
-                 DISTINCT CONCAT(
-                   IFNULL(st.name,'N/A'), ' / ', IFNULL(st.Swedish,''),
-                   ' [English: ', IFNULL(st.English,''),
-                   ', Description EN: ', IFNULL(st.description,''),
-                   ', Description SV: ', IFNULL(st.desc_sv,''),
-                   ', Who can do: ', IFNULL(st.who_can_do,''),
-                   ', Areas: ', IFNULL(st.areas,''),
-                   ', Synonyms EN: ', IFNULL(st.syn_en,''),
-                   ', Synonyms SV: ', IFNULL(st.syn_sv,''),
-                   ']'
-                 ) SEPARATOR '; '
-               ) AS skin_types_text
-        FROM tbl_clinic_skin_types cst
-        LEFT JOIN tbl_skin_types st ON cst.skin_type_id = st.skin_type_id
-        GROUP BY cst.clinic_id
-      ) stagg ON c.clinic_id = stagg.clinic_id
+//       -- Pre-aggregate skin types
+//       LEFT JOIN (
+//         SELECT cst.clinic_id,
+//                GROUP_CONCAT(
+//                  DISTINCT CONCAT(
+//                    IFNULL(st.name,'N/A'), ' / ', IFNULL(st.Swedish,''),
+//                    ' [English: ', IFNULL(st.English,''),
+//                    ', Description EN: ', IFNULL(st.description,''),
+//                    ', Description SV: ', IFNULL(st.desc_sv,''),
+//                    ', Who can do: ', IFNULL(st.who_can_do,''),
+//                    ', Areas: ', IFNULL(st.areas,''),
+//                    ', Synonyms EN: ', IFNULL(st.syn_en,''),
+//                    ', Synonyms SV: ', IFNULL(st.syn_sv,''),
+//                    ']'
+//                  ) SEPARATOR '; '
+//                ) AS skin_types_text
+//         FROM tbl_clinic_skin_types cst
+//         LEFT JOIN tbl_skin_types st ON cst.skin_type_id = st.skin_type_id
+//         GROUP BY cst.clinic_id
+//       ) stagg ON c.clinic_id = stagg.clinic_id
 
-      -- Pre-aggregate devices
-      LEFT JOIN (
-        SELECT cad.clinic_id,
-               GROUP_CONCAT(
-                 DISTINCT CONCAT(
-                   IFNULL(ad.device,''),
-                   ' [Category: ', IFNULL(ad.category,''),
-                   ', Manufacturer: ', IFNULL(ad.manufacturer,''),
-                   ', Distributor: ', IFNULL(ad.swedish_distributor,''),
-                   ', Application: ', IFNULL(ad.main_application,''),
-                   ']'
-                 ) SEPARATOR '; '
-               ) AS devices_text
-        FROM tbl_clinic_aesthetic_devices cad
-        LEFT JOIN tbl_aesthetic_devices ad ON cad.aesthetic_devices_id = ad.aesthetic_device_id
-        GROUP BY cad.clinic_id
-      ) devicesagg ON c.clinic_id = devicesagg.clinic_id
+//       -- Pre-aggregate devices
+//       LEFT JOIN (
+//         SELECT cad.clinic_id,
+//                GROUP_CONCAT(
+//                  DISTINCT CONCAT(
+//                    IFNULL(ad.device,''),
+//                    ' [Category: ', IFNULL(ad.category,''),
+//                    ', Manufacturer: ', IFNULL(ad.manufacturer,''),
+//                    ', Distributor: ', IFNULL(ad.swedish_distributor,''),
+//                    ', Application: ', IFNULL(ad.main_application,''),
+//                    ']'
+//                  ) SEPARATOR '; '
+//                ) AS devices_text
+//         FROM tbl_clinic_aesthetic_devices cad
+//         LEFT JOIN tbl_aesthetic_devices ad ON cad.aesthetic_devices_id = ad.aesthetic_device_id
+//         GROUP BY cad.clinic_id
+//       ) devicesagg ON c.clinic_id = devicesagg.clinic_id
 
-      WHERE c.zynq_user_id = ?
-      LIMIT 1;
-    `, [zynq_user_id]);
+//       WHERE c.zynq_user_id = ?
+//       LIMIT 1;
+//     `, [zynq_user_id]);
 
-    } catch (err) {
-        console.error(`❌ Error fetching clinic ${zynq_user_id} embeddings:`, err);
-        throw err;
-    }
-};
+//     } catch (err) {
+//         console.error(`❌ Error fetching clinic ${zynq_user_id} embeddings:`, err);
+//         throw err;
+//     }
+// };
 
-export const getClinicEmbeddingTextByIdV2 = async (zynq_user_id) => {
-    try {
-        if (!zynq_user_id) throw new Error("zynq_user_id is required");
+// export const getClinicEmbeddingTextByIdV2 = async (zynq_user_id) => {
+//     try {
+//         if (!zynq_user_id) throw new Error("zynq_user_id is required");
 
-        const query = `
-        SELECT 
-          c.clinic_id,
-          c.clinic_name,
-          c.address,
-          treat.treatments_text,
-          skin.skin_types_text
-        FROM tbl_clinics c
+//         const query = `
+//         SELECT 
+//           c.clinic_id,
+//           c.clinic_name,
+//           c.address,
+//           treat.treatments_text,
+//           skin.skin_types_text
+//         FROM tbl_clinics c
         
-        -- Treatments
-        LEFT JOIN (
-          SELECT 
-            ct.clinic_id,
-            GROUP_CONCAT(DISTINCT JSON_OBJECT(
-              'treatment_name', t.name,
-              'benefits_en', t.benefits_en
-            )) AS treatments_text
-          FROM tbl_clinic_treatments ct
-          JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
-          GROUP BY ct.clinic_id
-        ) treat ON c.clinic_id = treat.clinic_id
+//         -- Treatments
+//         LEFT JOIN (
+//           SELECT 
+//             ct.clinic_id,
+//             GROUP_CONCAT(DISTINCT JSON_OBJECT(
+//               'treatment_name', t.name,
+//               'benefits_en', t.benefits_en
+//             )) AS treatments_text
+//           FROM tbl_clinic_treatments ct
+//           JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
+//           GROUP BY ct.clinic_id
+//         ) treat ON c.clinic_id = treat.clinic_id
   
-        -- Skin Types
-        LEFT JOIN (
-          SELECT 
-            cst.clinic_id,
-            GROUP_CONCAT(DISTINCT JSON_OBJECT(
-              'skin_type_name', st.name,
-              'english', st.English
-            )) AS skin_types_text
-          FROM tbl_clinic_skin_types cst
-          JOIN tbl_skin_types st ON cst.skin_type_id = st.skin_type_id
-          GROUP BY cst.clinic_id
-        ) skin ON c.clinic_id = skin.clinic_id
+//         -- Skin Types
+//         LEFT JOIN (
+//           SELECT 
+//             cst.clinic_id,
+//             GROUP_CONCAT(DISTINCT JSON_OBJECT(
+//               'skin_type_name', st.name,
+//               'english', st.English
+//             )) AS skin_types_text
+//           FROM tbl_clinic_skin_types cst
+//           JOIN tbl_skin_types st ON cst.skin_type_id = st.skin_type_id
+//           GROUP BY cst.clinic_id
+//         ) skin ON c.clinic_id = skin.clinic_id
   
-        WHERE c.zynq_user_id = ?
-        LIMIT 1;
-      `;
+//         WHERE c.zynq_user_id = ?
+//         LIMIT 1;
+//       `;
 
-        return await db.query(query, [zynq_user_id]);
-    } catch (err) {
-        console.error(`❌ Error fetching clinic ${zynq_user_id} data:`, err);
-        throw err;
-    }
-};
+//         return await db.query(query, [zynq_user_id]);
+//     } catch (err) {
+//         console.error(`❌ Error fetching clinic ${zynq_user_id} data:`, err);
+//         throw err;
+//     }
+// };
 export const getClinicEmbeddingTextByAllV2 = async () => {
     try {
 
