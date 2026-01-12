@@ -898,6 +898,10 @@ export const getFutureDoctorSlots = async (req, res) => {
             return handleError(res, 400, 'en', "NO_AVAILABLE_SLOTS_FOUND", []);
         }
 
+        availableSlots.sort(
+            (a, b) => new Date(a.start_time) - new Date(b.start_time)
+        );
+
         return handleSuccess(res, 200, 'en', "FUTURE_DOCTOR_SLOTS", {
             fee_per_session,
             resultWithStatus: availableSlots
