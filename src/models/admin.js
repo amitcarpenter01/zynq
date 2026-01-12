@@ -832,23 +832,7 @@ export const get_doctors_management = async (limit, offset, search = "", type = 
                 CASE 
                     WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
                     WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
-                END AS user_type,
-                        (
-                SELECT IFNULL(
-                    JSON_ARRAYAGG(
-                        JSON_OBJECT(
-                            'day_of_week', da.day_of_week,
-                            'start_time', da.start_time,
-                            'end_time', da.end_time,
-                            'closed', da.closed,
-                            'clinic_id', da.clinic_id
-                        )
-                    ),
-                    JSON_ARRAY()
-                )
-                FROM tbl_doctor_availability da
-                WHERE da.doctor_id = d.doctor_id
-            ) AS availability
+                END AS user_type
             FROM tbl_doctors d
             LEFT JOIN tbl_zqnq_users u 
                 ON u.id = d.zynq_user_id
@@ -1261,19 +1245,19 @@ export const getDoctorClinicDevices = async (zynqUserId, clinicId) => {
     }
 };
 
-export const getDoctorClinicAvailabilities = async (doctorId, clinicId) => {
-    try {
-        return await db.query(`
-            SELECT *
-            FROM 
-                tbl_doctor_availability
-            WHERE 
-                doctor_id = ? AND clinic_id = ?`, [doctorId, clinicId]);
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to get doctor's availabilities.");
-    }
-}
+// export const getDoctorClinicAvailabilities = async (doctorId, clinicId) => {
+//     try {
+//         return await db.query(`
+//             SELECT *
+//             FROM 
+//                 tbl_doctor_availability
+//             WHERE 
+//                 doctor_id = ? AND clinic_id = ?`, [doctorId, clinicId]);
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to get doctor's availabilities.");
+//     }
+// }
 
 
 //======================================= Support Managment =========================================

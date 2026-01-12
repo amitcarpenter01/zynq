@@ -687,16 +687,16 @@ export const getAllRecommendedDoctors = async ({
     }
 };
 
-export const getDoctorAvailability = async (doctor_id) => {
-    try {
-        const availability = await db.query('SELECT * FROM tbl_doctor_availability WHERE doctor_id = ? ORDER BY created_at DESC', [doctor_id]);
-        return availability;
-    }
-    catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch doctor availability.");
-    }
-};
+// export const getDoctorAvailability = async (doctor_id) => {
+//     try {
+//         const availability = await db.query('SELECT * FROM tbl_doctor_availability WHERE doctor_id = ? ORDER BY created_at DESC', [doctor_id]);
+//         return availability;
+//     }
+//     catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch doctor availability.");
+//     }
+// };
 
 export const getDoctorCertifications = async (doctor_id) => {
     try {

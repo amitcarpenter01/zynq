@@ -408,52 +408,52 @@ export const get_doctor_consultation_fee = async (doctorId) => {
 //     }
 // };
 
-export const update_availability = async (
-    doctorId,
-    availabilityData,
-    clinic_id = null
-) => {
-    try {
-        // Delete old availability for this doctor + clinic
-        await db.query(
-            `DELETE FROM tbl_doctor_availability 
-             WHERE doctor_id = ? AND clinic_id = ?`,
-            [doctorId, clinic_id]
-        );
+// export const update_availability = async (
+//     doctorId,
+//     availabilityData,
+//     clinic_id = null
+// ) => {
+//     try {
+//         // Delete old availability for this doctor + clinic
+//         await db.query(
+//             `DELETE FROM tbl_doctor_availability 
+//              WHERE doctor_id = ? AND clinic_id = ?`,
+//             [doctorId, clinic_id]
+//         );
 
-        const values = [];
+//         const values = [];
 
-        for (const dayItem of availabilityData) {
-            const dayOfWeek = dayItem.day;
+//         for (const dayItem of availabilityData) {
+//             const dayOfWeek = dayItem.day;
 
-            if (!Array.isArray(dayItem.session)) continue;
+//             if (!Array.isArray(dayItem.session)) continue;
 
-            for (const session of dayItem.session) {
-                values.push([
-                    doctorId,
-                    dayOfWeek,
-                    session.start_time,
-                    session.end_time,
-                    0, // closed
-                    clinic_id
-                ]);
-            }
-        }
+//             for (const session of dayItem.session) {
+//                 values.push([
+//                     doctorId,
+//                     dayOfWeek,
+//                     session.start_time,
+//                     session.end_time,
+//                     0, // closed
+//                     clinic_id
+//                 ]);
+//             }
+//         }
 
-        if (values.length === 0) return null;
+//         if (values.length === 0) return null;
 
-        return await db.query(
-            `INSERT INTO tbl_doctor_availability 
-            (doctor_id, day_of_week, start_time, end_time, closed, clinic_id) 
-            VALUES ?`,
-            [values]
-        );
+//         return await db.query(
+//             `INSERT INTO tbl_doctor_availability 
+//             (doctor_id, day_of_week, start_time, end_time, closed, clinic_id) 
+//             VALUES ?`,
+//             [values]
+//         );
 
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to update availability.");
-    }
-};
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to update availability.");
+//     }
+// };
 
 export const updateDoctorSessionSlots = async (doctorId, availabilityData, clinic_id) => {
     try {
@@ -548,26 +548,26 @@ export const getDoctorSlotSessionsModel = async (doctorId, clinic_id) => {
 };
 
 
-export const update_docter_availability = async (updatedFields, id) => {
-    const keys = Object.keys(updatedFields);
-    const values = Object.values(updatedFields);
-    const setClause = keys.map((key) => `${key} = ?`).join(", ");
-    values.push(id);
-    const query = `UPDATE tbl_doctor_availability SET ${setClause} WHERE doctor_availability_id = ?`;
-    return db.query(query, values);
-};
+// export const update_docter_availability = async (updatedFields, id) => {
+//     const keys = Object.keys(updatedFields);
+//     const values = Object.values(updatedFields);
+//     const setClause = keys.map((key) => `${key} = ?`).join(", ");
+//     values.push(id);
+//     const query = `UPDATE tbl_doctor_availability SET ${setClause} WHERE doctor_availability_id = ?`;
+//     return db.query(query, values);
+// };
 
 
 
 
-export const get_doctor_availability = async (doctorId) => {
-    try {
-        return await db.query(`SELECT * FROM tbl_doctor_availability WHERE doctor_id = ?`, [doctorId]);
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to get doctor's availability.");
-    }
-};
+// export const get_doctor_availability = async (doctorId) => {
+//     try {
+//         return await db.query(`SELECT * FROM tbl_doctor_availability WHERE doctor_id = ?`, [doctorId]);
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to get doctor's availability.");
+//     }
+// };
 
 export const add_certification = async (doctorId, certificationTypeId, uploadPath, issueDate, expiryDate, issuingAuthority) => {
     try {
@@ -1124,28 +1124,28 @@ export const get_clinics = async (doctorId) => {
     }
 }
 
-export const fetchDocterAvibilityById = async (doctor_id) => {
-    try {
-        const result = await db.query('SELECT * FROM tbl_doctor_availability WHERE doctor_id = ? ORDER BY created_at DESC', [doctor_id]);
-        return result;
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch support tickets.");
-    }
-}
+// export const fetchDocterAvibilityById = async (doctor_id) => {
+//     try {
+//         const result = await db.query('SELECT * FROM tbl_doctor_availability WHERE doctor_id = ? ORDER BY created_at DESC', [doctor_id]);
+//         return result;
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch support tickets.");
+//     }
+// }
 
 
 // -------------------------------------slot managment------------------------------------------------//
 
 
 
-export const insertDoctorAvailabilityModel = async (data) => {
-    return db.query("INSERT INTO tbl_doctor_availability SET ?", [data]);
-};
+// export const insertDoctorAvailabilityModel = async (data) => {
+//     return db.query("INSERT INTO tbl_doctor_availability SET ?", [data]);
+// };
 
-export const fetchDoctorAvailabilityModel = async (doctor_id) => {
-    return db.query("SELECT * FROM tbl_doctor_availability WHERE doctor_id = ?", [doctor_id]);
-};
+// export const fetchDoctorAvailabilityModel = async (doctor_id) => {
+//     return db.query("SELECT * FROM tbl_doctor_availability WHERE doctor_id = ?", [doctor_id]);
+// };
 
 export const fetchAppointmentsModel = async (doctor_id, date, start_time) => {
     return db.query("SELECT * FROM tbl_appointments WHERE doctor_id = ? AND date = ? AND start_time = ?", [doctor_id, date, start_time]);
@@ -1163,9 +1163,9 @@ export const update_doctor_fee_per_session = async (doctorId, feePerSession) => 
 };
 
 
-export const deleteDoctorAvailabilityByDoctorId = async (doctor_id) => {
-    return db.query("DELETE FROM tbl_doctor_availability WHERE doctor_id = ?", [doctor_id]);
-};
+// export const deleteDoctorAvailabilityByDoctorId = async (doctor_id) => {
+//     return db.query("DELETE FROM tbl_doctor_availability WHERE doctor_id = ?", [doctor_id]);
+// };
 
 export const update_doctor_is_online = async (doctorId, isOnline) => {
     return db.query("UPDATE tbl_doctors SET isOnline = ? WHERE doctor_id = ?", [isOnline, doctorId]);
