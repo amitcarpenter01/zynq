@@ -1996,8 +1996,8 @@ export const sendReciept = async (req, res) => {
                     clinic_name: data.clinic_name,
                     visit_link: "#",
                     refund_policy: "This appointment can be cancelled and will be fully refunded up to  24 hours before the schedule time.",
-                    subtotal: data.total_price ? `SEK ${data.total_price.toFixed(2)}` : "SEK 0.00",
-                    vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25)).toFixed(2)}` : "SEK 0.00",
+                    subtotal: `SEK ${(isNaN(Number(data?.total_price)) ? 0 : Number(data?.total_price)).toFixed(2)}`,
+                    vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25))?.toFixed(2)}` : "SEK 0.00",
                     vat_percentage: (() => {
                         const total = parseFloat(data.total_price) || 0;
                         const vat = parseFloat(data.vat_amount) || 0;
