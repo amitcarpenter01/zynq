@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { formatImagePath } from "../utils/user_helper.js";
-import { getTopSimilarRows, translator } from "../utils/misc.util.js";
+import { applyLanguageOverwrite, getTopSimilarRows, translator } from "../utils/misc.util.js";
 import { getTreatmentsAIResult } from "../utils/global_search.js";
 import { v4 as uuidv4 } from "uuid";
 
@@ -1733,36 +1733,63 @@ export const getClinicTreatmentsBulk = async (clinicIds) => {
 
 export const getClinicTreatmentsBulkV2 = async (clinicIds, lang = 'en') => {
     try {
-        const placeholders = clinicIds.map(() => '?').join(',');
-
         const query = `
-            SELECT ct.*, t.*
-            FROM tbl_clinic_treatments ct
-            LEFT JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
-            WHERE ct.clinic_id IN (${placeholders})
-            ORDER BY ct.created_at DESC
+            SELECT
+        c.clinic_id,
+        c.clinic_name,
+
+        COALESCE(
+          JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'clinic_treatment_id', ct.clinic_treatment_id,
+              'treatment_id', ct.treatment_id,
+              'name', t.name,
+              'swedish', t.swedish,
+              'total_price', ct.total_price,
+              'sub_treatments',
+                COALESCE(
+                  (
+                    SELECT JSON_ARRAYAGG(
+                      JSON_OBJECT(
+                        'clinic_sub_treatment_id', cst.clinic_sub_treatment_id,
+                        'sub_treatment_id', cst.sub_treatment_id,
+                        'name', st.name,
+                        'swedish', st.swedish,
+                        'price', cst.price
+                      )
+                    )
+                    FROM tbl_mapped_clinic_sub_treatments cst
+                    LEFT JOIN tbl_sub_treatment_master st
+                      ON cst.sub_treatment_id = st.sub_treatment_id
+                      AND st.is_deleted = 0
+                    WHERE cst.clinic_treatment_id = ct.clinic_treatment_id
+                  ),
+                  JSON_ARRAY()
+                )
+            )
+          ),
+          JSON_ARRAY()
+        ) AS treatments
+
+      FROM tbl_clinics c
+
+      LEFT JOIN tbl_mapped_clinic_treatments ct
+        ON c.clinic_id = ct.clinic_id
+
+      LEFT JOIN tbl_treatments t
+        ON ct.treatment_id = t.treatment_id
+        AND t.is_deleted = 0
+
+      WHERE c.clinic_id IN (?)
+        AND c.is_deleted = 0
+
+      GROUP BY c.clinic_id
         `;
 
         const results = await db.query(query, clinicIds);
 
-        const grouped = {};
-        results.forEach(row => {
-            if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
 
-            // Clone row so we can remove embeddings without mutating original
-            const treatmentRow = { ...row };
-
-            // Remove embeddings from treatment
-            if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
-            if ('name_embeddings' in treatmentRow) delete treatmentRow.name_embeddings;
-
-            // Replace name based on language
-            treatmentRow.name = lang === 'sv' ? row.swedish : row.name;
-
-            grouped[row.clinic_id].push(treatmentRow);
-        });
-
-        return grouped;
+        return applyLanguageOverwrite(results, lang) || [];
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to fetch clinic treatments.");
