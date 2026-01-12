@@ -1284,6 +1284,7 @@ export const getDoctorByDoctorID = async (doctor_id, clinic_id) => {
     try {
         const query = `
             SELECT 
+                d.zynq_user_id,
                 d.doctor_id, 
                 d.name, 
                 d.specialization, 

@@ -285,7 +285,7 @@
   "USER_PENDING": "Din profil väntar på godkännande",
   "DRAFT_APPOINTMENTS_FETCHED_SUCCESSFULLY": "Utkasttider hämtade framgångsrikt",
   "USER_DELETED": "Kontot har raderats",
-  "USER_VERIFIED_SUCCESSFULLY": "Klinik verifierad framgångsrikt",
+  "USER_VERIFIED_SUCCESSFULLY": "Konto verifierat",
   "APPOINTMENT_DRAFT_ADDED": "Utkasttid tillagd framgångsrikt",
   "CONSENT_ADDED_SUCCESSFULLY": "Samtycke tillagt framgångsrikt",
   "DEVICE_OR_USER_REQUIRED": "Enhets-ID eller användar-ID krävs",

@@ -2300,7 +2300,7 @@ export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en', search =
     }
 };
 
-export const getDoctorTreatmentsBulkV3 = async (doctorId, lang = 'en', search = null) => {
+export const getDoctorTreatmentsBulkV3 = async (doctorId,clinic_id, lang = 'en', search = null) => {
     try {
         const query = `
             SELECT 
@@ -2331,6 +2331,7 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, lang = 'en', search = 
 
             WHERE 
                 dt.doctor_id = ?
+                AND dt.clinic_id
                 AND t.is_deleted = 0
                 AND t.approval_status = 'APPROVED'
 
@@ -2511,18 +2512,19 @@ export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
     return grouped;
 };
 
-export const getDoctorDevicesBulk = async (zynqUserId) => {
+export const getDoctorDevicesBulk = async (zynqUserId,clinicId) => {
     try {
         return await db.query(`
         SELECT 
-            ttdum.*, 
-            ttd.*
-        FROM 
-            tbl_treatment_device_user_maps ttdum
-        LEFT JOIN 
-            tbl_treatment_devices ttd ON ttdum.device_id  = ttd.id
-        WHERE 
-            ttdum.zynq_user_id = ?`, [zynqUserId]);
+                tdum.*, td.*
+            FROM 
+                tbl_treatment_device_user_maps tdum
+            JOIN 
+                tbl_treatment_devices td 
+            ON 
+                tdum.device_id = td.id
+            WHERE 
+                tdum.zynq_user_id = ? AND tdum.clinic_id = ?`, [zynqUserId,clinicId]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor's aesthetic devices.");
