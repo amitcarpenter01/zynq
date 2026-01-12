@@ -588,6 +588,7 @@ export const getAllRecommendedDoctors = async ({
             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
             LEFT JOIN tbl_doctor_treatments dt2 ON d.doctor_id = dt2.doctor_id
             LEFT JOIN tbl_sub_treatment_master st ON dt2.sub_treatment_id = st.sub_treatment_id
+            LEFT JOIN tbl_doctor_skin_types dst ON d.doctor_id = dst.doctor_id
         `;
 
         const filters = [];
@@ -669,9 +670,6 @@ export const getAllRecommendedDoctors = async ({
         } else {
             query += ` ORDER BY d.created_at DESC`;
         }
-
-        console.log("query", query);
-        console.log("params", params);
 
         // Run query
         const rows = await db.query(query, params);
