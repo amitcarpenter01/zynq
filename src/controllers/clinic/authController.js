@@ -713,7 +713,7 @@ export const updateClinic = async (req, res) => {
     });
 
     await Promise.all([
-      clinicModels.updateClinicTreatments(treatments, clinic_id),
+      // clinicModels.updateClinicTreatments(treatments, clinic_id),
       clinicModels.updateClinicOperationHours(clinic_timing, clinic_id),
       clinicModels.updateClinicEquipments(equipments, clinic_id),
       clinicModels.updateClinicSkinTypes(skin_types, clinic_id),

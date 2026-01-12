@@ -679,11 +679,12 @@ export const generateDoctorsEmbeddingsV2 = async (id) => {
 
 export const generateClinicsEmbeddingsV2 = async (id) => {
   try {
-    const rows = await apiModels.getClinicEmbeddingTextById(id);
-    if (!rows || !rows.length) return handleError('', 404, 'en', "No Data found");
+    // const rows = await apiModels.getClinicEmbeddingTextById(id);
+    // if (!rows || !rows.length) return handleError('', 404, 'en', "No Data found");
 
-    await generateEmbeddingsForRows(rows, "tbl_clinics", "clinic_id");
+    // await generateEmbeddingsForRows(rows, "tbl_clinics", "clinic_id");
     // return handleSuccess(res, 200, "en", "All clinic embeddings updated successfully");
+    return null;
   } catch (err) {
     console.error("Error generating embeddings:", err);
     // return handleError(res, 500, "en", "Internal Server Error");

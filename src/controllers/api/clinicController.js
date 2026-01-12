@@ -107,7 +107,7 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         //     allAstheticDevices,
         //     allLocations
     ] = await Promise.all([
-        clinicModels.getClinicTreatmentsBulk(clinicIds),
+        clinicModels.getClinicTreatmentsBulkV2(clinicIds, language),
         //     clinicModels.getClinicOperationHoursBulk(clinicIds),
         //     clinicModels.getClinicSkinTypesBulk(clinicIds),
         //     clinicModels.getClinicSkinConditionBulk(clinicIds),
@@ -116,19 +116,25 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         //     clinicModels.getClinicLocationsBulk(clinicIds)
     ]);
 
-    const processedClinics = clinics.map(clinic => ({
-        ...clinic,
-        // location: allLocations[clinic.clinic_id] || null,
-        treatments: (allTreatments[clinic.clinic_id] || []).map(t => t.name),
-        // operation_hours: allOperationHours[clinic.clinic_id] || [],
-        // skin_types: allSkinTypes[clinic.clinic_id] || [],
-        // allSkinCondition: allSkinCondition[clinic.clinic_id] || [],
-        // allSurgery: allSurgery[clinic.clinic_id] || [],
-        // allAstheticDevices: allAstheticDevices[clinic.clinic_id] || [],
-        clinic_logo: clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")
-            ? `${APP_URL}clinic/logo/${clinic.clinic_logo}`
-            : clinic.clinic_logo
-    }));
+    const processedClinics = clinics.map(clinic => {
+
+        const clinicTreatments = allTreatments.find(
+            t => t.clinic_id === clinic.clinic_id
+        );
+        return {
+            ...clinic,
+            // location: allLocations[clinic.clinic_id] || null,
+            treatments: (clinicTreatments?.treatments || [])?.map(t => t.name),
+            // operation_hours: allOperationHours[clinic.clinic_id] || [],
+            // skin_types: allSkinTypes[clinic.clinic_id] || [],
+            // allSkinCondition: allSkinCondition[clinic.clinic_id] || [],
+            // allSurgery: allSurgery[clinic.clinic_id] || [],
+            // allAstheticDevices: allAstheticDevices[clinic.clinic_id] || [],
+            clinic_logo: clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")
+                ? `${APP_URL}clinic/logo/${clinic.clinic_logo}`
+                : clinic.clinic_logo
+        }
+    });
 
     return handleSuccess(res, 200, language || 'en', "CLINICS_FETCHED_SUCCESSFULLY", processedClinics);
 });
@@ -224,15 +230,22 @@ export const get_nearby_clinics = asyncHandler(async (req, res) => {
 
     // ✅ Fetch treatment names for clinic enrichment
     const clinicIds = clinics.map(c => c.clinic_id);
-    const allTreatments = await clinicModels.getClinicTreatmentsBulk(clinicIds);
+    const allTreatments = await clinicModels.getClinicTreatmentsBulkV2(clinicIds,language);
 
-    const processedClinics = clinics.map(clinic => ({
-        ...clinic,
-        treatments: (allTreatments[clinic.clinic_id] || []).map(t => t.name),
-        clinic_logo: clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")
-            ? `${APP_URL}clinic/logo/${clinic.clinic_logo}`
-            : clinic.clinic_logo
-    }));
+    const processedClinics = clinics.map(clinic => {
+
+        const clinicTreatments = allTreatments.find(
+            t => t.clinic_id === clinic.clinic_id
+        );
+
+        return {
+            ...clinic,
+            treatments: (clinicTreatments?.treatments || []).map(t => t.name),
+            clinic_logo: clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")
+                ? `${APP_URL}clinic/logo/${clinic.clinic_logo}`
+                : clinic.clinic_logo
+        }
+    });
 
     return handleSuccess(res, 200, language, "CLINICS_FETCHED_SUCCESSFULLY", processedClinics);
 });
