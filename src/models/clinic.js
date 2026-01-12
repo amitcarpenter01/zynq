@@ -1798,7 +1798,6 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
     if (!clinicIds.length) return {};
 
     try {
-        const params = [...clinicIds];
 
         const selectFields = [
             'd.doctor_id',
@@ -1823,14 +1822,19 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
             LEFT JOIN tbl_appointment_ratings ar ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
             LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
             LEFT JOIN tbl_doctor_treatments dt ON d.doctor_id = dt.doctor_id
-            WHERE dm.clinic_id IN (${clinicIds.map(() => '?').join(', ')})
+            WHERE dm.clinic_id IN (?)
               AND d.profile_completion_percentage >= 0 and c.is_onboarded = 1
-              and zu.on_boarding_status >= 4
+              AND (
+                 (zu.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' AND zu.on_boarding_status >= 4)
+                    OR
+                  (zu.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' AND zu.on_boarding_status >= 3)
+                      )
             GROUP BY d.doctor_id, dm.clinic_id
             ORDER BY d.created_at DESC
         `;
 
-        const rows = await db.query(query, params);
+
+        const rows = await db.query(query,  [...clinicIds]);
 
         // 🧹 Group results by clinic_id
         const grouped = {};
@@ -2300,7 +2304,7 @@ export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en', search =
     }
 };
 
-export const getDoctorTreatmentsBulkV3 = async (doctorId,clinic_id, lang = 'en', search = null) => {
+export const getDoctorTreatmentsBulkV3 = async (doctorId, clinic_id, lang = 'en', search = null) => {
     try {
         const query = `
             SELECT 
@@ -2512,7 +2516,7 @@ export const getDoctorAstheticDevicesBulk = async (doctorIds) => {
     return grouped;
 };
 
-export const getDoctorDevicesBulk = async (zynqUserId,clinicId) => {
+export const getDoctorDevicesBulk = async (zynqUserId, clinicId) => {
     try {
         return await db.query(`
         SELECT 
@@ -2524,7 +2528,7 @@ export const getDoctorDevicesBulk = async (zynqUserId,clinicId) => {
             ON 
                 tdum.device_id = td.id
             WHERE 
-                tdum.zynq_user_id = ? AND tdum.clinic_id = ?`, [zynqUserId,clinicId]);
+                tdum.zynq_user_id = ? AND tdum.clinic_id = ?`, [zynqUserId, clinicId]);
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor's aesthetic devices.");
