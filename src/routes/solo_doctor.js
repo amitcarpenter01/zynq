@@ -28,7 +28,7 @@ router.get("/get_profile", authenticate(['SOLO_DOCTOR']), soloController.getDoct
 router.get("/getDoctorProfileByStatus/:status", authenticate(['SOLO_DOCTOR']), soloController.getDoctorProfileByStatus);
 
 router.post('/createDoctorAvailability', authenticate(['SOLO_DOCTOR']), soloController.createDoctorAvailability);
-router.post('/updateDoctorAvailability', authenticate(['SOLO_DOCTOR']), soloController.updateDoctorAvailability);
+// router.post('/updateDoctorAvailability', authenticate(['SOLO_DOCTOR']), soloController.updateDoctorAvailability);
 router.get('/updateOnboardingStatus', authenticate(['SOLO_DOCTOR']), soloController.updateOnboardingStatus);
 // //======================================= Onboarding apis =========================================
 

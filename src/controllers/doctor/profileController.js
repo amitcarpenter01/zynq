@@ -1156,47 +1156,47 @@ export const createDoctorAvailability = async (req, res) => {
 };
 
 
-export const updateDoctorAvailability = async (req, res) => {
-    try {
-        const doctor_id = req.user.doctorData.doctor_id;
-        const language = req?.user?.language || 'en';
-        const { days, fee_per_session, dr_type } = req.body;
-        await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
-        await doctorModels.deleteDoctorAvailabilityByDoctorId(doctor_id);
-        await Promise.all(
-            days.map(dayObj => {
-                const day = dayObj.day.toLowerCase();
-                return Promise.all(
-                    dayObj.slots.map(async (slot) => {
-                        const availability = {
-                            doctor_id,
-                            day,
-                            start_time: slot.start_time,
-                            end_time: slot.end_time,
-                            slot_duration: slot.slot_duration,
-                            start_time_utc: slot.start_time_utc,
-                            end_time_utc: slot.end_time_utc,
-                            repeat: "weekly",
-                        };
-                        await doctorModels.insertDoctorAvailabilityModel(availability);
-                    })
-                );
-            })
-        );
-        const zynqUserId = req.user.id
-        if (dr_type == 1) {
-            await update_onboarding_status(5, zynqUserId);
-        } else {
-            await update_onboarding_status(4, zynqUserId);
-        }
-        await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
-        return handleSuccess(res, 200, language, 'UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY');
+// export const updateDoctorAvailability = async (req, res) => {
+//     try {
+//         const doctor_id = req.user.doctorData.doctor_id;
+//         const language = req?.user?.language || 'en';
+//         const { days, fee_per_session, dr_type } = req.body;
+//         await doctorModels.update_doctor_fee_per_session(doctor_id, fee_per_session);
+//         await doctorModels.deleteDoctorAvailabilityByDoctorId(doctor_id);
+//         await Promise.all(
+//             days.map(dayObj => {
+//                 const day = dayObj.day.toLowerCase();
+//                 return Promise.all(
+//                     dayObj.slots.map(async (slot) => {
+//                         const availability = {
+//                             doctor_id,
+//                             day,
+//                             start_time: slot.start_time,
+//                             end_time: slot.end_time,
+//                             slot_duration: slot.slot_duration,
+//                             start_time_utc: slot.start_time_utc,
+//                             end_time_utc: slot.end_time_utc,
+//                             repeat: "weekly",
+//                         };
+//                         await doctorModels.insertDoctorAvailabilityModel(availability);
+//                     })
+//                 );
+//             })
+//         );
+//         const zynqUserId = req.user.id
+//         if (dr_type == 1) {
+//             await update_onboarding_status(5, zynqUserId);
+//         } else {
+//             await update_onboarding_status(4, zynqUserId);
+//         }
+//         await dbOperations.updateData('tbl_clinics', { is_onboarded: 1 }, `WHERE zynq_user_id = '${zynqUserId}' `);
+//         return handleSuccess(res, 200, language, 'UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY');
 
-    } catch (err) {
-        console.error('Error updating availability:', err);
-        return handleError(res, 500, 'Failed to update availability');
-    }
-};
+//     } catch (err) {
+//         console.error('Error updating availability:', err);
+//         return handleError(res, 500, 'Failed to update availability');
+//     }
+// };
 
 
 export const get_docter_profile = async (req, res) => {

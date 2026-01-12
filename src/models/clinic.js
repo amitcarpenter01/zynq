@@ -1054,16 +1054,16 @@ export const get_all_doctors = async () => {
 };
 
 
-export const getDoctorAvailability = async (doctor_id) => {
-    try {
-        const availability = await db.query('SELECT * FROM tbl_doctor_availability WHERE doctor_id = ? ORDER BY created_at DESC', [doctor_id]);
-        return availability;
-    }
-    catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch doctor availability.");
-    }
-};
+// export const getDoctorAvailability = async (doctor_id) => {
+//     try {
+//         const availability = await db.query('SELECT * FROM tbl_doctor_availability WHERE doctor_id = ? ORDER BY created_at DESC', [doctor_id]);
+//         return availability;
+//     }
+//     catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch doctor availability.");
+//     }
+// };
 
 export const getDoctorCertifications = async (doctor_id) => {
     try {
@@ -2558,26 +2558,26 @@ export const getDoctorRatings = async (doctorId) => {
     }
 }
 
-export const getDoctorAvailabilityBulk = async (doctorIds) => {
-    try {
-        const placeholders = doctorIds.map(() => '?').join(',');
-        const query = `SELECT * FROM tbl_doctor_availability WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
-        const results = await db.query(query, doctorIds);
+// export const getDoctorAvailabilityBulk = async (doctorIds) => {
+//     try {
+//         const placeholders = doctorIds.map(() => '?').join(',');
+//         const query = `SELECT * FROM tbl_doctor_availability WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
+//         const results = await db.query(query, doctorIds);
 
 
-        const grouped = {};
-        results.forEach(row => {
-            if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
-            grouped[row.doctor_id].push(row);
-        });
+//         const grouped = {};
+//         results.forEach(row => {
+//             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+//             grouped[row.doctor_id].push(row);
+//         });
 
 
-        return grouped;
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        throw new Error("Failed to fetch doctor availability.");
-    }
-};
+//         return grouped;
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch doctor availability.");
+//     }
+// };
 
 export const getDoctorReviewsBulk = async (doctorIds) => {
     try {

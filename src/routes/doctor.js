@@ -66,7 +66,7 @@ router.delete('/delete_certification/:doctor_certification_id', authenticate(['D
 // Expertise
 router.post("/edit_expertise", authenticate(['DOCTOR']), doctorController.editExpertise);
 
-router.post('/edit_fee_availability/:doctor_availability_id', authenticate(['DOCTOR']), doctorController.editConsultationFeeAndAvailability);
+// router.post('/edit_fee_availability/:doctor_availability_id', authenticate(['DOCTOR']), doctorController.editConsultationFeeAndAvailability);
 
 router.get("/get_linked_clinics", authenticate(['DOCTOR']), doctorController.getLinkedClinics);
 
@@ -91,7 +91,7 @@ router.get("/getDoctorProfileById", authenticate(['DOCTOR']), doctorController.g
 // -------------------------------------slot managment------------------------------------------------//
 
 router.post('/createDoctorAvailability', authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.createDoctorAvailability);
-router.post('/updateDoctorAvailability', authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.updateDoctorAvailability);
+// router.post('/updateDoctorAvailability', authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.updateDoctorAvailability);
 router.get('/getMyAppointments', authenticate(['DOCTOR', 'SOLO_DOCTOR']), appointmentControllers.getMyAppointmentsDoctor);
 
 router.post('/getMyAppointmentById', authenticate(['DOCTOR', 'SOLO_DOCTOR']), appointmentControllers.getMyAppointmentById);
