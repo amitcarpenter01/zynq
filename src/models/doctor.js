@@ -670,7 +670,8 @@ export const get_doctor_profile = async (doctorId, language, zynqUserId) => {
 
                 clinic.surgeries = await getDoctorClinicSurgeries(
                     doctorId,
-                    clinic.clinic_id
+                    clinic.clinic_id,
+                    language
                 );
 
                 clinic.skinTypes = await getDoctorClinicSkinTypes(

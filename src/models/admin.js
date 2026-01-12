@@ -1169,11 +1169,18 @@ export const get_doctor_skin_conditions = async (doctorId) => {
 
 export const get_doctor_surgeries = async (doctorId) => {
     try {
-        return await db.query(`
-            SELECT 
-                ds.*,
+        const data = await db.query(`
+            SELECT DISTINCT
+                ds.doctor_surgery_id,
+                ds.doctor_id,
+                ds.clinic_id,
+                ds.swedish,
+                ds.english,
+                ds.surgery_id,
+                ds.updated_at,
+                ds.created_at,
                 s.type 
-            FROM 
+            FROM  
                 tbl_doctor_surgery ds
             INNER JOIN 
                 tbl_surgery s 
@@ -1181,6 +1188,14 @@ export const get_doctor_surgeries = async (doctorId) => {
                 ds.surgery_id = s.surgery_id
             WHERE 
                 ds.doctor_id = ?`, [doctorId]);
+
+        if (!data) {
+            return [];
+        }
+
+        const sergeries = applyLanguageOverwrite(data, language);
+
+        return sergeries;
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor's surgeries.");
