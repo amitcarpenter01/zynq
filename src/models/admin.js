@@ -1167,7 +1167,7 @@ export const get_doctor_skin_conditions = async (doctorId) => {
     }
 };
 
-export const get_doctor_surgeries = async (doctorId) => {
+export const get_doctor_surgeries = async (doctorId,language = "en") => {
     try {
         const data = await db.query(`
             SELECT DISTINCT
