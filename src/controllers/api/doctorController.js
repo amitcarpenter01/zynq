@@ -454,7 +454,7 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
 //     //         );
 //     //     })
 //     // );
-    
+
 //     // for (const t of treatments) {
 //     //     t.sub_treatments = await apiModels.getSubTreatmentsByTreatmentId(
 //     //         t.treatment_id,
@@ -496,16 +496,52 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
 //     return handleSuccess(res, 200, 'en', "DOCTOR_FETCHED_SUCCESSFULLY", processedDoctor);
 // });
 
+const calculateTotalExperienceYears = (experiences = []) => {
+    let totalMonths = 0;
+
+    experiences.forEach(exp => {
+        if (!exp.start_date) return;
+
+        const start = new Date(exp.start_date);
+        const end = exp.end_date ? new Date(exp.end_date) : new Date();
+
+        let months =
+            (end.getFullYear() - start.getFullYear()) * 12 +
+            (end.getMonth() - start.getMonth());
+
+        // If end day is before start day, subtract 1 month
+        if (end.getDate() < start.getDate()) {
+            months -= 1;
+        }
+
+        if (months > 0) {
+            totalMonths += months;
+        }
+    });
+
+    const years = totalMonths / 12;
+
+    // round to 1 decimal (4.5, 9.5 etc.)
+    const roundedYears = Math.round(years * 10) / 10;
+
+    return roundedYears;
+};
+
+
 export const getSingleDoctor = asyncHandler(async (req, res) => {
     const { doctor_id, clinic_id, treatment_search } = req.body;
     const { user_id, language = 'en' } = req.user;
 
     const doctorResult = await doctorModels.getDoctorByDoctorID(doctor_id, clinic_id);
+
+    const doctorInfo = await doctorModels.getDoctorInfo(doctor_id, clinic_id);
     let doctor = doctorResult?.[0];
 
     if (!doctor) {
         return handleSuccess(res, 200, 'en', "DOCTOR_NOT_FOUND", null);
-    }
+    };
+
+    doctor.fee_per_session = doctorInfo?.fee_per_session || null;
 
     const [
         allCertificates,
@@ -524,13 +560,13 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         clinicModels.getDoctorSkinTypesBulkV2([doctor_id], language),
 
         // FIXED: this now returns array directly
-        clinicModels.getDoctorTreatmentsBulkV3(doctor_id, language, treatment_search),
+        clinicModels.getDoctorTreatmentsBulkV3(doctor_id, clinic_id, language, treatment_search),
 
         clinicModels.getDoctorSkinConditionBulkV2([doctor_id], language),
         clinicModels.getDoctorSurgeryBulkV2([doctor_id], language),
 
         // FIXED: Devices always using zynq_user_id
-        clinicModels.getDoctorDevicesBulk(doctor.zynq_user_id),
+        clinicModels.getDoctorDevicesBulk(doctor.zynq_user_id, clinic_id),
         clinicModels.getDoctorRatings([doctor_id])
     ]);
 
@@ -573,6 +609,10 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
             ? `${APP_URL}clinic/logo/${doctor.clinic_logo}`
             : doctor.clinic_logo
     };
+
+    const experienceList = allExperience[doctor_id] || [];
+    const totalExperienceYears = calculateTotalExperienceYears(experienceList);
+    processedDoctor.experience_years = totalExperienceYears;
 
     return handleSuccess(res, 200, 'en', "DOCTOR_FETCHED_SUCCESSFULLY", processedDoctor);
 });

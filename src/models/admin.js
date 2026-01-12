@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import { applyLanguageOverwrite } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
 import { get_product_images_by_product_ids } from "./api.js";
 
@@ -772,7 +773,7 @@ export const clinicUnsubscribed = async (clinic_id) => {
 //     }
 // };
 
-export const get_doctors_management = async (limit, offset, search = "", type = "",zync_user_id) => {
+export const get_doctors_management = async (limit, offset, search = "", type = "", zync_user_id) => {
     try {
         const searchQuery = `%${search}%`;
 
@@ -799,7 +800,7 @@ export const get_doctors_management = async (limit, offset, search = "", type = 
             }
         }
 
-        if(zync_user_id) {
+        if (zync_user_id) {
             conditions += ` AND u.id = ?`;
             params.push(zync_user_id);
         }
@@ -1186,11 +1187,18 @@ export const get_doctor_surgeries = async (doctorId) => {
     }
 };
 
-export const getDoctorClinicSurgeries = async (doctorId, clinicId) => {
+export const getDoctorClinicSurgeries = async (doctorId, clinicId, language = "en") => {
     try {
-        return await db.query(`
-            SELECT 
-                ds.*,
+        const data = await db.query(`
+            SELECT DISTINCT
+                ds.doctor_surgery_id,
+                ds.doctor_id,
+                ds.clinic_id,
+                ds.swedish,
+                ds.english,
+                ds.surgery_id,
+                ds.updated_at,
+                ds.created_at,
                 s.type 
             FROM 
                 tbl_doctor_surgery ds
@@ -1200,6 +1208,14 @@ export const getDoctorClinicSurgeries = async (doctorId, clinicId) => {
                 ds.surgery_id = s.surgery_id
             WHERE 
                 ds.doctor_id = ? AND ds.clinic_id = ?`, [doctorId, clinicId]);
+
+        if (!data) {
+            return [];
+        }
+
+        const sergeries = applyLanguageOverwrite(data, language);
+
+        return sergeries;
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor's surgeries.");
@@ -3675,7 +3691,7 @@ export const checkDoctorIdsInvitaionListModel = async (ids) => {
             ORDER BY d.created_at DESC;
         `;
 
-        return await db.query(sql,params);
+        return await db.query(sql, params);
 
     } catch (error) {
         console.error("Database Error:", error.message);

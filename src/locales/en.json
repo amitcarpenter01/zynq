@@ -286,7 +286,7 @@
   "USER_PENDING": "Your profile is pending for approval",
   "DRAFT_APPOINTMENTS_FETCHED_SUCCESSFULLY": "Draft Appointments Fetched Successfully",
   "USER_DELETED": "Account has been deleted",
-  "USER_VERIFIED_SUCCESSFULLY": "Clinic Verified Successfully",
+  "USER_VERIFIED_SUCCESSFULLY": "Account Verified Successfully",
   "APPOINTMENT_DRAFT_ADDED": "Draft Appointment Added Successfully",
   "CONSENT_ADDED_SUCCESSFULLY": "Consent Added Successfully",
   "DEVICE_OR_USER_REQUIRED": "Device ID or User ID is required",
