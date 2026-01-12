@@ -1174,12 +1174,12 @@ export const get_doctor_surgeries = async (doctorId) => {
                 ds.doctor_surgery_id,
                 ds.doctor_id,
                 ds.clinic_id,
-                ds.swedish,
-                ds.english,
                 ds.surgery_id,
                 ds.updated_at,
                 ds.created_at,
-                s.type 
+                s.type,
+                s.swedish,
+                s.english
             FROM  
                 tbl_doctor_surgery ds
             INNER JOIN 
@@ -1209,12 +1209,12 @@ export const getDoctorClinicSurgeries = async (doctorId, clinicId, language = "e
                 ds.doctor_surgery_id,
                 ds.doctor_id,
                 ds.clinic_id,
-                ds.swedish,
-                ds.english,
                 ds.surgery_id,
                 ds.updated_at,
                 ds.created_at,
-                s.type 
+                s.type,
+                s.swedish,
+                s.english
             FROM 
                 tbl_doctor_surgery ds
             INNER JOIN 
