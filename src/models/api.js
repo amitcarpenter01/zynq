@@ -214,7 +214,7 @@ export const getFaceScanResultById = async (face_scan_result_id) => {
 
 export const delete_face_scan_result_by_id = async (face_scan_result_id) => {
     try {
-        return await db.query( `DELETE FROM tbl_face_scan_results WHERE face_scan_result_id = ?`, [face_scan_result_id]);
+        return await db.query(`DELETE FROM tbl_face_scan_results WHERE face_scan_result_id = ?`, [face_scan_result_id]);
     } catch (error) {
         console.error("DB Error in get_face_scan_result_by_id:", error);
         throw new Error("Failed to fetch face scan result data");
@@ -563,7 +563,14 @@ export const getAllRecommendedDoctors = async ({
             `GROUP_CONCAT(DISTINCT st.name ORDER BY st.name SEPARATOR ', ') AS sub_treatment_names`,
             'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
             'd.specialization',
-            'ANY_VALUE(d.fee_per_session) AS fee_per_session',
+            `ANY_VALUE(
+                       CASE 
+                          WHEN zu.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' 
+                          THEN dm.fee_per_session
+                          ELSE d.fee_per_session
+                          END
+                       ) AS fee_per_session`,
+            ,
             'd.profile_image',
             'dm.clinic_id',
             'c.clinic_name',
@@ -4228,7 +4235,7 @@ export const getDoctorEmbeddingTextAllV2 = async () => {
 //           treat.treatments_text,
 //           skin.skin_types_text
 //         FROM tbl_clinics c
-        
+
 //         -- Treatments
 //         LEFT JOIN (
 //           SELECT 
@@ -4241,7 +4248,7 @@ export const getDoctorEmbeddingTextAllV2 = async () => {
 //           JOIN tbl_treatments t ON ct.treatment_id = t.treatment_id
 //           GROUP BY ct.clinic_id
 //         ) treat ON c.clinic_id = treat.clinic_id
-  
+
 //         -- Skin Types
 //         LEFT JOIN (
 //           SELECT 
@@ -4254,7 +4261,7 @@ export const getDoctorEmbeddingTextAllV2 = async () => {
 //           JOIN tbl_skin_types st ON cst.skin_type_id = st.skin_type_id
 //           GROUP BY cst.clinic_id
 //         ) skin ON c.clinic_id = skin.clinic_id
-  
+
 //         WHERE c.zynq_user_id = ?
 //         LIMIT 1;
 //       `;
