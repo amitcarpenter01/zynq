@@ -89,7 +89,7 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         limit,
         offset
     }
-console.log('queryFilters=>',queryFilters);
+    console.log('queryFilters=>', queryFilters);
     const clinics = await apiModels.getAllClinicsForUser(queryFilters);
 
     if (!clinics || clinics.length === 0) {
@@ -266,39 +266,46 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
         clinicModels.getClinicDoctorsBulk(clinicIds)
     ]);
 
-    await Promise.all(
-        clinicIds.map(async (cid) => {
-            const treatments = allTreatments[cid] || [];
-            await Promise.all(
-                treatments.map(async (t) => {
-                    t.sub_treatments =
-                        await apiModels.getSubTreatmentsByTreatmentId(
-                            t.treatment_id,
-                            language
-                        );
-                })
-            );
-        })
-    );
+    // await Promise.all(
+    //     clinicIds.map(async (cid) => {
+    //         const treatments = allTreatments[cid] || [];
+    //         await Promise.all(
+    //             treatments.map(async (t) => {
+    //                 t.sub_treatments =
+    //                     await apiModels.getSubTreatmentsByTreatmentId(
+    //                         t.treatment_id,
+    //                         language
+    //                     );
+    //             })
+    //         );
+    //     })
+    // );
 
-    const processedClinics = clinics.map(clinic => ({
-        ...clinic,
-        images: images.filter(img => img?.image_url).map(img => ({
-            clinic_image_id: img.clinic_image_id,
-            url: formatImagePath(img.image_url, 'clinic/files'),
-        })),
-        location: allLocations[clinic.clinic_id] || null,
-        treatments: allTreatments[clinic.clinic_id] || [],
-        operation_hours: allOperationHours[clinic.clinic_id] || [],
-        skin_types: allSkinTypes[clinic.clinic_id] || [],
-        allSkinCondition: allSkinCondition[clinic.clinic_id] || [],
-        allSurgery: allSurgery[clinic.clinic_id] || [],
-        // allAstheticDevices: allAstheticDevices[clinic.clinic_id] || [],
-        allDoctors: allDoctors[clinic.clinic_id] || [],
-        clinic_logo: clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")
-            ? `${APP_URL}clinic/logo/${clinic.clinic_logo}`
-            : clinic.clinic_logo
-    }));
+    const processedClinics = clinics.map(clinic => {
+
+        const clinicTreatments = allTreatments.find(
+            t => t.clinic_id === clinic.clinic_id
+        );
+
+        return {
+            ...clinic,
+            images: images.filter(img => img?.image_url).map(img => ({
+                clinic_image_id: img.clinic_image_id,
+                url: formatImagePath(img.image_url, 'clinic/files'),
+            })),
+            location: allLocations[clinic.clinic_id] || null,
+            treatments: clinicTreatments?.treatments || [],
+            operation_hours: allOperationHours[clinic.clinic_id] || [],
+            skin_types: allSkinTypes[clinic.clinic_id] || [],
+            allSkinCondition: allSkinCondition[clinic.clinic_id] || [],
+            allSurgery: allSurgery[clinic.clinic_id] || [],
+            // allAstheticDevices: allAstheticDevices[clinic.clinic_id] || [],
+            allDoctors: allDoctors[clinic.clinic_id] || [],
+            clinic_logo: clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")
+                ? `${APP_URL}clinic/logo/${clinic.clinic_logo}`
+                : clinic.clinic_logo
+        }
+    });
 
     return handleSuccess(res, 200, language || 'en', "CLINICS_FETCHED_SUCCESSFULLY", processedClinics[0]);
 });
