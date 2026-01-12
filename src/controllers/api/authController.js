@@ -824,8 +824,17 @@ export const getFutureDoctorSlots = async (req, res) => {
                 for (const slot of availability.session) {
                     if (!slot?.start_time || !slot?.end_time) continue;
 
-                    const start = dayjs.utc(`${dateStr} ${slot.start_time}`, 'YYYY-MM-DD HH:mm:ss', true);
-                    const end = dayjs.utc(`${dateStr} ${slot.end_time}`, 'YYYY-MM-DD HH:mm:ss', true);
+                    // const start = dayjs.utc(`${dateStr} ${slot.start_time}`, 'YYYY-MM-DD HH:mm:ss', true);
+                    // const end = dayjs.utc(`${dateStr} ${slot.end_time}`, 'YYYY-MM-DD HH:mm:ss', true);
+
+                    const start = dayjs(
+                        `${dateStr}T${slot.start_time}Z`
+                    );
+
+                    const end = dayjs(
+                        `${dateStr}T${slot.end_time}Z`
+                    );
+
 
                     if (!start.isValid() || !end.isValid()) continue;
 
@@ -840,10 +849,17 @@ export const getFutureDoctorSlots = async (req, res) => {
         }
 
         // Remove past slots
-        const now = dayjs.utc();
+        // const now = dayjs.utc();
+        // const futureSlots = allSlots.filter(slot =>
+        //     dayjs.utc(slot.start_time).isAfter(now)
+        // );
+
+        const now = dayjs();
+
         const futureSlots = allSlots.filter(slot =>
-            dayjs.utc(slot.start_time).isAfter(now)
+            dayjs(slot.start_time).isAfter(now)
         );
+
 
         if (futureSlots.length === 0) {
             return handleError(res, 400, 'en', "NO_SLOTS_FOUND", []);
@@ -860,9 +876,13 @@ export const getFutureDoctorSlots = async (req, res) => {
         // Build lookup map
         const bookedMap = {};
         bookedAppointments.forEach(app => {
-            const dt = dayjs.utc(app.start_time);
+            // const dt = dayjs.utc(app.start_time);
+            // if (!dt.isValid()) return;
+            // bookedMap[dt.toISOString()] = true;
+            const dt = dayjs(app.start_time);
             if (!dt.isValid()) return;
             bookedMap[dt.toISOString()] = true;
+
         });
 
         // Assign status
@@ -873,14 +893,14 @@ export const getFutureDoctorSlots = async (req, res) => {
         }));
 
         const availableSlots = resultWithStatus.filter(slot => slot.status === 'available');
-        
+
         if (availableSlots.length === 0) {
             return handleError(res, 400, 'en', "NO_AVAILABLE_SLOTS_FOUND", []);
         }
 
         return handleSuccess(res, 200, 'en', "FUTURE_DOCTOR_SLOTS", {
             fee_per_session,
-            resultWithStatus : availableSlots
+            resultWithStatus: availableSlots
         });
 
     } catch (err) {
