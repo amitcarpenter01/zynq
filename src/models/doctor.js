@@ -522,6 +522,8 @@ export const getDoctorSlotSessionsModel = async (doctorId, clinic_id) => {
                 FROM tbl_doctor_slot_day dsd
                 LEFT JOIN tbl_doctor_session_time dst
                     ON dsd.doctor_slot_day_id = dst.doctor_slot_day_id
+                    AND dst.start_time IS NOT NULL
+                    AND dst.end_time IS NOT NULL
                 WHERE dsd.doctor_id = ? AND dsd.clinic_id = ?
                 GROUP BY dsd.doctor_slot_day_id, dsd.day
                 ORDER BY 
@@ -1934,5 +1936,72 @@ export const deleteDoctorClincData = async ({ clinic_id, doctor_id, zynq_user_id
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to update doctor personal details.");
+    }
+};
+
+export const getDoctorInfo = async (doctor_id, clinic_id) => {
+    try {
+        const sql = `
+            SELECT 
+                d.zynq_user_id,
+                d.doctor_id,
+                d.fee_per_session,
+                d.slot_time,
+                CASE 
+                    WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+                    WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' THEN 'Doctor'
+                END AS user_type
+            FROM tbl_doctors d
+            LEFT JOIN tbl_zqnq_users u 
+                ON u.id = d.zynq_user_id
+            WHERE u.role_id IN (
+                '407595e3-3196-11f0-9e07-0e8e5d906eef',
+                '3677a3e6-3196-11f0-9e07-0e8e5d906eef'
+            )
+            AND d.doctor_id = ?
+            ORDER BY d.created_at DESC
+            LIMIT 1
+        `;
+
+        const [rows] = await db.query(sql, [doctor_id]);
+
+        if (!rows || rows.length === 0) {
+            return null;
+        }
+
+        const data = rows;
+
+        if (data.user_type === 'Solo Doctor') {
+            return {
+                slot_time: data.slot_time,
+                fee_per_session: data.fee_per_session,
+                user_type: data.user_type
+            };
+        }
+
+        const [rows2] = await db.query(
+            `SELECT doctor_slot_time, fee_per_session
+             FROM tbl_doctor_clinic_map
+             WHERE doctor_id = ? AND clinic_id = ?`,
+            [doctor_id, clinic_id]
+        );
+
+        if (!rows2 || rows2.length === 0) {
+            return {
+                slot_time: null,
+                fee_per_session: null,
+                user_type: data.user_type
+            };
+        }
+
+        return {
+            slot_time: rows2.doctor_slot_time,
+            fee_per_session: rows2.fee_per_session,
+            user_type: data.user_type
+        };
+
+    } catch (error) {
+        console.error("Database Error:", error);
+        throw new Error("Failed to get doctor management data.");
     }
 };

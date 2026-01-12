@@ -667,26 +667,148 @@ export const create_call_log_doctor = async (req, res) => {
 }
 // -------------------------------------slot managment------------------------------------------------//
 
+// export const getFutureDoctorSlots = async (req, res) => {
+//     try {
+//         const { doctor_id } = req.query;
+//         const today = dayjs().startOf('day'); // sets time to 00:00:00
+
+//         const oneMonthLater = today.add(1, 'month');
+
+//         const availabilityRows = await doctorModels.fetchDoctorAvailabilityModel(doctor_id);
+
+//         if (availabilityRows.length === 0) {
+//             return handleError(res, 400, 'en', "NO_AVAILABILITY_FOUND", []);
+//         }
+
+//         // 1. Generate all possible future dates per availability
+//         let allSlotData = [];
+
+//         for (const availability of availabilityRows) {
+//             const rruleDay = weekdayMap[availability?.day_of_week?.toLowerCase()];
+//             if (!rruleDay) continue;
+
+//             const rule = new RRule({
+//                 freq: RRule.WEEKLY,
+//                 byweekday: [rruleDay],
+//                 dtstart: today.toDate(),
+//                 until: oneMonthLater.toDate()
+//             });
+
+//             const upcomingDates = rule.all();
+
+//             for (const dateObj of upcomingDates) {
+//                 const formattedDate = dayjs.utc(dateObj).format('YYYY-MM-DD');
+//                 const start_time = dayjs(availability.start_time_utc).utc().format('HH:mm');
+//                 const end_time = dayjs(availability.end_time_utc).utc().format('HH:mm');
+
+//                 const slots = generateSlots(
+//                     start_time,
+//                     end_time,
+//                     availability.slot_duration,
+//                     formattedDate
+//                 );
+
+
+//                 slots.forEach(slot => {
+//                     allSlotData.push({
+//                         date: formattedDate,
+//                         day: availability?.day_of_week?.toLowerCase(),
+//                         ...slot
+//                     });
+//                 });
+//             }
+//         }
+
+//         const now = dayjs.utc();
+
+//         const filteredSlotData = allSlotData.filter(slot => {
+//             return dayjs.utc(slot.start_time).isAfter(now);
+//         });
+
+//         if (filteredSlotData.length === 0) {
+//             return handleError(res, 400, 'en', "NO_SLOTS_FOUND", []);
+//         }
+
+//         // 2. Bulk fetch all appointments for doctor in the next 1 month
+//         const bookedAppointmentsRaw = await doctorModels.fetchAppointmentsBulkModel(
+//             doctor_id,
+//             today.format('YYYY-MM-DD'),
+//             oneMonthLater.format('YYYY-MM-DD')
+//         );
+
+//         const result = bookedAppointmentsRaw.map(app => {
+//             // Convert local Date object (from MySQL) to local string
+//             const localFormatted = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
+
+//             // Parse that string as if it was in UTC
+//             const fixedUTC = dayjs.utc(localFormatted).toISOString();
+
+//             return {
+//                 ...app,
+//                 start_time: fixedUTC,
+//             };
+//         });
+//         // Example result format: [{date: '2025-06-28', time: '10:00', count: 1}, ...]
+
+//         const bookedAppointments = Array.isArray(result) ? result : [];
+
+//         const bookedMap = {};
+//         // for (const app of bookedAppointments) {
+//         //     const key = `${app.date}_${app.time}`;
+//         //     bookedMap[key] = app.count;
+//         // }
+//         for (const app of bookedAppointments) {
+//             const key = `${app.start_time}`;
+//             bookedMap[key] = app.count || 1;
+//         }
+
+//         const doctorInfo = await doctorModels.fetchDoctorFeeModel(doctor_id);
+//         const fee_per_session = doctorInfo[0].fee_per_session || null;
+
+//         // 3. Assign status in-memory
+//         const resultWithStatus = filteredSlotData.map(slot => {
+//             const key = slot.start_time;
+//             const status = bookedMap[key] > 0 ? 'booked' : 'available';
+//             return {
+//                 start_time: slot.start_time,
+//                 end_time: slot.end_time,
+//                 status
+//             };
+//         });
+
+//         return handleSuccess(res, 200, 'en', "FUTURE_DOCTOR_SLOTS", {fee_per_session : fee_per_session, resultWithStatus});
+//     } catch (err) {
+//         console.error('Error fetching future slots:', err);
+//         res.status(500).json({ error: 'Internal server error' });
+//     }
+// };
+
 export const getFutureDoctorSlots = async (req, res) => {
     try {
-        const { doctor_id } = req.query;
-        const today = dayjs().startOf('day'); // sets time to 00:00:00
+        const { doctor_id, clinic_id } = req.query;
 
+        const today = dayjs().startOf('day');
         const oneMonthLater = today.add(1, 'month');
 
-        const availabilityRows = await doctorModels.fetchDoctorAvailabilityModel(doctor_id);
+        const availabilityRows =
+            await doctorModels.getDoctorSlotSessionsModel(doctor_id, clinic_id);
 
-        if (availabilityRows.length === 0) {
+
+        const doctorInfo = await doctorModels.getDoctorInfo(doctor_id, clinic_id);
+        const fee_per_session = doctorInfo?.fee_per_session || null;
+
+        if (!availabilityRows || availabilityRows.length === 0) {
             return handleError(res, 400, 'en', "NO_AVAILABILITY_FOUND", []);
         }
 
-        // 1. Generate all possible future dates per availability
-        let allSlotData = [];
+        let allSlots = [];
 
         for (const availability of availabilityRows) {
-            const rruleDay = weekdayMap[availability?.day_of_week?.toLowerCase()];
+            const weekday = availability.day?.toLowerCase();
+            const rruleDay = weekdayMap[weekday];
             if (!rruleDay) continue;
 
+            // Generate dates for this weekday
             const rule = new RRule({
                 freq: RRule.WEEKLY,
                 byweekday: [rruleDay],
@@ -694,92 +816,76 @@ export const getFutureDoctorSlots = async (req, res) => {
                 until: oneMonthLater.toDate()
             });
 
-            const upcomingDates = rule.all();
+            const dates = rule.all();
 
-            for (const dateObj of upcomingDates) {
-                const formattedDate = dayjs.utc(dateObj).format('YYYY-MM-DD');
-                const start_time = dayjs(availability.start_time_utc).utc().format('HH:mm');
-                const end_time = dayjs(availability.end_time_utc).utc().format('HH:mm');
+            for (const dateObj of dates) {
+                const dateStr = dayjs.utc(dateObj).format('YYYY-MM-DD');
 
-                const slots = generateSlots(
-                    start_time,
-                    end_time,
-                    availability.slot_duration,
-                    formattedDate
-                );
+                for (const slot of availability.session) {
+                    if (!slot?.start_time || !slot?.end_time) continue;
 
+                    const start = dayjs.utc(`${dateStr} ${slot.start_time}`, 'YYYY-MM-DD HH:mm:ss', true);
+                    const end = dayjs.utc(`${dateStr} ${slot.end_time}`, 'YYYY-MM-DD HH:mm:ss', true);
 
-                slots.forEach(slot => {
-                    allSlotData.push({
-                        date: formattedDate,
-                        day: availability?.day_of_week?.toLowerCase(),
-                        ...slot
+                    if (!start.isValid() || !end.isValid()) continue;
+
+                    allSlots.push({
+                        start_time: start.toISOString(),
+                        end_time: end.toISOString()
                     });
-                });
+                }
+
+
             }
         }
 
+        // Remove past slots
         const now = dayjs.utc();
+        const futureSlots = allSlots.filter(slot =>
+            dayjs.utc(slot.start_time).isAfter(now)
+        );
 
-        const filteredSlotData = allSlotData.filter(slot => {
-            return dayjs.utc(slot.start_time).isAfter(now);
-        });
-
-        if (filteredSlotData.length === 0) {
+        if (futureSlots.length === 0) {
             return handleError(res, 400, 'en', "NO_SLOTS_FOUND", []);
         }
 
-        // 2. Bulk fetch all appointments for doctor in the next 1 month
-        const bookedAppointmentsRaw = await doctorModels.fetchAppointmentsBulkModel(
-            doctor_id,
-            today.format('YYYY-MM-DD'),
-            oneMonthLater.format('YYYY-MM-DD')
-        );
+        // Fetch booked appointments
+        const bookedAppointments =
+            await doctorModels.fetchAppointmentsBulkModel(
+                doctor_id,
+                today.format('YYYY-MM-DD'),
+                oneMonthLater.format('YYYY-MM-DD')
+            );
 
-        const result = bookedAppointmentsRaw.map(app => {
-            // Convert local Date object (from MySQL) to local string
-            const localFormatted = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
-
-            // Parse that string as if it was in UTC
-            const fixedUTC = dayjs.utc(localFormatted).toISOString();
-
-            return {
-                ...app,
-                start_time: fixedUTC,
-            };
-        });
-        // Example result format: [{date: '2025-06-28', time: '10:00', count: 1}, ...]
-
-        const bookedAppointments = Array.isArray(result) ? result : [];
-
+        // Build lookup map
         const bookedMap = {};
-        // for (const app of bookedAppointments) {
-        //     const key = `${app.date}_${app.time}`;
-        //     bookedMap[key] = app.count;
-        // }
-        for (const app of bookedAppointments) {
-            const key = `${app.start_time}`;
-            bookedMap[key] = app.count || 1;
+        bookedAppointments.forEach(app => {
+            const dt = dayjs.utc(app.start_time);
+            if (!dt.isValid()) return;
+            bookedMap[dt.toISOString()] = true;
+        });
+
+        // Assign status
+        const resultWithStatus = futureSlots.map(slot => ({
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            status: bookedMap[slot.start_time] ? 'booked' : 'available'
+        }));
+
+        const availableSlots = resultWithStatus.filter(slot => slot.status === 'available');
+        
+        if (availableSlots.length === 0) {
+            return handleError(res, 400, 'en', "NO_AVAILABLE_SLOTS_FOUND", []);
         }
 
-        const doctorInfo = await doctorModels.fetchDoctorFeeModel(doctor_id);
-        const fee_per_session = doctorInfo[0].fee_per_session || null;
-
-        // 3. Assign status in-memory
-        const resultWithStatus = filteredSlotData.map(slot => {
-            const key = slot.start_time;
-            const status = bookedMap[key] > 0 ? 'booked' : 'available';
-            return {
-                start_time: slot.start_time,
-                end_time: slot.end_time,
-                status
-            };
+        return handleSuccess(res, 200, 'en', "FUTURE_DOCTOR_SLOTS", {
+            fee_per_session,
+            resultWithStatus : availableSlots
         });
 
-        return handleSuccess(res, 200, 'en', "FUTURE_DOCTOR_SLOTS", {fee_per_session : fee_per_session, resultWithStatus});
     } catch (err) {
         console.error('Error fetching future slots:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 };
 
