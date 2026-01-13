@@ -2007,3 +2007,19 @@ export const getDoctorInfo = async (doctor_id, clinic_id) => {
         throw new Error("Failed to get doctor management data.");
     }
 };
+
+
+export const fetchFees_per_session_doctor = async (doctor_id, clinic_id) => {
+    try {
+        const [rows2] = await db.query(
+            `SELECT doctor_slot_time, fee_per_session
+             FROM tbl_doctor_clinic_map
+             WHERE doctor_id = ? AND clinic_id = ?`,
+            [doctor_id, clinic_id]
+        );
+        return rows2
+    } catch (error) {
+        console.error("Failed to fetch purchase products data:", error);
+        throw error;
+    }
+}
