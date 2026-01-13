@@ -1689,19 +1689,14 @@ export const getClinicTreatmentsBulkV2 = async (clinicIds, lang = 'en') => {
           ),
           JSON_ARRAY()
         ) AS treatments
-
       FROM tbl_clinics c
-
       LEFT JOIN tbl_mapped_clinic_treatments ct
         ON c.clinic_id = ct.clinic_id
-
       LEFT JOIN tbl_treatments t
         ON ct.treatment_id = t.treatment_id
         AND t.is_deleted = 0
-
       WHERE c.clinic_id IN (?)
         AND c.is_deleted = 0
-
       GROUP BY c.clinic_id
         `;
 
