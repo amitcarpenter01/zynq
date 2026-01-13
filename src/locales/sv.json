@@ -219,7 +219,7 @@
   "CONCERNS_FETCHED": "Bekymmer hämtade",
   "DASHBOARD_DATA": "Instrumentpaneldata",
   "DEVICES_FETCHED_SUCCESSFULLY": "Enheter hämtade framgångsrikt",
-  "DEVICES_NOT_FOUND":"Enheter hittades inte",
+  "DEVICES_NOT_FOUND": "Enheter hittades inte",
   "DOCTOR_AVIBILITY_FETCH_SUCCESSFULLY": "Experttillgänglighet hämtad framgångsrikt",
   "DOCTOR_FETCHED_SUCCESSFULLY": "Expert hämtad framgångsrikt",
   "DOCTOR_FETCH_SUCCESSFULLY": "Experthämtning lyckades",
@@ -321,11 +321,12 @@
   "SUB_TREATMENT_MASTER_DELETED_SUCCESSFULLY": "Huvuddelbehandling raderad framgångsrikt",
   "RECIEPT_SENT_SUCCESSFULLY": "Kvitto skickat till din registrerade e-postadress",
   "CLINIC_CREATED_SUCCESSFULLY": "Klinik skapad framgångsrikt",
-  "TREATMENT_CLONED_SUCCESSFULLY" : "Behandling klonad framgångsrikt",
-  "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY" : "Expert uppdaterad framgångsrikt",
-  "AWS_RECOGNITION_RESULT" : "AWS-igenkänningsresultat",
-  "FILE_NOT_FOUND" : "Filen hittades inte",
-  "CLINIC_UNSYNCED_SUCCESSFULLY" : "Kliniken har kopplats bort",
-  "EXPERT_ADDED_SUCCESSFULLY" : "Expert har lagts till",
-  "SOLO_EXPERT_UPDATED_SUCCESSFULLY" : "Soloexpert har lagts till"
+  "TREATMENT_CLONED_SUCCESSFULLY": "Behandling klonad framgångsrikt",
+  "DOCTOR_PROFILE_UPDATED_SUCCESSFULLY": "Expert uppdaterad framgångsrikt",
+  "AWS_RECOGNITION_RESULT": "AWS-igenkänningsresultat",
+  "FILE_NOT_FOUND": "Filen hittades inte",
+  "CLINIC_UNSYNCED_SUCCESSFULLY": "Kliniken har kopplats bort",
+  "EXPERT_ADDED_SUCCESSFULLY": "Expert har lagts till",
+  "SOLO_EXPERT_UPDATED_SUCCESSFULLY": "Soloexpert har lagts till",
+  "CALLBACK_REQUESTED_SUCCESSFULLY": "Återuppringningsförfrågan har skickats"
 }
