@@ -88,29 +88,17 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         offset
     }
     const clinics = await apiModels.getAllClinicsForUser(queryFilters);
+    console.log({ clinics })
 
     if (!clinics || clinics.length === 0) {
         return handleSuccess(res, 200, language || 'en', "CLINICS_FETCHED_SUCCESSFULLY", clinics);
     }
 
     const clinicIds = clinics.map(c => c.clinic_id);
-
     const [
         allTreatments,
-        //     allOperationHours,
-        //     allSkinTypes,
-        //     allSkinCondition,
-        //     allSurgery,
-        //     allAstheticDevices,
-        //     allLocations
     ] = await Promise.all([
         clinicModels.getClinicTreatmentsBulkV2(clinicIds, language),
-        //     clinicModels.getClinicOperationHoursBulk(clinicIds),
-        //     clinicModels.getClinicSkinTypesBulk(clinicIds),
-        //     clinicModels.getClinicSkinConditionBulk(clinicIds),
-        //     clinicModels.getClinicSurgeryBulk(clinicIds),
-        //     clinicModels.getClinicAstheticDevicesBulk(clinicIds),
-        //     clinicModels.getClinicLocationsBulk(clinicIds)
     ]);
 
     const processedClinics = clinics.map(clinic => {
@@ -120,13 +108,7 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         );
         return {
             ...clinic,
-            // location: allLocations[clinic.clinic_id] || null,
             treatments: (clinicTreatments?.treatments || [])?.map(t => t.name),
-            // operation_hours: allOperationHours[clinic.clinic_id] || [],
-            // skin_types: allSkinTypes[clinic.clinic_id] || [],
-            // allSkinCondition: allSkinCondition[clinic.clinic_id] || [],
-            // allSurgery: allSurgery[clinic.clinic_id] || [],
-            // allAstheticDevices: allAstheticDevices[clinic.clinic_id] || [],
             clinic_logo: clinic.clinic_logo && !clinic.clinic_logo.startsWith("http")
                 ? `${APP_URL}clinic/logo/${clinic.clinic_logo}`
                 : clinic.clinic_logo
