@@ -197,7 +197,7 @@ router.post('/payments/test', testPayment)
 
 router.get('/skin-types', optionalAuthenticateUser, faceScanControllers.getClinicSkinTypes);
 router.get('/treatments', optionalAuthenticateUser, faceScanControllers.getTreatments);
-router.post('/get-treatments-by-ids', authenticateUser, validate(getTreatmentsSchema, "body"), faceScanControllers.get_treatments_by_treatments);
+router.post('/get-treatments-by-ids', authenticateUser,  faceScanControllers.get_treatments_by_treatments);
 router.post("/get-all-search-results",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.search_home_entities);
 
 router.get('/payments/get-booked-appointments', authenticateUser, appointmentController.getBookedAppointments);

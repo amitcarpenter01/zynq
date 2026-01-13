@@ -591,22 +591,46 @@ export const createPaymentSessionForAppointmentPAYLATERKLARNA = async ({ metadat
 };
 
 
-export const createPayLaterSetupSession = async ({ metadata }) => {
-  try {
-    return await stripe.checkout.sessions.create({
-      mode: "setup", // SetupIntent mode
-      payment_method_types: ["card"],
-      customer: metadata.stripe_customer_id, // existing Stripe customer
-      client_reference_id: metadata.appointment_id, // optional but useful
-      metadata: { appointment_id: metadata.appointment_id },
-      success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}&type=PAY_LATER`,
-      cancel_url: `https://getzynq.io/zynq/payment-cancel/?redirect_url=${metadata.cancel_url}&type=PAY_LATER`,
-    });
-  } catch (error) {
-    console.error("Failed to create PAY_LATER setup session:", error);
-    throw error;
-  }
+// export const createPayLaterSetupSession = async ({ metadata }) => {
+//   try {
+//     return await stripe.checkout.sessions.create({
+//       mode: "setup", // SetupIntent mode
+//       payment_method_types: ["card"],
+//       customer: metadata.stripe_customer_id, // existing Stripe customer
+//       client_reference_id: metadata.appointment_id, // optional but useful
+//       metadata: { appointment_id: metadata.appointment_id },
+//       success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}&type=PAY_LATER`,
+//       cancel_url: `https://getzynq.io/zynq/payment-cancel/?redirect_url=${metadata.cancel_url}&type=PAY_LATER`,
+//     });
+//   } catch (error) {
+//     console.error("Failed to create PAY_LATER setup session:", error);
+//     throw error;
+//   }
+// };
+
+export const createPayLaterSetupSession = async ({ metadata, final_total }) => {
+  return await stripe.checkout.sessions.create({
+    mode: "payment",
+    payment_method_types: ["card"],
+    customer: metadata.stripe_customer_id,
+    line_items: [
+      {
+        price_data: {
+          currency: "eur",
+          product_data: {
+            name: "Doctor Appointment"
+          },
+          unit_amount: final_total * 100
+        },
+        quantity: 1
+      }
+    ],
+
+    success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&type=PAY_NOW`,
+    cancel_url: `https://getzynq.io/zynq/payment-cancel/?type=PAY_NOW`
+  });
 };
+
 
 export const getOrCreateStripeCustomerId = async (user_id) => {
   // Check if user already has a stripe_customer_id in DB

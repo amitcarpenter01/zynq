@@ -217,8 +217,18 @@ export const get_treatments = asyncHandler(async (req, res) => {
 });
 
 export const get_treatments_by_treatments = asyncHandler(async (req, res) => {
-    const { treatment_ids, doctor_id } = req.body;
+    const { treatment_ids, doctor_id ,clinic_id} = req.body;
     const language = req?.user?.language || 'en';
+
+    if(doctor_id && clinic_id){
+        const treatments = await apiModels.getTreatmentsByTreatmentIdsAndClinicIdAndDocterId(
+            treatment_ids,
+            language,
+            doctor_id,
+            clinic_id
+        );
+        return handleSuccess(res, 200, 'en', 'TREATMENTS_FETCHED', treatments);
+    }
     const treatments = await apiModels.getTreatmentsByTreatmentIds(
         treatment_ids,
         language,

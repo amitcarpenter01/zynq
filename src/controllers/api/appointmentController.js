@@ -1567,7 +1567,7 @@ export const saveAppointmentAsDraft = async (req, res) => {
 //                 const updateStatus = await updateAuthorizationSetupIntentIdOfAppointment(session.setup_intent, appointment_id);
 
 //             } else if (payment_timing === 'PAY_LATER_KLARNA') {
-                
+
 //                 session = await createPaymentSessionForAppointmentPAYLATERKLARNA({
 //                     metadata: {
 //                         order_lines: [
@@ -1693,307 +1693,301 @@ export const saveAppointmentAsDraft = async (req, res) => {
 
 export const bookDirectAppointment = asyncHandler(async (req, res) => {
     try {
-    // ---------------- Validation ----------------
-    const schema = Joi.object({
-        appointment_id: Joi.string().optional(),
-        doctor_id: Joi.string().required(),
-        report_id: Joi.string().optional(),
-        clinic_id: Joi.string().required(),
-        treatments: Joi.array().items(
-            Joi.object({
-                treatment_id: Joi.string().required(),
-                price: Joi.number().optional(),
-                sub_treatments: Joi.array().items(
-                    Joi.object({
-                        sub_treatment_id: Joi.string().required(),
-                        sub_treatment_price: Joi.number().required()
-                    })
-                ).optional()
-            })
-        ).optional(),
-        concerns: Joi.array().items(Joi.string()).optional(),
-        start_time: Joi.string().isoDate().required(),
-        end_time: Joi.string().isoDate().required(),
-        redirect_url: Joi.string().required(),
-        cancel_url: Joi.string().required(),
-        appointmentType: Joi.string().required(),
-        payment_timing: Joi.string().optional().valid('PAY_NOW', 'PAY_LATER', 'PAY_LATER_KLARNA'),
-    });
- 
-    const { error, value } = schema.validate(req.body);
-    if (error) return joiErrorHandle(res, error);
- 
-    let {
-        appointment_id: inputId,
-        doctor_id,
-        clinic_id,
-        treatments = [],
-        start_time,
-        end_time,
-        report_id,
-        redirect_url,
-        cancel_url,
-        appointmentType,
-        concerns = [],
-        payment_timing
-    } = value;
- 
-    const user_id = req.user.user_id;
-    const language = req?.user?.language || "en";
-    const save_type = "booked";
-    const appointment_id = inputId || uuidv4();
- 
-    if (!isEmpty(concerns)) {
-        await appointmentModel.updateAppointmentConcerns(appointment_id, concerns);
-    }
- 
-    // ---------------- PRICE CALCULATION ----------------
-    let total_price = 0;
-    for (const t of treatments) {
-        if (Array.isArray(t.sub_treatments) && t.sub_treatments.length > 0) {
-            for (const st of t.sub_treatments) {
-                total_price += +st.sub_treatment_price || 0;
-            }
-        } else {
-            total_price += +t.price || 0;
+        // ---------------- Validation ----------------
+        const schema = Joi.object({
+            appointment_id: Joi.string().optional(),
+            doctor_id: Joi.string().required(),
+            report_id: Joi.string().optional(),
+            clinic_id: Joi.string().required(),
+            treatments: Joi.array().items(
+                Joi.object({
+                    treatment_id: Joi.string().required(),
+                    price: Joi.number().optional(),
+                    sub_treatments: Joi.array().items(
+                        Joi.object({
+                            sub_treatment_id: Joi.string().required(),
+                            sub_treatment_price: Joi.number().required()
+                        })
+                    ).optional()
+                })
+            ).optional(),
+            concerns: Joi.array().items(Joi.string()).optional(),
+            start_time: Joi.string().isoDate().required(),
+            end_time: Joi.string().isoDate().required(),
+            redirect_url: Joi.string().required(),
+            cancel_url: Joi.string().required(),
+            appointmentType: Joi.string().required(),
+            payment_timing: Joi.string().optional().valid('PAY_NOW', 'PAY_LATER', 'PAY_LATER_KLARNA'),
+        });
+
+        const { error, value } = schema.validate(req.body);
+        if (error) return joiErrorHandle(res, error);
+
+        let {
+            appointment_id: inputId,
+            doctor_id,
+            clinic_id,
+            treatments = [],
+            start_time,
+            end_time,
+            report_id,
+            redirect_url,
+            cancel_url,
+            appointmentType,
+            concerns = [],
+            payment_timing
+        } = value;
+
+        const user_id = req.user.user_id;
+        const language = req?.user?.language || "en";
+        const save_type = "booked";
+        const appointment_id = inputId || uuidv4();
+
+        if (!isEmpty(concerns)) {
+            await appointmentModel.updateAppointmentConcerns(appointment_id, concerns);
         }
-    }
-    // ---------------- Normalize Times ----------------
-    const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
-    const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
- 
-    if (!report_id) {
-        report_id = await getLatestFaceScanReportIDByUserID(user_id);
-    }
- 
-    // ---------------- Load Commission & VAT ----------------
-    const [{ APPOINTMENT_COMMISSION }] = await getAdminCommissionRatesModel();
-    const ADMIN_EARNING_PERCENTAGE = APPOINTMENT_COMMISSION || 3;
-    const VAT_PERCENTAGE = 25;
- 
-    // ---------------- Discount & VAT Logic ----------------
-    let discounted_amount = 0;
-    let subtotal = total_price;
-    let vat_amount = 0;
-    let final_total = total_price;
- 
-    let existingData = null;
- 
-    if (inputId) {
-        [existingData] = await appointmentModel.getAppointmentDetailsByAppointmentID(appointment_id);
- 
-        if (!existingData) {
-            return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
-        }
- 
-        const { discount_type = "NO_DISCOUNT", discount_value = 0 } = existingData;
- 
-        if (discount_type !== "NO_DISCOUNT") {
-            if (discount_type === "PERCENTAGE") {
-                discounted_amount = +((total_price * discount_value) / 100).toFixed(2);
-            } else if (discount_type === "SEK") {
-                discounted_amount = +discount_value;
-            }
- 
-            subtotal = Math.max(0, total_price - discounted_amount);
-        }
-    }
- 
- 
-    // vat_amount = +(subtotal * (VAT_PERCENTAGE / 100)).toFixed(2);
-    // final_total = +(subtotal + vat_amount).toFixed(2);
- 
-    // let admin_earnings = +((subtotal * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2);
-    // admin_earnings = +(admin_earnings + vat_amount).toFixed(2);
- 
-    // let clinic_earnings = +(subtotal - admin_earnings).toFixed(2);
- 
-    // ---------------- NO VAT Logic ----------------
-    const appointmentDetails = await getAppointmentDetails(user_id, appointment_id);
-    let [doctor] = await getDocterByDocterId(doctor_id);
-    if (doctor.role === 'DOCTOR') {
-        let data = await fetchFees_per_session_doctor(doctor_id,clinic_id);
-        doctor.fee_per_session = data.fee_per_session
-    }
-    vat_amount = 0;
-    final_total = subtotal === 0 ? doctor.fee_per_session : subtotal;
-    let admin_earnings = +((subtotal * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2);
-    let clinic_earnings = +(subtotal - admin_earnings).toFixed(2);
- 
-    const is_paid = final_total > 0 ? 1 : 0;
- 
-    // ---------------- Appointment Data ----------------
-    const appointmentData = {
-        appointment_id,
-        user_id,
-        doctor_id,
-        clinic_id,
-        subtotal,
-        vat_amount,
-        total_price: final_total,
-        admin_earnings,
-        clinic_earnings,
-        report_id,
-        type: appointmentType,
-        status: "Scheduled",
-        save_type,
-        start_time: normalizedStart,
-        end_time: normalizedEnd,
-        is_paid,
-        payment_status: is_paid ? "unpaid" : "paid",
-        payment_timing: payment_timing ? payment_timing : "PAY_NOW",
-    };
- 
-    if (inputId) {
-        if (existingData?.discount_type !== "NO_DISCOUNT") {
-            appointmentData.total_price_with_discount = total_price;
-            appointmentData.discounted_amount = discounted_amount;
-            await appointmentModel.updateAppointmentV3(appointmentData);
-        } else {
-            await appointmentModel.updateAppointment(appointmentData);
-        }
- 
-        await appointmentModel.deleteAppointmentTreatments(appointment_id);
-    } else {
-        await appointmentModel.insertAppointment(appointmentData);
-    }
- 
-    if (treatments.length > 0) {
-        await appointmentModel.insertAppointmentTreatments(appointment_id, treatments);
-    }
- 
-    let session = null;
-    // ---------------- PAYMENT SECTION (UPDATED) ----------------
-    if (is_paid && appointmentType === "Clinic Visit" && final_total != 0) {
-        if (payment_timing === 'PAY_LATER') {
- 
-            const stripe_customer_id = await getOrCreateStripeCustomerId(user_id);
- 
-            session = await createPayLaterSetupSession({
-                metadata: {
-                    appointment_id,
-                    redirect_url,
-                    cancel_url,
-                    stripe_customer_id: stripe_customer_id
+
+        // ---------------- PRICE CALCULATION ----------------
+        let total_price = 0;
+        for (const t of treatments) {
+            if (Array.isArray(t.sub_treatments) && t.sub_treatments.length > 0) {
+                for (const st of t.sub_treatments) {
+                    total_price += +st.sub_treatment_price || 0;
                 }
-            });
- 
-            const updateStatus = await updateAuthorizationSetupIntentIdOfAppointment(session.setup_intent, appointment_id);
- 
-        } else if (payment_timing === 'PAY_LATER_KLARNA') {
- 
-            session = await createPaymentSessionForAppointmentPAYLATERKLARNA({
-                metadata: {
-                    order_lines: [
-                        {
-                            name: "Appointment",
-                            quantity: 1,
-                            unit_amount: final_total * 100,
-                        },
-                    ],
-                    appointment_id,
-                    redirect_url,
-                    cancel_url,
-                    currency: "sek",
-                },
-            });
-        } else {
-            session = await createPaymentSessionForAppointment({
-                metadata: {
-                    order_lines: [
-                        {
-                            name: "Appointment",
-                            quantity: 1,
-                            unit_amount: final_total * 100,
-                        },
-                    ],
-                    appointment_id,
-                    redirect_url,
-                    cancel_url,
-                    currency: "sek",
-                },
-            });
+            } else {
+                total_price += +t.price || 0;
+            }
         }
- 
-        return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY", session);
-    }
- 
-    // ---------------- FREE APPOINTMENT FLOW ----------------
-    const newAppointmentDetails = await getAppointmentDetails(user_id, appointment_id);
-    if (is_paid && appointmentType === "Video Call" && final_total != 0) {
- 
-        let session;
- 
-        if (payment_timing === 'PAY_LATER') {
- 
- 
-            const stripe_customer_id = await getOrCreateStripeCustomerId(user_id);
- 
-            session = await createPayLaterSetupSession({
-                metadata: {
-                    appointment_id,
-                    redirect_url,
-                    cancel_url,
-                    stripe_customer_id: stripe_customer_id
+        // ---------------- Normalize Times ----------------
+        const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
+        const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
+
+        if (!report_id) {
+            report_id = await getLatestFaceScanReportIDByUserID(user_id);
+        }
+
+        // ---------------- Load Commission & VAT ----------------
+        const [{ APPOINTMENT_COMMISSION }] = await getAdminCommissionRatesModel();
+        const ADMIN_EARNING_PERCENTAGE = APPOINTMENT_COMMISSION || 3;
+        const VAT_PERCENTAGE = 25;
+
+        // ---------------- Discount & VAT Logic ----------------
+        let discounted_amount = 0;
+        let subtotal = total_price;
+        let vat_amount = 0;
+        let final_total = total_price;
+
+        let existingData = null;
+
+        if (inputId) {
+            [existingData] = await appointmentModel.getAppointmentDetailsByAppointmentID(appointment_id);
+
+            if (!existingData) {
+                return handleError(res, 404, language, "APPOINTMENT_NOT_FOUND");
+            }
+
+            const { discount_type = "NO_DISCOUNT", discount_value = 0 } = existingData;
+
+            if (discount_type !== "NO_DISCOUNT") {
+                if (discount_type === "PERCENTAGE") {
+                    discounted_amount = +((total_price * discount_value) / 100).toFixed(2);
+                } else if (discount_type === "SEK") {
+                    discounted_amount = +discount_value;
                 }
-            });
- 
-            const updateStatus = await updateAuthorizationSetupIntentIdOfAppointment(session.setup_intent, appointment_id);
- 
-        } else {
-            session = await createPaymentSessionForAppointment({
-                metadata: {
-                    order_lines: [
-                        {
-                            name: "Appointment",
-                            quantity: 1,
-                            unit_amount: final_total * 100,
-                        },
-                    ],
-                    appointment_id,
-                    redirect_url,
-                    cancel_url,
-                    currency: "sek",
-                },
-            });
+
+                subtotal = Math.max(0, total_price - discounted_amount);
+            }
         }
- 
-        return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY", session);
-    }
- 
-    await sendNotification({
-        userData: req.user,
-        type: "APPOINTMENT",
-        type_id: appointment_id,
-        notification_type: NOTIFICATION_MESSAGES.appointment_booked,
-        receiver_id: doctor_id,
-        receiver_type: "DOCTOR",
-    });
- 
-    await sendEmail({
-        to: doctor.email,
-        subject: appointmentBookedTemplate.subject({
-            user_name: req.user.full_name,
-            appointment_date: normalizedStart,
-        }),
-        html: appointmentBookedTemplate.body({
-            user_name: req.user.full_name,
-            doctor_name: doctor.name,
-            appointment_date: normalizedStart,
-            total_price: final_total == 0 ? "Free" : final_total,
-            clinic_name: newAppointmentDetails.clinic_name,
-        }),
-    });
- 
-    const chatCheck = await getChatBetweenUsers(user_id, doctor.zynq_user_id);
-    let chat_id = chatCheck.length ? chatCheck[0].id : (await createChat(user_id, doctor.zynq_user_id)).insertId;
- 
-    return handleSuccess(res, 201, language, "APPOINTMENT_BOOKED_SUCCESSFULLY", {
-        appointment_id,
-        chat_id,
-        appointmentDetails: newAppointmentDetails,
-    });
- 
+
+
+        // vat_amount = +(subtotal * (VAT_PERCENTAGE / 100)).toFixed(2);
+        // final_total = +(subtotal + vat_amount).toFixed(2);
+
+        // let admin_earnings = +((subtotal * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2);
+        // admin_earnings = +(admin_earnings + vat_amount).toFixed(2);
+
+        // let clinic_earnings = +(subtotal - admin_earnings).toFixed(2);
+
+        // ---------------- NO VAT Logic ----------------
+        const appointmentDetails = await getAppointmentDetails(user_id, appointment_id);
+        let [doctor] = await getDocterByDocterId(doctor_id);
+        if (doctor.role === 'DOCTOR') {
+            let data = await fetchFees_per_session_doctor(doctor_id, clinic_id);
+            doctor.fee_per_session = data.fee_per_session
+        }
+        vat_amount = 0;
+        final_total = subtotal === 0 ? doctor.fee_per_session : subtotal;
+        let admin_earnings = +((subtotal * ADMIN_EARNING_PERCENTAGE) / 100).toFixed(2);
+        let clinic_earnings = +(subtotal - admin_earnings).toFixed(2);
+
+        const is_paid = final_total > 0 ? 1 : 0;
+        console.log('final_total>>>>', final_total);
+
+        // ---------------- Appointment Data ----------------
+        const appointmentData = {
+            appointment_id,
+            user_id,
+            doctor_id,
+            clinic_id,
+            subtotal,
+            vat_amount,
+            total_price: final_total,
+            admin_earnings,
+            clinic_earnings,
+            report_id,
+            type: appointmentType,
+            status: "Scheduled",
+            save_type,
+            start_time: normalizedStart,
+            end_time: normalizedEnd,
+            is_paid,
+            payment_status: is_paid ? "unpaid" : "paid",
+            payment_timing: payment_timing ? payment_timing : "PAY_NOW",
+        };
+
+        if (inputId) {
+            if (existingData?.discount_type !== "NO_DISCOUNT") {
+                appointmentData.total_price_with_discount = total_price;
+                appointmentData.discounted_amount = discounted_amount;
+                await appointmentModel.updateAppointmentV3(appointmentData);
+            } else {
+                await appointmentModel.updateAppointment(appointmentData);
+            }
+
+            await appointmentModel.deleteAppointmentTreatments(appointment_id);
+        } else {
+            await appointmentModel.insertAppointment(appointmentData);
+        }
+
+        if (treatments.length > 0) {
+            await appointmentModel.insertAppointmentTreatments(appointment_id, treatments);
+        }
+
+        let session = null;
+        // ---------------- PAYMENT SECTION (UPDATED) ----------------
+        if (is_paid && appointmentType === "Clinic Visit" && final_total != 0) {
+            if (payment_timing === 'PAY_LATER') {
+                const stripe_customer_id = await getOrCreateStripeCustomerId(user_id);
+                session = await createPayLaterSetupSession({
+                    metadata: {
+                        appointment_id,
+                        redirect_url,
+                        cancel_url,
+                        stripe_customer_id: stripe_customer_id
+                    }, final_total
+                });
+
+                const updateStatus = await updateAuthorizationSetupIntentIdOfAppointment(session.setup_intent, appointment_id);
+
+            } else if (payment_timing === 'PAY_LATER_KLARNA') {
+                session = await createPaymentSessionForAppointmentPAYLATERKLARNA({
+                    metadata: {
+                        order_lines: [
+                            {
+                                name: "Appointment",
+                                quantity: 1,
+                                unit_amount: final_total * 100,
+                            },
+                        ],
+                        appointment_id,
+                        redirect_url,
+                        cancel_url,
+                        currency: "sek",
+                    },
+                });
+            } else {
+                session = await createPaymentSessionForAppointment({
+                    metadata: {
+                        order_lines: [
+                            {
+                                name: "Appointment",
+                                quantity: 1,
+                                unit_amount: final_total * 100,
+                            },
+                        ],
+                        appointment_id,
+                        redirect_url,
+                        cancel_url,
+                        currency: "sek",
+                    },
+                });
+            }
+
+            return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY", session);
+        }
+
+        // ---------------- FREE APPOINTMENT FLOW ----------------
+        const newAppointmentDetails = await getAppointmentDetails(user_id, appointment_id);
+        if (is_paid && appointmentType === "Video Call" && final_total != 0) {
+            let session;
+            if (payment_timing === 'PAY_LATER') {
+                const stripe_customer_id = await getOrCreateStripeCustomerId(user_id);
+
+                session = await createPayLaterSetupSession({
+                    metadata: {
+                        appointment_id,
+                        redirect_url,
+                        cancel_url,
+                        stripe_customer_id: stripe_customer_id
+                    },final_total
+                });
+
+                const updateStatus = await updateAuthorizationSetupIntentIdOfAppointment(session.setup_intent, appointment_id);
+
+            } else {
+                session = await createPaymentSessionForAppointment({
+                    metadata: {
+                        order_lines: [
+                            {
+                                name: "Appointment",
+                                quantity: 1,
+                                unit_amount: final_total * 100,
+                            },
+                        ],
+                        appointment_id,
+                        redirect_url,
+                        cancel_url,
+                        currency: "sek",
+                    },
+                });
+            }
+
+            return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY", session);
+        }
+
+        await sendNotification({
+            userData: req.user,
+            type: "APPOINTMENT",
+            type_id: appointment_id,
+            notification_type: NOTIFICATION_MESSAGES.appointment_booked,
+            receiver_id: doctor_id,
+            receiver_type: "DOCTOR",
+        });
+
+        await sendEmail({
+            to: doctor.email,
+            subject: appointmentBookedTemplate.subject({
+                user_name: req.user.full_name,
+                appointment_date: normalizedStart,
+            }),
+            html: appointmentBookedTemplate.body({
+                user_name: req.user.full_name,
+                doctor_name: doctor.name,
+                appointment_date: normalizedStart,
+                total_price: final_total == 0 ? "Free" : final_total,
+                clinic_name: newAppointmentDetails.clinic_name,
+            }),
+        });
+
+        const chatCheck = await getChatBetweenUsers(user_id, doctor.zynq_user_id);
+        let chat_id = chatCheck.length ? chatCheck[0].id : (await createChat(user_id, doctor.zynq_user_id)).insertId;
+
+        return handleSuccess(res, 201, language, "APPOINTMENT_BOOKED_SUCCESSFULLY", {
+            appointment_id,
+            chat_id,
+            appointmentDetails: newAppointmentDetails,
+        });
+
     } catch (err) {
         if (err.code === "ER_DUP_ENTRY") {
             return handleError(res, 400, 'en', "SLOT_ALREADY_BOOKED");
