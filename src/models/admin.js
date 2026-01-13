@@ -1167,7 +1167,7 @@ export const get_doctor_skin_conditions = async (doctorId) => {
     }
 };
 
-export const get_doctor_surgeries = async (doctorId,language = "en") => {
+export const get_doctor_surgeries = async (doctorId, language = "en") => {
     try {
         const data = await db.query(`
             SELECT DISTINCT
@@ -3361,20 +3361,17 @@ export const deleteZynqUserSubTreatmentsModel = async (sub_treatment_id, zynq_us
     }
 }
 
-// export const deleteZynqUserSubTreatmentsModel = async (sub_treatment_id, zynq_user_id) => {
-//     try {
-//         return await db.query(
-//             `
-//             UPDATE tbl_sub_treatments SET
-//             is_deleted = 1
-//             WHERE sub_treatment_id LIKE ? AND created_by_zynq_user_id = ?`,
-//             [sub_treatment_id, zynq_user_id]
-//         );
-//     } catch (error) {
-//         console.error("deleteZynqUserSubTreatmentsModel error:", error);
-//         throw error;
-//     }
-// }
+export const deleteUserSubTreatmentsModel1 = async (sub_treatment_id) => {
+    try {
+        return await db.query(
+            `DELETE FROM tbl_treatment_sub_treatment_user_maps WHERE treatment_id = ?`,
+            [sub_treatment_id]
+        );
+    } catch (error) {
+        console.error("deleteZynqUserSubTreatmentsModel error:", error);
+        throw error;
+    }
+}
 
 export const updateTreatmentApprovalStatusModel = async (treatment_id, approval_status) => {
     try {
