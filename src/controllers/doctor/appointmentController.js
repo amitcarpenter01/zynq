@@ -28,26 +28,20 @@ export const getMyAppointmentsDoctor = async (req, res) => {
             const doctor = await getDocterByDocterId(app.doctor_id);
             let chatId = await getChatBetweenUsers(userId, doctor[0]?.zynq_user_id);
             app.chatId = chatId.length > 0 ? chatId[0].id : null;
-
             // Ensure profile image is fully qualified
             if (app.profile_image && !app.profile_image.startsWith('http')) {
                 app.profile_image = `${APP_URL}${app.profile_image}`;
-            }
-
+            };
             let start_time_iso = null;
             let end_time_iso = null;
             let videoCallOn = false;
-
             if (app.start_time && app.end_time) {
                 const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
                 const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
-
                 const startUTC = dayjs.utc(localFormattedStart);
                 const endUTC = dayjs.utc(localFormattedEnd);
-
                 start_time_iso = startUTC.toISOString();
                 end_time_iso = endUTC.toISOString();
-
                 // Check if current time is between start and end
                 videoCallOn = app.status !== 'Completed' && dayjs().isAfter(startUTC) && dayjs().isBefore(endUTC);
             }
@@ -93,7 +87,6 @@ export const getMyAppointmentById = async (req, res) => {
             const suggestedTreatments = await getTreatmentsByAppointmentId(app.suggested_appointment_id);
             const doctor = await doctorModel.getDocterByDocterId(app.doctor_id);
             let chatId = await chatModel.getChatBetweenUsers(app.user_id, doctor[0].zynq_user_id);
-            // console.log('chatId', chatId);
             const treatments = await appointmentModel.getAppointmentTreatments(appointment_id);
 
             return {
@@ -156,8 +149,134 @@ export const rescheduleAppointment = asyncHandler(async (req, res) => {
     return handleSuccess(res, 200, language, "APPOINTMENT_RESCHEDULED_SUCCESSFULLY");
 });
 
+// try {
+//         const { doctor_id, clinic_id } = req.query;
+
+//         const today = dayjs().startOf('day');
+//         const oneMonthLater = today.add(1, 'month');
+
+//         const availabilityRows =
+//             await doctorModels.getDoctorSlotSessionsModel(doctor_id, clinic_id);
+
+
+//         const doctorInfo = await doctorModels.getDoctorInfo(doctor_id, clinic_id);
+//         const fee_per_session = doctorInfo?.fee_per_session || null;
+
+//         if (!availabilityRows || availabilityRows.length === 0) {
+//             return handleError(res, 400, 'en', "NO_AVAILABILITY_FOUND", []);
+//         }
+
+//         let allSlots = [];
+
+//         for (const availability of availabilityRows) {
+//             const weekday = availability.day?.toLowerCase();
+//             const rruleDay = weekdayMap[weekday];
+//             if (!rruleDay) continue;
+
+//             // Generate dates for this weekday
+//             const rule = new RRule({
+//                 freq: RRule.WEEKLY,
+//                 byweekday: [rruleDay],
+//                 dtstart: today.toDate(),
+//                 until: oneMonthLater.toDate()
+//             });
+
+//             const dates = rule.all();
+
+//             for (const dateObj of dates) {
+//                 const dateStr = dayjs.utc(dateObj).format('YYYY-MM-DD');
+
+//                 for (const slot of availability.session) {
+//                     if (!slot?.start_time || !slot?.end_time) continue;
+
+//                     // const start = dayjs.utc(`${dateStr} ${slot.start_time}`, 'YYYY-MM-DD HH:mm:ss', true);
+//                     // const end = dayjs.utc(`${dateStr} ${slot.end_time}`, 'YYYY-MM-DD HH:mm:ss', true);
+
+//                     const start = dayjs(
+//                         `${dateStr}T${slot.start_time}Z`
+//                     );
+
+//                     const end = dayjs(
+//                         `${dateStr}T${slot.end_time}Z`
+//                     );
+
+
+//                     if (!start.isValid() || !end.isValid()) continue;
+
+//                     allSlots.push({
+//                         start_time: start.toISOString(),
+//                         end_time: end.toISOString()
+//                     });
+//                 }
+
+
+//             }
+//         }
+
+//         // Remove past slots
+//         // const now = dayjs.utc();
+//         // const futureSlots = allSlots.filter(slot =>
+//         //     dayjs.utc(slot.start_time).isAfter(now)
+//         // );
+
+//         const now = dayjs();
+
+//         const futureSlots = allSlots.filter(slot =>
+//             dayjs(slot.start_time).isAfter(now)
+//         );
+
+
+//         if (futureSlots.length === 0) {
+//             return handleError(res, 400, 'en', "NO_SLOTS_FOUND", []);
+//         }
+
+//         // Fetch booked appointments
+//         const bookedAppointments =
+//             await doctorModels.fetchAppointmentsBulkModel(
+//                 doctor_id,
+//                 today.format('YYYY-MM-DD'),
+//                 oneMonthLater.format('YYYY-MM-DD')
+//             );
+
+//         // Build lookup map
+//         const bookedMap = {};
+//         bookedAppointments.forEach(app => {
+//             // const dt = dayjs.utc(app.start_time);
+//             // if (!dt.isValid()) return;
+//             // bookedMap[dt.toISOString()] = true;
+//             const dt = dayjs(app.start_time);
+//             if (!dt.isValid()) return;
+//             bookedMap[dt.toISOString()] = true;
+
+//         });
+
+//         // Assign status
+//         const resultWithStatus = futureSlots.map(slot => ({
+//             start_time: slot.start_time,
+//             end_time: slot.end_time,
+//             status: bookedMap[slot.start_time] ? 'booked' : 'available'
+//         }));
+
+//         const availableSlots = resultWithStatus.filter(slot => slot.status === 'available');
+
+//         if (availableSlots.length === 0) {
+//             return handleError(res, 400, 'en', "NO_AVAILABLE_SLOTS_FOUND", []);
+//         }
+
+//         availableSlots.sort(
+//             (a, b) => new Date(a.start_time) - new Date(b.start_time)
+//         );
+
+//         return handleSuccess(res, 200, 'en', "FUTURE_DOCTOR_SLOTS", {
+//             fee_per_session,
+//             resultWithStatus: availableSlots
+//         });
+
+//     }
+
 export const getFutureDoctorSlots = asyncHandler(async (req, res) => {
     const doctor_id = req.user.doctorData.doctor_id;
+    console.log({ doctor_id });
     const today = dayjs().startOf('day'); // Include all of today
     const oneMonthLater = today.add(1, 'month');
 
