@@ -348,9 +348,9 @@ export const get_clinic_managment = async (req, res) => {
                     clinicModels.getClinicOperationHours(clinic.clinic_id)
                 ]);
 
-                if(clinic.user_type == "Solo Doctor"){
+                if (clinic.user_type == "Solo Doctor") {
                     clinic.new_user_type = "Solo Expert";
-                }else{
+                } else {
                     clinic.new_user_type = "Clinic";
                 }
 
@@ -1081,18 +1081,30 @@ export const getAllDevicesOfClinicController = async (req, res) => {
         const language = "en";
         const { clinic_id } = req.params;
         const { treatment_ids } = req.query;
-        const ids = treatment_ids ? treatment_ids.split(',') : [];
-        const devices = await clinicModels.getAllDevicesOfClinic(clinic_id,ids);
-        if (!devices.length) {
-            return handleError(res, 400, language, "NO_DEVICES_FOUND");
+        console.log({ treatment_ids, clinic_id });
+        if (treatment_ids) {
+            const ids = treatment_ids ? treatment_ids.split(',') : [];
+            const devices = await clinicModels.getAllDevicesOfClinic(clinic_id, ids);
+            if (!devices.length) {
+                return handleError(res, 400, language, "NO_DEVICES_FOUND");
+            }
+            return handleSuccess(
+                res,
+                200,
+                language,
+                "DEVICES_FETCHED_SUCCESSFULLY",
+                devices
+            );
+        } else {
+            let devices = []
+            return handleSuccess(
+                res,
+                200,
+                language,
+                "DEVICES_NOT_FOUND",
+                devices
+            );
         }
-        return handleSuccess(
-            res,
-            200,
-            language,
-            "DEVICES_FETCHED_SUCCESSFULLY",
-            devices
-        );
     } catch (error) {
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
