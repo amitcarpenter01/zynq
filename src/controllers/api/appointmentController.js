@@ -1746,7 +1746,6 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         if (!isEmpty(concerns)) {
             await appointmentModel.updateAppointmentConcerns(appointment_id, concerns);
         }
-        const newAppointmentDetails = await getAppointmentDetails(user_id, appointment_id);
 
         // ---------------- PRICE CALCULATION ----------------
         let total_price = 0;
@@ -1772,79 +1771,75 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
                 )
             );
 
-        const buildEmptyCheckoutSession = ({
-            id: null,
-            object: "checkout.session",
-            adaptive_pricing: null,
-            after_expiration: null,
-            allow_promotion_codes: null,
-            amount_subtotal: 0,
-            amount_total: 0,
-            automatic_tax: null,
-            billing_address_collection: null,
-            branding_settings: null,
-            cancel_url: null,
-            client_reference_id: null,
-            client_secret: null,
-            collected_information: null,
-            consent: null,
-            consent_collection: null,
-            created: null,
-            currency: null,
-            currency_conversion: null,
-            custom_fields: [],
-            custom_text: null,
-            customer: null,
-            customer_account: null,
-            customer_creation: null,
-            customer_details: null,
-            customer_email: null,
-            discounts: [],
-            expires_at: null,
-            invoice: null,
-            invoice_creation: null,
-            livemode: false,
-            locale: null,
-            metadata: {},
-            mode: null,
-            origin_context: null,
-            payment_intent: null,
-            payment_link: null,
-            payment_method_collection: null,
-            payment_method_configuration_details: null,
-            payment_method_options: null,
-            payment_method_types: [],
-            payment_status: null,
-            permissions: null,
-            phone_number_collection: null,
-            recovered_from: null,
-            saved_payment_method_options: null,
-            setup_intent: null,
-            shipping_address_collection: null,
-            shipping_cost: null,
-            shipping_options: [],
-            status: null,
-            submit_type: null,
-            subscription: null,
-            success_url: null,
-            total_details: {
-                amount_discount: 0,
-                amount_shipping: 0,
-                amount_tax: 0
-            },
-            ui_mode: null,
-            url: null,
-            wallet_options: null,
-            appointmentDetails: newAppointmentDetails,
-            chat_id: 0,
-            appointment_id: appointment_id,
-        });
+        // const buildEmptyCheckoutSession = ({
+        //     id: null,
+        //     object: "checkout.session",
+        //     adaptive_pricing: null,
+        //     after_expiration: null,
+        //     allow_promotion_codes: null,
+        //     amount_subtotal: 0,
+        //     amount_total: 0,
+        //     automatic_tax: null,
+        //     billing_address_collection: null,
+        //     branding_settings: null,
+        //     cancel_url: null,
+        //     client_reference_id: null,
+        //     client_secret: null,
+        //     collected_information: null,
+        //     consent: null,
+        //     consent_collection: null,
+        //     created: null,
+        //     currency: null,
+        //     currency_conversion: null,
+        //     custom_fields: [],
+        //     custom_text: null,
+        //     customer: null,
+        //     customer_account: null,
+        //     customer_creation: null,
+        //     customer_details: null,
+        //     customer_email: null,
+        //     discounts: [],
+        //     expires_at: null,
+        //     invoice: null,
+        //     invoice_creation: null,
+        //     livemode: false,
+        //     locale: null,
+        //     metadata: {},
+        //     mode: null,
+        //     origin_context: null,
+        //     payment_intent: null,
+        //     payment_link: null,
+        //     payment_method_collection: null,
+        //     payment_method_configuration_details: null,
+        //     payment_method_options: null,
+        //     payment_method_types: [],
+        //     payment_status: null,
+        //     permissions: null,
+        //     phone_number_collection: null,
+        //     recovered_from: null,
+        //     saved_payment_method_options: null,
+        //     setup_intent: null,
+        //     shipping_address_collection: null,
+        //     shipping_cost: null,
+        //     shipping_options: [],
+        //     status: null,
+        //     submit_type: null,
+        //     subscription: null,
+        //     success_url: null,
+        //     total_details: {
+        //         amount_discount: 0,
+        //         amount_shipping: 0,
+        //         amount_tax: 0
+        //     },
+        //     ui_mode: null,
+        //     url: null,
+        //     wallet_options: null,
+        //     appointmentDetails: newAppointmentDetails,
+        //     chat_id: 0,
+        //     appointment_id: appointment_id,
+        // });
 
-        if (appointmentType === "Clinic Visit" && isAllTreatmentsFree) {
-            return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY",
-                buildEmptyCheckoutSession
-            );
-        }
+
         // ---------------- Normalize Times ----------------
         const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
         const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
@@ -1953,13 +1948,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         let session = null;
         // ---------------- PAYMENT SECTION (UPDATED) ----------------
 
-        if (appointmentType === "Video Call" && doctor.fee_per_session === 0) {
-            return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY",
-                buildEmptyCheckoutSession
-            );
-        }
-
-        if (is_paid && appointmentType === "Clinic Visit" && final_total != 0) {
+        if (is_paid && appointmentType === "Clinic Visit" && final_total != 0 && isAllTreatmentsFree === false) {
             if (payment_timing === 'PAY_LATER') {
                 const stripe_customer_id = await getOrCreateStripeCustomerId(user_id);
                 session = await createPayLaterSetupSession({
@@ -2012,8 +2001,8 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 
 
         // ---------------- FREE APPOINTMENT FLOW ----------------
-        // const newAppointmentDetails = await getAppointmentDetails(user_id, appointment_id);
-        if (is_paid && appointmentType === "Video Call" && final_total != 0) {
+        let  newAppointmentDetails = await getAppointmentDetails(user_id, appointment_id);
+        if (is_paid && appointmentType === "Video Call" && final_total != 0 && doctor.fee_per_session !== 0) {
             let session;
             if (payment_timing === 'PAY_LATER') {
                 const stripe_customer_id = await getOrCreateStripeCustomerId(user_id);
@@ -2074,6 +2063,84 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             }),
         });
 
+        const buildEmptyCheckoutSession = ({
+            id: null,
+            object: "checkout.session",
+            adaptive_pricing: null,
+            after_expiration: null,
+            allow_promotion_codes: null,
+            amount_subtotal: 0,
+            amount_total: 0,
+            automatic_tax: null,
+            billing_address_collection: null,
+            branding_settings: null,
+            cancel_url: null,
+            client_reference_id: null,
+            client_secret: null,
+            collected_information: null,
+            consent: null,
+            consent_collection: null,
+            created: null,
+            currency: null,
+            currency_conversion: null,
+            custom_fields: [],
+            custom_text: null,
+            customer: null,
+            customer_account: null,
+            customer_creation: null,
+            customer_details: null,
+            customer_email: null,
+            discounts: [],
+            expires_at: null,
+            invoice: null,
+            invoice_creation: null,
+            livemode: false,
+            locale: null,
+            metadata: {},
+            mode: null,
+            origin_context: null,
+            payment_intent: null,
+            payment_link: null,
+            payment_method_collection: null,
+            payment_method_configuration_details: null,
+            payment_method_options: null,
+            payment_method_types: [],
+            payment_status: null,
+            permissions: null,
+            phone_number_collection: null,
+            recovered_from: null,
+            saved_payment_method_options: null,
+            setup_intent: null,
+            shipping_address_collection: null,
+            shipping_cost: null,
+            shipping_options: [],
+            status: null,
+            submit_type: null,
+            subscription: null,
+            success_url: null,
+            total_details: {
+                amount_discount: 0,
+                amount_shipping: 0,
+                amount_tax: 0
+            },
+            ui_mode: null,
+            url: null,
+            wallet_options: null,
+            appointmentDetails: newAppointmentDetails,
+            chat_id: 0,
+            appointment_id: appointment_id,
+        });
+        if (appointmentType === "Clinic Visit" && isAllTreatmentsFree) {
+            return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY",
+                buildEmptyCheckoutSession
+            );
+        }
+
+        if (appointmentType === "Video Call" && doctor.fee_per_session === 0) {
+            return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY",
+                buildEmptyCheckoutSession
+            );
+        }
         const chatCheck = await getChatBetweenUsers(user_id, doctor.zynq_user_id);
         let chat_id = chatCheck.length ? chatCheck[0].id : (await createChat(user_id, doctor.zynq_user_id)).insertId;
 

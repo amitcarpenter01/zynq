@@ -283,6 +283,7 @@ export const updateAppointmentStatus = async (appointment_id, status) => {
 
 export const getAppointmentsById = async (user_id, appointment_id, lang = "en") => {
     const nameColumn = lang === "sv" ? "cnc.swedish" : "cnc.name";
+    console.log('user_id, appointment_id', user_id, appointment_id);
 
     const results = await db.query(`
         SELECT 
