@@ -1150,7 +1150,9 @@ export const getSubtreatmentsBySearchOnlyController = asyncHandler(async (req, r
             normalized_search = search
         } else {
             console.log("Long query, translating to english");
-            normalized_search = await translator(search, 'en');
+            normalized_search = search;
+            if (language != 'en') { normalized_search = await translator(search, 'en'); }
+
         }
         // 🧠 Detect if the translated text is gibberish
         const gibberish = isGibberishText(normalized_search);
