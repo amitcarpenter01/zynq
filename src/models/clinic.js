@@ -1980,7 +1980,7 @@ export const getDoctorSkinTypesBulk = async (doctorIds) => {
     }
 };
 
-export const getDoctorSkinTypesBulkV2 = async (doctorIds, lang = "en") => {
+export const getDoctorSkinTypesBulkV2 = async (doctorIds, lang = "en",clinic_id) => {
     try {
         if (!doctorIds?.length) return {};
 
@@ -1992,11 +1992,11 @@ export const getDoctorSkinTypesBulkV2 = async (doctorIds, lang = "en") => {
             LEFT JOIN tbl_skin_types st 
                 ON dst.skin_type_id = st.skin_type_id 
             WHERE st.English IS NOT NULL 
-              AND dst.doctor_id IN (${placeholders})
+              AND dst.doctor_id IN (?) AND dst.clinic_id = ?
             ORDER BY dst.created_at DESC
         `;
 
-        const results = await db.query(query, doctorIds);
+        const results = await db.query(query, [doctorIds, clinic_id]);
 
         const grouped = {};
         results.forEach(row => {
@@ -2431,10 +2431,10 @@ export const getDoctorSkinConditionBulkV2 = async (doctorIds, lang = "en") => {
             FROM tbl_doctor_skin_condition dsc
             INNER JOIN tbl_skin_conditions sc 
                 ON dsc.skin_condition_id = sc.skin_condition_id
-            WHERE dsc.doctor_id IN (${placeholders})
+            WHERE dsc.doctor_id IN (?) 
         `;
 
-        const results = await db.query(query, doctorIds);
+        const results = await db.query(query, [doctorIds]);
 
         const grouped = {};
         results.forEach(row => {
@@ -2469,7 +2469,7 @@ export const getDoctorSurgeryBulk = async (doctorIds) => {
     return grouped;
 };
 
-export const getDoctorSurgeryBulkV2 = async (doctorIds, lang = "en") => {
+export const getDoctorSurgeryBulkV2 = async (doctorIds, lang = "en",clinic_id) => {
     try {
         if (!doctorIds?.length) return {};
 
@@ -2479,10 +2479,10 @@ export const getDoctorSurgeryBulkV2 = async (doctorIds, lang = "en") => {
             SELECT ds.*, s.* 
             FROM tbl_doctor_surgery ds
             INNER JOIN tbl_surgery s ON ds.surgery_id = s.surgery_id
-            WHERE ds.doctor_id IN (${placeholders})
+            WHERE ds.doctor_id IN (?) AND ds.clinic_id = ?
         `;
 
-        const results = await db.query(query, doctorIds);
+        const results = await db.query(query, [doctorIds,clinic_id]);
 
         const grouped = {};
         results.forEach(row => {
