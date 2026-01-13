@@ -1834,9 +1834,9 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             ui_mode: null,
             url: null,
             wallet_options: null,
-            appointmentDetails:{},
-            chat_id:0,
-            appointment_id:null,
+            appointmentDetails: {},
+            chat_id: 0,
+            appointment_id: null,
         });
 
         if (appointmentType === "Clinic Visit" && isAllTreatmentsFree) {
