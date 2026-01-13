@@ -125,11 +125,11 @@ export const getAppointmentsByClinicByclinicID = async (clinic_id) => {
     try {
         const results = await db.query(`
         SELECT 
+        d.*,
     a.*,
     u.*,
     c.clinic_id AS clinic_id,
-    c.clinic_name AS clinic_name,
-    d.*
+    c.clinic_name AS clinic_name
 FROM tbl_appointments a 
 INNER JOIN tbl_users u ON a.user_id = u.user_id  
 INNER JOIN tbl_clinics c ON a.clinic_id = c.clinic_id 
@@ -150,11 +150,11 @@ export const getAppointmentByAppointmentId = async (clinicId, appointment_id) =>
     try {
         const results = await db.query(`
       SELECT 
+      d.*,
           a.*,
           u.*,
           c.clinic_id AS clinic_id,
-          c.clinic_name AS clinic_name,
-          d.*
+          c.clinic_name AS clinic_name
       FROM tbl_appointments a 
       INNER JOIN tbl_users u ON a.user_id = u.user_id  
       INNER JOIN tbl_clinics c ON a.clinic_id = ? 
@@ -333,6 +333,7 @@ export const getAppointmentDataByAppointmentID = async (appointment_id) => {
         const results = await db.query(` 
             SELECT doctor_id, clinic_id, user_id FROM tbl_appointments WHERE appointment_id  = ?
         `, [appointment_id]);
+        console.log({ results });
         return results;
     } catch (error) {
         console.error("Database Error in getAppointmentDataByAppointmentID:", error.message);
