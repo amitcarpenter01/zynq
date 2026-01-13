@@ -368,14 +368,15 @@ export const sendDoctorInvitation = async (req, res) => {
 export const getAllDoctors = async (req, res) => {
     try {
         const clinic_id = req.user.clinicData.clinic_id;
+        console.log({clinic_id})
         const doctors = await clinicModels.get_all_doctors_by_clinic_id(clinic_id);
         if (!doctors || doctors.length === 0) {
             return handleSuccess(res, 200, 'en', "DOCTORS_FETCHED_SUCCESSFULLY", []);
         }
         for (const doctor of doctors) {
             // Get doctor availability
-            const availability = await clinicModels.getDoctorAvailability(doctor.doctor_id);
-            doctor.availability = availability || null;
+            // const availability = await clinicModels.getDoctorAvailability(doctor.doctor_id);
+            // doctor.availability = availability || null;
 
             // Get doctor certifications
             const certifications = await clinicModels.getDoctorCertifications(doctor.doctor_id);
@@ -435,8 +436,8 @@ export const getAllDoctorsById = async (req, res) => {
 
         for (const doctor of doctors) {
             // Get doctor availability
-            const availability = await clinicModels.getDoctorAvailability(doctor.doctor_id);
-            doctor.availability = availability || null;
+            // const availability = await clinicModels.getDoctorAvailability(doctor.doctor_id);
+            // doctor.availability = availability || null;
 
             // Get doctor certifications
             const certifications = await clinicModels.getDoctorCertifications(doctor.doctor_id);
