@@ -19,13 +19,12 @@ import { getTreatmentsByAppointmentId, getTreatmentsByTreatmentDoctorId, getTrea
 export const getMyAppointmentsDoctor = async (req, res) => {
     try {
         await appointmentModel.updateMissedAppointmentStatusModel();
-        const userId = req.user.user_id;
-        const doctorId = req.user.doctorData.doctor_id;
-
+        const userId = req?.user?.user_id;
+        const doctorId = req?.user?.doctorData?.doctor_id;
+        const clinicId = req?.user?.clinicData?.clinic_id;
         const now = dayjs.utc();
-
         const appointments = await appointmentModel.getAppointmentsByDoctorId(doctorId, 'booked');
-
+        const clinicAppointments = await appointmentModel.getAppointmentsByClinicId(clinicId);
         const result = await Promise.all(appointments.map(async (app) => {
             const doctor = await getDocterByDocterId(app.doctor_id);
             let chatId = await getChatBetweenUsers(userId, doctor[0]?.zynq_user_id);
@@ -61,13 +60,17 @@ export const getMyAppointmentsDoctor = async (req, res) => {
                 videoCallOn,
             };
         }));
-
-
-        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
+        let data;
+        if (clinicId) {
+            data = clinicAppointments;
+        } else {
+            data = result;
+        };
+        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", data);
     } catch (error) {
         console.error("Error fetching doctor appointments:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
-    }
+    };
 };
 
 export const getMyAppointmentById = async (req, res) => {
