@@ -1028,7 +1028,8 @@ export const getClinicsByNameSearchOnlyController = asyncHandler(async (req, res
         // 3️⃣ Enrich images (same as your code)
         const enrichedClinics = clinics.map(clinic => ({
             ...clinic,
-            clinic_logo: formatImagePath(clinic.clinic_logo, 'clinic/logo')
+            clinic_logo: formatImagePath(clinic.clinic_logo, 'clinic/logo'),
+            treatments : clinic.treatments.map(treatment => language == "en" ? treatment.name : treatment.swedish)
         }));
 
 
