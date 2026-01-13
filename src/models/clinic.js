@@ -1834,7 +1834,7 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
         `;
 
 
-        const rows = await db.query(query,  [...clinicIds]);
+        const rows = await db.query(query, [...clinicIds]);
 
         // 🧹 Group results by clinic_id
         const grouped = {};
@@ -1980,7 +1980,7 @@ export const getDoctorSkinTypesBulk = async (doctorIds) => {
     }
 };
 
-export const getDoctorSkinTypesBulkV2 = async (doctorIds, lang = "en",clinic_id) => {
+export const getDoctorSkinTypesBulkV2 = async (doctorIds, lang = "en", clinic_id) => {
     try {
         if (!doctorIds?.length) return {};
 
@@ -2469,7 +2469,7 @@ export const getDoctorSurgeryBulk = async (doctorIds) => {
     return grouped;
 };
 
-export const getDoctorSurgeryBulkV2 = async (doctorIds, lang = "en",clinic_id) => {
+export const getDoctorSurgeryBulkV2 = async (doctorIds, lang = "en", clinic_id) => {
     try {
         if (!doctorIds?.length) return {};
 
@@ -2482,7 +2482,7 @@ export const getDoctorSurgeryBulkV2 = async (doctorIds, lang = "en",clinic_id) =
             WHERE ds.doctor_id IN (?) AND ds.clinic_id = ?
         `;
 
-        const results = await db.query(query, [doctorIds,clinic_id]);
+        const results = await db.query(query, [doctorIds, clinic_id]);
 
         const grouped = {};
         results.forEach(row => {

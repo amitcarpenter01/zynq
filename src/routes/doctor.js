@@ -92,9 +92,9 @@ router.get("/getDoctorProfileById", authenticate(['DOCTOR']), doctorController.g
 
 router.post('/createDoctorAvailability', authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.createDoctorAvailability);
 // router.post('/updateDoctorAvailability', authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.updateDoctorAvailability);
-router.get('/getMyAppointments', authenticate(['DOCTOR', 'SOLO_DOCTOR']), appointmentControllers.getMyAppointmentsDoctor);
+router.get('/getMyAppointments', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), appointmentControllers.getMyAppointmentsDoctor);
 
-router.post('/getMyAppointmentById', authenticate(['DOCTOR', 'SOLO_DOCTOR']), appointmentControllers.getMyAppointmentById);
+router.post('/getMyAppointmentById', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), appointmentControllers.getMyAppointmentById);
 
 router.get("/get_docter_profile", authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.get_docter_profile);
 router.patch('/appointment/reschedule', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(rescheduleAppointmentSchema, "body"), appointmentControllers.rescheduleAppointment);
@@ -160,9 +160,9 @@ router.delete('/concern/:concern_id', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CL
 
 router.get("/get-clinic-mapped-treatments/:clinic_id", authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), get_Clinic_Mapped_treatments);
 router.get("/get-surgery/:clinic_id", authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getAllSurgeryOfClinicController)
-router.get("/get-devices/:clinic_id",authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getAllDevicesOfClinicController);
+router.get("/get-devices/:clinic_id", authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getAllDevicesOfClinicController);
 router.get("/get-skin-types/:clinic_id", authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getClinicSkinTypesOfClinicController);
-router.post("/generate-slots",authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']),generateAvailabilityFromOperationHours);
+router.post("/generate-slots", authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), generateAvailabilityFromOperationHours);
 
 
 export default router;
