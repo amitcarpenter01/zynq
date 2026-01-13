@@ -286,33 +286,20 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
         Saturday: "Lördag",
         Sunday: "Söndag",
     };
-    if (language != "en") {
-        const convertedOperationHours = allOperationHours[clinicIds]?.map(item => ({
-            ...item,
-            day_of_week: dayMapSv[item.day_of_week] || item.day_of_week,
-        }));
-    };
-    // await Promise.all(
-    //     clinicIds.map(async (cid) => {
-    //         const treatments = allTreatments[cid] || [];
-    //         await Promise.all(
-    //             treatments.map(async (t) => {
-    //                 t.sub_treatments =
-    //                     await apiModels.getSubTreatmentsByTreatmentId(
-    //                         t.treatment_id,
-    //                         language
-    //                     );
-    //             })
-    //         );
-    //     })
-    // );
-
+    if (language !== "en") {
+        for (const clinicId of clinicIds) {
+            if (allOperationHours[clinicId]) {
+                allOperationHours[clinicId] = allOperationHours[clinicId].map(item => ({
+                    ...item,
+                    day_of_week: dayMapSv[item.day_of_week] || item.day_of_week,
+                }));
+            }
+        }
+    }
     const processedClinics = clinics.map(clinic => {
-
         const clinicTreatments = allTreatments.find(
             t => t.clinic_id === clinic.clinic_id
         );
-
         return {
             ...clinic,
             images: images.filter(img => img?.image_url).map(img => ({
