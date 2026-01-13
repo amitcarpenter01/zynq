@@ -1256,12 +1256,27 @@ export const createOrUpdateCallLog = async ({
     }
 };
 
+// export const getDocterByDocterId = async (doctor_id) => {
+//     try {
+//         const result = await db.query(`
+//             SELECT d.*, zu.email 
+//             FROM tbl_doctors d
+//             LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+//             WHERE d.doctor_id = ?`, [doctor_id]);
+//         return result;
+//     } catch (error) {
+//         console.error("Database Error:", error.message);
+//         throw new Error("Failed to fetch support tickets.");
+//     }
+// }
+
 export const getDocterByDocterId = async (doctor_id) => {
     try {
         const result = await db.query(`
-            SELECT d.*, zu.email 
+            SELECT d.*, zu.email ,r.role
             FROM tbl_doctors d
             LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
+            LEFT JOIN tbl_roles r ON zu.role_id = r.id
             WHERE d.doctor_id = ?`, [doctor_id]);
         return result;
     } catch (error) {
@@ -1269,6 +1284,8 @@ export const getDocterByDocterId = async (doctor_id) => {
         throw new Error("Failed to fetch support tickets.");
     }
 }
+ 
+ 
 
 
 export const getSoloDoctorByZynqUserId = async (zynq_user_id) => {
