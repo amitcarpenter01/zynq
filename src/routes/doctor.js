@@ -94,7 +94,7 @@ router.post('/createDoctorAvailability', authenticate(['DOCTOR', 'SOLO_DOCTOR'])
 // router.post('/updateDoctorAvailability', authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.updateDoctorAvailability);
 router.get('/getMyAppointments', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), appointmentControllers.getMyAppointmentsDoctor);
 
-router.post('/getMyAppointmentById', authenticate(['DOCTOR', 'SOLO_DOCTOR']), appointmentControllers.getMyAppointmentById);
+router.post('/getMyAppointmentById', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), appointmentControllers.getMyAppointmentById);
 
 router.get("/get_docter_profile", authenticate(['DOCTOR', 'SOLO_DOCTOR']), doctorController.get_docter_profile);
 router.patch('/appointment/reschedule', authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), validate(rescheduleAppointmentSchema, "body"), appointmentControllers.rescheduleAppointment);
