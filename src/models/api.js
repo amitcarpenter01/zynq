@@ -3010,8 +3010,9 @@ export const getDevicesByNameSearchOnly = async ({ search = '', page = null, lim
         GROUP BY d.id, d.treatment_id
       `);
 
+
         // 2️⃣ Compute top similar rows using embeddings
-        results = await getDevicesAIResult(results, search, 0.45);
+        results = await getDevicesAIResult(results, search);
         // 3️⃣ Apply pagination
         results = paginateRows(results, limit, page);
 

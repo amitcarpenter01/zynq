@@ -276,6 +276,7 @@ export const getSinglePatientRecord = asyncHandler(async (req, res) => {
 
 export const getReviewsAndRatings = asyncHandler(async (req, res) => {
     const reviews = await appointmentModel.getRatings(req.user);
+    console.log({ reviews });
     return handleSuccess(res, 200, 'en', "REVIEWS_FETCHED", reviews);
 });
 
