@@ -1134,7 +1134,6 @@ export const getAllClinicsForUser = async ({
 
         // 3️⃣ Compute top similar rows using embedding stored in DB_sync table
         const aiRows = await getClinicsAIResult(rows, search);
-        console.log(" search aiRows", aiRows);
         // 4️⃣ Apply pagination
         const paginatedRows = paginateRows(aiRows, limit, offset);
 
@@ -2822,6 +2821,7 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
             SELECT 
                 d.doctor_id,
                 d.name,
+                d.last_name,
                 TIMESTAMPDIFF(
                     YEAR, 
                     MIN(de.start_date), 
@@ -2844,8 +2844,16 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
                     SELECT GROUP_CONCAT(t.name ORDER BY t.name SEPARATOR ', ')
                     FROM tbl_doctor_treatments dt
                     JOIN tbl_treatments t ON t.treatment_id = dt.treatment_id
-                    WHERE dt.doctor_id = d.doctor_id
-                ) AS treatments
+                    WHERE dt.doctor_id = d.doctor_id AND dm.clinic_id = dt.clinic_id
+                ) AS treatments,
+
+                (
+                    SELECT GROUP_CONCAT(td.device_name ORDER BY td.device_name SEPARATOR ', ')
+                    FROM tbl_treatment_device_user_maps  tdum
+                    JOIN tbl_treatment_devices  td ON 
+                    tdum.device_id = td.id
+                    WHERE tdum.zynq_user_id = d.zynq_user_id AND tdum.clinic_id = c.clinic_id
+                ) AS devices
 
                 FROM tbl_doctors d
 
@@ -2867,7 +2875,7 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
 
                 GROUP BY 
                 d.doctor_id, 
-                dm.clinic_id;
+                dm.clinic_id
 
         `);
 

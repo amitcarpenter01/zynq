@@ -296,43 +296,142 @@ export const getDoctorsVectorResult = async (rows, search, threshold = 0.4, topN
   results.sort((a, b) => b.score - a.score);
   return topN && topN > 0 ? results.slice(0, topN) : results;
 };
+
 export const getDoctorsAIResult = async (rows, search, language = "en") => {
+  const normalizedSearch = (search || '').trim().toLowerCase();
 
-  const rowsWithText = rows.map(r => ({
-    ...r,
-    combined_text: `
-      Doctor ${r.name || ''} 
-      treats ${r.treatments || r.treatment_names || ''} 
-      and sub treatments ${r.sub_treatments || r.sub_treatment_names || ''} 
-      and practices at ${r.clinic_address || ''}.
-    `.trim()
-  }));
+  const rowsWithText = rows.map(r => {
+    const doctorFullName = `${r.name || ''} ${r.last_name || ''}`.trim();
 
-  const scoreResults = await runGPTSimilarity(rowsWithText, search, {
-    idField: "doctor_id",
-    textFields: ["combined_text"]
+    const sections = [
+      // 🔥 Doctor name repeated to boost GPT attention
+      `Primary Doctor Name: ${doctorFullName}`,
+      `This Doctor is called ${doctorFullName}`,
+      // 📍 Location
+      r.clinic_address ? `Doctor Location: ${r.clinic_address}` : '',
+      // 💉 Treatments
+      r.treatments
+        ? `Medical and cosmetic treatments provided at ${doctorFullName}: ${r.treatments}`
+        : '',
+      // 🧪 Devices
+      r.devices
+        ? `Medical devices and technology used at ${doctorFullName}: ${r.devices}`
+        : ''
+    ].filter(Boolean);
+
+    console.log("sections", sections);
+
+    return {
+      ...r,
+      combined_text: sections.join('. ') + '.'
+    };
   });
 
-  // ⛔ GPT returned no matches → return empty array
-  if (!scoreResults || scoreResults.length === 0) {
-    console.warn("⚠️ GPT returned no similarity matches");
-    return [];
-  }
-
-  // Apply similarity threshold
-  let results = applyAISimilarity(rows, scoreResults, {
+  // ----- Step 1: GPT similarity -----
+  const gptScoreResults = await runGPTSimilarity(rowsWithText, search, {
     idField: "doctor_id",
-    threshold: 0.40,
+    textFields: ["combined_text"],
+    batchSize: 200
   });
 
-  // ⛔ After threshold filtering, no results → return empty array
-  if (!results || results.length === 0) {
-    console.warn("⚠️ Similarity threshold removed all results");
-    return [];
+  // Map GPT scores by doctor_id
+  const gptScoreMap = new Map();
+  if (gptScoreResults?.length) {
+    gptScoreResults.forEach(r => {
+      gptScoreMap.set(r.doctor_id, r.score);
+    });
   }
 
-  return results;
+  // ----- Step 2: Lexical name match score -----
+  const finalResults = rowsWithText.map(r => {
+    const doctorFullName = `${r.name || ''} ${r.last_name || ''}`.trim().toLowerCase();
+    let nameScore = 0;
+
+    if (doctorFullName === normalizedSearch) {
+      nameScore = 1.0; // exact match
+    } else if (doctorFullName.startsWith(normalizedSearch)) {
+      nameScore = 0.9; // prefix match
+    } else if (doctorFullName.includes(normalizedSearch)) {
+      nameScore = 0.8; // contains
+    }
+
+    const gptScore = gptScoreMap.get(r.doctor_id) || 0;
+
+    // ----- Step 3: Combine scores -----
+    const final_score = 0.6 * gptScore + 0.4 * nameScore;
+
+    return {
+      ...r,
+      gpt_score: gptScore,
+      name_score: nameScore,
+      final_score
+    };
+  });
+
+  // ----- Step 4: Sort by final_score descending -----
+  const sortedResults = finalResults.sort((a, b) => b.final_score - a.final_score);
+
+  return sortedResults;
 };
+
+// export const getDoctorsAIResult = async (rows, search, language = "en") => {
+
+//   const rowsWithText = rows.map(r => {
+
+//     const sections = [
+//       // 🔥 Clinic name repeated to boost GPT attention
+//       `Primary Doctor Name: ${r.name} ${r.last_name ? r.last_name : ''}`,
+//       `This Doctor is called ${r.name} ${r.last_name ? r.last_name : ''}`,
+//       // 📍 Location
+//       r.clinic_address ? `Doctor Location: ${r.clinic_address}` : '',
+//       // 💉 Treatments
+//       r.treatments
+//         ? `Medical and cosmetic treatments provided at ${r.name} ${r.last_name ? r.last_name : ''}: ${r.treatments}`
+//         : '',
+//       // 🧪 Devices
+//       r.devices
+//         ? `Medical devices and technology used at ${r.name} ${r.last_name ? r.last_name : ''}: ${r.devices}`
+//         : ''
+//     ].filter(Boolean);
+
+
+
+//     return {
+//       ...r,
+//       // combined_text: `
+//       //   Doctor ${r.name || ''} 
+//       //   treats ${r.treatments || r.treatment_names || ''} 
+//       //   and practices at ${r.clinic_address || ''}.
+//       // `.trim()
+//       combined_text: sections.join('. ') + '.'
+//     }
+//   });
+
+//   const scoreResults = await runGPTSimilarity(rowsWithText, search, {
+//     idField: "doctor_id",
+//     textFields: ["combined_text"]
+//   });
+
+//   // ⛔ GPT returned no matches → return empty array
+//   if (!scoreResults || scoreResults.length === 0) {
+//     console.warn("⚠️ GPT returned no similarity matches");
+//     return [];
+//   }
+
+//   // Apply similarity threshold
+//   let results = applyAISimilarity(rows, scoreResults, {
+//     idField: "doctor_id",
+//     threshold: 0.40,
+//   });
+
+//   // ⛔ After threshold filtering, no results → return empty array
+//   if (!results || results.length === 0) {
+//     console.warn("⚠️ Similarity threshold removed all results");
+//     return [];
+//   }
+
+//   return results;
+// };
 
 export const getClinicsAIResult = async (rows, search, language = "en") => {
   const normalizedSearch = (search || '').trim().toLowerCase();
@@ -510,7 +609,6 @@ export const getDevicesAIResult = async (
   const normalized = search.trim().toLowerCase();
 
   const scoreResults = await batchDeviceGPTSimilarity(rows, normalized);
-  console.log("scoreResults device", scoreResults);
   const scoreMap = new Map(scoreResults.map(r => [r.id, r.score]));
 
   const filtered = rows
@@ -753,7 +851,7 @@ export async function batchGPTSimilaritySubTreatments(rows, searchQuery, batchSi
     batches.push(rows.slice(i, i + batchSize));
   }
 
-  console.log(`Processing ${batches.length} batches in parallel...`);
+  // console.log(`Processing ${batches.length} batches in parallel...`);
 
   // Run all batches in parallel
   const batchPromises = batches.map(batch =>
@@ -764,7 +862,6 @@ export async function batchGPTSimilaritySubTreatments(rows, searchQuery, batchSi
 
   // Optional debugging
   results.forEach((partial, idx) => {
-    console.log(`partial sub-treatment batch ${idx + 1}:`, partial);
   });
 
   return results.flat();
@@ -777,7 +874,7 @@ export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 10
     batches.push(rows.slice(i, i + batchSize));
   }
 
-  console.log(`Processing ${batches.length} batches in parallel...`);
+  // console.log(`Processing ${batches.length} batches in parallel...`);
 
   // Process all batches in parallel
   const batchPromises = batches.map(batch =>
@@ -788,7 +885,7 @@ export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 10
 
   // Log each partial result
   results.forEach(partial => {
-    console.log("partial device", partial);
+    // console.log("partial device", partial);
   });
 
   return results.flat();
@@ -800,7 +897,6 @@ export async function batchDeviceGPTSimilarity(rows, searchQuery, batchSize = 10
  * 🧠 Runs GPT similarity on a *single batch*
  */
 async function runDeviceSimilarityBatch(rows, searchQuery) {
-  console.log("fetching device results");
   if (!rows || rows.length === 0) return [];
 
   const list = rows.map(r =>
@@ -980,7 +1076,6 @@ export async function runGPTSimilarity(rows, searchQuery, options = {}) {
  * 🧠 Runs GPT similarity on a single batch
  */
 async function runSingleBatch(batch, searchQuery, idField, textFields) {
-  console.log("Running batch:", batch);
 
   // compact "id|text" format
   const list = batch.map((row) => {
