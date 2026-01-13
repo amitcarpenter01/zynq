@@ -239,7 +239,7 @@ export const getSubTreatmentsAIResult = async (
     ...result,
     name: language === "en" ? result.name : result.swedish,
     treatment_name: language === "en" ? result.treatment_name : result.treatment_swedish,
-    
+
   }));
 
   return topN ? translated.slice(0, topN) : translated;
@@ -334,14 +334,19 @@ export const getDoctorsAIResult = async (rows, search, language = "en") => {
   return results;
 };
 export const getClinicsAIResult = async (rows, search, language = "en") => {
-  
-  const rowsWithText = rows.map(r => ({
-    ...r,
-    combined_text: `
+
+  const rowsWithText = rows.map(r => {
+    return {
+      ...r,
+      combined_text: `
       Clinic ${r.clinic_name || ''} 
-      located at ${r.address || ''}.
+      located at ${r.address || ''}
+      ${Array.isArray(r.devices) && r.devices.length
+      ? `Devices ${r.devices.join(", ")}.`
+      : ''}.
     `.trim()
-  }));
+    }
+  });
 
   const scoreResults = await runGPTSimilarity(rowsWithText, search, {
     idField: "clinic_id",
@@ -456,7 +461,7 @@ export const getClinicsVectorResult = async (rows, search, threshold = 0.4, topN
 };
 
 async function batchGPTSimilarity(rows, searchQuery) {
- 
+
   // const list = rows.map(r => ({
   //   id: r.treatment_id,
   //   text: `${safeString(r.name)} - ${safeString(r.concern_en)} ${safeString(r.description_en)} ${safeString(r.like_wise_terms)}`.trim() 
@@ -472,7 +477,7 @@ Description: ${safeString(r.description_en) || ''}
 Related Terms: ${safeString(r.like_wise_terms) || ''}
   `.trim()
   }));
- 
+
 
   const prompt = `
 You are a similarity scoring engine.

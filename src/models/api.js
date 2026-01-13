@@ -2861,27 +2861,70 @@ export const getClinicsByNameSearchOnly = async ({ search = '', page = null, lim
         if (!search?.trim()) return [];
 
         // 1️⃣ Fetch clinics with embeddings + aggregated fields
+        // let results = await db.query(`
+        //     SELECT 
+        //         c.*,
+        //         MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range,
+        //         MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range,
+        //         ROUND(AVG(ar.rating), 2) AS avg_rating,
+        //     FROM tbl_clinics c
+        //     LEFT JOIN tbl_doctor_clinic_map dcm ON c.clinic_id = dcm.clinic_id
+        //     LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
+        //     LEFT JOIN tbl_appointment_ratings ar 
+        //         ON c.clinic_id = ar.clinic_id 
+        //         AND ar.approval_status = 'APPROVED'
+        //     WHERE 
+        //         c.profile_status = 'VERIFIED'
+        //     GROUP BY 
+        //         c.clinic_id;
+        // `);
+
         let results = await db.query(`
             SELECT 
-                c.*,
-                MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range,
-                MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range,
-                ROUND(AVG(ar.rating), 2) AS avg_rating
-            FROM tbl_clinics c
-            LEFT JOIN tbl_doctor_clinic_map dcm ON c.clinic_id = dcm.clinic_id
-            LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
-            LEFT JOIN tbl_appointment_ratings ar 
-                ON c.clinic_id = ar.clinic_id 
-                AND ar.approval_status = 'APPROVED'
-            WHERE 
-                c.profile_status = 'VERIFIED'
-            GROUP BY 
-                c.clinic_id;
+    c.*,
+
+    MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range,
+    MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range,
+    ROUND(AVG(ar.rating), 2) AS avg_rating,
+
+    -- 👇 devices array workaround
+    COALESCE(
+        CONCAT(
+            '[',
+            GROUP_CONCAT(DISTINCT JSON_QUOTE(td.device_name)),
+            ']'
+        ),
+        '[]'
+    ) AS devices
+
+FROM tbl_clinics c
+
+LEFT JOIN tbl_doctor_clinic_map dcm 
+    ON c.clinic_id = dcm.clinic_id
+
+LEFT JOIN tbl_doctors d 
+    ON d.doctor_id = dcm.doctor_id
+
+LEFT JOIN tbl_appointment_ratings ar 
+    ON c.clinic_id = ar.clinic_id 
+   AND ar.approval_status = 'APPROVED'
+
+LEFT JOIN tbl_clinic_aesthetic_devices cad
+    ON c.clinic_id = cad.clinic_id
+
+LEFT JOIN tbl_treatment_devices td
+    ON td.id = cad.aesthetic_devices_id
+
+WHERE c.profile_status = 'VERIFIED'
+
+GROUP BY c.clinic_id;
+
         `);
 
         // 2️⃣ REMOVE embeddings before AI filtering
         results = results.map(row => {
             delete row.embeddings;
+            row.devices = JSON.parse(row.devices || '[]');
             return row;
         });
 
