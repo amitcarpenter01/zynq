@@ -856,7 +856,6 @@ export const getRatingsByRole = async (id, role) => {
     try {
         let whereClause = ' ar.approval_status = `APPROVED` AND ';
         const values = [id];
-
         switch (role) {
             case 'DOCTOR':
             case 'SOLO_DOCTOR':
@@ -869,23 +868,47 @@ export const getRatingsByRole = async (id, role) => {
                 throw new Error('Invalid role for fetching ratings');
         }
 
+        // const query = `
+        //     SELECT 
+        //         ar.appointment_rating_id,
+        //         ar.appointment_id,
+        //         ar.doctor_id,
+        //         ar.rating,
+        //         ar.review,
+        //         ar.created_at,
+        //         u.user_id,
+        //         u.full_name,
+        //         u.profile_image,
+        //         u.age,
+        //         u.gender
+        //     FROM tbl_appointment_ratings AS ar 
+        //     INNER JOIN tbl_users AS u ON ar.user_id = u.user_id
+        //     WHERE ${whereClause}
+        //     ORDER BY ar.created_at DESC
+        // `;
         const query = `
-            SELECT 
-                ar.appointment_rating_id,
-                ar.appointment_id,
-                ar.rating,
-                ar.review,
-                ar.created_at,
-                u.user_id,
-                u.full_name,
-                u.profile_image,
-                u.age,
-                u.gender
-            FROM tbl_appointment_ratings AS ar 
-            INNER JOIN tbl_users AS u ON ar.user_id = u.user_id
-            WHERE ${whereClause}
-            ORDER BY ar.created_at DESC
-        `;
+    SELECT 
+        ar.appointment_rating_id,
+        ar.appointment_id,
+        ar.doctor_id,
+        d.name,
+        ar.rating,
+        ar.review,
+        ar.created_at,
+        u.user_id,
+        u.full_name,
+        u.profile_image,
+        u.age,
+        u.gender
+    FROM tbl_appointment_ratings AS ar
+    INNER JOIN tbl_users AS u 
+        ON ar.user_id = u.user_id
+    INNER JOIN tbl_doctors AS d 
+        ON ar.doctor_id = d.doctor_id 
+    WHERE ${whereClause}
+    ORDER BY ar.created_at DESC
+`;
+
 
         const rows = await db.query(query, values);
 
@@ -942,7 +965,7 @@ export const getAppointmentsForNotification = async (windowStart, windowEnd) => 
 export const updateAppointment = async (data) => {
     const {
         appointment_id, doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings,
-        type, start_time, end_time, save_type, status,payment_timing
+        type, start_time, end_time, save_type, status, payment_timing
     } = data;
 
     const query = `
@@ -951,13 +974,13 @@ export const updateAppointment = async (data) => {
         start_time = ?, end_time = ?, save_type = ?, status = ?, updated_at = CURRENT_TIMESTAM , payment_timing = ?
     WHERE appointment_id = ?
   `;
-    return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings, type, start_time, end_time, save_type, status,payment_timing, appointment_id]);
+    return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings, type, start_time, end_time, save_type, status, payment_timing, appointment_id]);
 };
 
 export const updateAppointmentV3 = async (data) => {
     const {
         appointment_id, doctor_id, clinic_id, total_price, admin_earnings, clinic_earnings,
-        type, start_time, end_time, save_type, status, total_price_with_discount, discounted_amount,payment_timing
+        type, start_time, end_time, save_type, status, total_price_with_discount, discounted_amount, payment_timing
     } = data;
 
     const query = `
@@ -969,7 +992,7 @@ export const updateAppointmentV3 = async (data) => {
   `;
     return await db.query(query, [doctor_id, clinic_id, total_price, admin_earnings,
         clinic_earnings, type, start_time, end_time, save_type, status,
-        total_price_with_discount, discounted_amount,payment_timing, appointment_id]);
+        total_price_with_discount, discounted_amount, payment_timing, appointment_id]);
 };
 
 export const updateAppointmentV2 = async (data) => {
