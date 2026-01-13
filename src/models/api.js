@@ -2834,7 +2834,16 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
                     JOIN tbl_treatment_devices  td ON 
                     tdum.device_id = td.id
                     WHERE tdum.zynq_user_id = d.zynq_user_id AND tdum.clinic_id = c.clinic_id
-                ) AS devices
+                ) AS devices,
+
+                 (
+                    SELECT GROUP_CONCAT(tst.name ORDER BY tst.name SEPARATOR ', ')
+                    FROM tbl_doctor_skin_types dst
+                    JOIN tbl_skin_types   tst ON 
+                    dst.skin_type_id = tst.skin_type_id
+                    WHERE 
+                dst.doctor_id = d.doctor_id AND dst.clinic_id = c.clinic_id
+                ) AS skin_types
 
                 FROM tbl_doctors d
 
