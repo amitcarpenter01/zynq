@@ -2330,7 +2330,7 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, clinic_id, lang = 'en'
 
             WHERE 
                 dt.doctor_id = ?
-                AND dt.clinic_id
+                AND dt.clinic_id=?
                 AND t.is_deleted = 0
                 AND t.approval_status = 'APPROVED'
 
@@ -2338,7 +2338,7 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, clinic_id, lang = 'en'
         `;
 
         // SAFE QUERY
-        let results = await db.query(query, [doctorId]);
+        let results = await db.query(query, [doctorId,clinic_id]);
 
         // APPLY SEARCH (if needed)
         if (search) {
