@@ -221,29 +221,93 @@ export const getSubTreatmentsAIResult = async (
 ) => {
   if (!search?.trim()) return rows;
 
-  const normalized = search.trim().toLowerCase();
+  console.log("search", search);
 
-  const scoreResults = await batchGPTSimilaritySubTreatments(rows, normalized);
+  const normalizedSearch = search.trim().toLowerCase();
 
-  const scoreMap = new Map(scoreResults.map(r => [r.id, r.score]));
+  // ----- Step 1: GPT similarity -----
+  const gptScoreResults = await batchGPTSimilaritySubTreatments(rows, normalizedSearch);
 
-  const filtered = rows
-    .map(r => ({
+  const gptScoreMap = new Map();
+  gptScoreResults.forEach(r => gptScoreMap.set(r.id, r.score));
+
+  // ----- Step 2: Manual lexical match score -----
+  const scoredRows = rows.map(r => {
+    const nameEn = (r.name || '').toLowerCase();
+    const treatmentEn = (r.treatment_name || '').toLowerCase();
+
+    let nameScore = 0;
+
+    if (nameEn === normalizedSearch || treatmentEn === normalizedSearch) {
+      nameScore = 1.0; // exact match
+    } else if (nameEn.startsWith(normalizedSearch) || treatmentEn.startsWith(normalizedSearch)) {
+      nameScore = 0.7; // prefix match
+    } else if (nameEn.includes(normalizedSearch) || treatmentEn.includes(normalizedSearch)) {
+      nameScore = 0.5; // contains
+    }
+
+    const gptScore = gptScoreMap.get(r.treatment_id) || 0;
+
+    // ----- Step 3: Combine scores (weight: 60% GPT, 40% manual) -----
+    const final_score = 0.6 * gptScore + 0.4 * nameScore;
+
+    return {
       ...r,
-      score: scoreMap.get(r.treatment_id) ?? 0
-    }))
-    .filter(r => r.score >= threshold)
-    .sort((a, b) => b.score - a.score);
+      gpt_score: gptScore,
+      name_score: nameScore,
+      final_score
+    };
+  });
 
-  const translated = filtered.map(result => ({
-    ...result,
-    name: language === "en" ? result.name : result.swedish,
-    treatment_name: language === "en" ? result.treatment_name : result.treatment_swedish,
+  // ----- Step 4: Filter by threshold -----
+  const filtered = scoredRows
+    .filter(r => r.final_score >= threshold)
+    .sort((a, b) => b.final_score - a.final_score);
 
+  // ----- Step 5: Translate if needed -----
+  const translated = filtered.map(r => ({
+    ...r,
+    name: language === "en" ? r.name : r.swedish,
+    treatment_name: language === "en" ? r.treatment_name : r.treatment_swedish,
   }));
 
+  // ----- Step 6: Limit top N if requested -----
   return topN ? translated.slice(0, topN) : translated;
 };
+
+
+// export const getSubTreatmentsAIResult = async (
+//   rows,
+//   search,
+//   threshold = 0.40,
+//   topN = null,
+//   language = "en"
+// ) => {
+//   if (!search?.trim()) return rows;
+
+//   const normalized = search.trim().toLowerCase();
+
+//   const scoreResults = await batchGPTSimilaritySubTreatments(rows, normalized);
+
+//   const scoreMap = new Map(scoreResults.map(r => [r.id, r.score]));
+
+//   const filtered = rows
+//     .map(r => ({
+//       ...r,
+//       score: scoreMap.get(r.treatment_id) ?? 0
+//     }))
+//     .filter(r => r.score >= threshold)
+//     .sort((a, b) => b.score - a.score);
+
+//   const translated = filtered.map(result => ({
+//     ...result,
+//     name: language === "en" ? result.name : result.swedish,
+//     treatment_name: language === "en" ? result.treatment_name : result.treatment_swedish,
+
+//   }));
+
+//   return topN ? translated.slice(0, topN) : translated;
+// };
 
 
 export const getDoctorsVectorResult = async (rows, search, threshold = 0.4, topN = null) => {
