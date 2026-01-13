@@ -1949,7 +1949,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         let session = null;
         // ---------------- PAYMENT SECTION (UPDATED) ----------------
 
-        if(appointmentType==="Video Call" && doctor.fee_per_session === 0){
+        if (appointmentType === "Video Call" && doctor.fee_per_session === 0) {
             return handleSuccess(res, 200, language, "SESSION_CREATED_SUCCESSFULLY",
                 buildEmptyCheckoutSession
             );
