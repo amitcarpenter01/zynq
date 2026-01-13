@@ -557,13 +557,13 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         clinicModels.getDoctorCertificationsBulkV2([doctor_id], language),
         clinicModels.getDoctorEducationBulk([doctor_id]),
         clinicModels.getDoctorExperienceBulk([doctor_id]),
-        clinicModels.getDoctorSkinTypesBulkV2([doctor_id], language),
+        clinicModels.getDoctorSkinTypesBulkV2([doctor_id], language,clinic_id),
 
         // FIXED: this now returns array directly
         clinicModels.getDoctorTreatmentsBulkV3(doctor_id, clinic_id, language, treatment_search),
 
         clinicModels.getDoctorSkinConditionBulkV2([doctor_id], language),
-        clinicModels.getDoctorSurgeryBulkV2([doctor_id], language),
+        clinicModels.getDoctorSurgeryBulkV2([doctor_id], language,clinic_id),
 
         // FIXED: Devices always using zynq_user_id
         clinicModels.getDoctorDevicesBulk(doctor.zynq_user_id, clinic_id),
