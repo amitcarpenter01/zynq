@@ -27,7 +27,8 @@ import {
     getTreatmentByIdModel,
     getTreatmentConcernsModel,
     getTreatmentDevicesModel,
-    getTreatmentSubTreatmentsModel
+    getTreatmentSubTreatmentsModel,
+    deleteUserSubTreatmentsModel1
 } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
@@ -53,9 +54,7 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
     const role = req.user?.role;
     const user_id = req.user?.id;
     const language = req.user?.language || 'en';
-
     const isAdmin = role === "ADMIN";
-
     const dbData = { ...body };
     dbData.swedish = await googleTranslator(dbData.name, "sv");
     dbData.benefits_sv = await googleTranslator(dbData.benefits_en, "sv");
@@ -107,8 +106,10 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             updateTreatmentModel(treatment_id, updateTreatment),
             deleteExistingConcernsModel(treatment_id),
             deleteTreatmentDeviceNameModel(treatment_id),
+            !isAdmin && deleteUserSubTreatmentsModel1(treatment_id),
             !isAdmin
-                ? deleteZynqUserSubTreatmentsModel(treatment_id)
+                ?
+                deleteZynqUserSubTreatmentsModel(treatment_id)
                 : deleteTreatmentSubTreatmentsModel(treatment_id)
         ]);
 
@@ -120,7 +121,8 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             await addTreatmentDeviceNameModel(treatment_id, req.body.device_name);
 
         if (req.body.sub_treatments?.length > 0)
-            if (!isAdmin) await addTreatmentSubTreatmentUserModel(treatment_id, req.body.sub_treatments, user_id);
+            console.log({ sub_treatments: req.body.sub_treatments, treatment_id })
+        if (!isAdmin) await addTreatmentSubTreatmentUserModel(treatment_id, req.body.sub_treatments, user_id);
         if (isAdmin) await addTreatmentSubTreatmentModel(treatment_id, req.body.sub_treatments);
 
     }
@@ -516,7 +518,7 @@ export const get_all_concerns = async (req, res) => {
         const language = req?.user?.language || 'en';
         const concerns = await getAllConcerns(language);
 
-        return handleSuccess(res, 200, "en", "CONCERNS_FETCHED",applyLanguageOverwrite(concerns,language) );
+        return handleSuccess(res, 200, "en", "CONCERNS_FETCHED", applyLanguageOverwrite(concerns, language));
     } catch (error) {
         console.error("Error fetching concerns:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
@@ -854,61 +856,61 @@ export const import_treatments_from_CSV = async (req, res) => {
 };
 
 export const cloneTreatment = asyncHandler(async (req, res) => {
-  const { treatment_id } = req.params;
-  const role = req.user?.role;
-  const language = req.user?.language || 'en';
+    const { treatment_id } = req.params;
+    const role = req.user?.role;
+    const language = req.user?.language || 'en';
 
 
-  // 1️⃣ Fetch original treatment
-  const original = await getTreatmentByIdModel(treatment_id);
-  if (!original) {
-    return handleError(res, 404, language, "TREATMENT_NOT_FOUND");
-  }
+    // 1️⃣ Fetch original treatment
+    const original = await getTreatmentByIdModel(treatment_id);
+    if (!original) {
+        return handleError(res, 404, language, "TREATMENT_NOT_FOUND");
+    }
 
 
-  // 2️⃣ Fetch relations
-  const [concerns, devices, subTreatments] = await Promise.all([
-    getTreatmentConcernsModel(treatment_id),
-    getTreatmentDevicesModel(treatment_id),
-    getTreatmentSubTreatmentsModel(treatment_id)
-  ]);
+    // 2️⃣ Fetch relations
+    const [concerns, devices, subTreatments] = await Promise.all([
+        getTreatmentConcernsModel(treatment_id),
+        getTreatmentDevicesModel(treatment_id),
+        getTreatmentSubTreatmentsModel(treatment_id)
+    ]);
 
-  // 3️⃣ Create new treatment
-  const newTreatmentId = uuidv4();
+    // 3️⃣ Create new treatment
+    const newTreatmentId = uuidv4();
 
-  const clonedTreatment = {
-    treatment_id: newTreatmentId,
-    name: `${original.name}`,
-    swedish: original.swedish,
-    device_name: original.device_name,
-    like_wise_terms: original.like_wise_terms,
-    classification_type: original.classification_type,
-    benefits_en: original.benefits_en,
-    benefits_sv: original.benefits_sv,
-    description_en: original.description_en,
-    description_sv: original.description_sv,
-    source: original.source,
-    is_device: original.is_device,
-    is_admin_created: true,
-    created_by_zynq_user_id: null,
-    approval_status: "APPROVED",
-  };
+    const clonedTreatment = {
+        treatment_id: newTreatmentId,
+        name: `${original.name}`,
+        swedish: original.swedish,
+        device_name: original.device_name,
+        like_wise_terms: original.like_wise_terms,
+        classification_type: original.classification_type,
+        benefits_en: original.benefits_en,
+        benefits_sv: original.benefits_sv,
+        description_en: original.description_en,
+        description_sv: original.description_sv,
+        source: original.source,
+        is_device: original.is_device,
+        is_admin_created: true,
+        created_by_zynq_user_id: null,
+        approval_status: "APPROVED",
+    };
 
-  await addTreatmentModel(clonedTreatment);
+    await addTreatmentModel(clonedTreatment);
 
 
-  // 4️⃣ Insert relations
-  if (concerns.length)
-    await addTreatmentConcernsModel(newTreatmentId, concerns);
+    // 4️⃣ Insert relations
+    if (concerns.length)
+        await addTreatmentConcernsModel(newTreatmentId, concerns);
 
-  if (devices.length)
-    await addTreatmentDeviceNameModel(newTreatmentId, devices);
+    if (devices.length)
+        await addTreatmentDeviceNameModel(newTreatmentId, devices);
 
-  if (subTreatments.length)
-    await addTreatmentSubTreatmentModel(newTreatmentId, subTreatments);
+    if (subTreatments.length)
+        await addTreatmentSubTreatmentModel(newTreatmentId, subTreatments);
 
-  // 5️⃣ Response
-  handleSuccess(res, 201, language, "TREATMENT_CLONED_SUCCESSFULLY", {
-    treatment_id: newTreatmentId
-  });
+    // 5️⃣ Response
+    handleSuccess(res, 201, language, "TREATMENT_CLONED_SUCCESSFULLY", {
+        treatment_id: newTreatmentId
+    });
 });

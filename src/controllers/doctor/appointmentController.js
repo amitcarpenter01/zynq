@@ -19,61 +19,64 @@ import { getTreatmentsByAppointmentId, getTreatmentsByTreatmentDoctorId, getTrea
 export const getMyAppointmentsDoctor = async (req, res) => {
     try {
         await appointmentModel.updateMissedAppointmentStatusModel();
-        const userId = req.user.user_id;
-        const doctorId = req.user.doctorData.doctor_id;
-
+        const userId = req?.user?.user_id;
+        const doctorId = req?.user?.doctorData?.doctor_id;
+        const clinicId = req?.user?.clinicData?.clinic_id;
         const now = dayjs.utc();
+        let data;
+        if (doctorId) {
+            const appointments = await appointmentModel?.getAppointmentsByDoctorId(doctorId, 'booked');
+            const result = await Promise?.all(appointments?.map(async (app) => {
+                const doctor = await getDocterByDocterId(app.doctor_id);
+                let chatId = await getChatBetweenUsers(userId, doctor[0]?.zynq_user_id);
+                app.chatId = chatId.length > 0 ? chatId[0].id : null;
 
-        const appointments = await appointmentModel.getAppointmentsByDoctorId(doctorId, 'booked');
+                // Ensure profile image is fully qualified
+                if (app.profile_image && !app.profile_image.startsWith('http')) {
+                    app.profile_image = `${APP_URL}${app.profile_image}`;
+                }
 
-        const result = await Promise.all(appointments.map(async (app) => {
-            const doctor = await getDocterByDocterId(app.doctor_id);
-            let chatId = await getChatBetweenUsers(userId, doctor[0]?.zynq_user_id);
-            app.chatId = chatId.length > 0 ? chatId[0].id : null;
+                let start_time_iso = null;
+                let end_time_iso = null;
+                let videoCallOn = false;
 
-            // Ensure profile image is fully qualified
-            if (app.profile_image && !app.profile_image.startsWith('http')) {
-                app.profile_image = `${APP_URL}${app.profile_image}`;
-            }
+                if (app.start_time && app.end_time) {
+                    const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
+                    const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
 
-            let start_time_iso = null;
-            let end_time_iso = null;
-            let videoCallOn = false;
+                    const startUTC = dayjs.utc(localFormattedStart);
+                    const endUTC = dayjs.utc(localFormattedEnd);
 
-            if (app.start_time && app.end_time) {
-                const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
-                const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
+                    start_time_iso = startUTC.toISOString();
+                    end_time_iso = endUTC.toISOString();
 
-                const startUTC = dayjs.utc(localFormattedStart);
-                const endUTC = dayjs.utc(localFormattedEnd);
+                    // Check if current time is between start and end
+                    videoCallOn = app.status !== 'Completed' && dayjs().isAfter(startUTC) && dayjs().isBefore(endUTC);
+                }
 
-                start_time_iso = startUTC.toISOString();
-                end_time_iso = endUTC.toISOString();
-
-                // Check if current time is between start and end
-                videoCallOn = app.status !== 'Completed' && dayjs().isAfter(startUTC) && dayjs().isBefore(endUTC);
-            }
-
-            return {
-                ...app,
-                start_time: start_time_iso,
-                end_time: end_time_iso,
-                videoCallOn,
-            };
-        }));
-
-
-        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", result);
+                return {
+                    ...app,
+                    start_time: start_time_iso,
+                    end_time: end_time_iso,
+                    videoCallOn,
+                };
+            }));
+            data = result;
+        }
+        if (clinicId) {
+            const clinicAppointments = await appointmentModel?.getAppointmentsByClinicId(clinicId);
+            data = clinicAppointments;
+        };
+        return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", data);
     } catch (error) {
         console.error("Error fetching doctor appointments:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
-    }
+    };
 };
 
 export const getMyAppointmentById = async (req, res) => {
     try {
-        const doctorId = req.user.doctorData.doctor_id;
-
+        const doctorId = req?.user?.doctorData?.doctor_id;
         const schema = Joi.object({
             appointment_id: Joi.string().required(),
         });
@@ -87,28 +90,22 @@ export const getMyAppointmentById = async (req, res) => {
 
         const appointments = await appointmentModel.getAppointmentByIdForDoctorV2(doctorId, appointment_id);
 
-        const result = await Promise.all(appointments.map(async app => {
-
+        const result = await Promise?.all(appointments?.map(async app => {
             const localFormattedStart = dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss");
             const localFormattedEnd = dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss");
-
             if (app.profile_image && !app.profile_image.startsWith('http')) {
                 app.profile_image = `${APP_URL}${app.profile_image}`;
             }
-
             if (app.pdf && !app.pdf.startsWith('http')) {
                 app.pdf = `${APP_URL}${app.pdf}`;
             }
-
             const startUTC = dayjs.utc(localFormattedStart);
             const endUTC = dayjs.utc(localFormattedEnd);
             const videoCallOn = app.status !== 'Completed' && now.isAfter(startUTC) && now.isBefore(endUTC);
-
             const suggestedTreatments = await getTreatmentsByAppointmentId(app.suggested_appointment_id);
             const doctor = await doctorModel.getDocterByDocterId(app.doctor_id);
             let chatId = await chatModel.getChatBetweenUsers(app.user_id, doctor[0].zynq_user_id);
             // console.log('chatId', chatId);
-
             const treatments = await appointmentModel.getAppointmentTreatments(appointment_id);
 
             return {
@@ -276,6 +273,7 @@ export const getSinglePatientRecord = asyncHandler(async (req, res) => {
 
 export const getReviewsAndRatings = asyncHandler(async (req, res) => {
     const reviews = await appointmentModel.getRatings(req.user);
+    console.log({ reviews });
     return handleSuccess(res, 200, 'en', "REVIEWS_FETCHED", reviews);
 });
 

@@ -157,7 +157,7 @@ router.delete('/notifications', authenticateUser, deleteNotifications);
 // -------------------------------------Concerns------------------------------------------------//
 
 router.post('/get_treatments_by_concern_id', faceScanControllers.get_treatments_by_concern_id);
-router.post('/get_treatments_by_concerns',authenticateUser, validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
+router.post('/get_treatments_by_concerns', authenticateUser, validate(getTreatmentsByConcersSchema, "body"), faceScanControllers.get_treatments_by_concerns);
 router.post('/get_treatments', optionalAuthenticateUser, validate(getTreatmentFiltersSchema, "body"), faceScanControllers.get_treatments);
 router.get('/get_all_concerns', faceScanControllers.get_all_concerns);
 router.post('/concerns', faceScanControllers.get_all_concerns);
@@ -197,8 +197,8 @@ router.post('/payments/test', testPayment)
 
 router.get('/skin-types', optionalAuthenticateUser, faceScanControllers.getClinicSkinTypes);
 router.get('/treatments', optionalAuthenticateUser, faceScanControllers.getTreatments);
-router.post('/get-treatments-by-ids', authenticateUser, validate(getTreatmentsSchema, "body"), faceScanControllers.get_treatments_by_treatments);
-router.post("/get-all-search-results",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.search_home_entities);
+router.post('/get-treatments-by-ids', authenticateUser, faceScanControllers.get_treatments_by_treatments);
+router.post("/get-all-search-results", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.search_home_entities);
 
 router.get('/payments/get-booked-appointments', authenticateUser, appointmentController.getBookedAppointments);
 router.get('/payments/get-purchased-products/:purchase_id', authenticateUser, validate(getSinglePurchasedProductSchema, "params"), productControllers.getSingleUserPurchasedProducts);
@@ -260,8 +260,8 @@ router.post('/gemini/endpoint', geminiBackendEndpoint)
 
 router.post('/consent', optionalAuthenticateUser, validate(addConsentSchema, "body"), addConsent);
 
-router.post('/face', 
-  optionalAuthenticateUser, 
+router.post('/face',
+  optionalAuthenticateUser,
   upload.fields([{ name: 'face', maxCount: 1 }]),
   faceScanControllers.addFace
 );
@@ -271,13 +271,13 @@ router.delete('/draft-appointment/:appointment_id', authenticateUser, validate(d
 
 
 
-router.post("/detect-search-intent",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.detectSearchIntentController);
-router.post("/get-doctor-by-first-name",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.getDoctorsByFirstNameSearchOnlyController);
-router.post("/get-clinic-by-name",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.getClinicsByNameSearchOnlyController);
-router.post("/get-devices-by-name",(req,res,next) => {console.log(req.body);next()},authenticateUser, doctorControllers.getDevicesByNameSearchOnlyController);
-router.post("/get-treatments-by-search",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.gettreatmentsBySearchOnlyController);
-router.post("/get-sub-treatments-by-search",authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.getSubtreatmentsBySearchOnlyController);
+router.post("/detect-search-intent", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.detectSearchIntentController);
+router.post("/get-doctor-by-first-name", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.getDoctorsByFirstNameSearchOnlyController);
+router.post("/get-clinic-by-name", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.getClinicsByNameSearchOnlyController);
+router.post("/get-devices-by-name", (req, res, next) => { console.log(req.body); next() }, authenticateUser, doctorControllers.getDevicesByNameSearchOnlyController);
+router.post("/get-treatments-by-search", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.gettreatmentsBySearchOnlyController);
+router.post("/get-sub-treatments-by-search", authenticateUser, validate(getAllDoctorsSchema, "body"), doctorControllers.getSubtreatmentsBySearchOnlyController);
 
-router.post("/aws-image-recognition",uploadImageToMemory , analyzeImageController);
+router.post("/aws-image-recognition", uploadImageToMemory, analyzeImageController);
 
 export default router;
