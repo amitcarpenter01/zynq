@@ -994,8 +994,31 @@ export const getAllClinicsForUser = async ({
             'c.clinic_logo',
             'c.address',
             'c.mobile_number',
-            'MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range',
-            'MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range',
+            // 'MIN(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_lower_price_range',
+            // 'MAX(CAST(d.fee_per_session AS DECIMAL(10,2))) AS doctor_higher_price_range',
+            `MIN(
+      CASE
+          WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef'
+          AND d.fee_per_session IS NOT NULL
+               THEN CAST(d.fee_per_session AS DECIMAL(10,2))
+          WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef'
+          AND dcm.fee_per_session IS NOT NULL
+          AND dcm.is_invitation_accepted = 1
+               THEN CAST(dcm.fee_per_session AS DECIMAL(10,2))
+      END
+  ) AS doctor_lower_price_range`,
+
+            `MAX(
+      CASE
+          WHEN u.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef'
+          AND d.fee_per_session IS NOT NULL
+               THEN CAST(d.fee_per_session AS DECIMAL(10,2))
+          WHEN u.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef'
+          AND dcm.fee_per_session IS NOT NULL
+          AND dcm.is_invitation_accepted = 1
+               THEN CAST(dcm.fee_per_session AS DECIMAL(10,2))
+      END
+  ) AS doctor_higher_price_range`,
             'ROUND(AVG(ar.rating), 2) AS avg_rating',
             needsDistance
                 ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance`
@@ -1017,6 +1040,9 @@ export const getAllClinicsForUser = async ({
       LEFT JOIN tbl_doctors d ON d.doctor_id = dcm.doctor_id
       LEFT JOIN tbl_appointment_ratings ar 
         ON c.clinic_id = ar.clinic_id AND ar.approval_status = 'APPROVED'
+        LEFT JOIN tbl_zqnq_users u 
+    ON u.id = d.zynq_user_id
+
     `;
 
         const joins = [];
