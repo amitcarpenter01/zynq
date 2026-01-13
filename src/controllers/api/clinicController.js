@@ -229,7 +229,7 @@ export const get_nearby_clinics = asyncHandler(async (req, res) => {
 
     // ✅ Fetch treatment names for clinic enrichment
     const clinicIds = clinics.map(c => c.clinic_id);
-    const allTreatments = await clinicModels.getClinicTreatmentsBulkV2(clinicIds,language);
+    const allTreatments = await clinicModels.getClinicTreatmentsBulkV2(clinicIds, language);
 
     const processedClinics = clinics.map(clinic => {
 
@@ -254,7 +254,6 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
     const { language = 'en' } = req.user;
     const clinics = await apiModels.getSingleClinicForUser(clinic_id);
     if (!clinics || clinics.length === 0) return handleSuccess(res, 200, language || 'en', "CLINIC_FETCHED_SUCCESSFULLY", clinics);
-
     const clinicIds = clinics.map(c => c.clinic_id);
     const images = await clinicModels.getClinicImages(clinic_id);
 
@@ -278,6 +277,21 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
         clinicModels.getClinicDoctorsBulk(clinicIds)
     ]);
 
+    const dayMapSv = {
+        Monday: "Måndag",
+        Tuesday: "Tisdag",
+        Wednesday: "Onsdag",
+        Thursday: "Torsdag",
+        Friday: "Fredag",
+        Saturday: "Lördag",
+        Sunday: "Söndag",
+    };
+    if (language != "en") {
+        const convertedOperationHours = allOperationHours[clinicIds]?.map(item => ({
+            ...item,
+            day_of_week: dayMapSv[item.day_of_week] || item.day_of_week,
+        }));
+    };
     // await Promise.all(
     //     clinicIds.map(async (cid) => {
     //         const treatments = allTreatments[cid] || [];
