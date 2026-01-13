@@ -1746,6 +1746,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
         if (!isEmpty(concerns)) {
             await appointmentModel.updateAppointmentConcerns(appointment_id, concerns);
         }
+        const newAppointmentDetails = await getAppointmentDetails(user_id, appointment_id);
 
         // ---------------- PRICE CALCULATION ----------------
         let total_price = 0;
@@ -1834,9 +1835,9 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             ui_mode: null,
             url: null,
             wallet_options: null,
-            appointmentDetails: {},
+            appointmentDetails: newAppointmentDetails,
             chat_id: 0,
-            appointment_id: null,
+            appointment_id: appointment_id,
         });
 
         if (appointmentType === "Clinic Visit" && isAllTreatmentsFree) {
@@ -2011,7 +2012,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 
 
         // ---------------- FREE APPOINTMENT FLOW ----------------
-        const newAppointmentDetails = await getAppointmentDetails(user_id, appointment_id);
+        // const newAppointmentDetails = await getAppointmentDetails(user_id, appointment_id);
         if (is_paid && appointmentType === "Video Call" && final_total != 0) {
             let session;
             if (payment_timing === 'PAY_LATER') {
