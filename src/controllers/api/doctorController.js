@@ -532,8 +532,9 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
     const { doctor_id, clinic_id, treatment_search } = req.body;
     const { user_id, language = 'en' } = req.user;
 
-    const doctorResult = await doctorModels.getDoctorByDoctorID(doctor_id, clinic_id);
+    console.log({ doctor_id });
 
+    const doctorResult = await doctorModels.getDoctorByDoctorID(doctor_id, clinic_id);
     const doctorInfo = await doctorModels.getDoctorInfo(doctor_id, clinic_id);
     let doctor = doctorResult?.[0];
 
@@ -557,13 +558,13 @@ export const getSingleDoctor = asyncHandler(async (req, res) => {
         clinicModels.getDoctorCertificationsBulkV2([doctor_id], language),
         clinicModels.getDoctorEducationBulk([doctor_id]),
         clinicModels.getDoctorExperienceBulk([doctor_id]),
-        clinicModels.getDoctorSkinTypesBulkV2([doctor_id], language,clinic_id),
+        clinicModels.getDoctorSkinTypesBulkV2([doctor_id], language, clinic_id),
 
         // FIXED: this now returns array directly
         clinicModels.getDoctorTreatmentsBulkV3(doctor_id, clinic_id, language, treatment_search),
 
         clinicModels.getDoctorSkinConditionBulkV2([doctor_id], language),
-        clinicModels.getDoctorSurgeryBulkV2([doctor_id], language,clinic_id),
+        clinicModels.getDoctorSurgeryBulkV2([doctor_id], language, clinic_id),
 
         // FIXED: Devices always using zynq_user_id
         clinicModels.getDoctorDevicesBulk(doctor.zynq_user_id, clinic_id),

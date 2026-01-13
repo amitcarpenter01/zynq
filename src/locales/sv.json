@@ -219,6 +219,7 @@
   "CONCERNS_FETCHED": "Bekymmer hämtade",
   "DASHBOARD_DATA": "Instrumentpaneldata",
   "DEVICES_FETCHED_SUCCESSFULLY": "Enheter hämtade framgångsrikt",
+  "DEVICES_NOT_FOUND":"Enheter hittades inte",
   "DOCTOR_AVIBILITY_FETCH_SUCCESSFULLY": "Experttillgänglighet hämtad framgångsrikt",
   "DOCTOR_FETCHED_SUCCESSFULLY": "Expert hämtad framgångsrikt",
   "DOCTOR_FETCH_SUCCESSFULLY": "Experthämtning lyckades",

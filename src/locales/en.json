@@ -220,6 +220,7 @@
   "CONCERNS_FETCHED": "Concerns fetched",
   "DASHBOARD_DATA": "Dashboard data",
   "DEVICES_FETCHED_SUCCESSFULLY": "Devices fetched successfully",
+  "DEVICES_NOT_FOUND": "Devices not found",
   "DOCTOR_AVIBILITY_FETCH_SUCCESSFULLY": "Expert availability fetched successfully",
   "DOCTOR_FETCHED_SUCCESSFULLY": "Expert fetched successfully",
   "DOCTOR_FETCH_SUCCESSFULLY": "Expert fetch successfully",
