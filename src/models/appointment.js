@@ -146,6 +146,31 @@ ORDER BY a.start_time ASC
     }
 }
 
+export const getAppointmentByAppointmentId = async (clinicId, appointment_id) => {
+    try {
+        const results = await db.query(`
+      SELECT 
+          a.*,
+          u.*,
+          c.clinic_id AS clinic_id,
+          c.clinic_name AS clinic_name,
+          d.*
+      FROM tbl_appointments a 
+      INNER JOIN tbl_users u ON a.user_id = u.user_id  
+      INNER JOIN tbl_clinics c ON a.clinic_id = ? 
+      INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+      WHERE a.appointment_id = ?
+        AND a.payment_status != 'unpaid'
+      LIMIT 1
+    `, [clinicId, appointment_id]);
+        return results;
+    } catch (error) {
+        console.error("Error in getAppointmentByAppointmentId:", error);
+        throw error;
+    }
+};
+
+
 export const getAppointmentsByClinicId = async (clinic_id) => {
     try {
         const results = await db.query(`
@@ -255,8 +280,6 @@ export const updateAppointmentStatus = async (appointment_id, status) => {
         throw error;
     }
 };
-
-
 
 export const getAppointmentsById = async (user_id, appointment_id, lang = "en") => {
     const nameColumn = lang === "sv" ? "cnc.swedish" : "cnc.name";
