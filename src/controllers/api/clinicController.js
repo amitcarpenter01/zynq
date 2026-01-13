@@ -6,9 +6,7 @@ import { getTreatmentIDsByUserID } from "../../utils/misc.util.js";
 import { formatImagePath } from "../../utils/user_helper.js";
 
 dotenv.config();
-
 const APP_URL = process.env.APP_URL;
-
 
 export const get_all_clinics = asyncHandler(async (req, res) => {
     const {
@@ -276,7 +274,6 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
         clinicModels.getClinicLocationsBulk(clinicIds),
         clinicModels.getClinicDoctorsBulk(clinicIds)
     ]);
-
     const dayMapSv = {
         Monday: "Måndag",
         Tuesday: "Tisdag",
@@ -295,7 +292,7 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
                 }));
             }
         }
-    }
+    };
     const processedClinics = clinics.map(clinic => {
         const clinicTreatments = allTreatments.find(
             t => t.clinic_id === clinic.clinic_id
@@ -319,9 +316,5 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
                 : clinic.clinic_logo
         }
     });
-
     return handleSuccess(res, 200, language || 'en', "CLINICS_FETCHED_SUCCESSFULLY", processedClinics[0]);
 });
-
-
-

@@ -64,7 +64,7 @@ export const getMyAppointmentsDoctor = async (req, res) => {
             data = result;
         }
         if (clinicId) {
-            const clinicAppointments = await appointmentModel?.getAppointmentsByClinicId(clinicId);
+            const clinicAppointments = await appointmentModel?.getAppointmentsByClinicByclinicID(clinicId);
             data = clinicAppointments;
         };
         return handleSuccess(res, 200, "en", "APPOINTMENTS_FETCHED", data);

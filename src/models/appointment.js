@@ -121,6 +121,31 @@ export const getAppointmentsByDoctorId = async (doctor_id, type) => {
     return results;
 };
 
+export const getAppointmentsByClinicByclinicID = async (clinic_id) => {
+    try {
+        const results = await db.query(`
+        SELECT 
+    a.*,
+    u.*,
+    c.clinic_id AS clinic_id,
+    c.clinic_name AS clinic_name,
+    d.*
+FROM tbl_appointments a 
+INNER JOIN tbl_users u ON a.user_id = u.user_id  
+INNER JOIN tbl_clinics c ON a.clinic_id = c.clinic_id 
+INNER JOIN tbl_doctors d ON a.doctor_id = d.doctor_id
+WHERE a.clinic_id = ? 
+  AND a.payment_status != 'unpaid'
+ORDER BY a.start_time ASC
+            `, [clinic_id])
+        return results;
+    }
+    catch (error) {
+        console.error("Error in getAppointmentsByClinicId:", error);
+        throw error;
+    }
+}
+
 export const getAppointmentsByClinicId = async (clinic_id) => {
     try {
         const results = await db.query(`
