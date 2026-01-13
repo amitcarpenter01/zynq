@@ -685,56 +685,104 @@ async function runDeviceSimilarityBatch(rows, searchQuery) {
     `${r.id}|${safeString(r.device_name)} ${safeString(r.treatment_name)}`
   );
 
+
   const prompt = `
 You are a STRICT JSON similarity scoring engine for DEVICES ONLY.
 
 Search Query: "${searchQuery}"
 
-Return ONLY this JSON:
+Return ONLY JSON in this format:
 {
   "results": [
     { "id": "string", "score": number }
   ]
 }
 
-GENERAL RULES:
-1. If the search query is NOT about a device → all scores = 0.0
-2. If the query refers to clinics, doctors, people, cities, symptoms, body parts → all scores = 0.0
-3. Only compare DEVICE NAME + TREATMENT NAME.
-4. Never force a match if uncertain.
-5. Never hallucinate IDs. Only return IDs from the item list.
+RULES:
 
-DEVICE CATEGORY RULE (MANDATORY):
-If the search query implies a device category (e.g., “laser”, “IPL”, “RF”, “radiofrequency”, “ultrasound”, “HIFU”, “LED”, “injectable”):
+1️⃣ DEVICE MATCHING
+- If DEVICE NAME exactly matches the search query → score 0.85–1.0
+- If DEVICE NAME partially matches the search query → score 0.6–0.85
+- If TREATMENT NAME matches but DEVICE NAME does not → score 0.4–0.6
+- If neither DEVICE NAME nor TREATMENT NAME matches → score 0.0–0.3
 
-  A. Only items whose DEVICE NAME belongs to the SAME CATEGORY
-     are allowed to score ABOVE 0.50.
+2️⃣ CATEGORY RULE (if query implies a category, e.g., "laser", "IPL", "RF", "HIFU", "LED", "injectable")
+- Exact DEVICE NAME match → 0.85–1.0
+- Partial DEVICE NAME match → 0.6–0.85
+- TREATMENT NAME match only → 0.4–0.6
+- Category mismatch → 0.0–0.3
 
-  B. Treatment name similarity CANNOT raise a score above 0.30
-     if the device category does not match.
+3️⃣ NEGATION RULE
+- If query contains "non laser", "not laser", "without laser":
+  • LASER devices → 0.0–0.2
+  • Non-laser devices → score normally
 
-  C. If device category does NOT match the query:
-        Score MUST be 0.0–0.30.
-
-NEGATION RULE:
-If query contains:
-  • "non laser"
-  • "not laser"
-  • "without laser"
-
-  Then:
-    • All LASER devices MUST be scored 0.0–0.20
-    • Non-laser devices may score normally
+4️⃣ GENERAL RULES
+- Only compare DEVICE NAME + TREATMENT NAME
+- Never force a match if uncertain
+- Never hallucinate IDs; only return IDs from the item list
+- Queries unrelated to devices → all scores 0.0
 
 SCORING SCALE:
-• 0.85–1.0 strong match (same device)
-• 0.60–0.85 good match (same category)
-• 0.40–0.60 weak match (same category, but further)
-• 0.0–0.30 category mismatch or unrelated
+- 0.85–1.0 strong match
+- 0.60–0.85 good match
+- 0.40–0.60 weak match
+- 0.0–0.30 unrelated or category mismatch
 
 ITEM LIST (id|text):
 ${list.join("\n")}
-  `;
+`;
+
+
+//   const prompt = `
+// You are a STRICT JSON similarity scoring engine for DEVICES ONLY.
+
+// Search Query: "${searchQuery}"
+
+// Return ONLY this JSON:
+// {
+//   "results": [
+//     { "id": "string", "score": number }
+//   ]
+// }
+
+// GENERAL RULES:
+// 1. If the search query is NOT about a device → all scores = 0.0
+// 2. If the query refers to clinics, doctors, people, cities, symptoms, body parts → all scores = 0.0
+// 3. Only compare DEVICE NAME + TREATMENT NAME.
+// 4. Never force a match if uncertain.
+// 5. Never hallucinate IDs. Only return IDs from the item list.
+
+// DEVICE CATEGORY RULE (MANDATORY):
+// If the search query implies a device category (e.g., “laser”, “IPL”, “RF”, “radiofrequency”, “ultrasound”, “HIFU”, “LED”, “injectable”):
+
+//   A. If DEVICE NAME exactly matches query → score 0.85–1.0, If DEVICE NAME partially matches query → score 0.6–0.85, If TREATMENT NAME matches but DEVICE NAME does not → score 0.4–0.6.
+
+//   B. Treatment name similarity CANNOT raise a score above 0.30
+//      if the device category does not match.
+
+//   C. If device category does NOT match the query:
+//         Score MUST be 0.0–0.30.
+
+// NEGATION RULE:
+// If query contains:
+//   • "non laser"
+//   • "not laser"
+//   • "without laser"
+
+//   Then:
+//     • All LASER devices MUST be scored 0.0–0.20
+//     • Non-laser devices may score normally
+
+// SCORING SCALE:
+// • 0.85–1.0 strong match (same device)
+// • 0.60–0.85 good match (same category)
+// • 0.40–0.60 weak match (same category, but further)
+// • 0.0–0.30 category mismatch or unrelated
+
+// ITEM LIST (id|text):
+// ${list.join("\n")}
+//   `;
 
   const res = await client.chat.completions.create({
     model: "gpt-4o-mini",
