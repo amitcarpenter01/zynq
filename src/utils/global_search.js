@@ -333,47 +333,169 @@ export const getDoctorsAIResult = async (rows, search, language = "en") => {
 
   return results;
 };
+
 export const getClinicsAIResult = async (rows, search, language = "en") => {
+  const normalizedSearch = (search || '').trim().toLowerCase();
 
   const rowsWithText = rows.map(r => {
+    // ---- Treatments ----
+    const treatmentNames = Array.isArray(r.treatments)
+      ? r.treatments.map(t => t?.name).filter(Boolean)
+      : [];
+
+    // ---- Devices ----
+    const deviceNames = Array.isArray(r.devices)
+      ? r.devices.filter(Boolean)
+      : [];
+
+    const clinicName = r.clinic_name || '';
+
+    const sections = [
+      // 🔥 Clinic name repeated to boost GPT attention
+      `Primary Clinic Name: ${clinicName}`,
+      `This clinic is called ${clinicName}`,
+      // 📄 Description
+      r.clinic_description ? `Clinic Description: ${r.clinic_description}` : '',
+      // 📍 Location
+      r.address ? `Clinic Location: ${r.address}` : '',
+      // 💉 Treatments
+      treatmentNames.length
+        ? `Medical and cosmetic treatments provided at ${clinicName}: ${treatmentNames.join(', ')}`
+        : '',
+      // 🧪 Devices
+      deviceNames.length
+        ? `Medical devices and technology used at ${clinicName}: ${deviceNames.join(', ')}`
+        : ''
+    ].filter(Boolean);
+
     return {
       ...r,
-      combined_text: `
-      Clinic ${r.clinic_name || ''} 
-      located at ${r.address || ''}
-      ${Array.isArray(r.devices) && r.devices.length
-      ? `Devices ${r.devices.join(", ")}.`
-      : ''}.
-    `.trim()
-    }
+      combined_text: sections.join('. ') + '.'
+    };
   });
 
-  const scoreResults = await runGPTSimilarity(rowsWithText, search, {
+  // ----- Step 1: GPT similarity -----
+  const gptScoreResults = await runGPTSimilarity(rowsWithText, search, {
     idField: "clinic_id",
     textFields: ["combined_text"],
     batchSize: 200
   });
 
-  // ⛔ GPT returned no matches → return empty array
-  if (!scoreResults || scoreResults.length === 0) {
-    console.warn("⚠️ GPT returned no similarity matches");
-    return [];
+  // Map GPT scores by clinic_id
+  const gptScoreMap = new Map();
+  if (gptScoreResults?.length) {
+    gptScoreResults.forEach(r => {
+      gptScoreMap.set(r.clinic_id, r.score);
+    });
   }
 
-  // Apply similarity threshold
-  let results = applyAISimilarity(rows, scoreResults, {
-    idField: "clinic_id",
-    threshold: 0.45,
+  // ----- Step 2: Lexical name match score -----
+  const finalResults = rowsWithText.map(r => {
+    const nameLower = (r.clinic_name || '').toLowerCase();
+    let nameScore = 0;
+
+    if (nameLower === normalizedSearch) {
+      nameScore = 1.0; // exact match
+    } else if (nameLower.startsWith(normalizedSearch)) {
+      nameScore = 0.9; // prefix match
+    } else if (nameLower.includes(normalizedSearch)) {
+      nameScore = 0.8; // contains
+    }
+
+    const gptScore = gptScoreMap.get(r.clinic_id) || 0;
+
+    // ----- Step 3: Combine scores -----
+    // Option 1: weighted sum
+    const final_score = 0.6 * gptScore + 0.4 * nameScore;
+
+    return {
+      ...r,
+      gpt_score: gptScore,
+      name_score: nameScore,
+      final_score
+    };
   });
 
-  // ⛔ After threshold filtering, no results → return empty array
-  if (!results || results.length === 0) {
-    console.warn("⚠️ Similarity threshold removed all results");
-    return [];
-  }
+  // ----- Step 4: Sort by final_score descending -----
+  const sortedResults = finalResults.sort((a, b) => b.final_score - a.final_score);
 
-  return results;
+  return sortedResults;
 };
+
+// export const getClinicsAIResult = async (rows, search, language = "en") => {
+
+//   const rowsWithText = rows.map(r => {
+
+//     // ---- Treatments ----
+//     const treatmentNames = Array.isArray(r.treatments)
+//       ? r.treatments
+//           .map(t => t?.name)
+//           .filter(Boolean)
+//       : [];
+
+//     // ---- Devices ----
+//     const deviceNames = Array.isArray(r.devices)
+//       ? r.devices.filter(Boolean)
+//       : [];
+
+//    const clinicName = r.clinic_name || '';
+
+// const sections = [
+//   // 🔥 NAME — repeated & explicitly weighted
+//   `Primary Clinic Name: ${clinicName}`,
+//   `This clinic is called ${clinicName}`,
+
+//   // 📄 Description
+//   r.clinic_description
+//     ? `Clinic Description: ${r.clinic_description}`
+//     : '',
+
+//   // 📍 Location
+//   r.address
+//     ? `Clinic Location: ${r.address}`
+//     : '',
+
+//   // 💉 Treatments
+//   treatmentNames.length
+//     ? `Medical and cosmetic treatments provided at ${clinicName}: ${treatmentNames.join(', ')}`
+//     : '',
+
+//   // 🧪 Devices
+//   deviceNames.length
+//     ? `Medical devices and technology used at ${clinicName}: ${deviceNames.join(', ')}`
+//     : ''
+// ].filter(Boolean);
+
+//     return {
+//       ...r,
+//       combined_text: sections.join('. ') + '.'
+//     };
+//   });
+
+//   const scoreResults = await runGPTSimilarity(rowsWithText, search, {
+//     idField: "clinic_id",
+//     textFields: ["combined_text"],
+//     batchSize: 200
+//   });
+
+//   if (!scoreResults || scoreResults.length === 0) {
+//     console.warn("⚠️ GPT returned no similarity matches");
+//     return [];
+//   }
+
+//   let results = applyAISimilarity(rows, scoreResults, {
+//     idField: "clinic_id",
+//     threshold: 0.45
+//   });
+
+//   if (!results || results.length === 0) {
+//     console.warn("⚠️ Similarity threshold removed all results");
+//     return [];
+//   }
+
+//   return results;
+// };
+
 
 
 export const getDevicesAIResult = async (
@@ -734,55 +856,55 @@ ${list.join("\n")}
 `;
 
 
-//   const prompt = `
-// You are a STRICT JSON similarity scoring engine for DEVICES ONLY.
+  //   const prompt = `
+  // You are a STRICT JSON similarity scoring engine for DEVICES ONLY.
 
-// Search Query: "${searchQuery}"
+  // Search Query: "${searchQuery}"
 
-// Return ONLY this JSON:
-// {
-//   "results": [
-//     { "id": "string", "score": number }
-//   ]
-// }
+  // Return ONLY this JSON:
+  // {
+  //   "results": [
+  //     { "id": "string", "score": number }
+  //   ]
+  // }
 
-// GENERAL RULES:
-// 1. If the search query is NOT about a device → all scores = 0.0
-// 2. If the query refers to clinics, doctors, people, cities, symptoms, body parts → all scores = 0.0
-// 3. Only compare DEVICE NAME + TREATMENT NAME.
-// 4. Never force a match if uncertain.
-// 5. Never hallucinate IDs. Only return IDs from the item list.
+  // GENERAL RULES:
+  // 1. If the search query is NOT about a device → all scores = 0.0
+  // 2. If the query refers to clinics, doctors, people, cities, symptoms, body parts → all scores = 0.0
+  // 3. Only compare DEVICE NAME + TREATMENT NAME.
+  // 4. Never force a match if uncertain.
+  // 5. Never hallucinate IDs. Only return IDs from the item list.
 
-// DEVICE CATEGORY RULE (MANDATORY):
-// If the search query implies a device category (e.g., “laser”, “IPL”, “RF”, “radiofrequency”, “ultrasound”, “HIFU”, “LED”, “injectable”):
+  // DEVICE CATEGORY RULE (MANDATORY):
+  // If the search query implies a device category (e.g., “laser”, “IPL”, “RF”, “radiofrequency”, “ultrasound”, “HIFU”, “LED”, “injectable”):
 
-//   A. If DEVICE NAME exactly matches query → score 0.85–1.0, If DEVICE NAME partially matches query → score 0.6–0.85, If TREATMENT NAME matches but DEVICE NAME does not → score 0.4–0.6.
+  //   A. If DEVICE NAME exactly matches query → score 0.85–1.0, If DEVICE NAME partially matches query → score 0.6–0.85, If TREATMENT NAME matches but DEVICE NAME does not → score 0.4–0.6.
 
-//   B. Treatment name similarity CANNOT raise a score above 0.30
-//      if the device category does not match.
+  //   B. Treatment name similarity CANNOT raise a score above 0.30
+  //      if the device category does not match.
 
-//   C. If device category does NOT match the query:
-//         Score MUST be 0.0–0.30.
+  //   C. If device category does NOT match the query:
+  //         Score MUST be 0.0–0.30.
 
-// NEGATION RULE:
-// If query contains:
-//   • "non laser"
-//   • "not laser"
-//   • "without laser"
+  // NEGATION RULE:
+  // If query contains:
+  //   • "non laser"
+  //   • "not laser"
+  //   • "without laser"
 
-//   Then:
-//     • All LASER devices MUST be scored 0.0–0.20
-//     • Non-laser devices may score normally
+  //   Then:
+  //     • All LASER devices MUST be scored 0.0–0.20
+  //     • Non-laser devices may score normally
 
-// SCORING SCALE:
-// • 0.85–1.0 strong match (same device)
-// • 0.60–0.85 good match (same category)
-// • 0.40–0.60 weak match (same category, but further)
-// • 0.0–0.30 category mismatch or unrelated
+  // SCORING SCALE:
+  // • 0.85–1.0 strong match (same device)
+  // • 0.60–0.85 good match (same category)
+  // • 0.40–0.60 weak match (same category, but further)
+  // • 0.0–0.30 category mismatch or unrelated
 
-// ITEM LIST (id|text):
-// ${list.join("\n")}
-//   `;
+  // ITEM LIST (id|text):
+  // ${list.join("\n")}
+  //   `;
 
   const res = await client.chat.completions.create({
     model: "gpt-4o-mini",
@@ -858,6 +980,7 @@ export async function runGPTSimilarity(rows, searchQuery, options = {}) {
  * 🧠 Runs GPT similarity on a single batch
  */
 async function runSingleBatch(batch, searchQuery, idField, textFields) {
+  console.log("Running batch:", batch);
 
   // compact "id|text" format
   const list = batch.map((row) => {

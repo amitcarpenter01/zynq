@@ -3,6 +3,7 @@ import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, pagi
 import { isEmpty } from "../utils/user_helper.js";
 import { getTreatmentsAIResult, getDoctorsVectorResult, getDoctorsAIResult, getClinicsAIResult, getDevicesAIResult, getSubTreatmentsAIResult } from "../utils/global_search.js"
 import { name } from "ejs";
+import { getClinicMappedTreatments } from "./clinic.js";
 
 //======================================= Auth =========================================
 
@@ -2948,23 +2949,37 @@ GROUP BY c.clinic_id;
         `);
 
         // 2️⃣ REMOVE embeddings before AI filtering
-        results = results.map(row => {
-            delete row.embeddings;
-            row.devices = JSON.parse(row.devices || '[]');
-            return row;
-        });
+       results = await Promise.all(
+    results.map(async (row) => {
+        delete row.embeddings;
 
-        // 3️⃣ Compute top similar rows using embedding stored in DB_sync table
-        results = await getClinicsAIResult(results, search, 0.4);
+        // safe devices parsing
+        try {
+            row.devices = row.devices ? JSON.parse(row.devices) : [];
+        } catch {
+            row.devices = [];
+        }
 
-        // 4️⃣ Apply pagination
-        results = paginateRows(results, limit, page);
+        // get only treatments array (not whole object)
+        const treatmentData = await getClinicMappedTreatments(row.clinic_id);
+        row.treatments = treatmentData?.treatments ?? [];
 
-        return results;
+        return row;
+    })
+);
+
+
+// 3️⃣ Compute top similar rows using embedding stored in DB_sync table
+results = await getClinicsAIResult(results, search,);
+
+// 4️⃣ Apply pagination
+results = paginateRows(results, limit, page);
+
+return results;
     } catch (error) {
-        console.error('Database Error in getClinicsByNameSearchOnly:', error.message);
-        throw new Error('Failed to fetch clinics by name.');
-    }
+    console.error('Database Error in getClinicsByNameSearchOnly:', error.message);
+    throw new Error('Failed to fetch clinics by name.');
+}
 };
 
 
