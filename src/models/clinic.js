@@ -1712,7 +1712,17 @@ export const getClinicTreatmentsBulkV2 = async (clinicIds, lang = 'en') => {
 
 export const getClinicOperationHoursBulk = async (clinicIds) => {
     const placeholders = clinicIds.map(() => '?').join(',');
-    const query = `SELECT * FROM tbl_clinic_operation_hours WHERE clinic_id IN (${placeholders})`;
+    const query = `SELECT * FROM tbl_clinic_operation_hours WHERE clinic_id IN (${placeholders})ORDER BY
+      FIELD(
+        day_of_week,
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday'
+      )`;
     const results = await db.query(query, clinicIds);
 
     const grouped = {};
@@ -2338,7 +2348,7 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, clinic_id, lang = 'en'
         `;
 
         // SAFE QUERY
-        let results = await db.query(query, [doctorId,clinic_id]);
+        let results = await db.query(query, [doctorId, clinic_id]);
 
         // APPLY SEARCH (if needed)
         if (search) {
