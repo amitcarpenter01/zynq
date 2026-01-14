@@ -663,21 +663,70 @@ export const get_doctor_profile = async (doctorId, language, zynqUserId) => {
         if (clinics.length > 0) {
 
             await Promise.all(clinics.map(async (clinic) => {
-                clinic.treatments = await getDoctorClinicTreatments(
+                let treatments = await getDoctorClinicTreatments(
                     doctorId,
                     clinic.clinic_id
                 );
 
-                clinic.surgeries = await getDoctorClinicSurgeries(
+                treatments?.forEach((treatment) => {
+                    if (!treatment) return;
+
+                    treatment.name =
+                        language === "en"
+                            ? treatment?.name
+                            : treatment?.swedish ?? treatment?.name;
+
+                    treatment?.sub_treatments?.forEach((subTreatment) => {
+                        if (!subTreatment) return;
+
+                        subTreatment.sub_treatment_name_en =
+                            language === "en"
+                                ? subTreatment?.sub_treatment_name_en
+                                : subTreatment?.sub_treatment_name_sv ?? subTreatment?.sub_treatment_name_en;
+                    });
+                });
+
+
+                clinic.treatments = treatments;
+
+                let surgeries = await getDoctorClinicSurgeries(
                     doctorId,
                     clinic.clinic_id,
                     language
                 );
 
-                clinic.skinTypes = await getDoctorClinicSkinTypes(
+                surgeries?.forEach((surgerie) => {
+                    if (!surgerie) return;
+
+                    const value =
+                        language === "en"
+                            ? surgerie?.english
+                            : surgerie?.swedish ?? surgerie?.english;
+
+                    surgerie.name = value;
+                    surgerie.english = value;
+                });
+
+                clinic.surgeries = surgeries;
+
+                let skinTypes = await getDoctorClinicSkinTypes(
                     doctorId,
                     clinic.clinic_id
                 );
+                skinTypes?.forEach((skinType) => {
+                    if (!skinType) return;
+
+                    const value =
+                        language === "en"
+                            ? skinType?.English
+                            : skinType?.Swedish ?? skinType?.English;
+
+                    skinType.name = value;
+                    skinType.English = value;
+                });
+
+
+                clinic.skinTypes = skinTypes
 
                 clinic.devices = await getDoctorClinicDevices(
                     zynqUserId,
@@ -1284,8 +1333,8 @@ export const getDocterByDocterId = async (doctor_id) => {
         throw new Error("Failed to fetch support tickets.");
     }
 }
- 
- 
+
+
 
 
 export const getSoloDoctorByZynqUserId = async (zynq_user_id) => {
