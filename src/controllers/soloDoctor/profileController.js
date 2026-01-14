@@ -104,7 +104,10 @@ export const addPersonalInformation = async (req, res) => {
             return handleError(res, 401, 'en', "CLINIC_NOT_FOUND");
         }
         if (update_doctor.affectedRows > 0 && updatClinic.affectedRows > 0) {
-            await update_onboarding_status(1, zynqUserId)
+            const [getZynqUserData] = await dbOperations.getData('tbl_zqnq_users', `WHERE id = '${zynqUserId}' `);
+            if (getZynqUserData.on_boarding_status < 1) {
+                await update_onboarding_status(1, zynqUserId)
+            }
             return handleSuccess(res, 201, language, "PERSONAL_DETAILS_ADDED", '');
 
         } else {
@@ -165,7 +168,11 @@ export const addContactInformation = async (req, res) => {
         const updateDoctor = await dbOperations.updateData('tbl_doctors', doctorData, `WHERE zynq_user_id = '${zynqUserId}' `);
 
 
-        await update_onboarding_status(2, zynqUserId)
+        // await update_onboarding_status(2, zynqUserId)
+        const [getZynqUserData] = await dbOperations.getData('tbl_zqnq_users', `WHERE id = '${zynqUserId}' `);
+        if (getZynqUserData.on_boarding_status < 2) {
+            await update_onboarding_status(2, zynqUserId)
+        }
         await generateDoctorsEmbeddingsV2(zynqUserId)
         return handleSuccess(res, 201, 'en', "CONTACT_DETAILS_UPDATED", '');
 
@@ -257,7 +264,12 @@ export const addEducationAndExperienceInformation = async (req, res) => {
             );
         }
         const zynqUserId = req.user.id
-        await update_onboarding_status(3, zynqUserId)
+        // await update_onboarding_status(3, zynqUserId)
+
+        const [getZynqUserData] = await dbOperations.getData('tbl_zqnq_users', `WHERE id = '${zynqUserId}' `);
+        if (getZynqUserData.on_boarding_status < 3) {
+            await update_onboarding_status(3, zynqUserId)
+        }
         // await generateDoctorsEmbeddingsV2(zynqUserId)
         return handleSuccess(res, 201, language, "DOCTOR_PROFILE_INFO_ADDED", {});
     } catch (error) {
@@ -460,7 +472,11 @@ export const addExpertise = async (req, res) => {
         };
 
         // ---------- ONBOARDING ----------
-        await update_onboarding_status(4, zynqUserId);
+        // await update_onboarding_status(4, zynqUserId);
+        const [getZynqUserData] = await dbOperations.getData('tbl_zqnq_users', `WHERE id = '${zynqUserId}' `);
+        if (getZynqUserData.on_boarding_status < 4) {
+            await update_onboarding_status(4, zynqUserId)
+        }
 
         return handleSuccess(res, 200, language, "EXPERTISE_UPDATED", {});
 
