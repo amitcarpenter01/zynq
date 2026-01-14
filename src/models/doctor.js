@@ -733,9 +733,58 @@ export const get_doctor_profile = async (doctorId, language, zynqUserId) => {
                     clinic.clinic_id
                 );
 
-                clinic.slots = await getDoctorSlotSessionsModel(
+                const dayOrder = [
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday",
+                    "Sunday"
+                ];
+
+                const dayMapSv = {
+                    Monday: "Måndag",
+                    Tuesday: "Tisdag",
+                    Wednesday: "Onsdag",
+                    Thursday: "Torsdag",
+                    Friday: "Fredag",
+                    Saturday: "Lördag",
+                    Sunday: "Söndag"
+                };
+
+
+                let slots = await getDoctorSlotSessionsModel(
                     doctorId, clinic.clinic_id
                 );
+
+                clinic.slots =
+                    slots
+                        ?.sort(
+                            (a, b) =>
+                                dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)
+                        )
+                        .map(daySlot => ({
+                            ...daySlot,
+
+                            // 🌍 Language mapping
+                            day:
+                                language === "en"
+                                    ? daySlot.day
+                                    : dayMapSv[daySlot.day] || daySlot.day,
+
+                            // ⏱️ Clean + sort sessions
+                            session: Array.isArray(daySlot.session)
+                                ? daySlot.session
+                                    .filter(
+                                        s => s?.start_time && s?.end_time
+                                    )
+                                    .sort(
+                                        (a, b) =>
+                                            a.start_time.localeCompare(b.start_time)
+                                    )
+                                : []
+                        })) ?? [];
             }));
         }
 
