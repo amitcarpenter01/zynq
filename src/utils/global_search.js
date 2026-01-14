@@ -659,38 +659,107 @@ export const getClinicsAIResult = async (rows, search, language = "en") => {
 //   return results;
 // };
 
+function computeDeviceNameScore(deviceName, search) {
+  if (!deviceName || !search) return 0;
+
+  const name = deviceName.toLowerCase();
+  const query = search.toLowerCase();
+
+  // Normalize plurals
+  const normalize = str =>
+    str.replace(/\bdevices\b/g, 'device').trim();
+
+  const nameNorm = normalize(name);
+  const queryNorm = normalize(query);
+
+  if (nameNorm === queryNorm) return 1.0;
+
+  if (nameNorm.startsWith(queryNorm)) return 0.95;
+
+  if (nameNorm.includes(queryNorm)) return 0.85;
+
+  // Word-level token match
+  const nameTokens = new Set(nameNorm.split(/\s+/));
+  const queryTokens = queryNorm.split(/\s+/);
+
+  const matched = queryTokens.filter(t => nameTokens.has(t));
+
+  if (matched.length > 0) return 0.75;
+
+  return 0;
+}
 
 
 export const getDevicesAIResult = async (
   rows,
   search,
   threshold = 0.40,
-  topN = null,
-  language = "en"
+  topN = null
 ) => {
   if (!search?.trim()) return rows;
 
-  const normalized = search.trim().toLowerCase();
+  const normalizedSearch = search.trim().toLowerCase();
 
-  const scoreResults = await batchDeviceGPTSimilarity(rows, normalized);
-  const scoreMap = new Map(scoreResults.map(r => [r.id, r.score]));
+  const gptScoreResults = await batchDeviceGPTSimilarity(rows, normalizedSearch);
+  const gptScoreMap = new Map(gptScoreResults.map(r => [r.id, r.score]));
 
-  const filtered = rows
-    .map(r => ({
+  const scored = rows.map(r => {
+    const gptScore = gptScoreMap.get(r.id) ?? 0;
+    const nameScore = computeDeviceNameScore(r.device_name, normalizedSearch);
+
+    let final_score;
+    if (nameScore >= 0.8) {
+      final_score = Math.max(gptScore, nameScore);
+    } else {
+      final_score = 0.6 * gptScore + 0.4 * nameScore;
+    }
+
+    return {
       ...r,
-      score: scoreMap.get(r.id) ?? 0
-    }))
-    .filter(r => r.score >= threshold)
-    .sort((a, b) => b.score - a.score);
+      gpt_score: gptScore,
+      name_score: nameScore,
+      final_score
+    };
+  });
 
-  const translated = filtered.map(result => ({
-    ...result,
-    device_name: result.device_name,
-    treatment_name: result.treatment_name
-  }));
+  const filtered = scored
+    .filter(r => r.final_score >= threshold || r.name_score >= 0.8)
+    .sort((a, b) => b.final_score - a.final_score);
 
-  return topN ? translated.slice(0, topN) : translated;
+  return topN ? filtered.slice(0, topN) : filtered;
 };
+
+
+// export const getDevicesAIResult = async (
+//   rows,
+//   search,
+//   threshold = 0.40,
+//   topN = null,
+//   language = "en"
+// ) => {
+//   if (!search?.trim()) return rows;
+
+//   const normalized = search.trim().toLowerCase();
+
+//   const scoreResults = await batchDeviceGPTSimilarity(rows, normalized);
+//   const scoreMap = new Map(scoreResults.map(r => [r.id, r.score]));
+
+//   const filtered = rows
+//     .map(r => ({
+//       ...r,
+//       score: scoreMap.get(r.id) ?? 0
+//     }))
+//     .filter(r => r.score >= threshold)
+//     .sort((a, b) => b.score - a.score);
+
+//   const translated = filtered.map(result => ({
+//     ...result,
+//     device_name: result.device_name,
+//     treatment_name: result.treatment_name
+//   }));
+
+//   return topN ? translated.slice(0, topN) : translated;
+// };
 
 
 export const getClinicsVectorResult = async (rows, search, threshold = 0.4, topN = null) => {

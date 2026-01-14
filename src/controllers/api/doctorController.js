@@ -1029,7 +1029,7 @@ export const getClinicsByNameSearchOnlyController = asyncHandler(async (req, res
         const enrichedClinics = clinics.map(clinic => ({
             ...clinic,
             clinic_logo: formatImagePath(clinic.clinic_logo, 'clinic/logo'),
-            treatments : clinic.treatments.map(treatment => language == "en" ? treatment.name : treatment.swedish)
+            treatments: clinic.treatments.map(treatment => language == "en" ? treatment.name : treatment.swedish)
         }));
 
 
@@ -1061,7 +1061,10 @@ export const getDevicesByNameSearchOnlyController = asyncHandler(async (req, res
             normalized_search = search
         } else {
             console.log("Long query, translating to english");
-            normalized_search = await translator(search, 'en');
+            normalized_search = search
+            if (language !== "en") {
+                normalized_search = await translator(search, 'en');
+            }
         }
         // 🧠 Detect if the translated text is gibberish
         const gibberish = isGibberishText(normalized_search);
