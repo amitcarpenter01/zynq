@@ -956,8 +956,11 @@ export const getDoctorsByFirstNameSearchOnlyController = asyncHandler(async (req
             console.log("Short query, returning default valid_medical");
             normalized_search = search
         } else {
-            console.log("Long query, translating to english");
-            normalized_search = await translator(search, 'en');
+            normalized_search = search
+            if (language !== "en") {
+                console.log("Long query, translating to english");
+                normalized_search = await translator(search, 'en');
+            }
         }
         // 🧠 Detect if the translated text is gibberish
         const gibberish = isGibberishText(normalized_search);
@@ -977,7 +980,8 @@ export const getDoctorsByFirstNameSearchOnlyController = asyncHandler(async (req
         // 3️⃣ Enrich images (same as your code)
         const enrichedDoctors = doctors.map(({ embeddings, ...doctor }) => ({
             ...doctor,
-            profile_image: formatImagePath(doctor.profile_image, 'doctor/profile_images')
+            profile_image: formatImagePath(doctor.profile_image, 'doctor/profile_images'),
+            skin_types: language === 'en' ? doctor.skin_types : doctor.skin_types_swedish,
         }));
 
 
@@ -1008,8 +1012,8 @@ export const getClinicsByNameSearchOnlyController = asyncHandler(async (req, res
             normalized_search = search
         } else {
             normalized_search = search
-            if(language !== "en"){
-            console.log("Long query, translating to english");
+            if (language !== "en") {
+                console.log("Long query, translating to english");
                 normalized_search = await translator(search, 'en');
             }
         }
