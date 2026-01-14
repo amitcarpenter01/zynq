@@ -251,7 +251,7 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
         clinicModels.getClinicOperationHoursBulk(clinicIds),
         clinicModels.getClinicSkinTypesBulk(clinicIds),
         clinicModels.getClinicSkinConditionBulk(clinicIds),
-        clinicModels.getClinicSurgeryBulk(clinicIds),
+        clinicModels.getClinicSurgeryBulk(clinicIds,language),
         // clinicModels.getClinicAstheticDevicesBulk(clinicIds),
         clinicModels.getClinicLocationsBulk(clinicIds),
         clinicModels.getClinicDoctorsBulk(clinicIds)

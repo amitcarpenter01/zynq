@@ -1760,7 +1760,7 @@ export const getClinicSkinConditionBulk = async (clinicIds) => {
     return grouped;
 };
 
-export const getClinicSurgeryBulk = async (clinicIds) => {
+export const getClinicSurgeryBulk = async (clinicIds,lang = "en") => {
     const placeholders = clinicIds.map(() => '?').join(',');
     const query = `SELECT s.*,cs.* FROM tbl_surgery s INNER JOIN tbl_clinic_surgery cs ON s.surgery_id  = cs.surgery_id WHERE cs.clinic_id IN (${placeholders})`;
     const results = await db.query(query, clinicIds);
@@ -1769,6 +1769,9 @@ export const getClinicSurgeryBulk = async (clinicIds) => {
     results.forEach(row => {
         if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
         grouped[row.clinic_id].push(row);
+        
+            // ✅ Set surgery name dynamically
+            row.name = lang === "sv" ? row.swedish : row.english;
     });
     return grouped;
 };
