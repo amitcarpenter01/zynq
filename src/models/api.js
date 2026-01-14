@@ -1,5 +1,5 @@
 import db from "../config/db.js";
-import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows, getTopSimilarRowsWithoutTranslate, translator } from "../utils/misc.util.js";
+import { formatBenefitsUnified, getTopSimilarRows, getTreatmentIDsByUserID, paginateRows, getTopSimilarRowsWithoutTranslate, translator, applyLanguageOverwrite } from "../utils/misc.util.js";
 import { isEmpty } from "../utils/user_helper.js";
 import { getTreatmentsAIResult, getDoctorsVectorResult, getDoctorsAIResult, getClinicsAIResult, getDevicesAIResult, getSubTreatmentsAIResult } from "../utils/global_search.js"
 import { name } from "ejs";
@@ -2111,9 +2111,9 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         } else {
             results = results.map(row => {
                 delete row.embeddings;
-                delete row.swedish;
-                delete row.description_sv;
-                delete row.description_en;
+                // delete row.swedish;
+                // delete row.description_sv;
+                // delete row.description_en;
                 delete row.embeddings;
                 delete row.name_embeddings;
                 return row;
@@ -2125,7 +2125,7 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
             benefits: lang === "sv" ? row.benefits_sv : row.benefits_en
         }));
 
-        return results;
+        return applyLanguageOverwrite(results, lang) || results;
 
     } catch (error) {
         console.error("Database Error in getAllTreatmentsV2:", error.message);
