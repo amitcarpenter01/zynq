@@ -517,10 +517,11 @@ export const getClinicsAIResult = async (rows, search, language = "en") => {
       // 🔥 Clinic name repeated to boost GPT attention
       `Primary Clinic Name: ${clinicName}`,
       `This clinic is called ${clinicName}`,
-      // 📄 Description
-      r.clinic_description ? `Clinic Description: ${r.clinic_description}` : '',
       // 📍 Location
       r.address ? `Clinic Location: ${r.address}` : '',
+      // 📄 Description
+      r.clinic_description ? `Clinic Description: ${r.clinic_description}` : '',
+
       // 💉 Treatments
       treatmentNames.length
         ? `Medical and cosmetic treatments provided at ${clinicName}: ${treatmentNames.join(', ')}`
@@ -553,31 +554,51 @@ export const getClinicsAIResult = async (rows, search, language = "en") => {
   }
 
   // ----- Step 2: Lexical name match score -----
-  const finalResults = rowsWithText.map(r => {
-    const nameLower = (r.clinic_name || '').toLowerCase();
-    let nameScore = 0;
+// ----- Step 2: Lexical name + address match score -----
+const finalResults = rowsWithText.map(r => {
+  const nameLower = (r.clinic_name || '').toLowerCase();
+  const addressLower = (r.address || '').toLowerCase();
 
-    if (nameLower === normalizedSearch) {
-      nameScore = 1.0; // exact match
-    } else if (nameLower.startsWith(normalizedSearch)) {
-      nameScore = 0.9; // prefix match
-    } else if (nameLower.includes(normalizedSearch)) {
-      nameScore = 0.8; // contains
+  let nameScore = 0;
+  let addressScore = 0;
+
+  // ---- NAME SCORING (highest priority) ----
+  if (nameLower === normalizedSearch) {
+    nameScore = 1.0;
+  } else if (nameLower.startsWith(normalizedSearch)) {
+    nameScore = 0.95;
+  } else if (nameLower.includes(normalizedSearch)) {
+    nameScore = 0.85;
+  }
+
+  // ---- ADDRESS SCORING (secondary priority) ----
+  if (addressLower) {
+    if (addressLower === normalizedSearch) {
+      addressScore = 0.7;
+    } else if (addressLower.startsWith(normalizedSearch)) {
+      addressScore = 0.6;
+    } else if (addressLower.includes(normalizedSearch)) {
+      addressScore = 0.5;
     }
+  }
 
-    const gptScore = gptScoreMap.get(r.clinic_id) || 0;
+  const gptScore = gptScoreMap.get(r.clinic_id) || 0;
 
-    // ----- Step 3: Combine scores -----
-    // Option 1: weighted sum
-    const final_score = 0.6 * gptScore + 0.4 * nameScore;
+  // ---- FINAL SCORE (weighted) ----
+  const final_score =
+    (0.45 * nameScore) +
+    (0.25 * addressScore) +
+    (0.30 * gptScore);
 
-    return {
-      ...r,
-      gpt_score: gptScore,
-      name_score: nameScore,
-      final_score
-    };
-  });
+  return {
+    ...r,
+    gpt_score: gptScore,
+    name_score: nameScore,
+    address_score: addressScore,
+    final_score
+  };
+});
+
 
   // ----- Step 4: Sort by final_score descending -----
   const sortedResults = finalResults.sort((a, b) => b.final_score - a.final_score);
