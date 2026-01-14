@@ -1733,7 +1733,7 @@ export const getClinicOperationHoursBulk = async (clinicIds) => {
     return grouped;
 };
 
-export const getClinicSkinTypesBulk = async (clinicIds) => {
+export const getClinicSkinTypesBulk = async (clinicIds,lang = "en") => {
     const placeholders = clinicIds.map(() => '?').join(',');
     const query = `SELECT st.*,cst.* FROM tbl_skin_types st INNER JOIN
     tbl_clinic_skin_types cst ON st.skin_type_id = cst.skin_type_id WHERE cst.clinic_id IN (${placeholders}) ORDER BY cst.created_at DESC`;
@@ -1743,6 +1743,11 @@ export const getClinicSkinTypesBulk = async (clinicIds) => {
     results.forEach(row => {
         if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
         grouped[row.clinic_id].push(row);
+
+
+        // ✅ Set surgery name dynamically
+        row.name = lang === "sv" ? row.Swedish : row.English;
+
     });
     return grouped;
 };
@@ -1760,7 +1765,7 @@ export const getClinicSkinConditionBulk = async (clinicIds) => {
     return grouped;
 };
 
-export const getClinicSurgeryBulk = async (clinicIds,lang = "en") => {
+export const getClinicSurgeryBulk = async (clinicIds, lang = "en") => {
     const placeholders = clinicIds.map(() => '?').join(',');
     const query = `SELECT s.*,cs.* FROM tbl_surgery s INNER JOIN tbl_clinic_surgery cs ON s.surgery_id  = cs.surgery_id WHERE cs.clinic_id IN (${placeholders})`;
     const results = await db.query(query, clinicIds);
@@ -1769,9 +1774,9 @@ export const getClinicSurgeryBulk = async (clinicIds,lang = "en") => {
     results.forEach(row => {
         if (!grouped[row.clinic_id]) grouped[row.clinic_id] = [];
         grouped[row.clinic_id].push(row);
-        
-            // ✅ Set surgery name dynamically
-            row.name = lang === "sv" ? row.swedish : row.english;
+
+        // ✅ Set surgery name dynamically
+        row.name = lang === "sv" ? row.swedish : row.english;
     });
     return grouped;
 };
