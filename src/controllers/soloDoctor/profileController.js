@@ -32,7 +32,7 @@ export const addPersonalInformation = async (req, res) => {
             // hsa_id: Joi.string().optional().allow('', null),
             org_number: Joi.string().optional().allow('', null),
             slot_time: Joi.string().optional().allow("", null),
-            last_name : Joi.string().optional().allow("", null),
+            last_name: Joi.string().optional().allow("", null),
         });
         let language = 'en';
 
@@ -46,7 +46,7 @@ export const addPersonalInformation = async (req, res) => {
             gender: value.gender,
             age: value.age,
             biography: value.clinic_description,
-            last_name : value.last_name,
+            last_name: value.last_name,
         };
         if (req.files.profile) {
             doctorData.profile_image = req.files.profile[0].filename
@@ -580,9 +580,43 @@ export const getDoctorProfile = async (req, res) => {
 
         // const treatments = await clinicModels.getClinicTreatments(clinic.clinic_id);
         // clinic.treatments = treatments;
+        const dayMapSv = {
+            Monday: "Måndag",
+            Tuesday: "Tisdag",
+            Wednesday: "Onsdag",
+            Thursday: "Torsdag",
+            Friday: "Fredag",
+            Saturday: "Lördag",
+            Sunday: "Söndag"
+        };
+
+        const dayOrder = [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday"
+        ];
 
         const operationHours = await clinicModels.getClinicOperationHours(clinic.clinic_id);
-        clinic.operation_hours = operationHours;
+        // clinic.operation_hours = operationHours;
+        // ✅ map + sort + language-safe
+        clinic.operation_hours =
+            operationHours
+                ?.sort(
+                    (a, b) =>
+                        dayOrder.indexOf(a.day_of_week) -
+                        dayOrder.indexOf(b.day_of_week)
+                )
+                .map(hour => ({
+                    ...hour,
+                    day_of_week:
+                        language === "en"
+                            ? hour.day_of_week
+                            : dayMapSv[hour.day_of_week] || hour.day_of_week
+                })) ?? [];
 
         // const equipments = await clinicModels.getClinicEquipments(clinic.clinic_id);
         // clinic.equipments = equipments;
@@ -639,7 +673,7 @@ export const getSoloExpertOnboardingStatus = async (req, res) => {
     try {
 
         const on_boarding_status = req.user.on_boarding_status || 0;
-        
+
         return handleSuccess(res, 200, "en", "DOCTOR_PROFILE_RETRIEVED", on_boarding_status);
     } catch (error) {
         console.error(error);
@@ -815,7 +849,7 @@ export const getDoctorProfileByStatus = async (req, res) => {
             clinic.equipments = equipments;
 
             const skinTypes = await clinicModels.getClinicSkinTypes(clinicId);
-            clinic.skin_types = applyLanguageOverwrite(skinTypes, language); ;
+            clinic.skin_types = applyLanguageOverwrite(skinTypes, language);;
 
             // const severityLevels = await clinicModels.getClinicSeverityLevels(clinic.clinic_id);
             // clinic.severity_levels = severityLevels;
@@ -836,15 +870,15 @@ export const getDoctorProfileByStatus = async (req, res) => {
             clinic.on_boarding_status = zynqUser[0].on_boarding_status;
 
         } else if (status == 5) {
-            console.log("clinicId",clinicId);
+            console.log("clinicId", clinicId);
             // const operationHours = await dbOperations.getData('tbl_doctor_availability', `WHERE doctor_id = '${doctorId}' `); (clinic.clinic_id);
 
             clinic.operation_hours = await clinicModels.getClinicOperationHours(clinicId);
             let doctorSessions = await dbOperations.getSelectedColumn('fee_per_session, slot_time', 'tbl_doctors', `WHERE doctor_id = '${doctorId}' `);
 
-            const [same_for_all] = await dbOperations.getSelectedColumn('same_for_all','tbl_clinics', `WHERE clinic_id = '${clinicId}' `)
+            const [same_for_all] = await dbOperations.getSelectedColumn('same_for_all', 'tbl_clinics', `WHERE clinic_id = '${clinicId}' `)
             // clinic.operation_hours = operationHours;
-            doctorSessions[0].same_for_all = same_for_all?.same_for_all || 0 ;
+            doctorSessions[0].same_for_all = same_for_all?.same_for_all || 0;
             clinic.doctorSessions = doctorSessions;
 
             const zynqUser = await fetchZynqUserByUserId(zynqUserId);
@@ -880,7 +914,7 @@ export const getDoctorProfileByStatus = async (req, res) => {
 
         // Get profile for clinic ends
 
-        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, clinic, completionPercentage,email });
+        return handleSuccess(res, 200, language, "DOCTOR_PROFILE_RETRIEVED", { ...profileData, clinic, completionPercentage, email });
     } catch (error) {
         console.error(error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
