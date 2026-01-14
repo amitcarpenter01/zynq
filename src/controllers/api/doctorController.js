@@ -392,7 +392,7 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
 
     const enrichedDoctors = doctors.map((doctor) => ({
         ...doctor,
-        skin_types: (skinTypeMap.get(doctor.doctor_id) || []).map(st => st?.name || null),
+        skin_types: (skinTypeMap.get(doctor.doctor_id) || []).map(st => language == "en" ? st?.English : st?.Swedish),
         profile_image: formatImagePath(doctor.profile_image, 'doctor/profile_images')
 
     }));

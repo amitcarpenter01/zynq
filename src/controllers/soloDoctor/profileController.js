@@ -809,13 +809,13 @@ export const getDoctorProfileByStatus = async (req, res) => {
             // const treatments = await clinicModels.getClinicTreatments(clinicId);
             //console.log("treatments", treatments);
             const treatments = await doctorModels.get_doctor_treatments(doctorId);
-            clinic.treatments = treatments;
+            clinic.treatments = applyLanguageOverwrite(treatments, language); //treatments;
 
             const equipments = await clinicModels.getClinicEquipments(clinicId);
             clinic.equipments = equipments;
 
             const skinTypes = await clinicModels.getClinicSkinTypes(clinicId);
-            clinic.skin_types = skinTypes;
+            clinic.skin_types = applyLanguageOverwrite(skinTypes, language); ;
 
             // const severityLevels = await clinicModels.getClinicSeverityLevels(clinic.clinic_id);
             // clinic.severity_levels = severityLevels;
