@@ -2014,11 +2014,12 @@ export const getDoctorSkinTypesBulkV2 = async (doctorIds, lang = "en", clinic_id
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
+            
+            row.name = lang === "sv" ? row.Swedish : row.English;
 
             const skinTypeRow = { ...row };
 
             // ✅ Normalize to `name` based on lang
-            skinTypeRow.name = lang === "sv" ? row.Swedish : row.English;
 
             grouped[row.doctor_id].push(skinTypeRow);
         });
