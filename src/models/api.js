@@ -2837,13 +2837,22 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
                 ) AS devices,
 
                  (
-                    SELECT GROUP_CONCAT(tst.name ORDER BY tst.name SEPARATOR ', ')
+                    SELECT GROUP_CONCAT(tst.English ORDER BY tst.English SEPARATOR ', ')
                     FROM tbl_doctor_skin_types dst
                     JOIN tbl_skin_types   tst ON 
                     dst.skin_type_id = tst.skin_type_id
                     WHERE 
                 dst.doctor_id = d.doctor_id AND dst.clinic_id = c.clinic_id
-                ) AS skin_types
+                ) AS skin_types,
+
+                (
+                    SELECT GROUP_CONCAT(tst.Swedish ORDER BY tst.Swedish SEPARATOR ', ')
+                    FROM tbl_doctor_skin_types dst
+                    JOIN tbl_skin_types   tst ON 
+                    dst.skin_type_id = tst.skin_type_id
+                    WHERE 
+                dst.doctor_id = d.doctor_id AND dst.clinic_id = c.clinic_id
+                ) AS skin_types_swedish
 
                 FROM tbl_doctors d
 
