@@ -249,7 +249,7 @@ export const getSingleClinic = asyncHandler(async (req, res) => {
     ] = await Promise.all([
         clinicModels.getClinicTreatmentsBulkV2(clinicIds, language),
         clinicModels.getClinicOperationHoursBulk(clinicIds),
-        clinicModels.getClinicSkinTypesBulk(clinicIds),
+        clinicModels.getClinicSkinTypesBulk(clinicIds,language),
         clinicModels.getClinicSkinConditionBulk(clinicIds),
         clinicModels.getClinicSurgeryBulk(clinicIds,language),
         // clinicModels.getClinicAstheticDevicesBulk(clinicIds),
