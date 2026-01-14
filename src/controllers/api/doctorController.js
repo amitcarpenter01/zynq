@@ -1007,8 +1007,11 @@ export const getClinicsByNameSearchOnlyController = asyncHandler(async (req, res
             console.log("Short query, returning default valid_medical");
             normalized_search = search
         } else {
+            normalized_search = search
+            if(language !== "en"){
             console.log("Long query, translating to english");
-            normalized_search = await translator(search, 'en');
+                normalized_search = await translator(search, 'en');
+            }
         }
         // 🧠 Detect if the translated text is gibberish
         const gibberish = isGibberishText(normalized_search);
