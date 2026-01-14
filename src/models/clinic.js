@@ -1733,7 +1733,7 @@ export const getClinicOperationHoursBulk = async (clinicIds) => {
     return grouped;
 };
 
-export const getClinicSkinTypesBulk = async (clinicIds,lang = "en") => {
+export const getClinicSkinTypesBulk = async (clinicIds, lang = "en") => {
     const placeholders = clinicIds.map(() => '?').join(',');
     const query = `SELECT st.*,cst.* FROM tbl_skin_types st INNER JOIN
     tbl_clinic_skin_types cst ON st.skin_type_id = cst.skin_type_id WHERE cst.clinic_id IN (${placeholders}) ORDER BY cst.created_at DESC`;
@@ -1747,6 +1747,7 @@ export const getClinicSkinTypesBulk = async (clinicIds,lang = "en") => {
 
         // ✅ Set surgery name dynamically
         row.name = lang === "sv" ? row.Swedish : row.English;
+        row.description = lang === "sv" ? row.desc_sv : row.description;
 
     });
     return grouped;
@@ -2014,8 +2015,9 @@ export const getDoctorSkinTypesBulkV2 = async (doctorIds, lang = "en", clinic_id
         const grouped = {};
         results.forEach(row => {
             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
-            
+
             row.name = lang === "sv" ? row.Swedish : row.English;
+            row.description = lang === "sv" ? row.desc_sv : row.description;
 
             const skinTypeRow = { ...row };
 
