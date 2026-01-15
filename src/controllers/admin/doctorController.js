@@ -2188,7 +2188,22 @@ export const getDoctorInvitationListController = async (req, res) => {
         // Fetch filtered clinics
         const doctors = await adminModels.getDoctorInvitaionListModel();
 
-        return handleSuccess(res, 200, language, "Fetch doctor invitation list successfully", doctors);
+        return handleSuccess(res, 200, language, "Fetch Doctor Invitation List Successfully", doctors);
+
+    } catch (error) {
+        console.error("internal E", error);
+        return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
+    }
+};
+
+export const getClinicInvitationListController = async (req, res) => {
+    try {
+        const language = req?.user?.language || 'en';
+
+        // Fetch filtered clinics
+        const doctors = await adminModels.getClinicInvitaionListModel();
+
+        return handleSuccess(res, 200, language, "Fetch Clinic Invitation List Successfully", doctors);
 
     } catch (error) {
         console.error("internal E", error);

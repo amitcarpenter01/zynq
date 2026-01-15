@@ -3710,3 +3710,44 @@ export const checkDoctorIdsInvitaionListModel = async (ids) => {
         throw new Error("Failed to get doctor management data.");
     }
 };
+
+export const getClinicInvitaionListModel = async () => {
+    try {
+
+        const sql = `
+            SELECT 
+                c.zynq_user_id,
+                c.clinic_id, 
+                c.clinic_name,
+                c.email, 
+                c.mobile_number, 
+                c.address, 
+                c.profile_status,
+
+                CASE 
+                    WHEN zu.role_id = '2fc0b43c-3196-11f0-9e07-0e8e5d906eef' THEN 'Clinic'
+                    WHEN zu.role_id = '407595e3-3196-11f0-9e07-0e8e5d906eef' THEN 'Solo Doctor'
+                END AS user_type
+
+            FROM tbl_clinics c
+            LEFT JOIN tbl_clinic_locations cl 
+                ON cl.clinic_id = c.clinic_id
+            LEFT JOIN tbl_zqnq_users zu 
+                ON zu.id = c.zynq_user_id
+
+            WHERE c.is_deleted = 0
+            AND zu.role_id IN (
+                '2fc0b43c-3196-11f0-9e07-0e8e5d906eef',
+                '407595e3-3196-11f0-9e07-0e8e5d906eef'
+            ) AND c.profile_status IN ('IMPORTED','INVITED')
+
+            ORDER BY c.created_at DESC
+        `;
+
+        return await db.query(sql);
+
+    } catch (error) {
+        console.error("Database Error:", error.message);
+        throw new Error("Failed to get doctor management data.");
+    }
+};

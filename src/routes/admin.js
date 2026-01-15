@@ -256,4 +256,7 @@ router.post("/clinic-unlinck",authenticateAdmin,doctorControllers.unsyncClinicCo
 router.post("/send-doctor-invitation",authenticateAdmin,doctorControllers.sendDoctorInvitationListController);
 
 
+router.get('/get-clinic-invitation-list', authenticateAdmin, doctorControllers.getClinicInvitationListController);
+
+
 export default router;
