@@ -401,101 +401,6 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
 });
 
 
-// export const getSingleDoctor = asyncHandler(async (req, res) => {
-//     const { doctor_id, clinic_id, treatment_search } = req.body;
-//     const { user_id, language = 'en' } = req.user;
-// console.log('doctor_id=>',doctor_id)
-//     const doctorResult = await doctorModels.getDoctorByDoctorID(doctor_id, clinic_id);
-//     let doctor = doctorResult?.[0];
-
-//     if (!doctor) {
-//         return handleSuccess(res, 200, 'en', "DOCTOR_NOT_FOUND", null);
-//     }
-
-//     const [
-//         allCertificates,
-//         allEducation,
-//         allExperience,
-//         allSkinTypes,
-//         allTreatments,
-//         allSkinCondition,
-//         allSurgery,
-//         // allAstheticDevices,
-//         allDevices,
-//         allRatings
-//     ] = await Promise.all([
-//         clinicModels.getDoctorCertificationsBulkV2([doctor_id], language),
-//         clinicModels.getDoctorEducationBulk([doctor_id]),
-//         clinicModels.getDoctorExperienceBulk([doctor_id]),
-//         clinicModels.getDoctorSkinTypesBulkV2([doctor_id], language),
-//         clinicModels.getDoctorTreatmentsBulkV3(doctor_id, language, treatment_search),
-//         clinicModels.getDoctorSkinConditionBulkV2([doctor_id], language),
-//         clinicModels.getDoctorSurgeryBulkV2([doctor_id], language),
-//         // clinicModels.getDoctorAstheticDevicesBulk([doctor_id]),
-//         clinicModels.getDoctorDevicesBulk(doctor.zynq_user_id),
-//         clinicModels.getDoctorRatings([doctor_id])
-//     ]);
-
-//     const chat = await getChatBetweenUsers(user_id, doctor.zynq_user_id);
-//     const images = await clinicModels.getClinicImages(doctor.clinic_id);
-//     doctor.images = images
-//         .filter(img => img?.image_url)
-//         .map(img => ({
-//             clinic_image_id: img.clinic_image_id,
-//             url: formatImagePath(img.image_url, 'clinic/files'),
-//         }));
-
-//     const treatments = allTreatments[doctor_id] || [];
-//     // await Promise.all(
-//     //     treatments.map(async (t) => {
-//     //         t.sub_treatments = await apiModels.getSubTreatmentsByTreatmentId(
-//     //             t.treatment_id,
-//     //             language
-//     //         );
-//     //     })
-//     // );
-
-//     // for (const t of treatments) {
-//     //     t.sub_treatments = await apiModels.getSubTreatmentsByTreatmentId(
-//     //         t.treatment_id,
-//     //         language
-//     //     );
-//     // }
-
-//     const processedDoctor = {
-//         ...doctor,
-//         chatId: chat?.[0]?.id || null,
-//         ratings: allRatings || [],
-//         treatments: formatBenefitsUnified(treatments, 'en') || [],
-//         skin_types: allSkinTypes[doctor_id] || [],
-//         allSkinCondition: allSkinCondition[doctor_id] || [],
-//         allSurgery: allSurgery[doctor_id] || [],
-//         // allAstheticDevices: allAstheticDevices[doctor_id] || [],
-//         allDevices: allDevices || [],
-//         allEducation: allEducation[doctor_id] || [],
-//         allExperience: allExperience[doctor_id] || [],
-//         allCertificates: (allCertificates[doctor_id] || []).map(cert => ({
-//             ...cert,
-//             upload_path: cert.upload_path
-//                 ? (cert.upload_path.startsWith('http')
-//                     ? cert.upload_path
-//                     : `${APP_URL}doctor/certifications/${cert.upload_path}`)
-//                 : null
-//         })),
-//         doctor_logo: doctor.profile_image
-//             ? (doctor.profile_image.startsWith('http')
-//                 ? doctor.profile_image
-//                 : `${APP_URL}doctor/profile_images/${doctor.profile_image}`)
-//             : null
-//         ,
-//         clinic_logo: doctor.clinic_logo && !doctor.clinic_logo.startsWith("http")
-//             ? `${APP_URL}clinic/logo/${doctor.clinic_logo}`
-//             : doctor.clinic_logo
-//     };
-
-//     return handleSuccess(res, 200, 'en', "DOCTOR_FETCHED_SUCCESSFULLY", processedDoctor);
-// });
-
 const calculateTotalExperienceYears = (experiences = []) => {
     let totalMonths = 0;
 
@@ -685,26 +590,6 @@ export const search_home_entities = asyncHandler(async (req, res) => {
         }));
 
         let enrichedProducts = [];
-        // if (products?.length) {
-        //     const productIds = products.map(p => p.product_id);
-        //     const imageRows = await userModels.get_product_images_by_product_ids(productIds);
-
-        //     const imagesMap = {};
-        //     for (const row of imageRows) {
-        //         if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
-        //         imagesMap[row.product_id].push(
-        //             row.image.startsWith('http')
-        //                 ? row.image
-        //                 : `${APP_URL}clinic/product_image/${row.image}`
-        //         );
-        //     }
-
-        //     enrichedProducts = products.map(product => ({
-        //         ...product,
-        //         product_images: imagesMap[product.product_id] || [],
-        //         image: formatImagePath(product.image, 'clinic/product_image')
-        //     }));
-        // }
 
         // 4️⃣ Reorder results based on AI ranking
         const rankedResults = {};

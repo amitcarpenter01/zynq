@@ -216,65 +216,6 @@ export const updateAppointmentStatus = async (req, res) => {
 };
 
 
-// export const getAppointmentsById = async (req, res) => {
-//     try {
-//         const userId = req.user.user_id;
-
-//         const schema = Joi.object({
-//             appointment_id: Joi.string().required(),
-//         });
-
-//         const language = req?.user?.language || 'en';
-
-//         const { error, value } = schema.validate(req.body);
-//         if (error) return joiErrorHandle(res, error);
-
-//         const { appointment_id } = value;
-//         const appointments = await appointmentModel.getAppointmentsById(userId, appointment_id, language);
-
-//         const now = dayjs.utc();
-
-//         const result = await Promise.all(appointments.map(async (app) => {
-//             const doctor = await getDocterByDocterId(app.doctor_id);
-//             const chatId = await getChatBetweenUsers(userId, doctor[0].zynq_user_id);
-
-//             app.chatId = chatId.length > 0 ? chatId[0].id : null;
-
-//             const localFormattedStart = app.start_time ? dayjs(app.start_time).format("YYYY-MM-DD HH:mm:ss") : null;
-//             const localFormattedEnd = app.end_time ? dayjs(app.end_time).format("YYYY-MM-DD HH:mm:ss") : null;
-//             if (app.profile_image && !app.profile_image.startsWith('http')) {
-//                 app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
-//             }
-
-//             if (app.pdf && !app.pdf.startsWith('http')) {
-//                 app.pdf = `${APP_URL}${app.pdf}`;
-//             }
-
-//             const startUTC = localFormattedStart ? dayjs.utc(localFormattedStart) : null;
-//             const endUTC = localFormattedEnd ? dayjs.utc(localFormattedEnd) : null;
-//             //const videoCallOn = now.isAfter(startUTC) && now.isBefore(endUTC);
-//             const videoCallOn =
-//                 // app.status !== 'Completed' &&
-//                 now.isAfter(startUTC) &&
-//                 now.isBefore(endUTC);
-//             const treatments = await appointmentModel.getAppointmentTreatments(appointment_id);
-
-//             return {
-//                 ...app,
-//                 start_time: localFormattedStart ? dayjs.utc(localFormattedStart).toISOString() : null,
-//                 end_time: localFormattedEnd ? dayjs.utc(localFormattedEnd).toISOString() : null,
-//                 videoCallOn,
-//                 treatments
-//             };
-//         }));
-
-//         return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", result[0]);
-//     } catch (error) {
-//         console.error("Error fetching appointment by ID:", error);
-//         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
-//     }
-// };
-
 export const getAppointmentsById = async (req, res) => {
     try {
         const userId = req.user.user_id;

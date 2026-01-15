@@ -111,10 +111,6 @@ export const openAIBackendEndpointV2 = asyncHandler(async (req, res) => {
       return handleError(res, 400, "en", "INVALID_PAYLOAD", { error: "Payload must be an object or JSON string" });
     }
 
-    // const sanitizedMessages = parsedPayload.messages.map(msg => ({
-    //     role: msg.role,
-    //     content: sanitizeMessageContent(msg.content),
-    // }));
 
     // Call OpenAI
     const openAIResponse = await openai.responses.create({
