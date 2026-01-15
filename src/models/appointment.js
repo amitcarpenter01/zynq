@@ -918,24 +918,7 @@ export const getRatingsByRole = async (id, role) => {
                 throw new Error('Invalid role for fetching ratings');
         }
 
-        // const query = `
-        //     SELECT 
-        //         ar.appointment_rating_id,
-        //         ar.appointment_id,
-        //         ar.doctor_id,
-        //         ar.rating,
-        //         ar.review,
-        //         ar.created_at,
-        //         u.user_id,
-        //         u.full_name,
-        //         u.profile_image,
-        //         u.age,
-        //         u.gender
-        //     FROM tbl_appointment_ratings AS ar 
-        //     INNER JOIN tbl_users AS u ON ar.user_id = u.user_id
-        //     WHERE ${whereClause}
-        //     ORDER BY ar.created_at DESC
-        // `;
+  
         const query = `
     SELECT 
         ar.appointment_rating_id,
@@ -1066,15 +1049,6 @@ export const deleteAppointmentTreatments = async (appointment_id) => {
     return await db.query(`DELETE FROM tbl_appointment_treatments WHERE appointment_id = ?`, [appointment_id]);
 };
 
-// export const insertAppointmentTreatments = async (appointment_id, treatments) => {
-//     if (!Array.isArray(treatments) || treatments.length === 0) return;
-//     const values = treatments.map(t => [appointment_id, t.treatment_id, t.price]);
-//     const query = `
-//     INSERT INTO tbl_appointment_treatments (appointment_id, treatment_id, price)
-//     VALUES ?
-//   `;
-//     return await db.query(query, [values]);
-// };
 
 export const insertAppointmentTreatments = async (appointment_id, treatments) => {
     try {
@@ -1134,32 +1108,6 @@ export const insertAppointmentTreatments = async (appointment_id, treatments) =>
         throw new Error("Failed to insert appointment treatments.");
     }
 };
-
-
-// export const getAppointmentTreatments = async (appointment_id) => {
-//     const query = `
-//     SELECT t.*,ap.* FROM tbl_appointment_treatments ap INNER JOIN tbl_treatments t ON ap.treatment_id  = t.treatment_id  WHERE appointment_id = ?
-//   `;
-//     return await db.query(query, [appointment_id]);
-// };
-
-// export const getAppointmentTreatments = async (appointment_id) => {
-//     const query = `
-//         SELECT t.*, ap.*
-//         FROM tbl_appointment_treatments ap
-//         INNER JOIN tbl_treatments t ON ap.treatment_id = t.treatment_id
-//         WHERE appointment_id = ?
-//     `;
-
-//     let results = await db.query(query, [appointment_id]);
-
-//     return results.map(row => {
-//         const cleanRow = { ...row };
-//         if ('embeddings' in cleanRow) delete cleanRow.embeddings;
-//         if ('name_embeddings' in cleanRow) delete cleanRow.name_embeddings;
-//         return cleanRow;
-//     });
-// };
 
 export const getAppointmentTreatments = async (appointment_id, language) => {
     const query = `
@@ -1313,17 +1261,6 @@ export const getAppointmentsByUserIdAndDoctorId = async (user_id, doctor_id, sta
     return results;
 };
 
-// export const getDraftAppointmentsModel = async (user_id, doctor_id) => {
-//     return await db.query(`
-//     SELECT at.treatment_id, at.appointment_id
-//     FROM tbl_appointments a
-//     INNER JOIN tbl_appointment_treatments at 
-//     ON a.appointment_id = at.appointment_id
-//     WHERE a.user_id = ? 
-//     AND a.doctor_id = ? 
-//     AND a.save_type = 'draft'
-//   `, [user_id, doctor_id]);
-// }
 
 export const getDraftAppointmentsModel = async (user_id, doctor_id) => {
     const rows = await db.query(`
@@ -1416,30 +1353,6 @@ export const insertDraftTreatmentsModel = async (appointment_id, treatments) => 
         throw new Error("Failed to insert draft treatments.");
     }
 };
-
-
-// export const insertDraftTreatmentsModel = async (appointment_id, treatments) => {
-//     if (!treatments || !treatments.length) return;
-//     try {
-
-//         const params = treatments.map(t => [
-//             appointment_id,
-//             t.treatment_id,
-//             t.price,
-//         ]);
-
-//         const query = `
-//         INSERT INTO tbl_appointment_treatments
-//         (appointment_id, treatment_id, price)
-//         VALUES ?
-//       `;
-
-//         return await db.query(query, [params]);
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to insert draft treatments.");
-//     }
-// }
 
 export const insertDraftAppointmentModel = async (appointment_id, doctor_id, clinic_id, user_id, report_id, discount_type, discount_value) => {
     try {

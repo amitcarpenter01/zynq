@@ -172,67 +172,6 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
     });
 });
 
-// export const addEditSubtreatment = asyncHandler(async (req, res) => {
-//     const { treatment_id, sub_treatment_id, ...body } = req.body;
-//     const role = req.user?.role;
-//     const user_id = req.user?.id;
-//     const language = req.user?.language || 'en';
-
-//     const isAdmin = role === "ADMIN";
-
-//     const dbData = { ...body };
-
-//     dbData.swedish = await googleTranslator(dbData.name, "sv");
-
-//     // 🧩 Creator metadata
-//     if (isAdmin) {
-//         dbData.is_admin_created = true;
-//         dbData.approval_status = "APPROVED";
-//     } else {
-//         dbData.created_by_zynq_user_id = user_id;
-//         dbData.approval_status = "PENDING";
-//     }
-
-//     // ✳️ EDIT FLOW
-//     if (sub_treatment_id) {
-//         // 🛡️ Non-admin ownership check
-
-//         const updateSubTreatment = {
-//             treatment_id: treatment_id,
-//             name: dbData.name,
-//             swedish: dbData.swedish,
-//             is_admin_created: dbData.is_admin_created,
-//             approval_status: dbData.approval_status,
-//         };
-//         // 🧹 Cleanup + reinserts only if editing
-//         await Promise.all([
-//             updateSubtreatmentModel(sub_treatment_id, updateSubTreatment),
-//         ]);
-//     }
-
-//     // ✳️ CREATE FLOW
-//     else {
-//         const addSubTreatment = {
-//             treatment_id: treatment_id,
-//             name: dbData.name,
-//             swedish: dbData.swedish,
-//             is_admin_created: dbData.is_admin_created,
-//             approval_status: dbData.approval_status,
-//         };
-
-//         // Insert main + related tables together
-//         await addSubTreatmentModel(addSubTreatment);
-//     }
-
-//     // ✅ Unified response
-//     const message = sub_treatment_id
-//         ? "SUBTREATMENT_UPDATED_SUCCESSFULLY"
-//         : "SUBTREATMENT_ADDED_SUCCESSFULLY";
-
-//     handleSuccess(res, 200, language, message, { sub_treatment_id: sub_treatment_id ? sub_treatment_id : dbData.sub_treatment_id });
-//     // await generateTreatmentEmbeddingsV2(treatment_id)
-// });
-
 export const addEditSubtreatment = asyncHandler(async (req, res) => {
     const { treatment_id, sub_treatment_id, ...body } = req.body;
     const role = req.user?.role;
@@ -447,36 +386,6 @@ export const deleteSubTreatmentMaster = asyncHandler(async (req, res) => {
 });
 
 
-// export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
-//     const { approval_status, treatment_id } = req.body;
-//     const { language = "en" } = req.user;
-
-//     const statusMessages = {
-//         APPROVED: "TREATMENT_APPROVED_SUCCESSFULLY",
-//         REJECTED: "TREATMENT_REJECTED_SUCCESSFULLY",
-//     };
-
-//     const notificationUpdates = {
-//         APPROVED: "treatment_approved",
-//         REJECTED: "treatment_rejected",
-//     };
-
-//     const [treatmentData] = await updateTreatmentApprovalStatusModel(treatment_id, approval_status)
-
-//     handleSuccess(res, 200, language, statusMessages[approval_status],)
-
-//     if (treatmentData) {
-//         await sendNotification({
-//             userData: req.user,
-//             type: "TREATMENT",
-//             type_id: treatment_id,
-//             notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
-//             receiver_id: treatmentData.role === "CLINIC" ? treatmentData.clinic_id : treatmentData.doctor_id,
-//             receiver_type: treatmentData.role === "CLINIC" ? "CLINIC" : "DOCTOR",
-//         })
-//     }
-// })
-
 
 export const updateTreatmentApprovalStatus = asyncHandler(async (req, res) => {
     const { approval_status, treatment_id } = req.body;
@@ -525,22 +434,6 @@ export const get_all_concerns = async (req, res) => {
     }
 };
 
-// export const getAllTreatments = asyncHandler(async (req, res) => {
-//     const language = req?.user?.language || 'en';
-//     const treatments = await getAllTreatmentsModel();
-
-//     treatments.APPROVED = [];
-//     treatments.OTHERS = [];
-//     treatments.map((treatment) => {
-//         if (treatment.approval_status === "APPROVED") {
-//             treatments.APPROVED.push(treatment);
-//         } else {
-//             treatments.OTHERS.push(treatment);
-//         }
-//     })
-
-//     return handleSuccess(res, 200, "en", "TREATMENTS_FETCHED", treatments);
-// });
 export const getAllTreatments = asyncHandler(async (req, res) => {
     const role = req.user?.role;
     const zynq_user_id = req.user?.id;

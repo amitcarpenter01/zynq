@@ -252,51 +252,6 @@ export const change_password = async (req, res) => {
     }
 };
 
-// export const create_Call_log = async (req, res) => {
-//   try {
-//     const {
-//       call_id,
-//       receiver_user_id,
-//       receiver_doctor_id,
-//       status
-//     } = req.body;
-
-//     const { id: caller_id, role_name, doctorData } = req.user;
-
-//     if (!call_id || !status || (!receiver_user_id && !receiver_doctor_id)) {
-//       return res.status(400).json({ message: "Missing required fields" });
-//     }
-
-//     let sender_user_id = null;
-//     let sender_doctor_id = null;
-
-//     // ✅ Identify caller role
-//     if (role_name === 'DOCTOR') {
-//       sender_doctor_id = doctorData?.doctor_id;
-//     } else if (role_name === 'USER') {
-//       sender_user_id = caller_id;
-//     } else {
-//       return res.status(403).json({ message: "Unauthorized role" });
-//     }
-
-//     // ✅ Create or update call log
-//     await webModels.createOrUpdateCallLog({
-//       call_id,
-//       caller_id,
-//       sender_user_id,
-//       sender_doctor_id,
-//       receiver_user_id,
-//       receiver_doctor_id,
-//       status
-//     });
-
-//     return handleSuccess(res, 200, 'en', "Call log saved successfully");
-//   } catch (error) {
-//     console.error("Error in create_Call_log:", error);
-//     return handleError(res, 500, 'en', error.message);
-//   }
-// };
-
 export const create_call_log_user = async (req, res) => {
     try {
         const {

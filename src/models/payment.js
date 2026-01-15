@@ -591,22 +591,6 @@ export const createPaymentSessionForAppointmentPAYLATERKLARNA = async ({ metadat
 };
 
 
-// export const createPayLaterSetupSession = async ({ metadata }) => {
-//   try {
-//     return await stripe.checkout.sessions.create({
-//       mode: "setup", // SetupIntent mode
-//       payment_method_types: ["card"],
-//       customer: metadata.stripe_customer_id, // existing Stripe customer
-//       client_reference_id: metadata.appointment_id, // optional but useful
-//       metadata: { appointment_id: metadata.appointment_id },
-//       success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}&type=PAY_LATER`,
-//       cancel_url: `https://getzynq.io/zynq/payment-cancel/?redirect_url=${metadata.cancel_url}&type=PAY_LATER`,
-//     });
-//   } catch (error) {
-//     console.error("Failed to create PAY_LATER setup session:", error);
-//     throw error;
-//   }
-// };
 
 export const createPayLaterSetupSession = async ({ metadata, final_total }) => {
   return await stripe.checkout.sessions.create({

@@ -267,38 +267,6 @@ export const update_doctor_severity_levels = async (doctorId, severityLevelIds) 
     }
 };
 
-// export const update_doctor_treatments = async (doctorId, treatments) => {
-//     try {
-//         await db.query(`DELETE FROM tbl_doctor_treatments WHERE doctor_id = ?`, [doctorId]);
-
-//         const values = treatments.map(t => [
-//             doctorId,
-//             t.treatment_id,
-//             t.price,
-//             t.add_notes || null,
-//             t.session_duration || null
-//         ]);
-
-//         if (values.length > 0) {
-//             const insertQuery = `
-//                 INSERT INTO tbl_doctor_treatments (
-//                     doctor_id,
-//                     treatment_id,
-//                     price,
-//                     add_notes,
-//                     session_duration
-//                 ) VALUES ?
-//             `;
-//             return await db.query(insertQuery, [values]);
-//         }
-
-//         return null;
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to update doctor's treatments.");
-//     }
-// };
-
 export const update_doctor_treatments = async (doctorId, treatments, clinic_id) => {
     try {
         // Delete existing rows
@@ -393,67 +361,6 @@ export const get_doctor_consultation_fee = async (doctorId) => {
         throw new Error("Failed to get doctor's consultation fee.");
     }
 };
-
-// export const update_availability = async (doctorId, availabilityData, clinic_id = null) => {
-//     try {
-//         await db.query(`DELETE FROM tbl_doctor_availability WHERE doctor_id = ? AND clinic_id = ?`, [doctorId, clinic_id]);
-//         const values = availabilityData.map(avail => [doctorId, avail.day_of_week, avail.start_time, avail.end_time, avail.closed, clinic_id]);
-//         if (values.length > 0) {
-//             return await db.query(`INSERT INTO tbl_doctor_availability (doctor_id, day_of_week, start_time, end_time,closed, clinic_id) VALUES ?`, [values]);
-//         }
-//         return null;
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to update availability.");
-//     }
-// };
-
-// export const update_availability = async (
-//     doctorId,
-//     availabilityData,
-//     clinic_id = null
-// ) => {
-//     try {
-//         // Delete old availability for this doctor + clinic
-//         await db.query(
-//             `DELETE FROM tbl_doctor_availability 
-//              WHERE doctor_id = ? AND clinic_id = ?`,
-//             [doctorId, clinic_id]
-//         );
-
-//         const values = [];
-
-//         for (const dayItem of availabilityData) {
-//             const dayOfWeek = dayItem.day;
-
-//             if (!Array.isArray(dayItem.session)) continue;
-
-//             for (const session of dayItem.session) {
-//                 values.push([
-//                     doctorId,
-//                     dayOfWeek,
-//                     session.start_time,
-//                     session.end_time,
-//                     0, // closed
-//                     clinic_id
-//                 ]);
-//             }
-//         }
-
-//         if (values.length === 0) return null;
-
-//         return await db.query(
-//             `INSERT INTO tbl_doctor_availability 
-//             (doctor_id, day_of_week, start_time, end_time, closed, clinic_id) 
-//             VALUES ?`,
-//             [values]
-//         );
-
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to update availability.");
-//     }
-// };
 
 export const updateDoctorSessionSlots = async (doctorId, availabilityData, clinic_id) => {
     try {
@@ -1065,40 +972,6 @@ export const update_doctor_aesthetic_devices = async (doctorId, aestheticDevices
     }
 };
 
-// export const update_doctor_treatment_devices = async (zynqUserId, treatments, deviceIds) => {
-//     try {
-//         await db.query(
-//             `DELETE FROM tbl_treatment_device_user_maps WHERE zynq_user_id = ?`,
-//             [zynqUserId]
-//         );
-
-//         let data = [];
-//         let uniqueMap = new Set();
-
-//         treatments.forEach(t => {
-//             deviceIds.forEach(deviceId => {
-//                 const key = `${t.treatment_id}-${deviceId}`;
-//                 if (!uniqueMap.has(key)) {
-//                     uniqueMap.add(key);
-//                     data.push([t.treatment_id, zynqUserId, deviceId]);
-//                 }
-//             });
-//         });
-
-//         if (data.length > 0) {
-//             await db.query(
-//                 `INSERT INTO tbl_treatment_device_user_maps (treatment_id, zynq_user_id, device_id) VALUES ?`,
-//                 [data]
-//             );
-//         }
-
-//         return true;
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to update mapping in tbl_treatment_device_user_maps");
-//     }
-// };
-
 export const update_doctor_treatment_devices = async (zynqUserId, treatments, deviceIds, clinic_id) => {
     try {
         // Remove previous mappings
@@ -1225,29 +1098,6 @@ export const get_clinics = async (doctorId) => {
     }
 }
 
-// export const fetchDocterAvibilityById = async (doctor_id) => {
-//     try {
-//         const result = await db.query('SELECT * FROM tbl_doctor_availability WHERE doctor_id = ? ORDER BY created_at DESC', [doctor_id]);
-//         return result;
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to fetch support tickets.");
-//     }
-// }
-
-
-// -------------------------------------slot managment------------------------------------------------//
-
-
-
-// export const insertDoctorAvailabilityModel = async (data) => {
-//     return db.query("INSERT INTO tbl_doctor_availability SET ?", [data]);
-// };
-
-// export const fetchDoctorAvailabilityModel = async (doctor_id) => {
-//     return db.query("SELECT * FROM tbl_doctor_availability WHERE doctor_id = ?", [doctor_id]);
-// };
-
 export const fetchAppointmentsModel = async (doctor_id, date, start_time) => {
     return db.query("SELECT * FROM tbl_appointments WHERE doctor_id = ? AND date = ? AND start_time = ?", [doctor_id, date, start_time]);
 };
@@ -1273,18 +1123,7 @@ export const update_doctor_is_online = async (doctorId, isOnline) => {
 };
 
 
-// doctorModels.js
-// export const fetchAppointmentsBulkModel = async (doctor_id, start_date, end_date) => {
-//     const query = `
-//         SELECT date, start_time, COUNT(*) as count
-//         FROM tbl_appointments
-//         WHERE doctor_id = ?
-//         AND date BETWEEN ? AND ?
-//         GROUP BY date, start_time
-//     `;
-//     const results = await db.query(query, [doctor_id, start_date, end_date]);
-//     return results;
-// };
+
 
 export const fetchAppointmentsBulkModel = async (doctorId, fromDate, toDate) => {
     try {
@@ -1354,19 +1193,6 @@ export const createOrUpdateCallLog = async ({
     }
 };
 
-// export const getDocterByDocterId = async (doctor_id) => {
-//     try {
-//         const result = await db.query(`
-//             SELECT d.*, zu.email 
-//             FROM tbl_doctors d
-//             LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
-//             WHERE d.doctor_id = ?`, [doctor_id]);
-//         return result;
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to fetch support tickets.");
-//     }
-// }
 
 export const getDocterByDocterId = async (doctor_id) => {
     try {

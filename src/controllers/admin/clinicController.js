@@ -28,44 +28,6 @@ dotenv.config();
 
 const APP_URL = process.env.APP_URL;
 
-// export const import_clinics_from_CSV = async (req, res) => {
-//     const filePath = req.file?.path;
-
-//     if (!filePath) {
-//         return handleError(res, 400, 'en', "CSV_REQUIRED");
-//     }
-
-//     const clinics = [];
-//     fs.createReadStream(filePath)
-//         .pipe(csv())
-//         .on('data', (row) => {
-//             console.log(row, "row data");
-
-//             clinics.push({
-//                 clinic_name: row.clinic_name || '',
-//                 org_number: row.org_number || '',
-//                 email: row.email || '',
-//                 mobile_number: row.mobile_number || '',
-//                 address: row.address || '',
-//                 token: generateToken()
-//             });
-//         })
-//         .on('end', async () => {
-//             try {
-//                 // for (const clinic of clinics) {
-//                 //     await insert_clinic(clinic);
-//                 // }
-//                 // fs.unlinkSync(filePath);
-//                 // return handleSuccess(res, 200, 'en', "CLINIC_IMPORT");
-
-//             } catch (error) {
-//                 console.error('Import failed:', error);
-//                 return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR");
-//             }
-//         });
-// };
-
-
 export const import_clinics_from_CSV = async (req, res) => {
     const filePath = req.file?.path;
     if (!filePath) return handleError(res, 400, "en", "CSV_REQUIRED");
@@ -235,49 +197,6 @@ export const add_clinic_managment = async (req, res) => {
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
     }
 };
-
-// export const get_clinic_managment = async (req, res) => {
-//     try {
-
-//         const clinics = await adminModels.get_clinic_managment();
-
-//         if (!clinics || clinics.length === 0) {
-//             return handleSuccess(res, 200, 'en', "No clinics found", { clinics: [] });
-//         }
-
-//         const fullClinicData = await Promise.all(
-//             clinics.map(async (clinic) => {
-//                 clinic.clinic_logo = clinic.clinic_logo == null
-//                     ? null
-//                     : process.env.APP_URL + 'clinic/logo/' + clinic.clinic_logo;
-
-//                 const treatments = await adminModels.get_clinic_treatments(clinic.clinic_id);
-//                 const skinTypes = await adminModels.get_clinic_skintype(clinic.clinic_id);
-//                 const severityLevels = await adminModels.get_clinic_serveritylevel(clinic.clinic_id);
-//                 const skinConditionsLevel = await adminModels.get_clinic_skin_conditions(clinic.clinic_id);
-//                 const surgeriesLevel = await adminModels.get_clinic_surgeries(clinic.clinic_id);
-//                 const aestheticDevicesLevel = await adminModels.get_clinic_aesthetic_devices(clinic.clinic_id);
-
-//                 return {
-//                     ...clinic,
-//                     treatments,
-//                     skinTypes,
-//                     severityLevels,
-//                     skinConditionsLevel,
-//                     surgeriesLevel,
-//                     aestheticDevicesLevel
-//                 };
-//             })
-//         );
-//         await calculateAndUpdateBulkClinicProfileCompletion(fullClinicData);
-
-//         return handleSuccess(res, 200, 'en', "Fetch clinic management successfully", { clinics: fullClinicData });
-
-//     } catch (error) {
-//         console.error("internal E", error);
-//         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
-//     }
-// };
 
 export const get_clinic_managment = async (req, res) => {
     try {

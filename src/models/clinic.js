@@ -117,26 +117,6 @@ export const update_clinic_location = async (locationData, clinic_id) => {
     }
 };
 
-// export const update_clinic_treatments = async (treatments, clinic_id) => {
-//     try {
-//         // First delete existing treatments
-//         await db.query('DELETE FROM tbl_clinic_treatments WHERE clinic_id = ?', [clinic_id]);
-
-//         // Then insert new treatments
-//         const treatmentPromises = treatments.map(treatment_id => {
-//             return db.query(
-//                 'INSERT INTO tbl_clinic_treatments (clinic_id, treatment_id) VALUES (?, ?)',
-//                 [clinic_id, treatment_id]
-//             );
-//         });
-
-//         return await Promise.all(treatmentPromises);
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to update clinic treatments.");
-//     }
-// };
-
 export const update_clinic_timing = async (timing, clinic_id) => {
     try {
         // First delete existing timing
@@ -180,25 +160,6 @@ export const insertClinicLocation = async (locationData) => {
         throw new Error("Failed to insert clinic location.");
     }
 };
-
-// export const insertClinicTreatments = async (treatments, clinic_id) => {
-//     try {
-//         if (!Array.isArray(treatments)) {
-//             throw new Error("Treatments must be an array");
-//         }
-
-//         const treatmentPromises = treatments.map(treatment_id => {
-//             return db.query(
-//                 'INSERT INTO tbl_clinic_treatments (clinic_id, treatment_id) VALUES (?, ?)',
-//                 [clinic_id, treatment_id]
-//             );
-//         });
-//         return await Promise.all(treatmentPromises);
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to insert clinic treatments.");
-//     }
-// };
 
 export const insertClinicSurgeries = async (surgeries, clinic_id) => {
     try {
@@ -2549,16 +2510,7 @@ export const getDoctorDevicesBulk = async (zynqUserId, clinicId) => {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get doctor's aesthetic devices.");
     }
-    // const placeholders = doctorIds.map(() => '?').join(',');
-    // const query = `SELECT ad.*, dad.* FROM tbl_aesthetic_devices ad INNER JOIN  tbl_doctor_aesthetic_devices dad ON ad.aesthetic_device_id = dad.aesthetic_devices_id    WHERE dad.doctor_id IN (${placeholders})`;
-    // const results = await db.query(query, doctorIds);
 
-    // const grouped = {};
-    // results.forEach(row => {
-    //     if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
-    //     grouped[row.doctor_id].push(row);
-    // });
-    // return grouped;
 };
 
 export const getDoctorRatings = async (doctorId) => {
@@ -2579,27 +2531,6 @@ export const getDoctorRatings = async (doctorId) => {
         throw new Error("Failed to fetch doctor ratings.");
     }
 }
-
-// export const getDoctorAvailabilityBulk = async (doctorIds) => {
-//     try {
-//         const placeholders = doctorIds.map(() => '?').join(',');
-//         const query = `SELECT * FROM tbl_doctor_availability WHERE doctor_id IN (${placeholders}) ORDER BY created_at DESC`;
-//         const results = await db.query(query, doctorIds);
-
-
-//         const grouped = {};
-//         results.forEach(row => {
-//             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
-//             grouped[row.doctor_id].push(row);
-//         });
-
-
-//         return grouped;
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to fetch doctor availability.");
-//     }
-// };
 
 export const getDoctorReviewsBulk = async (doctorIds) => {
     try {
@@ -2831,24 +2762,6 @@ export const calculateAndUpdateBulkClinicProfileCompletion = async (clinics) => 
                     else missingFields.push(field);
                 });
 
-                // 2️⃣ Treatments
-                // totalFieldsCount += 1;
-                // if (clinic.treatments?.length > 0) filledFieldsCount++;
-                // else missingFields.push("treatments");
-
-                // // 3️⃣ Expertise Categories
-                // const expertiseCategories = {
-                //     skinTypes: "skinTypes",
-                //     surgeriesLevel: "surgeriesLevel",
-                //     aestheticDevicesLevel: "aestheticDevicesLevel",
-                //     skinConditionsLevel: "skinConditionsLevel"
-                // };
-
-                // totalFieldsCount += Object.keys(expertiseCategories).length;
-                // Object.entries(expertiseCategories).forEach(([key, label]) => {
-                //     if (clinic[key]?.length > 0) filledFieldsCount++;
-                //     else missingFields.push(label);
-                // });
 
                 // 🧮 Final %
                 const completionPercentage =
