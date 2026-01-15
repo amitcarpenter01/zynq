@@ -3139,7 +3139,7 @@ export const getAllSurgeriesOfClinic = async (language, clinic_id) => {
 export const getAllDevicesOfClinic = async (clinic_id, ids = []) => {
     try {
         let sql = `
-            SELECT d.*
+            SELECT DISTINCT d.id ,d.treatment_id,d.device_name,d.created_at
             FROM tbl_clinic_aesthetic_devices cad
             INNER JOIN tbl_treatment_devices d
                 ON cad.aesthetic_devices_id = d.id
