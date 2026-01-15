@@ -64,8 +64,8 @@ router.get('/get-clinic-managment', authenticateAdmin, clinicControllers.get_cli
 router.get('/get-clinic-list-doctor-onboarding', authenticateAdmin, clinicControllers.getClinicListForDoctorOnboardingController);
 router.post('/delete-clinic-management', authenticateAdmin, clinicControllers.delete_clinic_management);
 router.post('/send-invitation', authenticateAdmin, clinicControllers.send_invitation);
-router.get('/subscribed/:is_subscribed', clinicControllers.subscribed);
-router.get('/unsubscribed/:is_unsubscribed', clinicControllers.unsubscribed);
+// router.get('/subscribed/:is_subscribed', clinicControllers.subscribed);
+// router.get('/unsubscribed/:is_unsubscribed', clinicControllers.unsubscribed);
 
 //==================================== Doctor Managment ==============================
 
