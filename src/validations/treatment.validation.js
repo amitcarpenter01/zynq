@@ -105,11 +105,7 @@ export const updateTreatmentApprovalStatusSchema = joi.object({
 export const addEditConcernSchema = joi.object({
   concern_id: stringValidation.optional(),
   name: stringValidation,
-  swedish: stringValidation,
-  tips: joi.object({
-    en: joi.string().allow("").required(),
-    sv: joi.string().allow("").required(),
-  }).required(),
+  swedish: stringValidation.optional(),
 });
 
 export const deleteConcernSchema = joi.object({
