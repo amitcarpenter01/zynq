@@ -545,9 +545,9 @@ export const addEditConcern = asyncHandler(async (req, res) => {
     const language = req.user?.language || "en";
 
     const isAdmin = role === "ADMIN";
-    const dbData = { ...body };
+    let dbData = { ...body };
 
-    dbData.tips = JSON.stringify(dbData.tips);
+    dbData.swedish = await googleTranslator(dbData.name, "sv");
 
     // 🧩 Metadata
     if (isAdmin) {
