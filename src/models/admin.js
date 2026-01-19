@@ -2998,7 +2998,8 @@ export const getAllConcerns = async (lang = "en") => {
         let query = `
             SELECT *
             FROM tbl_concerns
-            WHERE is_deleted = 0 AND approval_status = 'APPROVED'     
+            WHERE is_deleted = 0 AND approval_status = 'APPROVED'
+            ORDER BY created_at desc  
         `;
         const params = [];
 
