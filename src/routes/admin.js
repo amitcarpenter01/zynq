@@ -24,8 +24,8 @@ import { addEditFAQCategorySchema, addEditFAQSchema, deleteFAQCategorySchema, ge
 import { addEditFAQ, addEditFAQCategory, deleteFAQ, deleteFAQCategory, getAllFAQCategories, getAllFAQs, getSingleFAQ, getSingleFAQCategory } from '../controllers/api/FAQController.js';
 import { getContactUs } from '../controllers/api/authController.js';
 import { updateProductApprovalStatusSchema } from '../validations/product.validation.js';
-import { addEditConcernSchema, addEditTreatmentSchema, addEditSubtreatmentSchema, deleteConcernSchema, deleteTreatmentSchema, updateConcernApprovalStatusSchema, updateTreatmentApprovalStatusSchema, deleteSubTreatmentSchema, addEditSubtreatmentMasterSchema } from '../validations/treatment.validation.js';
-import { get_all_concerns, addEditConcern, getAllTreatments, getAllTreatmentById, addEditTreatment, addEditSubtreatment, deleteConcern, deleteTreatment, updateConcernApprovalStatus, updateTreatmentApprovalStatus, deleteSubTreatment, addEditSubTreatmentMaster, deleteSubTreatmentMaster,  getAllSubTreatmentMasters, cloneTreatment } from '../controllers/api/treatmentController.js';
+import { addEditConcernSchema, addEditTreatmentSchema, addEditSubtreatmentSchema, deleteConcernSchema, deleteTreatmentSchema, updateConcernApprovalStatusSchema, updateTreatmentApprovalStatusSchema, deleteSubTreatmentSchema, addEditSubtreatmentMasterSchema, addEditLikeWiseSchema, updateLikeWiseApprovalStatusSchema, deleteLikeWiseSchema, addEditDevicesSchema, deleteDevicesSchema, updateDevicesApprovalStatusSchema, addEditBenefitsSchema, deleteBenefitsSchema, updateBenefitsApprovalStatusSchema } from '../validations/treatment.validation.js';
+import { get_all_concerns, addEditConcern, getAllTreatments, getAllTreatmentById, addEditTreatment, addEditSubtreatment, deleteConcern, deleteTreatment, updateConcernApprovalStatus, updateTreatmentApprovalStatus, deleteSubTreatment, addEditSubTreatmentMaster, deleteSubTreatmentMaster, getAllSubTreatmentMasters, cloneTreatment, addEditLikeWiseTerms, deleteLikeWiseTerms, updateLikeWiseTermsApprovalStatus, addEditBenefit, addEditDevice, deleteDevice, updateDeviceApprovalStatus, deleteBenefit, updateBenefitApprovalStatus, getAllLikeWiseTerms, getAllDevices, getAllBenefits } from '../controllers/api/treatmentController.js';
 import { uploadDynamicClinicFiles } from '../services/clinic_multer.js';
 import { updateClinicAdmin } from '../controllers/clinic/authController.js';
 import * as clinicModels from '../models/clinic.js';
@@ -67,9 +67,9 @@ router.post('/send-invitation', authenticateAdmin, clinicControllers.send_invita
 // router.get('/subscribed/:is_subscribed', clinicControllers.subscribed);
 // router.get('/unsubscribed/:is_unsubscribed', clinicControllers.unsubscribed);
 
-router.get('/subscribed/:is_subscribed', (req,res) => {
+router.get('/subscribed/:is_subscribed', (req, res) => {
 
-    const data = `<!DOCTYPE html>
+  const data = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -217,10 +217,10 @@ Håll utkik efter lanseringen.
 </html>
 `
 
-    res.send(data);
+  res.send(data);
 });
-router.get('/unsubscribed/:is_unsubscribed', (req,res) => {
-       const data = `<!DOCTYPE html>
+router.get('/unsubscribed/:is_unsubscribed', (req, res) => {
+  const data = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -368,7 +368,7 @@ Håll utkik efter lanseringen.
 </html>
 `
 
-    res.send(data);
+  res.send(data);
 });
 
 //==================================== Doctor Managment ==============================
@@ -496,16 +496,16 @@ router.patch('/concern/approval-status', authenticateAdmin, validate(updateConce
 
 
 const getFieldsFn = async (req) => {
-    const certificationType = await clinicModels.getCertificateType();
-    if (certificationType.length === 0) {
-        return [];
-    }
-    const dynamicFields = certificationType.map(type => ({
-        name: type.file_name ? type.file_name.toLowerCase() : '',
-        maxCount: 10
-    }));
-    dynamicFields.push({ name: 'logo', maxCount: 1 });
-    return dynamicFields;
+  const certificationType = await clinicModels.getCertificateType();
+  if (certificationType.length === 0) {
+    return [];
+  }
+  const dynamicFields = certificationType.map(type => ({
+    name: type.file_name ? type.file_name.toLowerCase() : '',
+    maxCount: 10
+  }));
+  dynamicFields.push({ name: 'logo', maxCount: 1 });
+  return dynamicFields;
 };
 
 router.patch("/update-clinic", authenticateAdmin, uploadDynamicClinicFiles(getFieldsFn), updateClinicAdmin);
@@ -515,16 +515,16 @@ router.patch("/update-doctor", authenticateAdmin, uploadFileTo('profile_images')
 
 
 
-router.post("/add-clinic-onboarding",authenticateAdmin,uploadDynamicClinicFiles(getFieldsFn),clinicControllers.add_clinic_with_onboarding);
-router.get("/get-treatments/:clinic_id",authenticateAdmin,clinicControllers.get_Clinic_Mapped_treatments);
+router.post("/add-clinic-onboarding", authenticateAdmin, uploadDynamicClinicFiles(getFieldsFn), clinicControllers.add_clinic_with_onboarding);
+router.get("/get-treatments/:clinic_id", authenticateAdmin, clinicControllers.get_Clinic_Mapped_treatments);
 router.post("/update-clinic", authenticateAdmin, uploadDynamicClinicFiles(getFieldsFn), clinicControllers.updateClinicController);
 
 const uploadVariousFields = uploadCertificationFieldsTo([
-    { name: 'medical_council', maxCount: 1, subfolder: 'certifications' },
-    { name: 'deramatology_board', maxCount: 1, subfolder: 'certifications' },
-    { name: 'laser_safety', maxCount: 1, subfolder: 'certifications' },
-    { name: 'cosmetology_license', maxCount: 1, subfolder: 'certifications' },
-    { name : "profile", maxCount: 1 , subfolder: 'profile_images' },
+  { name: 'medical_council', maxCount: 1, subfolder: 'certifications' },
+  { name: 'deramatology_board', maxCount: 1, subfolder: 'certifications' },
+  { name: 'laser_safety', maxCount: 1, subfolder: 'certifications' },
+  { name: 'cosmetology_license', maxCount: 1, subfolder: 'certifications' },
+  { name: "profile", maxCount: 1, subfolder: 'profile_images' },
 ]);
 
 const uploadVariousFieldsForSoloDoctor = uploadCertificationFieldsTo([
@@ -538,29 +538,55 @@ const uploadVariousFieldsForSoloDoctor = uploadCertificationFieldsTo([
 ]);
 
 
-router.post("/add-doctor-onboarding",authenticateAdmin,uploadVariousFieldsForSoloDoctorDynamic,doctorControllers.sendDoctorOnaboardingInvitation);
-router.post("/update-doctor", authenticateAdmin, uploadVariousFieldsForSoloDoctorDynamic,doctorControllers.updateDoctorController);
+router.post("/add-doctor-onboarding", authenticateAdmin, uploadVariousFieldsForSoloDoctorDynamic, doctorControllers.sendDoctorOnaboardingInvitation);
+router.post("/update-doctor", authenticateAdmin, uploadVariousFieldsForSoloDoctorDynamic, doctorControllers.updateDoctorController);
 
-router.post("/add-solo-doctor-onboarding",authenticateAdmin,uploadVariousFieldsForSoloDoctorDynamic,doctorControllers.sendSoloDoctorOnaboardingInvitation);
-router.post("/update-solo-doctor",authenticateAdmin,uploadVariousFieldsForSoloDoctorDynamic,doctorControllers.updateSoloDoctorController);
-router.get("/get-surgery",authenticateAdmin, authControllersClinic.getAllSurgery)
+router.post("/add-solo-doctor-onboarding", authenticateAdmin, uploadVariousFieldsForSoloDoctorDynamic, doctorControllers.sendSoloDoctorOnaboardingInvitation);
+router.post("/update-solo-doctor", authenticateAdmin, uploadVariousFieldsForSoloDoctorDynamic, doctorControllers.updateSoloDoctorController);
+router.get("/get-surgery", authenticateAdmin, authControllersClinic.getAllSurgery)
 router.get("/get-devices", authControllersClinic.getAllDevices);
 router.get("/get-treatments", authControllersClinic.getAllTreatments);
-router.get("/get-skin-types",authenticateAdmin, authControllersClinic.getClinicSkinTypes);
-router.post("/clone-treatment/:treatment_id",authenticateAdmin, cloneTreatment);
+router.get("/get-skin-types", authenticateAdmin, authControllersClinic.getClinicSkinTypes);
+router.post("/clone-treatment/:treatment_id", authenticateAdmin, cloneTreatment);
 
-router.get("/get-surgery/:clinic_id",authenticateAdmin,clinicControllers.getAllSurgeryOfClinicController)
+router.get("/get-surgery/:clinic_id", authenticateAdmin, clinicControllers.getAllSurgeryOfClinicController)
 router.get("/get-devices/:clinic_id", clinicControllers.getAllDevicesOfClinicController);
-router.get("/get-skin-types/:clinic_id",authenticateAdmin, clinicControllers.getClinicSkinTypesOfClinicController);
-router.delete("/clinin-images/:clinic_image_id", authenticateAdmin ,validate(deleteClinicImageSchema, "params"),authControllersClinic.deleteClinicImage);
-router.post("/generate-slots",authenticateAdmin,doctorControllers.generateAvailabilityFromOperationHours);
+router.get("/get-skin-types/:clinic_id", authenticateAdmin, clinicControllers.getClinicSkinTypesOfClinicController);
+router.delete("/clinin-images/:clinic_image_id", authenticateAdmin, validate(deleteClinicImageSchema, "params"), authControllersClinic.deleteClinicImage);
+router.post("/generate-slots", authenticateAdmin, doctorControllers.generateAvailabilityFromOperationHours);
 
-router.post("/clinic-unlinck",authenticateAdmin,doctorControllers.unsyncClinicController);
+router.post("/clinic-unlinck", authenticateAdmin, doctorControllers.unsyncClinicController);
 
-router.post("/send-doctor-invitation",authenticateAdmin,doctorControllers.sendDoctorInvitationListController);
+router.post("/send-doctor-invitation", authenticateAdmin, doctorControllers.sendDoctorInvitationListController);
 
 
 router.get('/get-clinic-invitation-list', authenticateAdmin, doctorControllers.getClinicInvitationListController);
+
+
+router.post('/likewiseterms', authenticateAdmin, validate(addEditLikeWiseSchema, 'body'), addEditLikeWiseTerms);
+
+router.delete('/likewiseterms/:like_wise_term_id', authenticateAdmin, validate(deleteLikeWiseSchema, 'params'), deleteLikeWiseTerms);
+
+router.patch('/likewiseterms', authenticateAdmin, validate(updateLikeWiseApprovalStatusSchema, 'body'), updateLikeWiseTermsApprovalStatus);
+
+
+router.post('/device', authenticateAdmin, validate(addEditDevicesSchema, 'body'), addEditDevice);
+
+router.delete('/device/:device_id', authenticateAdmin, validate(deleteDevicesSchema, 'params'), deleteDevice);
+
+router.patch('/device', authenticateAdmin, validate(updateDevicesApprovalStatusSchema, 'body'), updateDeviceApprovalStatus);
+
+router.post('/benefit', authenticateAdmin, validate(addEditBenefitsSchema, 'body'), addEditBenefit);
+
+router.delete('/benefit/:benefit_id', authenticateAdmin, validate(deleteBenefitsSchema, 'params'), deleteBenefit);
+
+router.patch('/benefit', authenticateAdmin, validate(updateBenefitsApprovalStatusSchema, 'body'), updateBenefitApprovalStatus);
+
+router.get("/likewiseterms",authenticateAdmin,getAllLikeWiseTerms);
+
+router.get("/device",authenticateAdmin,getAllDevices);
+
+router.get("/benefit",authenticateAdmin,getAllBenefits);
 
 
 export default router;

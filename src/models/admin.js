@@ -3288,3 +3288,449 @@ export const getClinicInvitaionListModel = async () => {
         throw new Error("Failed to get doctor management data.");
     }
 };
+
+export const updateLikeWiseTermsModel = async (like_wise_term_id, data) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_likewise_terms SET ? WHERE like_wise_term_id  = ?`,
+            [data, like_wise_term_id]
+        );
+    } catch (error) {
+        console.error("updateConcernModel error:", error);
+        throw error;
+    }
+};
+
+export const addLikeWiseTermsModel = async (data) => {
+    try {
+        return await db.query(
+            `INSERT INTO tbl_likewise_terms SET ?`,
+            [data]
+        );
+    } catch (error) {
+        console.error("addLikeWiseTermsModel error:", error);
+        throw error;
+    }
+};
+
+export const checkExistingLikeWiseTermsModel = async (like_wise_term_id, zynq_user_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_likewise_terms WHERE like_wise_term_id  = ? AND created_by_zynq_user_id = ?`,
+            [like_wise_term_id, zynq_user_id]
+        );
+    } catch (error) {
+        console.error("checkExistingConcernModel error:", error);
+        throw error;
+    }
+};
+
+
+export const deleteLikeWiseTermsModel = async (like_wise_term_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_likewise_terms SET is_deleted = 1 WHERE like_wise_term_id = ?`,
+            [like_wise_term_id]
+        );
+    } catch (error) {
+        console.error("deleteLikeWiseTermsModel error:", error);
+        throw error;
+    }
+}
+
+export const deleteZynqUserLikeWiseTermsModel = async (like_wise_term_id, zynq_user_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_likewise_terms SET is_deleted = 1 WHERE like_wise_term_id = ? AND created_by_zynq_user_id = ?`,
+            [like_wise_term_id, zynq_user_id]
+        );
+    } catch (error) {
+        console.error("deleteZynqUserLikeWiseTermsModel error:", error);
+        throw error;
+    }
+};
+
+export const updateLikeWiseTermsApprovalStatusModel = async (like_wise_term_id, approval_status) => {
+    try {
+        // 🔹 Step 1: Update approval status
+        await db.query(
+            `UPDATE tbl_likewise_terms 
+             SET approval_status = ? 
+             WHERE like_wise_term_id = ?`,
+            [approval_status, like_wise_term_id]
+        );
+
+        // 🔹 Step 2: Fetch the concern creator metadata
+        return await db.query(
+            `SELECT 
+                c.created_by_zynq_user_id,
+                r.role,
+                d.doctor_id,
+                cl.clinic_id
+             FROM tbl_likewise_terms c
+             LEFT JOIN tbl_zqnq_users zu ON c.created_by_zynq_user_id = zu.id
+             LEFT JOIN tbl_doctors d ON d.zynq_user_id = zu.id
+             LEFT JOIN tbl_clinics cl ON cl.zynq_user_id = zu.id
+             LEFT JOIN tbl_roles r ON zu.role_id = r.id
+             WHERE c.like_wise_term_id = ?`,
+            [like_wise_term_id]
+        );
+
+    } catch (error) {
+        console.error("updateConcernApprovalStatusModel error:", error);
+        throw error;
+    }
+};
+
+
+
+export const updateBenifitsModel = async (benefit_id, data) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_benefits SET ? WHERE benefit_id   = ?`,
+            [data, benefit_id ]
+        );
+    } catch (error) {
+        console.error("updateConcernModel error:", error);
+        throw error;
+    }
+};
+
+export const addBenifitsModel = async (data) => {
+    try {
+        return await db.query(
+            `INSERT INTO tbl_benefits SET ?`,
+            [data]
+        );
+    } catch (error) {
+        console.error("addBenifitsModel error:", error);
+        throw error;
+    }
+};
+
+export const checkExistingBenifitsModel = async (benefit_id , zynq_user_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_benefits WHERE benefit_id   = ? AND created_by_zynq_user_id = ?`,
+            [benefit_id , zynq_user_id]
+        );
+    } catch (error) {
+        console.error("checkExistingConcernModel error:", error);
+        throw error;
+    }
+};
+
+// 🔹 Delete (Admin)
+export const deleteBenefitModel = async (benefit_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_benefits SET is_deleted = 1 WHERE benefit_id = ?`,
+            [benefit_id]
+        );
+    } catch (error) {
+        console.error("deleteBenefitModel error:", error);
+        throw error;
+    }
+};
+
+// 🔹 Delete (Zynq User – Own Record)
+export const deleteZynqUserBenefitModel = async (benefit_id, zynq_user_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_benefits 
+             SET is_deleted = 1 
+             WHERE benefit_id = ? AND created_by_zynq_user_id = ?`,
+            [benefit_id, zynq_user_id]
+        );
+    } catch (error) {
+        console.error("deleteZynqUserBenefitModel error:", error);
+        throw error;
+    }
+};
+
+// 🔹 Update Approval Status
+export const updateBenefitApprovalStatusModel = async (benefit_id, approval_status) => {
+    try {
+        // Step 1: Update approval status
+        await db.query(
+            `UPDATE tbl_benefits 
+             SET approval_status = ? 
+             WHERE benefit_id = ?`,
+            [approval_status, benefit_id]
+        );
+
+        // Step 2: Fetch creator metadata
+        return await db.query(
+            `SELECT 
+                b.created_by_zynq_user_id,
+                r.role,
+                doc.doctor_id,
+                cl.clinic_id
+             FROM tbl_benefits b
+             LEFT JOIN tbl_zqnq_users zu ON b.created_by_zynq_user_id = zu.id
+             LEFT JOIN tbl_doctors doc ON doc.zynq_user_id = zu.id
+             LEFT JOIN tbl_clinics cl ON cl.zynq_user_id = zu.id
+             LEFT JOIN tbl_roles r ON zu.role_id = r.id
+             WHERE b.benefit_id = ?`,
+            [benefit_id]
+        );
+    } catch (error) {
+        console.error("updateBenefitApprovalStatusModel error:", error);
+        throw error;
+    }
+};
+
+
+
+export const getBeforeDevices = async() => {
+    try {
+        return await db.query(
+            `SELECT t.treatment_id,t.is_admin_created,t.approval_status,t.created_by_zynq_user_id,tdum.device_name FROM tbl_treatments t JOIN tbl_treatment_devices tdum ON t.treatment_id = tdum.treatment_id WHERE t.is_deleted = 0;`
+        );
+    } catch (error) {
+        console.error("getBeforeLikeWiseTerms error:", error);
+        throw error;
+    }
+};
+
+export const getBeforeLikeWiseTerms = async () => {
+    try {
+        return await db.query(
+            `select
+  tbl_treatments.treatment_id ,
+  tbl_treatments.approval_status,
+  tbl_treatments.is_admin_created,
+  tbl_treatments.created_by_zynq_user_id,
+  SUBSTRING_INDEX(SUBSTRING_INDEX(tbl_treatments.like_wise_terms, ',', numbers.n), ',', -1) like_wise_terms
+from
+  numbers inner join tbl_treatments
+  on CHAR_LENGTH(tbl_treatments.like_wise_terms)
+     -CHAR_LENGTH(REPLACE(tbl_treatments.like_wise_terms, ',', ''))>=numbers.n-1
+order by
+  treatment_id, n`
+        );
+    } catch (error) {
+        console.error("getBeforeLikeWiseTerms error:", error);
+        throw error;
+    }
+}
+
+export const getBeforeBenefitsTerms = async () => {
+    try {
+        return await db.query(
+            `select
+  tbl_treatments.treatment_id ,
+  tbl_treatments.approval_status,
+  tbl_treatments.is_admin_created,
+  tbl_treatments.created_by_zynq_user_id,
+  SUBSTRING_INDEX(SUBSTRING_INDEX(tbl_treatments.benefits_en, ',', numbers.n), ',', -1) benefits_en
+from
+  numbers inner join tbl_treatments
+  on CHAR_LENGTH(tbl_treatments.benefits_en )
+     -CHAR_LENGTH(REPLACE(tbl_treatments.benefits_en, ',', ''))>=numbers.n-1
+order by
+  treatment_id, n`
+        );
+    } catch (error) {
+        console.error("getBeforeLikeWiseTerms error:", error);
+        throw error;
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+export const updateDeviceModel = async (device_id , data) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_devices SET ? WHERE device_id    = ?`,
+            [data, device_id  ]
+        );
+    } catch (error) {
+        console.error("updateConcernModel error:", error);
+        throw error;
+    }
+};
+
+export const addDeviceModel = async (data) => {
+    try {
+        return await db.query(
+            `INSERT INTO tbl_devices SET ?`,
+            [data]
+        );
+    } catch (error) {
+        console.error("addBenifitsModel error:", error);
+        throw error;
+    }
+};
+
+export const checkExistingDeviceModel = async (device_id  , zynq_user_id) => {
+    try {
+        return await db.query(
+            `SELECT * FROM tbl_devices WHERE device_id    = ? AND created_by_zynq_user_id = ?`,
+            [device_id  , zynq_user_id]
+        );
+    } catch (error) {
+        console.error("checkExistingConcernModel error:", error);
+        throw error;
+    }
+};
+
+
+
+// 🔹 Delete (Admin)
+export const deleteDeviceModel = async (device_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_devices SET is_deleted = 1 WHERE device_id = ?`,
+            [device_id]
+        );
+    } catch (error) {
+        console.error("deleteDeviceModel error:", error);
+        throw error;
+    }
+};
+
+// 🔹 Delete (Zynq User – Own Record)
+export const deleteZynqUserDeviceModel = async (device_id, zynq_user_id) => {
+    try {
+        return await db.query(
+            `UPDATE tbl_devices 
+             SET is_deleted = 1 
+             WHERE device_id = ? AND created_by_zynq_user_id = ?`,
+            [device_id, zynq_user_id]
+        );
+    } catch (error) {
+        console.error("deleteZynqUserDeviceModel error:", error);
+        throw error;
+    }
+};
+
+// 🔹 Update Approval Status
+export const updateDeviceApprovalStatusModel = async (device_id, approval_status) => {
+    try {
+        // Step 1: Update approval status
+        await db.query(
+            `UPDATE tbl_devices 
+             SET approval_status = ? 
+             WHERE device_id = ?`,
+            [approval_status, device_id]
+        );
+
+        // Step 2: Fetch creator metadata
+        return await db.query(
+            `SELECT 
+                d.created_by_zynq_user_id,
+                r.role,
+                doc.doctor_id,
+                cl.clinic_id
+             FROM tbl_devices d
+             LEFT JOIN tbl_zqnq_users zu ON d.created_by_zynq_user_id = zu.id
+             LEFT JOIN tbl_doctors doc ON doc.zynq_user_id = zu.id
+             LEFT JOIN tbl_clinics cl ON cl.zynq_user_id = zu.id
+             LEFT JOIN tbl_roles r ON zu.role_id = r.id
+             WHERE d.device_id = ?`,
+            [device_id]
+        );
+    } catch (error) {
+        console.error("updateDeviceApprovalStatusModel error:", error);
+        throw error;
+    }
+};
+
+export const getAllLikeWiseTermsModel = async (user_id = null, isAdmin = false) => {
+    try {
+        let query = `
+            SELECT *
+            FROM tbl_likewise_terms
+            WHERE is_deleted = 0
+        `;
+
+        const params = [];
+
+        if (!isAdmin) {
+            query += `
+                AND (
+                    created_by_zynq_user_id = ?
+                    OR approval_status = 'APPROVED'
+                )
+            `;
+            params.push(user_id);
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        return await db.query(query, params);
+    } catch (error) {
+        console.error("getAllLikeWiseTermsModel error:", error);
+        throw error;
+    }
+};
+
+
+export const getAllDevicesModel = async (user_id = null, isAdmin = false) => {
+    try {
+        let query = `
+            SELECT *
+            FROM tbl_devices
+            WHERE is_deleted = 0
+        `;
+
+        const params = [];
+
+        if (!isAdmin) {
+            query += `
+                AND (
+                    created_by_zynq_user_id = ?
+                    OR approval_status = 'APPROVED'
+                )
+            `;
+            params.push(user_id);
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        return await db.query(query, params);
+    } catch (error) {
+        console.error("getAllDevicesModel error:", error);
+        throw error;
+    }
+};
+
+export const getAllBenefitsModel = async (user_id = null, isAdmin = false) => {
+    try {
+        let query = `
+            SELECT *
+            FROM tbl_benefits
+            WHERE is_deleted = 0
+        `;
+
+        const params = [];
+
+        if (!isAdmin) {
+            query += `
+                AND (
+                    created_by_zynq_user_id = ?
+                    OR approval_status = 'APPROVED'
+                )
+            `;
+            params.push(user_id);
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        return await db.query(query, params);
+    } catch (error) {
+        console.error("getAllBenefitsModel error:", error);
+        throw error;
+    }
+};
+
