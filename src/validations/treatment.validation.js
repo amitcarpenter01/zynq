@@ -115,4 +115,51 @@ export const deleteConcernSchema = joi.object({
 export const updateConcernApprovalStatusSchema = joi.object({
   concern_id: stringValidation,
   approval_status: stringValidation.valid('APPROVED', 'REJECTED')
-})
+});
+
+
+export const addEditLikeWiseSchema = joi.object({
+  like_wise_term_id : stringValidation.optional(),
+  name: stringValidation,
+  swedish: stringValidation.optional(),
+});
+
+export const deleteLikeWiseSchema = joi.object({
+  like_wise_term_id : stringValidation,
+});
+
+export const updateLikeWiseApprovalStatusSchema = joi.object({
+  like_wise_term_id : stringValidation,
+  approval_status: stringValidation.valid('APPROVED', 'REJECTED')
+});
+
+
+export const addEditBenefitsSchema = joi.object({
+  benefit_id : stringValidation.optional(),
+  name: stringValidation,
+  swedish: stringValidation.optional(),
+});
+
+export const deleteBenefitsSchema = joi.object({
+  benefit_id : stringValidation,
+});
+
+export const updateBenefitsApprovalStatusSchema = joi.object({
+  benefit_id : stringValidation,
+  approval_status: stringValidation.valid('APPROVED', 'REJECTED')
+});
+
+export const addEditDevicesSchema = joi.object({
+  device_id : stringValidation.optional(),
+  name: stringValidation,
+  swedish: stringValidation.optional(),
+});
+
+export const deleteDevicesSchema = joi.object({
+  device_id : stringValidation,
+});
+
+export const updateDevicesApprovalStatusSchema = joi.object({
+  device_id : stringValidation,
+  approval_status: stringValidation.valid('APPROVED', 'REJECTED')
+});

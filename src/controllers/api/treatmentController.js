@@ -28,7 +28,28 @@ import {
     getTreatmentConcernsModel,
     getTreatmentDevicesModel,
     getTreatmentSubTreatmentsModel,
-    deleteUserSubTreatmentsModel1
+    deleteUserSubTreatmentsModel1,
+    checkExistingLikeWiseTermsModel,
+    updateLikeWiseTermsModel,
+    addLikeWiseTermsModel,
+    deleteLikeWiseTermsModel,
+    deleteZynqUserLikeWiseTermsModel,
+    updateLikeWiseTermsApprovalStatusModel,
+    checkExistingDeviceModel,
+    updateDeviceModel,
+    addDeviceModel,
+    deleteDeviceModel,
+    deleteZynqUserDeviceModel,
+    updateDeviceApprovalStatusModel,
+    checkExistingBenifitsModel,
+    updateBenifitsModel,
+    addBenifitsModel,
+    deleteZynqUserBenefitModel,
+    deleteBenefitModel,
+    updateBenefitApprovalStatusModel,
+    getAllBenefitsModel,
+    getAllDevicesModel,
+    getAllLikeWiseTermsModel
 } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
@@ -806,4 +827,372 @@ export const cloneTreatment = asyncHandler(async (req, res) => {
     handleSuccess(res, 201, language, "TREATMENT_CLONED_SUCCESSFULLY", {
         treatment_id: newTreatmentId
     });
+});
+
+
+export const addEditLikeWiseTerms = asyncHandler(async (req, res) => {
+    const { like_wise_term_id : input_likewise_id, ...body } = req.body;
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+    const language = req.user?.language || "en";
+
+    const isAdmin = role === "ADMIN";
+    let dbData = { ...body };
+
+    dbData.swedish = await googleTranslator(dbData.name, "sv");
+
+    // 🧩 Metadata
+    if (isAdmin) {
+        dbData.is_admin_created = true;
+        dbData.approval_status = "APPROVED";
+    } else {
+        dbData.created_by_zynq_user_id = user_id;
+    }
+
+    let like_wise_term_id = input_likewise_id;
+
+    // ✳️ EDIT FLOW
+    if (like_wise_term_id) {
+        if (!isAdmin) {
+            const [existing] = await checkExistingLikeWiseTermsModel(like_wise_term_id, user_id);
+            if (!existing) {
+                return handleError(res, 403, language, "NOT_AUTHORIZED_TO_EDIT_CONCERN");
+            }
+        }
+
+        await updateLikeWiseTermsModel(like_wise_term_id, dbData);
+    }
+    // ✳️ CREATE FLOW
+    else {
+        like_wise_term_id = uuidv4();
+        dbData.like_wise_term_id = like_wise_term_id;
+
+        await addLikeWiseTermsModel(dbData);
+    }
+
+    const message = input_likewise_id
+        ? "CONCERN_UPDATED_SUCCESSFULLY"
+        : "CONCERN_ADDED_SUCCESSFULLY";
+
+    return handleSuccess(res, 200, language, message, { like_wise_term_id });
+});
+
+export const deleteLikeWiseTerms = asyncHandler(async (req, res) => {
+    const { like_wise_term_id } = req.params;
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+
+    const language = req.user?.language || 'en';
+
+    if (role === "ADMIN") {
+        await deleteLikeWiseTermsModel(like_wise_term_id)
+    } else {
+        const deleted = await deleteZynqUserLikeWiseTermsModel(like_wise_term_id, user_id);
+        if (deleted.affectedRows === 0) {
+            return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_CONCERN");
+        }
+    }
+
+    return handleSuccess(res, 200, language, "CONCERN_DELETED_SUCCESSFULLY");
+});
+
+export const updateLikeWiseTermsApprovalStatus = asyncHandler(async (req, res) => {
+    const { approval_status, like_wise_term_id } = req.body;
+    const { language = "en" } = req.user;
+
+    // 🧩 Map messages dynamically based on status
+    const statusMessages = {
+        APPROVED: "CONCERN_APPROVED_SUCCESSFULLY",
+        REJECTED: "CONCERN_REJECTED_SUCCESSFULLY",
+    };
+
+    const notificationUpdates = {
+        APPROVED: "concern_approved",
+        REJECTED: "concern_rejected",
+    };
+
+    // 🔹 Update approval status and fetch concern creator details
+    const [concernData] = await updateLikeWiseTermsApprovalStatusModel(like_wise_term_id, approval_status);
+
+    // ✅ Respond immediately to client
+    handleSuccess(res, 200, language, statusMessages[approval_status]);
+
+    // 🔔 Send notification asynchronously (non-blocking)
+    if (concernData) {
+        await sendNotification({
+            userData: req.user,
+            type: "CONCERN",
+            type_id: like_wise_term_id,
+            notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
+            receiver_id: concernData.role === "CLINIC" ? concernData.clinic_id : concernData.doctor_id,
+            receiver_type: concernData.role === "CLINIC" ? "CLINIC" : "DOCTOR",
+        });
+    }
+});
+
+export const addEditDevice = asyncHandler(async (req, res) => {
+    const { device_id: input_device_id, ...body } = req.body;
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+    const language = req.user?.language || "en";
+
+    const isAdmin = role === "ADMIN";
+    let dbData = { ...body };
+
+    dbData.swedish = await googleTranslator(dbData.name, "sv");
+
+    // 🧩 Metadata
+    if (isAdmin) {
+        dbData.is_admin_created = true;
+        dbData.approval_status = "APPROVED";
+    } else {
+        dbData.created_by_zynq_user_id = user_id;
+    }
+
+    let device_id = input_device_id;
+
+    // ✳️ EDIT FLOW
+    if (device_id) {
+        if (!isAdmin) {
+            const [existing] = await checkExistingDeviceModel(device_id, user_id);
+            if (!existing) {
+                return handleError(res, 403, language, "NOT_AUTHORIZED_TO_EDIT_DEVICE");
+            }
+        }
+
+        await updateDeviceModel(device_id, dbData);
+    }
+    // ✳️ CREATE FLOW
+    else {
+        device_id = uuidv4();
+        dbData.device_id = device_id;
+
+        await addDeviceModel(dbData);
+    }
+
+    const message = input_device_id
+        ? "DEVICE_UPDATED_SUCCESSFULLY"
+        : "DEVICE_ADDED_SUCCESSFULLY";
+
+    return handleSuccess(res, 200, language, message, { device_id });
+});
+
+export const deleteDevice = asyncHandler(async (req, res) => {
+    const { device_id } = req.params;
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+    const language = req.user?.language || "en";
+
+    if (role === "ADMIN") {
+        await deleteDeviceModel(device_id);
+    } else {
+        const deleted = await deleteZynqUserDeviceModel(device_id, user_id);
+        if (deleted.affectedRows === 0) {
+            return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_DEVICE");
+        }
+    }
+
+    return handleSuccess(res, 200, language, "DEVICE_DELETED_SUCCESSFULLY");
+});
+
+export const updateDeviceApprovalStatus = asyncHandler(async (req, res) => {
+    const { approval_status, device_id } = req.body;
+    const { language = "en" } = req.user;
+
+    const statusMessages = {
+        APPROVED: "DEVICE_APPROVED_SUCCESSFULLY",
+        REJECTED: "DEVICE_REJECTED_SUCCESSFULLY",
+    };
+
+    const notificationUpdates = {
+        APPROVED: "device_approved",
+        REJECTED: "device_rejected",
+    };
+
+    // 🔹 Update approval status & fetch creator
+    const [deviceData] = await updateDeviceApprovalStatusModel(device_id, approval_status);
+
+    handleSuccess(res, 200, language, statusMessages[approval_status]);
+
+    // 🔔 Async notification
+    if (deviceData) {
+        await sendNotification({
+            userData: req.user,
+            type: "DEVICE",
+            type_id: device_id,
+            notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
+            receiver_id:
+                deviceData.role === "CLINIC"
+                    ? deviceData.clinic_id
+                    : deviceData.doctor_id,
+            receiver_type:
+                deviceData.role === "CLINIC" ? "CLINIC" : "DOCTOR",
+        });
+    }
+});
+
+
+export const addEditBenefit = asyncHandler(async (req, res) => {
+    const { benefit_id: input_benefit_id, ...body } = req.body;
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+    const language = req.user?.language || "en";
+
+    const isAdmin = role === "ADMIN";
+    let dbData = { ...body };
+
+    dbData.swedish = await googleTranslator(dbData.name, "sv");
+
+    // 🧩 Metadata
+    if (isAdmin) {
+        dbData.is_admin_created = true;
+        dbData.approval_status = "APPROVED";
+    } else {
+        dbData.created_by_zynq_user_id = user_id;
+    }
+
+    let benefit_id = input_benefit_id;
+
+    // ✳️ EDIT FLOW
+    if (benefit_id) {
+        if (!isAdmin) {
+            const [existing] = await checkExistingBenifitsModel(benefit_id, user_id);
+            if (!existing) {
+                return handleError(res, 403, language, "NOT_AUTHORIZED_TO_EDIT_BENEFIT");
+            }
+        }
+
+        await updateBenifitsModel(benefit_id, dbData);
+    }
+    // ✳️ CREATE FLOW
+    else {
+        benefit_id = uuidv4();
+        dbData.benefit_id = benefit_id;
+
+        await addBenifitsModel(dbData);
+    }
+
+    const message = input_benefit_id
+        ? "BENEFIT_UPDATED_SUCCESSFULLY"
+        : "BENEFIT_ADDED_SUCCESSFULLY";
+
+    return handleSuccess(res, 200, language, message, { benefit_id });
+});
+
+export const deleteBenefit = asyncHandler(async (req, res) => {
+    const { benefit_id } = req.params;
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+    const language = req.user?.language || "en";
+
+    if (role === "ADMIN") {
+        await deleteBenefitModel(benefit_id);
+    } else {
+        const deleted = await deleteZynqUserBenefitModel(benefit_id, user_id);
+        if (deleted.affectedRows === 0) {
+            return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_BENEFIT");
+        }
+    }
+
+    return handleSuccess(res, 200, language, "BENEFIT_DELETED_SUCCESSFULLY");
+});
+
+export const updateBenefitApprovalStatus = asyncHandler(async (req, res) => {
+    const { approval_status, benefit_id } = req.body;
+    const { language = "en" } = req.user;
+
+    const statusMessages = {
+        APPROVED: "BENEFIT_APPROVED_SUCCESSFULLY",
+        REJECTED: "BENEFIT_REJECTED_SUCCESSFULLY",
+    };
+
+    const notificationUpdates = {
+        APPROVED: "benefit_approved",
+        REJECTED: "benefit_rejected",
+    };
+
+    // 🔹 Update approval status & fetch creator
+    const [benefitData] = await updateBenefitApprovalStatusModel(benefit_id, approval_status);
+
+    handleSuccess(res, 200, language, statusMessages[approval_status]);
+
+    // 🔔 Async notification
+    if (benefitData) {
+        await sendNotification({
+            userData: req.user,
+            type: "BENEFIT",
+            type_id: benefit_id,
+            notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
+            receiver_id:
+                benefitData.role === "CLINIC"
+                    ? benefitData.clinic_id
+                    : benefitData.doctor_id,
+            receiver_type:
+                benefitData.role === "CLINIC" ? "CLINIC" : "DOCTOR",
+        });
+    }
+});
+
+
+export const getAllLikeWiseTerms = asyncHandler(async (req, res) => {
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+    const language = req.user?.language || "en";
+
+    const isAdmin = role === "ADMIN";
+
+    const data = await getAllLikeWiseTermsModel(
+        isAdmin ? null : user_id,
+        isAdmin
+    );
+
+    return handleSuccess(
+        res,
+        200,
+        language,
+        "CONCERN_FETCHED_SUCCESSFULLY",
+        data
+    );
+});
+
+export const getAllDevices = asyncHandler(async (req, res) => {
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+    const language = req.user?.language || "en";
+
+    const isAdmin = role === "ADMIN";
+
+    const data = await getAllDevicesModel(
+        isAdmin ? null : user_id,
+        isAdmin
+    );
+
+    return handleSuccess(
+        res,
+        200,
+        language,
+        "DEVICE_FETCHED_SUCCESSFULLY",
+        data
+    );
+});
+
+export const getAllBenefits = asyncHandler(async (req, res) => {
+    const role = req.user?.role;
+    const user_id = req.user?.id;
+    const language = req.user?.language || "en";
+
+    const isAdmin = role === "ADMIN";
+
+    const data = await getAllBenefitsModel(
+        isAdmin ? null : user_id,
+        isAdmin
+    );
+
+    return handleSuccess(
+        res,
+        200,
+        language,
+        "BENEFIT_FETCHED_SUCCESSFULLY",
+        data
+    );
 });
