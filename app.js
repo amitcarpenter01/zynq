@@ -11,7 +11,11 @@ import OpenAI from "openai";
 import { GoogleGenAI } from "@google/genai";
 import configureApp from "./src/config/routes.js";
 import initializeSocket from "./src/utils/socket.js";
-import { send_clinic_email_cron, appointmentReminderCron, invitationReminderCron, deleteGuestDataCron } from "./src/utils/cronJob.js";
+import { 
+  // send_clinic_email_cron,
+   appointmentReminderCron,
+  //  invitationReminderCron, deleteGuestDataCron
+   } from "./src/utils/cronJob.js";
 import { connectDB } from "./src/config/db.js";
 import { loadTreatmentEmbeddings } from "./src/utils/vectorIndex.js";
 import initializeCallSocket from "./src/utils/callSocket.js";
@@ -93,8 +97,8 @@ function startServer() {
 
   // 🕒 Start all cron jobs once DB + server are ready
   appointmentReminderCron();
-  invitationReminderCron();
-  deleteGuestDataCron();
+  // invitationReminderCron();
+  // deleteGuestDataCron();
   console.log("📅 Cron jobs initialized successfully");
 }
 
