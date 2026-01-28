@@ -328,5 +328,28 @@
   "CLINIC_UNSYNCED_SUCCESSFULLY": "Kliniken har kopplats bort",
   "EXPERT_ADDED_SUCCESSFULLY": "Expert har lagts till",
   "SOLO_EXPERT_UPDATED_SUCCESSFULLY": "Soloexpert har lagts till",
-  "CALLBACK_REQUESTED_SUCCESSFULLY": "Återuppringningsförfrågan har skickats"
+  "CALLBACK_REQUESTED_SUCCESSFULLY": "Återuppringningsförfrågan har skickats",
+  "LIKEWISETERM_ADDED_SUCCESSFULLY": "Liknande term har lagts till",
+  "LIKEWISETERM_UPDATED_SUCCESSFULLY": "Liknande term har uppdaterats",
+  "NOT_AUTHORIZED_TO_EDIT_LIKEWISETERM": "Du har inte behörighet att redigera denna liknande term",
+  "LIKEWISETERM_DELETED_SUCCESSFULLY": "Liknande term har tagits bort",
+  "NOT_AUTHORIZED_TO_DELETE_LIKEWISETERM": "Du har inte behörighet att ta bort denna liknande term",
+  "LIKEWISETERM_APPROVED_SUCCESSFULLY": "Liknande term har godkänts",
+  "LIKEWISETERM_REJECTED_SUCCESSFULLY": "Liknande term har avvisats",
+
+  "DEVICE_ADDED_SUCCESSFULLY": "Enheten har lagts till",
+  "DEVICE_UPDATED_SUCCESSFULLY": "Enheten har uppdaterats",
+  "NOT_AUTHORIZED_TO_EDIT_DEVICE": "Du har inte behörighet att redigera denna enhet",
+  "DEVICE_DELETED_SUCCESSFULLY": "Enheten har tagits bort",
+  "NOT_AUTHORIZED_TO_DELETE_DEVICE": "Du har inte behörighet att ta bort denna enhet",
+  "DEVICE_APPROVED_SUCCESSFULLY": "Enheten har godkänts",
+  "DEVICE_REJECTED_SUCCESSFULLY": "Enheten har avvisats",
+
+  "BENEFIT_ADDED_SUCCESSFULLY": "Förmånen har lagts till",
+  "BENEFIT_UPDATED_SUCCESSFULLY": "Förmånen har uppdaterats",
+  "NOT_AUTHORIZED_TO_EDIT_BENEFIT": "Du har inte behörighet att redigera denna förmån",
+  "BENEFIT_DELETED_SUCCESSFULLY": "Förmånen har tagits bort",
+  "NOT_AUTHORIZED_TO_DELETE_BENEFIT": "Du har inte behörighet att ta bort denna förmån",
+  "BENEFIT_APPROVED_SUCCESSFULLY": "Förmånen har godkänts",
+  "BENEFIT_REJECTED_SUCCESSFULLY": "Förmånen har avvisats"
 }

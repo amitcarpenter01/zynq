@@ -363,171 +363,6 @@ export const getAllDoctors = async ({
         throw new Error('Failed to fetch doctors.');
     }
 };
-
-// export const getAllRecommendedDoctors_101225 = async ({
-//     treatment_ids = [],
-//     skin_condition_ids = [],
-//     aesthetic_device_ids = [],
-//     skin_type_ids = [],
-//     surgery_ids = [],
-//     distance = {},
-//     price = {},
-//     search = '',
-//     min_rating = null,
-//     sort = { by: 'default', order: 'desc' },
-//     userLatitude,
-//     userLongitude,
-//     limit = 20,
-//     offset = 0
-// }) => {
-//     try {
-//         const params = [];
-//         const needsDistance = userLatitude != null && userLongitude != null;
-
-//         // Distance calculation if coords provided
-//         const distanceSelect = needsDistance
-//             ? `ROUND(ST_Distance_Sphere(POINT(ANY_VALUE(cl.longitude), ANY_VALUE(cl.latitude)), POINT(?, ?)), 2) AS distance`
-//             : null;
-
-//         const selectFields = [
-//             'd.doctor_id',
-//             'd.name',
-//             `GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', ') AS treatment_names`,
-//             `GROUP_CONCAT(DISTINCT st.name ORDER BY st.name SEPARATOR ', ') AS sub_treatment_names`,
-//             'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
-//             'd.specialization',
-//             'ANY_VALUE(d.fee_per_session) AS fee_per_session',
-//             'd.profile_image',
-//             'dm.clinic_id',
-//             'c.clinic_name',
-//             'c.address AS clinic_address',
-//             'ROUND(AVG(ar.rating), 2) AS avg_rating',
-//             distanceSelect
-//         ].filter(Boolean).join(', ');
-
-//         if (needsDistance) params.push(userLongitude, userLatitude);
-
-//         // Base query
-//         let query = `
-//       SELECT ${selectFields}
-//       FROM tbl_doctors d
-//       LEFT JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
-//       LEFT JOIN tbl_doctor_clinic_map dm ON d.doctor_id = dm.doctor_id
-//       LEFT JOIN tbl_clinics c ON dm.clinic_id = c.clinic_id
-//       LEFT JOIN tbl_clinic_locations cl ON c.clinic_id = cl.clinic_id
-//       LEFT JOIN tbl_appointment_ratings ar
-//              ON d.doctor_id = ar.doctor_id AND ar.approval_status = 'APPROVED'
-//       LEFT JOIN tbl_doctor_experiences de ON d.doctor_id = de.doctor_id
-//       LEFT JOIN tbl_doctor_treatments dt ON d.doctor_id = dt.doctor_id
-//       LEFT JOIN tbl_doctor_skin_types dst ON d.doctor_id = dst.doctor_id
-//       LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
-//       LEFT JOIN tbl_doctor_treatments dt2 ON d.doctor_id = dt2.doctor_id
-//       LEFT JOIN tbl_sub_treatment_master st ON dt2.sub_treatment_id = st.sub_treatment_id
-
-
-//     `;
-
-//         // ---------- Joins & filters ----------
-//         const joins = [];
-//         const filters = [];
-
-//         const addJoinAndFilter = (ids, table, alias, field) => {
-//             if (Array.isArray(ids) && ids.length) {
-//                 filters.push(`${alias}.${field} IN (${ids.map(() => '?').join(', ')})`);
-//                 params.push(...ids);
-//             }
-//         };
-
-//         addJoinAndFilter(treatment_ids, 'tbl_doctor_treatments', 'dt', 'treatment_id');
-//         addJoinAndFilter(skin_condition_ids, 'tbl_doctor_skin_condition', 'dsc', 'skin_condition_id');
-//         addJoinAndFilter(aesthetic_device_ids, 'tbl_doctor_aesthetic_devices', 'dad', 'aesthetic_devices_id');
-//         addJoinAndFilter(skin_type_ids, 'tbl_doctor_skin_types', 'dst', 'skin_type_id');
-//         addJoinAndFilter(surgery_ids, 'tbl_doctor_surgery', 'ds', 'surgery_id');
-
-//         if (joins.length) query += ' ' + joins.join(' ');
-
-//         // Always filter verified doctors
-//         query += ` WHERE d.name IS NOT NULL AND d.profile_status = 'VERIFIED' `;
-
-//         // ---------- Distance & Price filters ----------
-//         if (needsDistance) {
-//             if (typeof distance.min === 'number') {
-//                 filters.push(`ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) >= ?`);
-//                 params.push(userLongitude, userLatitude, distance.min);
-//             }
-//             if (typeof distance.max === 'number') {
-//                 filters.push(`ST_Distance_Sphere(POINT(cl.longitude, cl.latitude), POINT(?, ?)) <= ?`);
-//                 params.push(userLongitude, userLatitude, distance.max);
-//             }
-//         }
-
-//         if (typeof price.min === 'number') {
-//             filters.push(`d.fee_per_session >= ?`);
-//             params.push(price.min);
-//         }
-//         if (typeof price.max === 'number') {
-//             filters.push(`d.fee_per_session <= ?`);
-//             params.push(price.max);
-//         }
-
-//         // Apply all filters
-//         if (filters.length) query += ` AND ${filters.join(' AND ')}`;
-
-//         // ---------- Grouping ----------
-//         query += ` GROUP BY d.doctor_id, dm.clinic_id`;
-
-//         // ---------- Rating filter ----------
-//         if (min_rating !== null) {
-//             const ceiling = Math.min(min_rating + 1, 5.01);
-//             query += ` HAVING CAST(avg_rating AS DECIMAL(10,2)) >= ? AND CAST(avg_rating AS DECIMAL(10,2)) <= ?`;
-//             params.push(min_rating, ceiling);
-//         }
-
-//         // ---------- Sorting ----------
-//         if (sort.by === 'rating') {
-//             query += ` ORDER BY avg_rating IS NULL, CAST(avg_rating AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
-//         } else if (sort.by === 'nearest' && needsDistance) {
-//             query += ` ORDER BY distance IS NULL, CAST(distance AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
-//         } else if (sort.by === 'price') {
-//             query += ` ORDER BY d.fee_per_session IS NULL, CAST(d.fee_per_session AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
-//         } else {
-//             query += ` ORDER BY d.created_at DESC`;
-//         }
-
-//         console.log("query", query);
-//         console.log("params", params);
-//         // ---------- Fetch all filtered rows ----------
-//         const rows = await db.query(query, params);
-
-//         if (!rows?.length) return [];
-
-//         // ---------- Embedding search ----------
-//         const trimmedSearch = (search || '').trim();
-
-//         if (!trimmedSearch) {
-//             return rows
-//                 .slice(offset, offset + limit)
-//                 .map(row => {
-//                     const cleanRow = { ...row };
-//                     if ('embeddings' in cleanRow) delete cleanRow.embeddings;
-//                     return cleanRow;
-//                 });
-//         }
-
-//         // 2️⃣ Compute top similar rows using embeddings
-//         // const aiRows = await getDoctorsAIResult(rows, trimmedSearch);
-//         const textRows = await getDoctorsAIResult(rows, trimmedSearch);
-//         // 3️⃣ Apply pagination
-//         const paginatedRows = paginateRows(textRows, limit, offset);
-
-//         return paginatedRows;
-
-//     } catch (error) {
-//         console.error('Database Error in getAllRecommendedDoctors:', error.message);
-//         throw new Error('Failed to fetch doctors.');
-//     }
-// };
-
 export const getAllRecommendedDoctors = async ({
     treatment_ids = [],
     skin_condition_ids = [],
@@ -1550,27 +1385,117 @@ export const getAllConcerns = async (lang = "en", concern_ids) => {
     }
 };
 
-// export const getTreatmentsByConcernId = async (concern_id) => {
-//     try {
-//         return await db.query(`SELECT t.*,c.name as concern_name FROM tbl_treatment_concerns tc INNER JOIN 
-//               tbl_treatments t ON tc.treatment_id = t.treatment_id INNER JOIN tbl_concerns c  ON  c.concern_id  = tc.concern_id
-//               WHERE tc.concern_id = ?;
-//                 `, [concern_id]);
-//     }
-//     catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to fetch clinic.");
-//     }
-// }
-
 export const getTreatmentsByConcernId = async (concern_id) => {
     try {
         const results = await db.query(`
-            SELECT t.*, c.name AS concern_name
-            FROM tbl_treatment_concerns tc
-            INNER JOIN tbl_treatments t ON tc.treatment_id = t.treatment_id
-            INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
-            WHERE tc.concern_id = ?;
+            SELECT
+                t.treatment_id,
+                t.name,
+                t.swedish,
+                t.classification_type,
+                t.description_en,
+                t.description_sv,
+                t.technology,
+                t.type,
+                t.source,
+                t.application,
+                t.is_device,
+                t.is_admin_created,
+                t.created_by_zynq_user_id,
+                t.approval_status,
+                t.is_deleted,
+                t.embeddings,
+                t.name_embeddings,
+                t.created_at,
+
+                IFNULL(pagg.min_price, 0) AS min_price,
+                IFNULL(pagg.max_price, 0) AS max_price,
+
+                cagg.concerns,
+                lwtagg.like_wise_terms,
+                lwtagg.like_wise_terms_swedish,
+                dagg.device_name,
+                dagg.device_name_swedish,
+                bagg.benefits_en,
+                bagg.benefits_sv
+
+            FROM tbl_treatments t
+
+            /* ---- filter by single concern ---- */
+            INNER JOIN tbl_treatment_concerns tcf
+                ON tcf.treatment_id = t.treatment_id
+               AND tcf.concern_id = ?
+
+            /* ---- prices ---- */
+            LEFT JOIN (
+                SELECT
+                    treatment_id,
+                    MIN(price) AS min_price,
+                    MAX(price) AS max_price
+                FROM tbl_doctor_treatments
+                GROUP BY treatment_id
+            ) pagg ON pagg.treatment_id = t.treatment_id
+
+            /* ---- concerns ---- */
+            LEFT JOIN (
+                SELECT
+                    tc.treatment_id,
+                    JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'concern_id', c.concern_id,
+                            'name', c.name
+                        )
+                    ) AS concerns
+                FROM tbl_treatment_concerns tc
+                JOIN tbl_concerns c
+                    ON c.concern_id = tc.concern_id
+                GROUP BY tc.treatment_id
+            ) cagg ON cagg.treatment_id = t.treatment_id
+
+            /* ---- like wise terms ---- */
+            LEFT JOIN (
+                SELECT
+                    tlwt.treatment_id,
+                    GROUP_CONCAT(DISTINCT lwt.name ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms,
+                    GROUP_CONCAT(DISTINCT lwt.swedish ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms_swedish
+                FROM tbl_treatment_like_wise_terms tlwt
+                JOIN tbl_likewise_terms lwt
+                    ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+                   AND lwt.is_deleted = 0
+                   AND lwt.approval_status = 'APPROVED'
+                GROUP BY tlwt.treatment_id
+            ) lwtagg ON lwtagg.treatment_id = t.treatment_id
+
+            /* ---- devices ---- */
+            LEFT JOIN (
+                SELECT
+                    d.treatment_id,
+                    GROUP_CONCAT(DISTINCT tbd.name ORDER BY tbd.name SEPARATOR ',') AS device_name,
+                    GROUP_CONCAT(DISTINCT tbd.swedish ORDER BY tbd.name SEPARATOR ',') AS device_name_swedish
+                FROM tbl_treatment_devices d
+                JOIN tbl_devices tbd
+                    ON tbd.device_id = d.device_id
+                   AND tbd.is_deleted = 0
+                   AND tbd.approval_status = 'APPROVED'
+                GROUP BY d.treatment_id
+            ) dagg ON dagg.treatment_id = t.treatment_id
+
+            /* ---- benefits ---- */
+            LEFT JOIN (
+                SELECT
+                    ttb.treatment_id,
+                    GROUP_CONCAT(DISTINCT tb.name ORDER BY tb.name SEPARATOR ',') AS benefits_en,
+                    GROUP_CONCAT(DISTINCT tb.swedish ORDER BY tb.name SEPARATOR ',') AS benefits_sv
+                FROM tbl_treatment_benefits ttb
+                JOIN tbl_benefits tb
+                    ON tb.benefit_id = ttb.benefit_id
+                   AND tb.is_deleted = 0
+                   AND tb.approval_status = 'APPROVED'
+                GROUP BY ttb.treatment_id
+            ) bagg ON bagg.treatment_id = t.treatment_id
+
+            WHERE t.is_deleted = 0
+              AND t.approval_status = 'APPROVED'
         `, [concern_id]);
 
         // Remove embeddings dynamically
@@ -1615,16 +1540,113 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
 
         const query = `
             SELECT
-                t.*,
-                ANY_VALUE(c.name) AS concern_name,
-                IFNULL(MIN(dt.price), 0) AS min_price,
-                IFNULL(MAX(dt.price), 0) AS max_price
-            FROM tbl_treatment_concerns tc
-            INNER JOIN tbl_treatments t ON tc.treatment_id = t.treatment_id
-            INNER JOIN tbl_concerns c ON c.concern_id = tc.concern_id
-            LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
-            WHERE tc.concern_id IN (${placeholders})
-            GROUP BY t.treatment_id
+                t.treatment_id,
+                t.name,
+                t.swedish,
+                t.classification_type,
+                t.description_en,
+                t.description_sv,
+                t.technology,
+                t.type,
+                t.source,
+                t.application,
+                t.is_device,
+                t.is_admin_created,
+                t.created_by_zynq_user_id,
+                t.approval_status,
+                t.is_deleted,
+                t.embeddings,
+                t.name_embeddings,
+                t.created_at,
+
+                IFNULL(pagg.min_price, 0) AS min_price,
+                IFNULL(pagg.max_price, 0) AS max_price,
+
+                cagg.concerns,
+                lwtagg.like_wise_terms,
+                lwtagg.like_wise_terms_swedish,
+                dagg.device_name,
+                dagg.device_name_swedish,
+                bagg.benefits_en,
+                bagg.benefits_sv
+
+            FROM tbl_treatments t
+
+            /* -------- Filter treatments by concern IDs -------- */
+            INNER JOIN tbl_treatment_concerns tcf
+                ON tcf.treatment_id = t.treatment_id
+               AND tcf.concern_id IN (${placeholders})
+
+            /* -------- Prices -------- */
+            LEFT JOIN (
+                SELECT
+                    treatment_id,
+                    MIN(price) AS min_price,
+                    MAX(price) AS max_price
+                FROM tbl_doctor_treatments
+                GROUP BY treatment_id
+            ) pagg ON pagg.treatment_id = t.treatment_id
+
+            /* -------- Concerns -------- */
+            LEFT JOIN (
+                SELECT
+                    tc.treatment_id,
+                    JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'concern_id', c.concern_id,
+                            'name', c.name
+                        )
+                    ) AS concerns
+                FROM tbl_treatment_concerns tc
+                JOIN tbl_concerns c
+                    ON c.concern_id = tc.concern_id
+                GROUP BY tc.treatment_id
+            ) cagg ON cagg.treatment_id = t.treatment_id
+
+            /* -------- Like Wise Terms -------- */
+            LEFT JOIN (
+                SELECT
+                    tlwt.treatment_id,
+                    GROUP_CONCAT(DISTINCT lwt.name ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms,
+                    GROUP_CONCAT(DISTINCT lwt.swedish ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms_swedish
+                FROM tbl_treatment_like_wise_terms tlwt
+                JOIN tbl_likewise_terms lwt
+                    ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+                   AND lwt.is_deleted = 0
+                   AND lwt.approval_status = 'APPROVED'
+                GROUP BY tlwt.treatment_id
+            ) lwtagg ON lwtagg.treatment_id = t.treatment_id
+
+            /* -------- Devices -------- */
+            LEFT JOIN (
+                SELECT
+                    d.treatment_id,
+                    GROUP_CONCAT(DISTINCT tbd.name ORDER BY tbd.name SEPARATOR ',') AS device_name,
+                    GROUP_CONCAT(DISTINCT tbd.swedish ORDER BY tbd.name SEPARATOR ',') AS device_name_swedish
+                FROM tbl_treatment_devices d
+                JOIN tbl_devices tbd
+                    ON tbd.device_id = d.device_id
+                   AND tbd.is_deleted = 0
+                   AND tbd.approval_status = 'APPROVED'
+                GROUP BY d.treatment_id
+            ) dagg ON dagg.treatment_id = t.treatment_id
+
+            /* -------- Benefits -------- */
+            LEFT JOIN (
+                SELECT
+                    ttb.treatment_id,
+                    GROUP_CONCAT(DISTINCT tb.name ORDER BY tb.name SEPARATOR ',') AS benefits_en,
+                    GROUP_CONCAT(DISTINCT tb.swedish ORDER BY tb.name SEPARATOR ',') AS benefits_sv
+                FROM tbl_treatment_benefits ttb
+                JOIN tbl_benefits tb
+                    ON tb.benefit_id = ttb.benefit_id
+                   AND tb.is_deleted = 0
+                   AND tb.approval_status = 'APPROVED'
+                GROUP BY ttb.treatment_id
+            ) bagg ON bagg.treatment_id = t.treatment_id
+
+            WHERE t.is_deleted = 0
+              AND t.approval_status = 'APPROVED'
         `;
 
         let results = await db.query(query, concern_ids);
@@ -1654,10 +1676,117 @@ export const getTreatmentsByIds = async (concern_ids = [], lang) => {
         const placeholders = concern_ids.map(() => '?').join(', ');
 
         const query = `
-            SELECT
-                t.*
-            FROM tbl_treatments t
-            WHERE t.treatment_id  IN (${placeholders})
+                       SELECT
+    t.treatment_id,
+    t.name,
+    t.swedish,
+    t.classification_type,
+    t.description_en,
+    t.description_sv,
+    t.technology,
+    t.type,
+    t.source,
+    t.application,
+    t.is_device,
+    t.is_admin_created,
+    t.created_by_zynq_user_id,
+    t.approval_status,
+    t.is_deleted,
+    t.embeddings,
+    t.name_embeddings,
+    t.created_at,
+
+    IFNULL(pagg.min_price, 0) AS min_price,
+    IFNULL(pagg.max_price, 0) AS max_price,
+
+    cagg.concerns AS concern_name,
+
+    lwtagg.like_wise_terms,
+    lwtagg.like_wise_terms_swedish,
+
+    dagg.device_name,
+    dagg.device_name_swedish,
+
+    bagg.benefits_en,
+    bagg.benefits_sv
+
+FROM tbl_treatments t
+
+/* ---------------- Prices ---------------- */
+LEFT JOIN (
+    SELECT
+        treatment_id,
+        MIN(price) AS min_price,
+        MAX(price) AS max_price
+    FROM tbl_doctor_treatments
+    GROUP BY treatment_id
+) pagg
+    ON pagg.treatment_id = t.treatment_id
+
+/* ---------------- Concerns ---------------- */
+LEFT JOIN (
+    SELECT
+        tc.treatment_id,
+        JSON_ARRAYAGG(
+            JSON_OBJECT(
+                'concern_id', c.concern_id,
+                'name', c.name
+            )
+        ) AS concerns
+    FROM tbl_treatment_concerns tc
+    JOIN tbl_concerns c
+        ON c.concern_id = tc.concern_id
+    GROUP BY tc.treatment_id
+) cagg
+    ON cagg.treatment_id = t.treatment_id
+
+/* ---------------- Like Wise Terms ---------------- */
+LEFT JOIN (
+    SELECT
+        tlwt.treatment_id,
+        GROUP_CONCAT(DISTINCT lwt.name ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms,
+        GROUP_CONCAT(DISTINCT lwt.swedish ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms_swedish
+    FROM tbl_treatment_like_wise_terms tlwt
+    JOIN tbl_likewise_terms lwt
+        ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+       AND lwt.is_deleted = 0
+       AND lwt.approval_status = 'APPROVED'
+    GROUP BY tlwt.treatment_id
+) lwtagg
+    ON lwtagg.treatment_id = t.treatment_id
+
+/* ---------------- Devices ---------------- */
+LEFT JOIN (
+    SELECT
+        d.treatment_id,
+        GROUP_CONCAT(DISTINCT tbd.name ORDER BY tbd.name SEPARATOR ',') AS device_name,
+        GROUP_CONCAT(DISTINCT tbd.swedish ORDER BY tbd.name SEPARATOR ',') AS device_name_swedish
+    FROM tbl_treatment_devices d
+    JOIN tbl_devices tbd
+        ON tbd.device_id = d.device_id
+       AND tbd.is_deleted = 0
+       AND tbd.approval_status = 'APPROVED'
+    GROUP BY d.treatment_id
+) dagg
+    ON dagg.treatment_id = t.treatment_id
+
+/* ---------------- Benefits ---------------- */
+LEFT JOIN (
+    SELECT
+        ttb.treatment_id,
+        GROUP_CONCAT(DISTINCT tb.name ORDER BY tb.name SEPARATOR ',') AS benefits_en,
+        GROUP_CONCAT(DISTINCT tb.swedish ORDER BY tb.name SEPARATOR ',') AS benefits_sv
+    FROM tbl_treatment_benefits ttb
+    JOIN tbl_benefits tb
+        ON tb.benefit_id = ttb.benefit_id
+       AND tb.is_deleted = 0
+       AND tb.approval_status = 'APPROVED'
+    GROUP BY ttb.treatment_id
+) bagg
+    ON bagg.treatment_id = t.treatment_id
+
+WHERE t.is_deleted = 0
+  AND t.approval_status = 'APPROVED' AND t.treatment_id  IN (${placeholders})
         `;
 
         let results = await db.query(query, concern_ids);
@@ -1681,17 +1810,117 @@ export const getTreatmentsByIds = async (concern_ids = [], lang) => {
 export const getAllTreatments = async (lang) => {
     try {
         const query = `
-            SELECT
-                t.*,
-                ANY_VALUE(c.name) AS concern_name,
-                IFNULL(MIN(dt.price), 0) AS min_price,
-                IFNULL(MAX(dt.price), 0) AS max_price
-            FROM tbl_treatments t
-            LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
-            LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
-            LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
-            WHERE t.is_deleted = 0 AND t.approval_status = 'APPROVED'
-            GROUP BY t.treatment_id
+           SELECT
+    t.treatment_id,
+    t.name,
+    t.swedish,
+    t.classification_type,
+    t.description_en,
+    t.description_sv,
+    t.technology,
+    t.type,
+    t.source,
+    t.application,
+    t.is_device,
+    t.is_admin_created,
+    t.created_by_zynq_user_id,
+    t.approval_status,
+    t.is_deleted,
+    t.embeddings,
+    t.name_embeddings,
+    t.created_at,
+
+    IFNULL(pagg.min_price, 0) AS min_price,
+    IFNULL(pagg.max_price, 0) AS max_price,
+
+    cagg.concerns AS concern_name,
+
+    lwtagg.like_wise_terms,
+    lwtagg.like_wise_terms_swedish,
+
+    dagg.device_name,
+    dagg.device_name_swedish,
+
+    bagg.benefits_en,
+    bagg.benefits_sv
+
+FROM tbl_treatments t
+
+/* ---------------- Prices ---------------- */
+LEFT JOIN (
+    SELECT
+        treatment_id,
+        MIN(price) AS min_price,
+        MAX(price) AS max_price
+    FROM tbl_doctor_treatments
+    GROUP BY treatment_id
+) pagg
+    ON pagg.treatment_id = t.treatment_id
+
+/* ---------------- Concerns ---------------- */
+LEFT JOIN (
+    SELECT
+        tc.treatment_id,
+        JSON_ARRAYAGG(
+            JSON_OBJECT(
+                'concern_id', c.concern_id,
+                'name', c.name
+            )
+        ) AS concerns
+    FROM tbl_treatment_concerns tc
+    JOIN tbl_concerns c
+        ON c.concern_id = tc.concern_id
+    GROUP BY tc.treatment_id
+) cagg
+    ON cagg.treatment_id = t.treatment_id
+
+/* ---------------- Like Wise Terms ---------------- */
+LEFT JOIN (
+    SELECT
+        tlwt.treatment_id,
+        GROUP_CONCAT(DISTINCT lwt.name ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms,
+        GROUP_CONCAT(DISTINCT lwt.swedish ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms_swedish
+    FROM tbl_treatment_like_wise_terms tlwt
+    JOIN tbl_likewise_terms lwt
+        ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+       AND lwt.is_deleted = 0
+       AND lwt.approval_status = 'APPROVED'
+    GROUP BY tlwt.treatment_id
+) lwtagg
+    ON lwtagg.treatment_id = t.treatment_id
+
+/* ---------------- Devices ---------------- */
+LEFT JOIN (
+    SELECT
+        d.treatment_id,
+        GROUP_CONCAT(DISTINCT tbd.name ORDER BY tbd.name SEPARATOR ',') AS device_name,
+        GROUP_CONCAT(DISTINCT tbd.swedish ORDER BY tbd.name SEPARATOR ',') AS device_name_swedish
+    FROM tbl_treatment_devices d
+    JOIN tbl_devices tbd
+        ON tbd.device_id = d.device_id
+       AND tbd.is_deleted = 0
+       AND tbd.approval_status = 'APPROVED'
+    GROUP BY d.treatment_id
+) dagg
+    ON dagg.treatment_id = t.treatment_id
+
+/* ---------------- Benefits ---------------- */
+LEFT JOIN (
+    SELECT
+        ttb.treatment_id,
+        GROUP_CONCAT(DISTINCT tb.name ORDER BY tb.name SEPARATOR ',') AS benefits_en,
+        GROUP_CONCAT(DISTINCT tb.swedish ORDER BY tb.name SEPARATOR ',') AS benefits_sv
+    FROM tbl_treatment_benefits ttb
+    JOIN tbl_benefits tb
+        ON tb.benefit_id = ttb.benefit_id
+       AND tb.is_deleted = 0
+       AND tb.approval_status = 'APPROVED'
+    GROUP BY ttb.treatment_id
+) bagg
+    ON bagg.treatment_id = t.treatment_id
+
+WHERE t.is_deleted = 0
+  AND t.approval_status = 'APPROVED';
         `;
 
         let results = await db.query(query);
@@ -1721,20 +1950,117 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         // ---------- BASE QUERY (keeps 1 WHERE only) ----------
         let query = `
             SELECT
-                t.*,
-                IFNULL(MIN(dt.price), 0) AS min_price,
-                IFNULL(MAX(dt.price), 0) AS max_price,
-                JSON_ARRAYAGG(
-                    JSON_OBJECT(
-                        'concern_id', c.concern_id,
-                        'name', ${concernNameColumn}
-                    )
-                ) AS concerns
-            FROM tbl_treatments t
-            LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
-            LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
-            LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
-            WHERE t.is_deleted = 0 AND t.approval_status = 'APPROVED'
+    t.treatment_id,
+    t.name,
+    t.swedish,
+    t.classification_type,
+    t.description_en,
+    t.description_sv,
+    t.technology,
+    t.type,
+    t.source,
+    t.application,
+    t.is_device,
+    t.is_admin_created,
+    t.created_by_zynq_user_id,
+    t.approval_status,
+    t.is_deleted,
+    t.embeddings,
+    t.name_embeddings,
+    t.created_at,
+
+    IFNULL(pagg.min_price, 0) AS min_price,
+    IFNULL(pagg.max_price, 0) AS max_price,
+
+    cagg.concerns,
+
+    lwtagg.like_wise_terms,
+    lwtagg.like_wise_terms_swedish,
+
+    dagg.device_name,
+    dagg.device_name_swedish,
+
+    bagg.benefits_en,
+    bagg.benefits_sv
+
+FROM tbl_treatments t
+
+/* ---------------- Prices ---------------- */
+LEFT JOIN (
+    SELECT
+        treatment_id,
+        MIN(price) AS min_price,
+        MAX(price) AS max_price
+    FROM tbl_doctor_treatments
+    GROUP BY treatment_id
+) pagg
+    ON pagg.treatment_id = t.treatment_id
+
+/* ---------------- Concerns ---------------- */
+LEFT JOIN (
+    SELECT
+        tc.treatment_id,
+        JSON_ARRAYAGG(
+            JSON_OBJECT(
+                'concern_id', c.concern_id,
+                'name', ${concernNameColumn}
+            )
+        ) AS concerns
+    FROM tbl_treatment_concerns tc
+    JOIN tbl_concerns c
+        ON c.concern_id = tc.concern_id
+    GROUP BY tc.treatment_id
+) cagg
+    ON cagg.treatment_id = t.treatment_id
+
+/* ---------------- Like Wise Terms ---------------- */
+LEFT JOIN (
+    SELECT
+        tlwt.treatment_id,
+        GROUP_CONCAT(DISTINCT lwt.name ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms,
+        GROUP_CONCAT(DISTINCT lwt.swedish ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms_swedish
+    FROM tbl_treatment_like_wise_terms tlwt
+    JOIN tbl_likewise_terms lwt
+        ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+       AND lwt.is_deleted = 0
+       AND lwt.approval_status = 'APPROVED'
+    GROUP BY tlwt.treatment_id
+) lwtagg
+    ON lwtagg.treatment_id = t.treatment_id
+
+/* ---------------- Devices ---------------- */
+LEFT JOIN (
+    SELECT
+        d.treatment_id,
+        GROUP_CONCAT(DISTINCT tbd.name ORDER BY tbd.name SEPARATOR ',') AS device_name,
+        GROUP_CONCAT(DISTINCT tbd.swedish ORDER BY tbd.name SEPARATOR ',') AS device_name_swedish
+    FROM tbl_treatment_devices d
+    JOIN tbl_devices tbd
+        ON tbd.device_id = d.device_id
+       AND tbd.is_deleted = 0
+       AND tbd.approval_status = 'APPROVED'
+    GROUP BY d.treatment_id
+) dagg
+    ON dagg.treatment_id = t.treatment_id
+
+/* ---------------- Benefits ---------------- */
+LEFT JOIN (
+    SELECT
+        ttb.treatment_id,
+        GROUP_CONCAT(DISTINCT tb.name ORDER BY tb.name SEPARATOR ',') AS benefits_en,
+        GROUP_CONCAT(DISTINCT tb.swedish ORDER BY tb.name SEPARATOR ',') AS benefits_sv
+    FROM tbl_treatment_benefits ttb
+    JOIN tbl_benefits tb
+        ON tb.benefit_id = ttb.benefit_id
+       AND tb.is_deleted = 0
+       AND tb.approval_status = 'APPROVED'
+    GROUP BY ttb.treatment_id
+) bagg
+    ON bagg.treatment_id = t.treatment_id
+
+WHERE t.is_deleted = 0
+  AND t.approval_status = 'APPROVED'
+
         `;
 
         const queryParams = [];
@@ -1762,9 +2088,6 @@ export const getAllTreatmentsV2 = async (filters = {}, lang = 'en', user_id = nu
         if (whereConditions.length) {
             query += ' AND ' + whereConditions.join(' AND ');
         }
-
-        // ---------- Group By ----------
-        query += ` GROUP BY t.treatment_id`;
 
         // ---------- Execute Query ----------
         let results = await db.query(query, queryParams);
@@ -1883,19 +2206,96 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang, doct
     try {
         let query = `
         SELECT 
-            t.*,
+             t.treatment_id,
+    t.name,
+    t.swedish,
+    t.classification_type,
+    t.description_en,
+    t.description_sv,
+    t.technology,
+    t.type,
+    t.source,
+    t.application,
+    t.is_device,
+    t.is_admin_created,
+    t.created_by_zynq_user_id,
+    t.approval_status,
+    t.is_deleted,
+    t.embeddings,
+    t.name_embeddings,
+    t.created_at,
             ANY_VALUE(c.name) AS concern_name,
+            ANY_VALUE(c.swedish) AS concern_name_swedish,
             dt.price AS doctor_price,
             dt.sub_treatment_id,
             dt.sub_treatment_price,
             tstm.name AS sub_treatment_name,
-            tstm.swedish AS sub_treatment_swedish
+            tstm.swedish AS sub_treatment_swedish,
+
+                    GROUP_CONCAT(
+        DISTINCT lwt.name
+        ORDER BY lwt.name
+        SEPARATOR ','
+    ) AS like_wise_terms,
+   
+      GROUP_CONCAT(
+        DISTINCT lwt.swedish
+        ORDER BY lwt.name
+        SEPARATOR ','
+    ) AS like_wise_terms_swedish,
+
+
+    GROUP_CONCAT(
+        DISTINCT tbd.name
+        ORDER BY tbd.name
+        SEPARATOR ','
+    ) AS device_name,
+   
+    GROUP_CONCAT(
+        DISTINCT tbd.swedish
+        ORDER BY tbd.name
+        SEPARATOR ','
+    ) AS device_name_swedish,
+
+    GROUP_CONCAT(
+        DISTINCT tb.name
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_en,
+   
+      GROUP_CONCAT(
+        DISTINCT tb.swedish
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_sv
         FROM tbl_treatments t
         LEFT JOIN tbl_treatment_concerns tc ON tc.treatment_id = t.treatment_id
         LEFT JOIN tbl_concerns c ON c.concern_id = tc.concern_id
         LEFT JOIN tbl_doctor_treatments dt ON t.treatment_id = dt.treatment_id
         LEFT JOIN tbl_treatment_sub_treatments ttst ON dt.sub_treatment_id = ttst.sub_treatment_id
         LEFT JOIN tbl_sub_treatment_master tstm ON ttst.sub_treatment_id = tstm.sub_treatment_id
+
+        
+        LEFT JOIN tbl_treatment_like_wise_terms tlwt
+    ON tlwt.treatment_id = t.treatment_id
+   LEFT JOIN tbl_likewise_terms lwt
+    ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+   AND lwt.is_deleted = 0
+   AND lwt.approval_status = 'APPROVED'
+
+   LEFT JOIN tbl_treatment_devices d
+    ON d.treatment_id = t.treatment_id
+   LEFT JOIN tbl_devices tbd
+    ON tbd.device_id = d.device_id
+    AND tbd.is_deleted = 0
+   AND tbd.approval_status = 'APPROVED'
+
+   LEFT JOIN tbl_treatment_benefits ttb
+    ON ttb.treatment_id = t.treatment_id
+   LEFT JOIN tbl_benefits tb
+    ON tb.benefit_id = ttb.benefit_id
+    AND tb.is_deleted = 0
+   AND tb.approval_status = 'APPROVED'
         `;
 
         const whereClauses = [];
@@ -1915,6 +2315,12 @@ export const getTreatmentsByTreatmentIds = async (treatment_ids = [], lang, doct
         if (whereClauses.length > 0) {
             query += ` WHERE ${whereClauses.join(" AND ")}`;
         }
+
+        query += ` GROUP BY t.treatment_id, dt.price,
+            dt.sub_treatment_id,
+            dt.sub_treatment_price,
+            tstm.name,
+            tstm.swedish`;
 
         const rawRows = await db.query(query, params);
 
@@ -1986,10 +2392,22 @@ export const getTreatmentsByTreatmentDoctorId = async (doctor_id, lang) => {
                 t.classification_type,
                 t.description_en,
                 t.description_sv,
-                t.benefits_en,
-                t.benefits_sv,
                 t.is_device,
                 t.is_admin_created,
+
+                GROUP_CONCAT(
+        DISTINCT tb.name
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_en,
+   
+      GROUP_CONCAT(
+        DISTINCT tb.swedish
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_sv,
+
+
 
                 st.name AS sub_treatment_name_en,
                 st.swedish AS sub_treatment_name_sv
@@ -2000,10 +2418,24 @@ export const getTreatmentsByTreatmentDoctorId = async (doctor_id, lang) => {
             LEFT JOIN tbl_sub_treatment_master st
                 ON dt.sub_treatment_id = st.sub_treatment_id
 
+
+                   LEFT JOIN tbl_treatment_benefits ttb
+    ON ttb.treatment_id = t.treatment_id
+   LEFT JOIN tbl_benefits tb
+    ON tb.benefit_id = ttb.benefit_id
+    AND tb.is_deleted = 0
+   AND tb.approval_status = 'APPROVED'
+
             WHERE 
                 dt.doctor_id = ?
                 AND t.is_deleted = 0
                 AND t.approval_status = 'APPROVED'
+
+                  GROUP BY dt.doctor_id,
+                dt.treatment_id,
+                dt.price,
+                dt.sub_treatment_id,
+                dt.sub_treatment_price
 
             ORDER BY t.name, st.name
         `;
@@ -2438,12 +2870,26 @@ export const getDoctorsByFirstNameSearchOnly = async ({ search = '', page = null
                 ) AS treatments,
 
                 (
-                    SELECT GROUP_CONCAT(td.device_name ORDER BY td.device_name SEPARATOR ', ')
+                    SELECT GROUP_CONCAT(tbd.name ORDER BY tbd.name SEPARATOR ', ')
                     FROM tbl_treatment_device_user_maps  tdum
                     JOIN tbl_treatment_devices  td ON 
                     tdum.device_id = td.id
+                    LEFT JOIN tbl_devices tbd
+                    ON tbd.device_id = td.device_id
+                    AND tbd.is_deleted = 0
                     WHERE tdum.zynq_user_id = d.zynq_user_id AND tdum.clinic_id = c.clinic_id
                 ) AS devices,
+
+                (
+                    SELECT GROUP_CONCAT(tbd.swedish ORDER BY tbd.swedish SEPARATOR ', ')
+                    FROM tbl_treatment_device_user_maps  tdum
+                    JOIN tbl_treatment_devices  td ON 
+                    tdum.device_id = td.id
+                    LEFT JOIN tbl_devices tbd
+                    ON tbd.device_id = td.device_id
+                    AND tbd.is_deleted = 0
+                    WHERE tdum.zynq_user_id = d.zynq_user_id AND tdum.clinic_id = c.clinic_id
+                ) AS devices_swedish,
 
                  (
                     SELECT GROUP_CONCAT(tst.English ORDER BY tst.English SEPARATOR ', ')
@@ -2613,11 +3059,13 @@ export const getDevicesByNameSearchOnly = async ({ search = '', page = null, lim
         let results = await db.query(`
         SELECT 
           d.id,
-          d.device_name,
+          dt.name AS device_name,
+          dt.swedish AS device_swedish,
           d.treatment_id,
           t.name as treatment_name
         FROM tbl_treatment_devices d
         LEFT JOIN tbl_treatments t ON d.treatment_id = t.treatment_id
+        LEFT JOIN tbl_devices dt ON d.device_id = dt.device_id
         WHERE t.approval_status = 'APPROVED'
         GROUP BY d.id, d.treatment_id
       `);
@@ -2648,9 +3096,74 @@ export const getTreatmentsBySearchOnly = async ({
 
         // 1️⃣ Fetch all treatments that have embeddings
         let results = await db.query(`
-      SELECT treatment_id,name,swedish ,benefits_sv ,device_name,classification_type,benefits_en,description_en,description_sv ,like_wise_terms
-      FROM tbl_treatments
-      WHERE is_deleted = 0 AND approval_status = 'APPROVED'
+      SELECT t.treatment_id,
+      t.name,t.swedish,
+      t.classification_type,
+      t.description_en,
+      t.description_sv ,
+                      GROUP_CONCAT(
+        DISTINCT lwt.name
+        ORDER BY lwt.name
+        SEPARATOR ','
+    ) AS like_wise_terms,
+   
+      GROUP_CONCAT(
+        DISTINCT lwt.swedish
+        ORDER BY lwt.name
+        SEPARATOR ','
+    ) AS like_wise_terms_swedish,
+
+        GROUP_CONCAT(
+        DISTINCT tb.name
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_en,
+   
+      GROUP_CONCAT(
+        DISTINCT tb.swedish
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_sv,
+
+        GROUP_CONCAT(
+        DISTINCT tbd.name
+        ORDER BY tbd.name
+        SEPARATOR ','
+    ) AS device_name,
+   
+    GROUP_CONCAT(
+        DISTINCT tbd.swedish
+        ORDER BY tbd.name
+        SEPARATOR ','
+    ) AS device_name_swedish
+
+      FROM tbl_treatments t
+      
+      LEFT JOIN tbl_treatment_like_wise_terms tlwt
+    ON tlwt.treatment_id = t.treatment_id
+   LEFT JOIN tbl_likewise_terms lwt
+    ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+   AND lwt.is_deleted = 0
+   AND lwt.approval_status = 'APPROVED'
+
+      LEFT JOIN tbl_treatment_benefits ttb
+    ON ttb.treatment_id = t.treatment_id
+   LEFT JOIN tbl_benefits tb
+    ON tb.benefit_id = ttb.benefit_id
+    AND tb.is_deleted = 0
+   AND tb.approval_status = 'APPROVED'
+
+      LEFT JOIN tbl_treatment_devices d
+    ON d.treatment_id = t.treatment_id
+   LEFT JOIN tbl_devices tbd
+    ON tbd.device_id = d.device_id
+    AND tbd.is_deleted = 0
+   AND tbd.approval_status = 'APPROVED'
+
+
+      WHERE t.is_deleted = 0 AND t.approval_status = 'APPROVED'
+
+      GROUP BY t.treatment_id
     `);
 
 
@@ -3729,13 +4242,67 @@ export const getTreatmentsByTreatmentIdsAndClinicIdAndDocterId = async (
 
         let query = `
       SELECT 
-        t.*,
+         t.treatment_id,
+    t.name,
+    t.swedish,
+    t.classification_type,
+    t.description_en,
+    t.description_sv,
+    t.technology,
+    t.type,
+    t.source,
+    t.application,
+    t.is_device,
+    t.is_admin_created,
+    t.created_by_zynq_user_id,
+    t.approval_status,
+    t.is_deleted,
+    t.embeddings,
+    t.name_embeddings,
+    t.created_at,
         ANY_VALUE(c.name) AS concern_name,
+        ANY_VALUE(c.swedish) AS concern_name_swedish,
         dt.price AS doctor_price,
         dt.sub_treatment_id,
         dt.sub_treatment_price,
         tstm.name AS sub_treatment_name,
-        tstm.swedish AS sub_treatment_swedish
+        tstm.swedish AS sub_treatment_swedish,
+        GROUP_CONCAT(
+        DISTINCT lwt.name
+        ORDER BY lwt.name
+        SEPARATOR ','
+    ) AS like_wise_terms,
+   
+      GROUP_CONCAT(
+        DISTINCT lwt.swedish
+        ORDER BY lwt.name
+        SEPARATOR ','
+    ) AS like_wise_terms_swedish,
+
+
+    GROUP_CONCAT(
+        DISTINCT tbd.name
+        ORDER BY tbd.name
+        SEPARATOR ','
+    ) AS device_name,
+   
+    GROUP_CONCAT(
+        DISTINCT tbd.swedish
+        ORDER BY tbd.name
+        SEPARATOR ','
+    ) AS device_name_swedish,
+
+    GROUP_CONCAT(
+        DISTINCT tb.name
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_en,
+   
+      GROUP_CONCAT(
+        DISTINCT tb.swedish
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_sv
       FROM tbl_treatments t
       INNER JOIN tbl_doctor_treatments dt 
         ON dt.treatment_id = t.treatment_id
@@ -3747,6 +4314,27 @@ export const getTreatmentsByTreatmentIdsAndClinicIdAndDocterId = async (
         ON dt.sub_treatment_id = ttst.sub_treatment_id
       LEFT JOIN tbl_sub_treatment_master tstm 
         ON ttst.sub_treatment_id = tstm.sub_treatment_id
+
+        LEFT JOIN tbl_treatment_like_wise_terms tlwt
+    ON tlwt.treatment_id = t.treatment_id
+   LEFT JOIN tbl_likewise_terms lwt
+    ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+   AND lwt.is_deleted = 0
+   AND lwt.approval_status = 'APPROVED'
+
+   LEFT JOIN tbl_treatment_devices d
+    ON d.treatment_id = t.treatment_id
+   LEFT JOIN tbl_devices tbd
+    ON tbd.device_id = d.device_id
+    AND tbd.is_deleted = 0
+   AND tbd.approval_status = 'APPROVED'
+
+   LEFT JOIN tbl_treatment_benefits ttb
+    ON ttb.treatment_id = t.treatment_id
+   LEFT JOIN tbl_benefits tb
+    ON tb.benefit_id = ttb.benefit_id
+    AND tb.is_deleted = 0
+   AND tb.approval_status = 'APPROVED'
     `;
 
         const whereClauses = [];
@@ -3771,6 +4359,12 @@ export const getTreatmentsByTreatmentIdsAndClinicIdAndDocterId = async (
         if (whereClauses.length) {
             query += ` WHERE ${whereClauses.join(' AND ')}`;
         }
+
+        query += ` GROUP BY t.treatment_id, dt.price,
+            dt.sub_treatment_id,
+            dt.sub_treatment_price,
+            tstm.name,
+            tstm.swedish`;
 
         const rawRows = await db.query(query, params);
 

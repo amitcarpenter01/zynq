@@ -1269,15 +1269,26 @@ export const updateClinicController = async (req, res) => {
 
         const [clinicLocation] = await clinicModels.getClinicLocation(clinic_id);
 
+        // await clinicModels.updateClinicLocation({
+        //     clinic_id,
+        //     street_address: street_address ? street_address : clinicLocation.street_address,
+        //     city: city ? city : clinicLocation.city,
+        //     state: state ? state : clinicLocation.state,
+        //     zip_code: zip_code ? zip_code : clinicLocation.zip_code,
+        //     latitude: latitude ? latitude : clinicLocation.latitude,
+        //     longitude: longitude ? longitude : clinicLocation.longitude,
+        // });
+
         await clinicModels.updateClinicLocation({
             clinic_id,
-            street_address: street_address ? street_address : clinicLocation.street_address,
-            city: city ? city : clinicLocation.city,
-            state: state ? state : clinicLocation.state,
-            zip_code: zip_code ? zip_code : clinicLocation.zip_code,
-            latitude: latitude ? latitude : clinicLocation.latitude,
-            longitude: longitude ? longitude : clinicLocation.longitude,
-        });
+            street_address: street_address ?? clinicLocation.street_address ?? null,
+            city: city ?? clinicLocation.city ?? null,
+            state: state ?? clinicLocation.state ?? null,
+            zip_code: zip_code ?? clinicLocation.zip_code ?? null,
+            latitude: latitude ?? clinicLocation.latitude ?? null,
+            longitude: longitude ?? clinicLocation.longitude ?? null,
+        },clinic_id);
+
 
         const updatePromises = [];
 

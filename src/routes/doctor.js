@@ -12,7 +12,7 @@ import { getSinglePurchasedProductSchema } from '../validations/payment.validati
 import { getAllFAQSchema } from '../validations/faq.validation.js';
 import { getAllFAQCategories, getAllFAQs } from '../controllers/api/FAQController.js';
 import { addAppointmentDraftSchema, addEditConcernSchema, addEditSubtreatmentSchema, addEditTreatmentSchema, deleteConcernSchema, deleteTreatmentSchema } from '../validations/treatment.validation.js';
-import { get_all_concerns, addEditConcern, addEditSubtreatment, getAllTreatments, getAllTreatmentById, addEditTreatment, deleteConcern, deleteTreatment, getAllSubTreatmentMasters } from '../controllers/api/treatmentController.js';
+import { get_all_concerns, addEditConcern, addEditSubtreatment, getAllTreatments, getAllTreatmentById, addEditTreatment, deleteConcern, deleteTreatment, getAllSubTreatmentMasters, getAllLikeWiseTerms, getAllDevices, getAllBenefits } from '../controllers/api/treatmentController.js';
 import { get_Clinic_Mapped_treatments, getAllDevicesOfClinicController, getAllSurgeryOfClinicController, getClinicSkinTypesOfClinicController } from '../controllers/admin/clinicController.js';
 import { generateAvailabilityFromOperationHours } from '../controllers/admin/doctorController.js';
 
@@ -163,6 +163,13 @@ router.get("/get-surgery/:clinic_id", authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CL
 router.get("/get-devices/:clinic_id", authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getAllDevicesOfClinicController);
 router.get("/get-skin-types/:clinic_id", authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), getClinicSkinTypesOfClinicController);
 router.post("/generate-slots", authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']), generateAvailabilityFromOperationHours);
+
+
+router.get("/likewiseterms",authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']),getAllLikeWiseTerms);
+
+router.get("/device",authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']),getAllDevices);
+
+router.get("/benefit",authenticate(['DOCTOR', 'SOLO_DOCTOR', 'CLINIC']),getAllBenefits);
 
 
 export default router;

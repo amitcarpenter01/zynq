@@ -101,20 +101,17 @@ let isRunning = false;
 //     }
 // };
 
-// Schedule: Every 10 minutes
+
 // export const appointmentReminderCron = () => {
 //     cron.schedule('*/10 * * * *', sendAppointmentNotifications);
+//     cron.schedule('* * * * *', processDueAuthorizedAppointments);
 // };
-export const appointmentReminderCron = () => {
-    cron.schedule('*/10 * * * *', sendAppointmentNotifications);
-    cron.schedule('* * * * *', processDueAuthorizedAppointments);
-};
 
 // export const invitationReminderCron = () => {
 //     cron.schedule('0 6 * * *', sendInvitationReminders);
 // }
 
-export const deleteGuestDataCron = () => {
-    cron.schedule('0 3 * * *', deleteGuestData);
-}
+// export const deleteGuestDataCron = () => {
+//     cron.schedule('0 3 * * *', deleteGuestData);
+// }
 

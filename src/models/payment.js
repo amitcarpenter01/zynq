@@ -508,8 +508,8 @@ export const getCartMetadataAndStatusByCartId = async (cart_id) => {
 //           payment_method_types: ["klarna"],
 //           mode: "payment",
 //           line_items,
-//           success_url: `https://getzynq.io/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
-//           cancel_url: `https://getzynq.io/payment-cancel/?&redirect_url=${metadata.cancel_url}`,
+//           success_url: `https://13.60.145.118:4000/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
+//           cancel_url: `https://13.60.145.118:4000/payment-cancel/?&redirect_url=${metadata.cancel_url}`,
 //           metadata: {
 //           },
 //         });
@@ -549,7 +549,7 @@ export const createPaymentSessionForAppointment = async ({ metadata }) => {
       line_items,
       success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
       cancel_url: `https://getzynq.io/zynq/payment-cancel/?redirect_url=${metadata.cancel_url}`,
-      metadata: { appointment_id: metadata.appointment_id,payment_flow: "PAY_NOW"},
+      metadata: { appointment_id: metadata.appointment_id, payment_flow: "PAY_NOW" },
     });
 
   } catch (error) {
@@ -581,7 +581,7 @@ export const createPaymentSessionForAppointmentPAYLATERKLARNA = async ({ metadat
       line_items,
       success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
       cancel_url: `https://getzynq.io/zynq/payment-cancel/?redirect_url=${metadata.cancel_url}`,
-      metadata: {appointment_id: metadata.appointment_id ,payment_flow: "PAY_LATER_KLARNA"},
+      metadata: { appointment_id: metadata.appointment_id, payment_flow: "PAY_LATER_KLARNA" },
     });
 
   } catch (error) {
@@ -595,8 +595,8 @@ export const createPaymentSessionForAppointmentPAYLATERKLARNA = async ({ metadat
 export const createPayLaterSetupSession = async ({ metadata, final_total }) => {
   return await stripe.checkout.sessions.create({
     mode: "payment",
-    payment_method_types: ["card"],
     customer: metadata.stripe_customer_id,
+    payment_method_configuration:"pmc_1SsKeiQQ6aAv64PfHDsY6cUL",
     line_items: [
       {
         price_data: {
@@ -614,6 +614,24 @@ export const createPayLaterSetupSession = async ({ metadata, final_total }) => {
     cancel_url: `https://getzynq.io/zynq/payment-cancel/?type=PAY_NOW`
   });
 };
+
+// --------------------------new functiniolity----------------------karan patel-----------------------//
+
+export const createPayLaterSetupIntent = async ({ user_id, appointment_id }) => {
+  const stripeCustomerId = await getOrCreateStripeCustomerId(user_id);
+  const setupIntent = await stripe.setupIntents.create({
+    customer: stripeCustomerId,
+    payment_method_types: ["card"],
+    usage: "off_session",
+    metadata: {
+      appointment_id,
+      payment_flow: "PAY_LATER_CARD"
+    }
+  });
+  return { setup_intent_id: setupIntent.id, client_secret: setupIntent.client_secret };
+};
+
+// ------------------------------------end----------------------------------------------//
 
 
 export const getOrCreateStripeCustomerId = async (user_id) => {
@@ -747,7 +765,7 @@ export const handlePaymentIntentFailed = async (paymentIntent) => {
   );
   let [user] = await get_user_by_user_id(appointment.user_id);
 
-    user.role = "USER";
+  user.role = "USER";
 
   // Mark payment failed
   const update = await db.query(
@@ -835,15 +853,15 @@ export const handleCheckoutSessionCompleted = async (session) => {
     [appointment_id]
   );
 
-  if(!appointment) return;
+  if (!appointment) return;
 
-  if(appointment.payment_timing == "PAY_LATER"){
-      await db.query(
-    `UPDATE tbl_appointments 
+  if (appointment.payment_timing == "PAY_LATER") {
+    await db.query(
+      `UPDATE tbl_appointments 
      SET stripe_payment_method_id = ?, stripe_setup_intent_id = ? , payment_status = 'authorized'
      WHERE appointment_id = ?`,
-    [setupIntent.payment_method, setupIntent.id, appointment_id]
-  );
+      [setupIntent.payment_method, setupIntent.id, appointment_id]
+    );
   }
 
 

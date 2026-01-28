@@ -297,40 +297,6 @@ export const insertClinicDocuments = async (clinic_id, certification_type_id, do
     }
 };
 
-// export const getAllTreatments = async () => {
-//     try {
-//         const treatments = await db.query('SELECT * FROM tbl_treatments ORDER BY created_at DESC');
-//         return treatments;
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to fetch treatments.");
-//     }
-// };
-
-// export const getAllTreatments = async () => {
-//     try {
-//         const treatments = await db.query(`
-//             SELECT * 
-//             FROM tbl_treatments 
-//             WHERE is_deleted = 0 AND approval_status = 'APPROVED'
-//             ORDER BY created_at DESC
-
-//             `);
-
-//         // Remove embeddings dynamically
-//         const cleanedTreatments = treatments.map(row => {
-//             const treatmentRow = { ...row };
-//             if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
-//             return treatmentRow;
-//         });
-
-//         return cleanedTreatments;
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to fetch treatments.");
-//     }
-// };
-
 export const getAllTreatments_old = async () => {
     try {
         const treatments = await db.query(`
@@ -1110,32 +1076,96 @@ export const getDoctorSkinTypes = async (doctor_id) => {
     }
 };
 
-// export const getDoctorTreatments = async (doctor_id) => {
-//     try {
-//         const treatments = await db.query(`
-//             SELECT dt.*, t.* 
-//             FROM tbl_doctor_treatments dt 
-//             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id 
-//             WHERE dt.doctor_id = ? 
-//             ORDER BY dt.created_at DESC`,
-//             [doctor_id]
-//         );
-//         return treatments;
-//     }
-//     catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to fetch doctor treatments.");
-//     }
-// };
 
 export const getDoctorTreatments = async (doctor_id) => {
     try {
         const treatments = await db.query(`
-            SELECT dt.*, t.*
+            SELECT dt.*,
+            t.treatment_id ,
+            t.name  ,
+            t.swedish  ,
+            t.classification_type  ,
+            t.description_en  ,
+            t.description_sv  ,
+            t.technology  ,
+            t.type  ,
+            t.source ,
+            t.application  ,
+            t.is_device ,
+            t.is_admin_created ,
+            t.created_by_zynq_user_id ,
+            t.approval_status  ,
+            t.is_deleted  ,
+            t.embeddings ,
+            t.name_embeddings ,
+            t.created_at ,
+
+             GROUP_CONCAT(
+        DISTINCT lwt.name
+        ORDER BY lwt.name
+        SEPARATOR ','
+    ) AS like_wise_terms,
+   
+      GROUP_CONCAT(
+        DISTINCT lwt.swedish
+        ORDER BY lwt.name
+        SEPARATOR ','
+    ) AS like_wise_terms_swedish,
+
+
+    GROUP_CONCAT(
+        DISTINCT tbd.name
+        ORDER BY tbd.name
+        SEPARATOR ','
+    ) AS device_name,
+   
+    GROUP_CONCAT(
+        DISTINCT tbd.swedish
+        ORDER BY tbd.name
+        SEPARATOR ','
+    ) AS device_name_swedish,
+
+    GROUP_CONCAT(
+        DISTINCT tb.name
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_en,
+   
+      GROUP_CONCAT(
+        DISTINCT tb.swedish
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_sv
+
             FROM tbl_doctor_treatments dt
             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+
+            LEFT JOIN tbl_treatment_like_wise_terms tlwt
+    ON tlwt.treatment_id = t.treatment_id
+   LEFT JOIN tbl_likewise_terms lwt
+    ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+   AND lwt.is_deleted = 0
+   AND lwt.approval_status = 'APPROVED'
+
+   LEFT JOIN tbl_treatment_devices d
+    ON d.treatment_id = t.treatment_id
+   LEFT JOIN tbl_devices tbd
+    ON tbd.device_id = d.device_id
+    AND tbd.is_deleted = 0
+   AND tbd.approval_status = 'APPROVED'
+
+   LEFT JOIN tbl_treatment_benefits ttb
+    ON ttb.treatment_id = t.treatment_id
+   LEFT JOIN tbl_benefits tb
+    ON tb.benefit_id = ttb.benefit_id
+    AND tb.is_deleted = 0
+   AND tb.approval_status = 'APPROVED'
+
             WHERE dt.doctor_id = ?
-            ORDER BY dt.created_at DESC
+
+            GROUP BY dt.doctor_treatment_id
+
+            ORDER BY dt.created_at DESC;
         `, [doctor_id]);
 
         // Remove embeddings dynamically
@@ -1994,28 +2024,6 @@ export const getDoctorSkinTypesBulkV2 = async (doctorIds, lang = "en", clinic_id
     }
 };
 
-// export const getDoctorTreatmentsBulk = async (doctorIds) => {
-//     try {
-//         const placeholders = doctorIds.map(() => '?').join(',');
-
-//         const query = `SELECT dt.*, t.* 
-//             FROM tbl_doctor_treatments dt 
-//             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id  WHERE dt.doctor_id IN (${placeholders}) ORDER BY dt.created_at DESC`;
-//         const results = await db.query(query, doctorIds);
-
-//         const grouped = {};
-//         results.forEach(row => {
-//             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
-//             grouped[row.doctor_id].push(row);
-//         });
-//         return grouped;
-//     }
-//     catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to fetch doctor education.");
-//     }
-// };
-
 export const getDoctorTreatmentsBulk = async (doctorIds) => {
     if (!Array.isArray(doctorIds) || doctorIds.length === 0) return {};
 
@@ -2023,10 +2031,91 @@ export const getDoctorTreatmentsBulk = async (doctorIds) => {
         const placeholders = doctorIds.map(() => '?').join(',');
 
         const query = `
-            SELECT dt.*, t.*
+            SELECT dt.*,
+            t.treatment_id ,
+            t.name  ,
+            t.swedish  ,
+            t.classification_type  ,
+            t.description_en  ,
+            t.description_sv  ,
+            t.technology  ,
+            t.type  ,
+            t.source ,
+            t.application  ,
+            t.is_device ,
+            t.is_admin_created ,
+            t.created_by_zynq_user_id ,
+            t.approval_status  ,
+            t.is_deleted  ,
+            t.embeddings ,
+            t.name_embeddings ,
+            t.created_at ,
+
+             GROUP_CONCAT(
+        DISTINCT lwt.name
+        ORDER BY lwt.name
+        SEPARATOR ','
+    ) AS like_wise_terms,
+   
+      GROUP_CONCAT(
+        DISTINCT lwt.swedish
+        ORDER BY lwt.name
+        SEPARATOR ','
+    ) AS like_wise_terms_swedish,
+
+
+    GROUP_CONCAT(
+        DISTINCT tbd.name
+        ORDER BY tbd.name
+        SEPARATOR ','
+    ) AS device_name,
+   
+    GROUP_CONCAT(
+        DISTINCT tbd.swedish
+        ORDER BY tbd.name
+        SEPARATOR ','
+    ) AS device_name_swedish,
+
+    GROUP_CONCAT(
+        DISTINCT tb.name
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_en,
+   
+      GROUP_CONCAT(
+        DISTINCT tb.swedish
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_sv
+
             FROM tbl_doctor_treatments dt
             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+
+            LEFT JOIN tbl_treatment_like_wise_terms tlwt
+    ON tlwt.treatment_id = t.treatment_id
+   LEFT JOIN tbl_likewise_terms lwt
+    ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+   AND lwt.is_deleted = 0
+   AND lwt.approval_status = 'APPROVED'
+
+   LEFT JOIN tbl_treatment_devices d
+    ON d.treatment_id = t.treatment_id
+   LEFT JOIN tbl_devices tbd
+    ON tbd.device_id = d.device_id
+    AND tbd.is_deleted = 0
+   AND tbd.approval_status = 'APPROVED'
+
+   LEFT JOIN tbl_treatment_benefits ttb
+    ON ttb.treatment_id = t.treatment_id
+   LEFT JOIN tbl_benefits tb
+    ON tb.benefit_id = ttb.benefit_id
+    AND tb.is_deleted = 0
+   AND tb.approval_status = 'APPROVED'
+
             WHERE dt.doctor_id IN (${placeholders})
+
+            GROUP BY dt.doctor_treatment_id
+
             ORDER BY dt.created_at DESC
         `;
 
@@ -2051,236 +2140,6 @@ export const getDoctorTreatmentsBulk = async (doctorIds) => {
 };
 
 
-// export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en') => {
-//     try {
-//         const placeholders = doctorIds.map(() => '?').join(',');
-
-//         const query = `SELECT dt.*, t.* 
-//             FROM tbl_doctor_treatments dt 
-//             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id  
-//             WHERE dt.doctor_id IN (${placeholders}) 
-//             ORDER BY dt.created_at DESC`;
-//         const results = await db.query(query, doctorIds);
-
-//         const grouped = {};
-//         results.forEach(row => {
-//             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
-
-//             // Set treatment name based on lang
-//             const treatmentRow = { ...row };
-//             treatmentRow.name = lang === 'sv' ? row.swedish : row.name;
-
-//             grouped[row.doctor_id].push(treatmentRow);
-//         });
-
-//         return grouped;
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to fetch doctor education.");
-//     }
-// };
-
-// export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en', search = null) => {
-//     if (!Array.isArray(doctorIds) || doctorIds.length === 0) return {};
-
-//     try {
-//         const placeholders = doctorIds.map(() => '?').join(',');
-
-//         const query = `
-//             SELECT dt.*, t.*
-//             FROM tbl_doctor_treatments dt
-//             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
-//             WHERE dt.doctor_id IN (${placeholders})
-//             ORDER BY dt.created_at DESC
-//         `;
-
-//         let results = await db.query(query, doctorIds);
-
-//         // Apply search if provided
-//         if (search !== null && search !== '') {
-//             results = await getTopSimilarRows(results, search);
-//         } else {
-//             // No search: remove embeddings
-//             results = results.map(({ embeddings, ...rest }) => rest);
-//         }
-
-//         const grouped = {};
-//         results.forEach(row => {
-//             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
-
-//             const treatmentRow = { ...row };
-
-//             // Ensure no embeddings remain
-//             // if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
-
-//             // Set treatment name based on language
-//             treatmentRow.name = lang === 'sv' ? row.swedish : row.name;
-
-//             grouped[row.doctor_id].push(treatmentRow);
-//         });
-
-//         return grouped;
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to fetch doctor treatments.");
-//     }
-// };
-
-// export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en', search = null) => {
-//     if (!Array.isArray(doctorIds) || doctorIds.length === 0) return {};
-
-//     try {
-//         const placeholders = doctorIds.map(() => '?').join(',');
-
-//         const query = `
-//             SELECT dt.*, t.*
-//             FROM tbl_doctor_treatments dt
-//             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
-//             WHERE dt.doctor_id IN (${placeholders})
-//             ORDER BY dt.created_at DESC
-//         `;
-
-//         let results = await db.query(query, doctorIds);
-
-//         // Apply search if provided
-//         if (search !== null && search !== '') {
-//             results = await getTopSimilarRows(results, search);
-//         } else {
-//             // Remove embeddings and name_embeddings from all rows before grouping
-//             results = results.map(row => {
-//                 const cleaned = { ...row };
-//                 delete cleaned.embeddings;  // remove embeddings from both tables
-//                 delete cleaned.name_embeddings;  // remove name_embeddings from both tables
-//                 return cleaned;
-//             });
-//         }
-
-//         const grouped = {};
-//         results.forEach(row => {
-//             if (!grouped[row.doctor_id]) grouped[row.doctor_id] = [];
-
-//             // Set translated treatment name
-//             row.name = lang === 'sv' ? row.swedish : row.name;
-
-//             grouped[row.doctor_id].push(row);
-//         });
-
-//         return grouped;
-//     } catch (error) {
-//         console.error("Database Error:", error.message);
-//         throw new Error("Failed to fetch doctor treatments.");
-//     }
-// };
-
-export const getDoctorTreatmentsBulkV2 = async (doctorIds, lang = 'en', search = null) => {
-    if (!Array.isArray(doctorIds) || doctorIds.length === 0) return {};
-
-    try {
-        const placeholders = doctorIds.map(() => '?').join(',');
-
-        const query = `
-            SELECT 
-                dt.doctor_id,
-                dt.treatment_id,
-                dt.price,
-                dt.sub_treatment_id,
-                dt.sub_treatment_price,
-
-                t.name AS treatment_name_en,
-                t.swedish AS treatment_name_sv,
-                t.classification_type,
-                t.description_en,
-                t.description_sv,
-                t.benefits_en,
-                t.benefits_sv,
-                t.is_device,
-                t.is_admin_created,
-
-                st.name AS sub_treatment_name_en,
-                st.swedish AS sub_treatment_name_sv
-
-            FROM tbl_doctor_treatments dt
-            INNER JOIN tbl_treatments t 
-                ON dt.treatment_id = t.treatment_id
-            LEFT JOIN tbl_sub_treatment_master st
-                ON dt.sub_treatment_id = st.sub_treatment_id
-
-            WHERE 
-                dt.doctor_id IN (${placeholders})
-                AND t.is_deleted = 0
-                AND t.approval_status = 'APPROVED'
-
-            ORDER BY t.name, st.name
-        `;
-
-        let results = await db.query(query, doctorIds);
-
-        // APPLY SEARCH (if needed)
-        if (search) {
-            results = await getTopSimilarRows(results, search);
-        }
-
-        // TRANSLATE
-        results = results.map(row => ({
-            ...row,
-            treatment_name: lang === 'sv' ? row.treatment_name_sv : row.treatment_name_en,
-            sub_treatment_name: lang === 'sv' ? row.sub_treatment_name_sv : row.sub_treatment_name_en
-        }));
-
-        // GROUP BY doctor → then inside group by treatment → then sub-treatments list
-        const finalGrouped = {};
-
-        for (const row of results) {
-
-            // If doctor group missing
-            if (!finalGrouped[row.doctor_id]) {
-                finalGrouped[row.doctor_id] = {};
-            }
-
-            // If treatment group missing for this doctor
-            if (!finalGrouped[row.doctor_id][row.treatment_id]) {
-                finalGrouped[row.doctor_id][row.treatment_id] = {
-                    treatment_id: row.treatment_id,
-                    name: row.treatment_name,
-                    // treatment_name_en: row.treatment_name_en,
-                    // treatment_name_sv: row.treatment_name_sv,
-                    price: row.price,
-                    classification_type: row.classification_type,
-                    description_en: row.description_en,
-                    description_sv: row.description_sv,
-                    benefits_en: row.benefits_en,
-                    benefits_sv: row.benefits_sv,
-                    is_device: row.is_device,
-                    is_admin_created: row.is_admin_created,
-                    sub_treatments: []
-                };
-            }
-
-            // Add sub-treatment if exists
-            if (row.sub_treatment_id) {
-                finalGrouped[row.doctor_id][row.treatment_id].sub_treatments.push({
-                    sub_treatment_id: row.sub_treatment_id,
-                    name: row.sub_treatment_name,
-                    // sub_treatment_name_en: row.sub_treatment_name_en,
-                    // sub_treatment_name_sv: row.sub_treatment_name_sv,
-                    price: row.sub_treatment_price
-                });
-            }
-        }
-
-        // Convert nested object → arrays
-        for (const doctorId in finalGrouped) {
-            finalGrouped[doctorId] = Object.values(finalGrouped[doctorId]);
-        }
-
-        return finalGrouped;
-
-    } catch (error) {
-        console.error("DB Error:", error.message);
-        throw new Error("Failed to fetch doctor treatments.");
-    }
-};
-
 export const getDoctorTreatmentsBulkV3 = async (doctorId, clinic_id, lang = 'en', search = null) => {
     try {
         const query = `
@@ -2296,10 +2155,20 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, clinic_id, lang = 'en'
                 t.classification_type,
                 t.description_en,
                 t.description_sv,
-                t.benefits_en,
-                t.benefits_sv,
                 t.is_device,
                 t.is_admin_created,
+
+                    GROUP_CONCAT(
+        DISTINCT tb.name
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_en,
+   
+      GROUP_CONCAT(
+        DISTINCT tb.swedish
+        ORDER BY tb.name
+        SEPARATOR ','
+    ) AS benefits_sv,
 
                 st.name AS sub_treatment_name_en,
                 st.swedish AS sub_treatment_name_sv
@@ -2310,13 +2179,26 @@ export const getDoctorTreatmentsBulkV3 = async (doctorId, clinic_id, lang = 'en'
             LEFT JOIN tbl_sub_treatment_master st
                 ON dt.sub_treatment_id = st.sub_treatment_id
 
-            WHERE 
-                dt.doctor_id = ?
-                AND dt.clinic_id=?
-                AND t.is_deleted = 0
-                AND t.approval_status = 'APPROVED'
+                   LEFT JOIN tbl_treatment_benefits ttb
+    ON ttb.treatment_id = t.treatment_id
+   LEFT JOIN tbl_benefits tb
+    ON tb.benefit_id = ttb.benefit_id
+    AND tb.is_deleted = 0
+   AND tb.approval_status = 'APPROVED'
+   
 
-            ORDER BY t.name, st.name
+            WHERE dt.doctor_id = ?
+                AND dt.clinic_id= ?
+               AND  t.is_deleted = 0
+                AND t.approval_status = 'APPROVED'
+                
+   GROUP BY dt.doctor_id,
+                dt.treatment_id,
+                dt.price,
+                dt.sub_treatment_id,
+                dt.sub_treatment_price
+
+            ORDER BY t.name, st.name;
         `;
 
         // SAFE QUERY

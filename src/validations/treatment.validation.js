@@ -63,17 +63,17 @@ export const addEditTreatmentSchema = joi.object({
   name: stringValidation,
   // swedish: stringValidation,
   classification_type: stringValidation.valid('Medical', 'Non-Medical'),
-  benefits_en: stringValidation,
+  benefits_ids: joi.array().items(joi.string().uuid()).allow(null).optional(),
   // benefits_sv: stringValidation,
   description_en: stringValidation,
   // description_sv: stringValidation,
   // source: stringValidation.valid("old", "new"),
-  embeddings: joi.array().items(numberValidation).min(1),
+  embeddings: joi.array().items(numberValidation).allow(null).optional(),
   is_device: booleanValidation,
-  concerns: idArrayValidation,
+  concerns_ids: joi.array().items(joi.string().uuid()).allow(null).optional(),
   sub_treatments: idArrayValidation,
-  device_name: joi.array().items(joi.string()).allow(null).optional(),
-  like_wise_terms: joi.array().items(joi.string()).allow(null).optional(),
+  device_ids: joi.array().items(joi.string().uuid()).allow(null).optional(),
+  like_wise_terms_ids: joi.array().items(joi.string().uuid()).allow(null).optional(),
 })
 
 export const addEditSubtreatmentSchema = joi.object({

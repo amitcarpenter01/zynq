@@ -64,312 +64,312 @@ router.get('/get-clinic-managment', authenticateAdmin, clinicControllers.get_cli
 router.get('/get-clinic-list-doctor-onboarding', authenticateAdmin, clinicControllers.getClinicListForDoctorOnboardingController);
 router.post('/delete-clinic-management', authenticateAdmin, clinicControllers.delete_clinic_management);
 router.post('/send-invitation', authenticateAdmin, clinicControllers.send_invitation);
-// router.get('/subscribed/:is_subscribed', clinicControllers.subscribed);
-// router.get('/unsubscribed/:is_unsubscribed', clinicControllers.unsubscribed);
+router.get('/subscribed/:is_subscribed', clinicControllers.subscribed);
+router.get('/unsubscribed/:is_unsubscribed', clinicControllers.unsubscribed);
 
-router.get('/subscribed/:is_subscribed', (req, res) => {
+// router.get('/subscribed/:is_subscribed', (req, res) => {
 
-  const data = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Coming Soon</title>
+//   const data = `<!DOCTYPE html>
+// <html lang="en">
+// <head>
+//   <meta charset="UTF-8">
+//   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+//   <title>Coming Soon</title>
 
-  <!-- Bootstrap 5 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+//   <!-- Bootstrap 5 -->
+//   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+//   <!-- Google Font -->
+//   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <style>
+//   <style>
     
-    * {
-  box-sizing: border-box;
-  font-family: 'Inter', sans-serif;
-}
+//     * {
+//   box-sizing: border-box;
+//   font-family: 'Inter', sans-serif;
+// }
 
-body {
-  margin: 0;
-  background: #000;
-  color: #fff;
-}
-.ct_logo{
-  margin-bottom: 30px;
-}
+// body {
+//   margin: 0;
+//   background: #000;
+//   color: #fff;
+// }
+// .ct_logo{
+//   margin-bottom: 30px;
+// }
 
-.ct_logo img {
-    filter: invert(1);
-    width: 100%;
-    max-width: 150px;
-}
+// .ct_logo img {
+//     filter: invert(1);
+//     width: 100%;
+//     max-width: 150px;
+// }
 
-/* Main Section */
-.coming-soon {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(99,102,241,0.25), transparent 40%),
-    radial-gradient(circle at bottom, rgba(236,72,153,0.2), transparent 45%),
-    #000;
-}
+// /* Main Section */
+// .coming-soon {
+//   min-height: 100vh;
+//   background:
+//     radial-gradient(circle at top, rgba(99,102,241,0.25), transparent 40%),
+//     radial-gradient(circle at bottom, rgba(236,72,153,0.2), transparent 45%),
+//     #000;
+// }
 
-/* Badge */
-.badge-soon {
-  background: linear-gradient(135deg, #6366f1, #ec4899);
-  padding: 8px 18px;
-  border-radius: 50px;
-  font-size: 14px;
-  font-weight: 600;
-}
+// /* Badge */
+// .badge-soon {
+//   background: linear-gradient(135deg, #6366f1, #ec4899);
+//   padding: 8px 18px;
+//   border-radius: 50px;
+//   font-size: 14px;
+//   font-weight: 600;
+// }
 
-/* Text */
-.title {
-  font-size: 60px;
-  font-weight: 700;
-}
+// /* Text */
+// .title {
+//   font-size: 60px;
+//   font-weight: 700;
+// }
 
-.subtitle {
-  color: #9ca3af;
-  font-size: 16px;
-  max-width: 520px;
-  margin: auto;
-}
+// .subtitle {
+//   color: #9ca3af;
+//   font-size: 16px;
+//   max-width: 520px;
+//   margin: auto;
+// }
 
-/* Email Box */
-.email-box {
-  display: flex;
-  max-width: 420px;
-  margin: auto;
-  background: #111;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid #222;
-}
+// /* Email Box */
+// .email-box {
+//   display: flex;
+//   max-width: 420px;
+//   margin: auto;
+//   background: #111;
+//   border-radius: 12px;
+//   overflow: hidden;
+//   border: 1px solid #222;
+// }
 
-.email-box input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  padding: 14px;
-  color: #fff;
-  outline: none;
-}
+// .email-box input {
+//   flex: 1;
+//   background: transparent;
+//   border: none;
+//   padding: 14px;
+//   color: #fff;
+//   outline: none;
+// }
 
-.email-box input::placeholder {
-  color: #6b7280;
-}
+// .email-box input::placeholder {
+//   color: #6b7280;
+// }
 
-.email-box button {
-  background: linear-gradient(135deg, #6366f1, #ec4899);
-  border: none;
-  padding: 0 22px;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
+// .email-box button {
+//   background: linear-gradient(135deg, #6366f1, #ec4899);
+//   border: none;
+//   padding: 0 22px;
+//   color: #fff;
+//   font-weight: 600;
+//   cursor: pointer;
+// }
 
-.email-box button:hover {
-  opacity: 0.9;
-}
+// .email-box button:hover {
+//   opacity: 0.9;
+// }
 
-/* Footer */
-.small-text {
-  font-size: 13px;
-  color: #6b7280;
-}
+// /* Footer */
+// .small-text {
+//   font-size: 13px;
+//   color: #6b7280;
+// }
 
-/* Responsive */
-@media (max-width: 576px) {
-  .title {
-    font-size: 30px;
-  }
-}
+// /* Responsive */
+// @media (max-width: 576px) {
+//   .title {
+//     font-size: 30px;
+//   }
+// }
 
-  </style>
-</head>
-<body>
-
-
-
-<section class="coming-soon d-flex align-items-center justify-content-center">
-  <div class="container text-center">
-    <div class="ct_logo">
-      <img src="https://getzynq.io:4000/logo1.png">
-    </div>
+//   </style>
+// </head>
+// <body>
 
 
-    <h1 class="title mt-3">Kommer snart</h1>
-    <p class="subtitle mt-3">
-      Vi arbetar hårt för att ge dig en fantastisk upplevelse.<br>
-Håll utkik efter lanseringen.
-    </p>
+
+// <section class="coming-soon d-flex align-items-center justify-content-center">
+//   <div class="container text-center">
+//     <div class="ct_logo">
+//       <img src="https://13.60.145.118:4000/logo1.png">
+//     </div>
+
+
+//     <h1 class="title mt-3">Kommer snart</h1>
+//     <p class="subtitle mt-3">
+//       Vi arbetar hårt för att ge dig en fantastisk upplevelse.<br>
+// Håll utkik efter lanseringen.
+//     </p>
 
    
 
-    <p class="small-text mt-4">
-      © 2026 ZYNQ. Alla rättigheter reserverade.
-    </p>
+//     <p class="small-text mt-4">
+//       © 2026 ZYNQ. Alla rättigheter reserverade.
+//     </p>
 
-  </div>
-</section>
+//   </div>
+// </section>
 
-</body>
-</html>
-`
+// </body>
+// </html>
+// `
 
-  res.send(data);
-});
-router.get('/unsubscribed/:is_unsubscribed', (req, res) => {
-  const data = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Coming Soon</title>
+//   res.send(data);
+// });
+// router.get('/unsubscribed/:is_unsubscribed', (req, res) => {
+//   const data = `<!DOCTYPE html>
+// <html lang="en">
+// <head>
+//   <meta charset="UTF-8">
+//   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+//   <title>Coming Soon</title>
 
-  <!-- Bootstrap 5 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+//   <!-- Bootstrap 5 -->
+//   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+//   <!-- Google Font -->
+//   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <style>
+//   <style>
     
-    * {
-  box-sizing: border-box;
-  font-family: 'Inter', sans-serif;
-}
+//     * {
+//   box-sizing: border-box;
+//   font-family: 'Inter', sans-serif;
+// }
 
-body {
-  margin: 0;
-  background: #000;
-  color: #fff;
-}
-.ct_logo{
-  margin-bottom: 30px;
-}
+// body {
+//   margin: 0;
+//   background: #000;
+//   color: #fff;
+// }
+// .ct_logo{
+//   margin-bottom: 30px;
+// }
 
-.ct_logo img {
-    filter: invert(1);
-    width: 100%;
-    max-width: 150px;
-}
+// .ct_logo img {
+//     filter: invert(1);
+//     width: 100%;
+//     max-width: 150px;
+// }
 
-/* Main Section */
-.coming-soon {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(99,102,241,0.25), transparent 40%),
-    radial-gradient(circle at bottom, rgba(236,72,153,0.2), transparent 45%),
-    #000;
-}
+// /* Main Section */
+// .coming-soon {
+//   min-height: 100vh;
+//   background:
+//     radial-gradient(circle at top, rgba(99,102,241,0.25), transparent 40%),
+//     radial-gradient(circle at bottom, rgba(236,72,153,0.2), transparent 45%),
+//     #000;
+// }
 
-/* Badge */
-.badge-soon {
-  background: linear-gradient(135deg, #6366f1, #ec4899);
-  padding: 8px 18px;
-  border-radius: 50px;
-  font-size: 14px;
-  font-weight: 600;
-}
+// /* Badge */
+// .badge-soon {
+//   background: linear-gradient(135deg, #6366f1, #ec4899);
+//   padding: 8px 18px;
+//   border-radius: 50px;
+//   font-size: 14px;
+//   font-weight: 600;
+// }
 
-/* Text */
-.title {
-  font-size: 60px;
-  font-weight: 700;
-}
+// /* Text */
+// .title {
+//   font-size: 60px;
+//   font-weight: 700;
+// }
 
-.subtitle {
-  color: #9ca3af;
-  font-size: 16px;
-  max-width: 520px;
-  margin: auto;
-}
+// .subtitle {
+//   color: #9ca3af;
+//   font-size: 16px;
+//   max-width: 520px;
+//   margin: auto;
+// }
 
-/* Email Box */
-.email-box {
-  display: flex;
-  max-width: 420px;
-  margin: auto;
-  background: #111;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid #222;
-}
+// /* Email Box */
+// .email-box {
+//   display: flex;
+//   max-width: 420px;
+//   margin: auto;
+//   background: #111;
+//   border-radius: 12px;
+//   overflow: hidden;
+//   border: 1px solid #222;
+// }
 
-.email-box input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  padding: 14px;
-  color: #fff;
-  outline: none;
-}
+// .email-box input {
+//   flex: 1;
+//   background: transparent;
+//   border: none;
+//   padding: 14px;
+//   color: #fff;
+//   outline: none;
+// }
 
-.email-box input::placeholder {
-  color: #6b7280;
-}
+// .email-box input::placeholder {
+//   color: #6b7280;
+// }
 
-.email-box button {
-  background: linear-gradient(135deg, #6366f1, #ec4899);
-  border: none;
-  padding: 0 22px;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
+// .email-box button {
+//   background: linear-gradient(135deg, #6366f1, #ec4899);
+//   border: none;
+//   padding: 0 22px;
+//   color: #fff;
+//   font-weight: 600;
+//   cursor: pointer;
+// }
 
-.email-box button:hover {
-  opacity: 0.9;
-}
+// .email-box button:hover {
+//   opacity: 0.9;
+// }
 
-/* Footer */
-.small-text {
-  font-size: 13px;
-  color: #6b7280;
-}
+// /* Footer */
+// .small-text {
+//   font-size: 13px;
+//   color: #6b7280;
+// }
 
-/* Responsive */
-@media (max-width: 576px) {
-  .title {
-    font-size: 30px;
-  }
-}
+// /* Responsive */
+// @media (max-width: 576px) {
+//   .title {
+//     font-size: 30px;
+//   }
+// }
 
-  </style>
-</head>
-<body>
-
-
-
-<section class="coming-soon d-flex align-items-center justify-content-center">
-  <div class="container text-center">
-    <div class="ct_logo">
-      <img src="https://getzynq.io:4000/logo1.png">
-    </div>
+//   </style>
+// </head>
+// <body>
 
 
-    <h1 class="title mt-3">Kommer snart</h1>
-    <p class="subtitle mt-3">
-      Vi arbetar hårt för att ge dig en fantastisk upplevelse.<br>
-Håll utkik efter lanseringen.
-    </p>
+
+// <section class="coming-soon d-flex align-items-center justify-content-center">
+//   <div class="container text-center">
+//     <div class="ct_logo">
+//       <img src="https://13.60.145.118:4000/logo1.png">
+//     </div>
+
+
+//     <h1 class="title mt-3">Kommer snart</h1>
+//     <p class="subtitle mt-3">
+//       Vi arbetar hårt för att ge dig en fantastisk upplevelse.<br>
+// Håll utkik efter lanseringen.
+//     </p>
 
    
 
-    <p class="small-text mt-4">
-      © 2026 ZYNQ. Alla rättigheter reserverade.
-    </p>
+//     <p class="small-text mt-4">
+//       © 2026 ZYNQ. Alla rättigheter reserverade.
+//     </p>
 
-  </div>
-</section>
+//   </div>
+// </section>
 
-</body>
-</html>
-`
+// </body>
+// </html>
+// `
 
-  res.send(data);
-});
+//   res.send(data);
+// });
 
 //==================================== Doctor Managment ==============================
 
