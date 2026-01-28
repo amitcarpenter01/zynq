@@ -2175,7 +2175,7 @@ export const markAppointmentAsPaid = async (req, res) => {
                 to: req.user.email,
                 subject: appointmentBookingConfirmationTemplate.subject(data.payment_timing),
                 html: appointmentBookingConfirmationTemplate.body({
-                    doctor_image: data.profile_image ? data.profile_image : `https://13.60.145.118:4000/default_doctor_img.jpg`,
+                    doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
                     doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
                     clinic_name: data.clinic_name,
                     visit_link: "#",
@@ -2203,7 +2203,7 @@ export const markAppointmentAsPaid = async (req, res) => {
                 to: req.user.email,
                 subject: appointmentBookingConfirmationTemplateSwedish.subject(data.payment_timing),
                 html: appointmentBookingConfirmationTemplateSwedish.body({
-                    doctor_image: data.profile_image ? data.profile_image : `https://13.60.145.118:4000/default_doctor_img.jpg`,
+                    doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
                     doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
                     clinic_name: data.clinic_name,
                     visit_link: "#",
@@ -2367,7 +2367,7 @@ export const sendReciept = async (req, res) => {
                 to: req.user.email,
                 subject: appointmentReceiptTemplate.subject(),
                 html: appointmentReceiptTemplate.body({
-                    doctor_image: data.profile_image ? data.profile_image : `https://13.60.145.118:4000/default_doctor_img.jpg`,
+                    doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
                     doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
                     clinic_name: data.clinic_name,
                     visit_link: "#",
@@ -2394,7 +2394,7 @@ export const sendReciept = async (req, res) => {
                 to: req.user.email,
                 subject: appointmentReceiptTemplateSwedish.subject(),
                 html: appointmentReceiptTemplateSwedish.body({
-                    doctor_image: data.profile_image ? data.profile_image : `https://13.60.145.118:4000/default_doctor_img.jpg`,
+                    doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
                     doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
                     clinic_name: data.clinic_name,
                     visit_link: "#",
