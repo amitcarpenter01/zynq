@@ -14,11 +14,11 @@ import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
 import { sendEmail } from '../../services/send_email.js';
 import { appointmentBookedTemplate, appointmentBookingConfirmationTemplate, appointmentBookingConfirmationTemplateSwedish, appointmentReceiptTemplate, appointmentReceiptTemplateSwedish } from '../../utils/templates.js';
 import { getAdminCommissionRatesModel } from '../../models/admin.js';
-import { createPayLaterSetupSession, createPaymentSessionForAppointment, createPaymentSessionForAppointmentPAYLATERKLARNA, getOrCreateStripeCustomerId, handleCheckoutSessionCompleted, handlePaymentIntentFailed, handlePaymentIntentSucceeded, handleSetupIntentSucceeded, updateAuthorizationSetupIntentIdOfAppointment, verifyStripeWebhook } from '../../models/payment.js';
+import { createPayLaterSetupIntent, createPayLaterSetupSession, createPaymentSessionForAppointment, createPaymentSessionForAppointmentPAYLATERKLARNA, getOrCreateStripeCustomerId, handleCheckoutSessionCompleted, handlePaymentIntentFailed, handlePaymentIntentSucceeded, handleSetupIntentSucceeded, updateAuthorizationSetupIntentIdOfAppointment, verifyStripeWebhook } from '../../models/payment.js';
 import { booleanValidation } from '../../utils/joi.util.js';
 import { getIO } from '../../utils/socketManager.js';
 import { onlineUsers } from "../../utils/callSocket.js";
-import { io } from '../../../app.js';
+import { io, stripe } from '../../../app.js';
 
 export const bookAppointment = async (req, res) => {
     try {
@@ -1712,75 +1712,6 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
                 )
             );
 
-        // const buildEmptyCheckoutSession = ({
-        //     id: null,
-        //     object: "checkout.session",
-        //     adaptive_pricing: null,
-        //     after_expiration: null,
-        //     allow_promotion_codes: null,
-        //     amount_subtotal: 0,
-        //     amount_total: 0,
-        //     automatic_tax: null,
-        //     billing_address_collection: null,
-        //     branding_settings: null,
-        //     cancel_url: null,
-        //     client_reference_id: null,
-        //     client_secret: null,
-        //     collected_information: null,
-        //     consent: null,
-        //     consent_collection: null,
-        //     created: null,
-        //     currency: null,
-        //     currency_conversion: null,
-        //     custom_fields: [],
-        //     custom_text: null,
-        //     customer: null,
-        //     customer_account: null,
-        //     customer_creation: null,
-        //     customer_details: null,
-        //     customer_email: null,
-        //     discounts: [],
-        //     expires_at: null,
-        //     invoice: null,
-        //     invoice_creation: null,
-        //     livemode: false,
-        //     locale: null,
-        //     metadata: {},
-        //     mode: null,
-        //     origin_context: null,
-        //     payment_intent: null,
-        //     payment_link: null,
-        //     payment_method_collection: null,
-        //     payment_method_configuration_details: null,
-        //     payment_method_options: null,
-        //     payment_method_types: [],
-        //     payment_status: null,
-        //     permissions: null,
-        //     phone_number_collection: null,
-        //     recovered_from: null,
-        //     saved_payment_method_options: null,
-        //     setup_intent: null,
-        //     shipping_address_collection: null,
-        //     shipping_cost: null,
-        //     shipping_options: [],
-        //     status: null,
-        //     submit_type: null,
-        //     subscription: null,
-        //     success_url: null,
-        //     total_details: {
-        //         amount_discount: 0,
-        //         amount_shipping: 0,
-        //         amount_tax: 0
-        //     },
-        //     ui_mode: null,
-        //     url: null,
-        //     wallet_options: null,
-        //     appointmentDetails: newAppointmentDetails,
-        //     chat_id: 0,
-        //     appointment_id: appointment_id,
-        // });
-
-
         // ---------------- Normalize Times ----------------
         const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
         const normalizedEnd = dayjs.utc(end_time).format("YYYY-MM-DD HH:mm:ss");
@@ -1903,6 +1834,42 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 
                 const updateStatus = await updateAuthorizationSetupIntentIdOfAppointment(session.setup_intent, appointment_id);
 
+                // -----------------------------new flow developing with setup intent--------------------------karan patel---//
+
+                // const stripeCustomerId = await getOrCreateStripeCustomerId(user_id);
+                // const paymentMethods = await stripe.paymentMethods.list({ customer: stripeCustomerId, type: "card" });
+                // const hasSavedCard = paymentMethods.data.length > 0;
+                // if (hasSavedCard) {
+                //     const paymentIntent = await stripe.paymentIntents.create({
+                //         amount: final_total * 100,
+                //         currency: "sek",
+                //         customer: stripeCustomerId,
+                //         payment_method: paymentMethods.data[0].id,
+                //         off_session: true,
+                //         confirm: true,
+                //         metadata: {
+                //             appointment_id,
+                //             payment_flow: "PAY_LATER_AUTO_CHARGE"
+                //         }
+                //     });
+                //     session = paymentIntent.id
+                // } else {
+                //     const setupIntent = await stripe.setupIntents.create({
+                //         customer: stripeCustomerId,
+                //         payment_method_types: ["card"],
+                //         usage: "off_session",
+                //         metadata: {
+                //             appointment_id,
+                //             amount_to_charge: final_total,
+                //             payment_flow: "PAY_LATER_SAVE_AND_CHARGE"
+                //         }
+                //     });
+
+                //     await updateAuthorizationSetupIntentIdOfAppointment(setupIntent.id, appointment_id);
+                //     session = setupIntent.client_secret
+                // }
+                // -----------------------------------end----------------------------------------------//
+
             } else if (payment_timing === 'PAY_LATER_KLARNA') {
                 session = await createPaymentSessionForAppointmentPAYLATERKLARNA({
                     metadata: {
@@ -1942,7 +1909,7 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 
 
         // ---------------- FREE APPOINTMENT FLOW ----------------
-        let  newAppointmentDetails = await getAppointmentDetails(user_id, appointment_id);
+        let newAppointmentDetails = await getAppointmentDetails(user_id, appointment_id);
         if (is_paid && appointmentType === "Video Call" && final_total != 0 && doctor.fee_per_session !== 0) {
             let session;
             if (payment_timing === 'PAY_LATER') {
@@ -2208,7 +2175,7 @@ export const markAppointmentAsPaid = async (req, res) => {
                 to: req.user.email,
                 subject: appointmentBookingConfirmationTemplate.subject(data.payment_timing),
                 html: appointmentBookingConfirmationTemplate.body({
-                    doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
+                    doctor_image: data.profile_image ? data.profile_image : `https://13.60.145.118:4000/default_doctor_img.jpg`,
                     doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
                     clinic_name: data.clinic_name,
                     visit_link: "#",
@@ -2236,7 +2203,7 @@ export const markAppointmentAsPaid = async (req, res) => {
                 to: req.user.email,
                 subject: appointmentBookingConfirmationTemplateSwedish.subject(data.payment_timing),
                 html: appointmentBookingConfirmationTemplateSwedish.body({
-                    doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
+                    doctor_image: data.profile_image ? data.profile_image : `https://13.60.145.118:4000/default_doctor_img.jpg`,
                     doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
                     clinic_name: data.clinic_name,
                     visit_link: "#",
@@ -2400,7 +2367,7 @@ export const sendReciept = async (req, res) => {
                 to: req.user.email,
                 subject: appointmentReceiptTemplate.subject(),
                 html: appointmentReceiptTemplate.body({
-                    doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
+                    doctor_image: data.profile_image ? data.profile_image : `https://13.60.145.118:4000/default_doctor_img.jpg`,
                     doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
                     clinic_name: data.clinic_name,
                     visit_link: "#",
@@ -2427,7 +2394,7 @@ export const sendReciept = async (req, res) => {
                 to: req.user.email,
                 subject: appointmentReceiptTemplateSwedish.subject(),
                 html: appointmentReceiptTemplateSwedish.body({
-                    doctor_image: data.profile_image ? data.profile_image : `https://getzynq.io:4000/default_doctor_img.jpg`,
+                    doctor_image: data.profile_image ? data.profile_image : `https://13.60.145.118:4000/default_doctor_img.jpg`,
                     doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
                     clinic_name: data.clinic_name,
                     visit_link: "#",
@@ -2491,8 +2458,33 @@ export const handleStripeWebhook = async (req, res) => {
 
 
             case "setup_intent.succeeded":
-                await handleSetupIntentSucceeded(event.data.object);
+            await handleSetupIntentSucceeded(event.data.object);
                 break;
+
+            // case "setup_intent.succeeded": {
+            //     const setupIntent = event.data.object;
+
+            //     const appointment_id = setupIntent.metadata.appointment_id;
+            //     const amount = setupIntent.metadata.amount_to_charge;
+            //     const paymentMethod = setupIntent.payment_method;
+
+            //     // Now charge immediately
+            //     const paymentIntent = await stripe.paymentIntents.create({
+            //         amount: amount * 100,
+            //         currency: "sek",
+            //         customer: setupIntent.customer,
+            //         payment_method: paymentMethod,
+            //         off_session: true,
+            //         confirm: true,
+            //         metadata: {
+            //             appointment_id,
+            //             payment_flow: "PAY_LATER_FINAL_CHARGE"
+            //         }
+            //     });
+
+            //     await handleSetupIntentSucceeded(event.data.object);
+            //     break;
+            // }
 
             case "payment_intent.succeeded":
                 await handlePaymentIntentSucceeded(event.data.object);
@@ -2501,6 +2493,7 @@ export const handleStripeWebhook = async (req, res) => {
             case "payment_intent.payment_failed":
                 await handlePaymentIntentFailed(event.data.object);
                 break;
+
 
             default:
                 console.log(`Unhandled event type ${event.type}`);

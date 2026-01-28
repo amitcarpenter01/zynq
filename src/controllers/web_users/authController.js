@@ -30,7 +30,7 @@ export const login_web_user = async (req, res) => {
             email: Joi.string().min(5).max(255).email({ tlds: { allow: false } }).lowercase().required(),
             password: Joi.string().min(8).max(15).required(),
             fcm_token: Joi.string().optional().allow("", null),
-            language : Joi.string().valid('en', 'sv').required()
+            language: Joi.string().valid('en', 'sv').required()
         });
 
         // let language = 'en';
@@ -41,12 +41,12 @@ export const login_web_user = async (req, res) => {
 
         const { email, password, fcm_token, language } = value;
 
-        const roleSelectedStatus = await dbOperations.getSelectedColumn('role_selected, role_id', 'tbl_zqnq_users', `WHERE email = '${email}'`); (email);
-        if (roleSelectedStatus.length > 0) {
-            if (roleSelectedStatus[0].role_selected === 0 && roleSelectedStatus[0].role_id !== "3677a3e6-3196-11f0-9e07-0e8e5d906eef") {
-                return handleError(res, 400, language, "ROLE_TYPE_NOT_SELECTED");
-            }
-        }
+        // const roleSelectedStatus = await dbOperations.getSelectedColumn('role_selected, role_id', 'tbl_zqnq_users', `WHERE email = '${email}'`); (email);
+        // if (roleSelectedStatus.length > 0) {
+        //     if (roleSelectedStatus[0].role_selected === 0 && roleSelectedStatus[0].role_id !== "3677a3e6-3196-11f0-9e07-0e8e5d906eef") {
+        //         return handleError(res, 400, language, "ROLE_TYPE_NOT_SELECTED");
+        //     }
+        // }
 
         const [existingWebUser] = await webModels.get_web_user_by_email(email);
         if (!existingWebUser) {
@@ -214,7 +214,7 @@ export const set_password = async (req, res) => {
         const [user] = await webModels.get_web_user_by_id(req.user.id);
         if (!user) return handleError(res, 404, 'en', "USER_NOT_FOUND");
         const hashedPassword = await bcrypt.hash(new_password, 10);
-        await webModels.update_web_user_password_set(hashedPassword, new_password, user.id,language);
+        await webModels.update_web_user_password_set(hashedPassword, new_password, user.id, language);
         return handleSuccess(res, 200, language, "PASSWORD_SET_SUCCESSFULLY");
     } catch (error) {
         console.error("Error setting password:", error);
@@ -229,6 +229,8 @@ export const change_password = async (req, res) => {
             new_password: Joi.string().required()
         });
 
+        const language = req?.user?.language || 'en';
+
         const { error, value } = schema.validate(req.body);
         if (error) return joiErrorHandle(res, error);
 
@@ -242,7 +244,7 @@ export const change_password = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(new_password, 10);
 
-        await webModels.update_web_user_password_set(hashedPassword, new_password, user.id);
+        await webModels.update_web_user_password_set(hashedPassword, new_password, user.id,language);
 
         return handleSuccess(res, 200, 'en', "PASSWORD_CHANGED_SUCCESSFULLY");
 

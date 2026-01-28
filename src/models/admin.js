@@ -72,7 +72,7 @@ export const get_doctors = async () => {
 
 export const get_users = async () => {
     try {
-        return await db.query('SELECT * FROM `tbl_users` WHERE is_verified = 1;');
+        return await db.query('SELECT * FROM `tbl_users` WHERE is_verified = 1 AND is_deleted = 0');
     } catch (error) {
         console.error("Database Error:", error.message);
         throw new Error("Failed to get dashboard users data.");
@@ -2268,62 +2268,112 @@ export const updateProductApprovalStatus = async (product_id, approval_status) =
 export const getAllTreatmentsModel = async () => {
     try {
         const query = `
-            SELECT 
-                t.treatment_id,
-                t.name,
-                t.swedish,
-                t.classification_type,
-                t.benefits_en,
-                t.benefits_sv,
-                t.concern_en,
-                t.concern_sv,
-                t.description_en,
-                t.description_sv,
-                t.technology,
-                t.type,
-                t.source,
-                t.application,
-                t.is_device,
-                t.is_admin_created,
-                t.created_by_zynq_user_id,
-                t.approval_status,
-                t.is_deleted,
-                t.created_at,
-                t.like_wise_terms,
+            SELECT
+    t.treatment_id,
+    t.name,
+    t.swedish,
+    t.classification_type,
+    t.description_en,
+    t.description_sv,
+    t.technology,
+    t.type,
+    t.source,
+    t.application,
+    t.is_device,
+    t.is_admin_created,
+    t.created_by_zynq_user_id,
+    t.approval_status,
+    t.is_deleted,
+    t.created_at,
 
-                GROUP_CONCAT(DISTINCT c.concern_id ORDER BY c.concern_id SEPARATOR ',') AS concern_ids,
-                GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ',') AS concern_name,
-                GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ',') AS device_name,
+    lw.like_wise_terms_ids,
+    lw.like_wise_terms,
+    lw.like_wise_terms_swedish,
 
-                -- 🔥 Merge ADMIN + USER sub-treatments
-                GROUP_CONCAT(
-                    DISTINCT COALESCE(t_user_map.sub_treatment_id, t_admin_map.sub_treatment_id)
-                    ORDER BY COALESCE(t_user_map.sub_treatment_id, t_admin_map.sub_treatment_id)
-                    SEPARATOR ','
-                ) AS sub_treatment_ids
+    c.concern_ids,
+    c.concern_name,
+    c.concern_name_swedish,
 
-            FROM tbl_treatments t
+    d.device_name_ids,
+    d.device_name,
+    d.device_name_swedish,
 
-            LEFT JOIN tbl_treatment_concerns tc 
-                ON tc.treatment_id = t.treatment_id
-            LEFT JOIN tbl_concerns c 
-                ON c.concern_id = tc.concern_id
-            LEFT JOIN tbl_treatment_devices d 
-                ON d.treatment_id = t.treatment_id
+    b.benefits_en_ids,
+    b.benefits_en,
+    b.benefits_sv,
 
-            -- USER CREATED SUB-TREATMENTS
-            LEFT JOIN tbl_treatment_sub_treatment_user_maps t_user_map
-                ON t_user_map.treatment_id = t.treatment_id
+    st.sub_treatment_ids
 
-            -- ADMIN CREATED SUB-TREATMENTS
-            LEFT JOIN tbl_treatment_sub_treatments t_admin_map
-                ON t_admin_map.treatment_id = t.treatment_id
+FROM tbl_treatments t
 
-            WHERE 
-                t.is_deleted = 0
+LEFT JOIN (
+    SELECT
+        tlwt.treatment_id,
+        GROUP_CONCAT(DISTINCT lwt.like_wise_term_id SEPARATOR ',') AS like_wise_terms_ids,
+        GROUP_CONCAT(DISTINCT lwt.name SEPARATOR ',') AS like_wise_terms,
+        GROUP_CONCAT(DISTINCT lwt.swedish SEPARATOR ',') AS like_wise_terms_swedish
+    FROM tbl_treatment_like_wise_terms tlwt
+    JOIN tbl_likewise_terms lwt
+        ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+       AND lwt.is_deleted = 0
+       AND lwt.approval_status = 'APPROVED'
+    GROUP BY tlwt.treatment_id
+) lw ON lw.treatment_id = t.treatment_id
 
-            GROUP BY t.treatment_id
-            ORDER BY t.created_at DESC
+LEFT JOIN (
+    SELECT
+        tc.treatment_id,
+        GROUP_CONCAT(DISTINCT c.concern_id SEPARATOR ',') AS concern_ids,
+        GROUP_CONCAT(DISTINCT c.name SEPARATOR ',') AS concern_name,
+        GROUP_CONCAT(DISTINCT c.swedish SEPARATOR ',') AS concern_name_swedish
+    FROM tbl_treatment_concerns tc
+    JOIN tbl_concerns c
+        ON c.concern_id = tc.concern_id
+       AND c.is_deleted = 0
+       AND c.approval_status = 'APPROVED'
+    GROUP BY tc.treatment_id
+) c ON c.treatment_id = t.treatment_id
+
+LEFT JOIN (
+    SELECT
+        d.treatment_id,
+        GROUP_CONCAT(DISTINCT tbd.device_id SEPARATOR ',') AS device_name_ids,
+        GROUP_CONCAT(DISTINCT tbd.name SEPARATOR ',') AS device_name,
+        GROUP_CONCAT(DISTINCT tbd.swedish SEPARATOR ',') AS device_name_swedish
+    FROM tbl_treatment_devices d
+    JOIN tbl_devices tbd
+        ON tbd.device_id = d.device_id
+       AND tbd.is_deleted = 0
+       AND tbd.approval_status = 'APPROVED'
+    GROUP BY d.treatment_id
+) d ON d.treatment_id = t.treatment_id
+
+LEFT JOIN (
+    SELECT
+        ttb.treatment_id,
+        GROUP_CONCAT(DISTINCT tb.benefit_id SEPARATOR ',') AS benefits_en_ids,
+        GROUP_CONCAT(DISTINCT tb.name SEPARATOR ',') AS benefits_en,
+        GROUP_CONCAT(DISTINCT tb.swedish SEPARATOR ',') AS benefits_sv
+    FROM tbl_treatment_benefits ttb
+    JOIN tbl_benefits tb
+        ON tb.benefit_id = ttb.benefit_id
+       AND tb.is_deleted = 0
+       AND tb.approval_status = 'APPROVED'
+    GROUP BY ttb.treatment_id
+) b ON b.treatment_id = t.treatment_id
+
+LEFT JOIN (
+    SELECT
+        ttstum.treatment_id,
+        GROUP_CONCAT(DISTINCT ttstum.sub_treatment_id SEPARATOR ',') AS sub_treatment_ids
+    FROM tbl_treatment_sub_treatments ttstum
+    GROUP BY ttstum.treatment_id
+) st ON st.treatment_id = t.treatment_id
+
+WHERE
+    t.is_deleted = 0
+ORDER BY
+    t.created_at DESC;
         `;
 
         return await db.query(query);
@@ -2338,59 +2388,114 @@ export const getTreatmentsByZynqUserId = async (zynq_user_id) => {
     console.log("user id =>", zynq_user_id)
     try {
         const query = `
-            SELECT 
-                t.treatment_id,
-                t.name,
-                t.swedish,
-                t.classification_type,
-                t.benefits_en,
-                t.benefits_sv,
-                t.concern_en,
-                t.concern_sv,
-                t.description_en,
-                t.description_sv,
-                t.technology,
-                t.type,
-                t.source,
-                t.application,
-                t.is_device,
-                t.is_admin_created,
-                t.created_by_zynq_user_id,
-                t.approval_status,
-                t.is_deleted,
-                t.created_at,
-                t.like_wise_terms,
+SELECT
+    t.treatment_id,
+    t.name,
+    t.swedish,
+    t.classification_type,
+    t.description_en,
+    t.description_sv,
+    t.technology,
+    t.type,
+    t.source,
+    t.application,
+    t.is_device,
+    t.is_admin_created,
+    t.created_by_zynq_user_id,
+    t.approval_status,
+    t.is_deleted,
+    t.created_at,
 
-                -- Concerns
-                GROUP_CONCAT(DISTINCT c.concern_id ORDER BY c.concern_id SEPARATOR ',') AS concern_ids,
-                GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ',') AS concern_name,
+    lw.like_wise_terms,
+    lw.like_wise_terms_swedish,
 
-                -- Devices
-                GROUP_CONCAT(DISTINCT d.device_name ORDER BY d.device_name SEPARATOR ',') AS device_name,
+    c.concern_ids,
+    c.concern_name,
+    c.concern_name_swedish,
 
-                -- Sub-Treatment IDs
-                GROUP_CONCAT(DISTINCT ttstum.sub_treatment_id ORDER BY ttstum.sub_treatment_id SEPARATOR ',') AS sub_treatment_ids
+    d.device_name,
+    d.device_name_swedish,
 
-            FROM 
-                tbl_treatments t
-            LEFT JOIN tbl_treatment_concerns tc 
-                ON tc.treatment_id = t.treatment_id
-            LEFT JOIN tbl_concerns c 
-                ON c.concern_id = tc.concern_id
-            LEFT JOIN tbl_treatment_devices d 
-                ON d.treatment_id = t.treatment_id
-            LEFT JOIN tbl_treatment_sub_treatment_user_maps ttstum 
-                ON ttstum.treatment_id = t.treatment_id
-            WHERE 
-                t.is_deleted = 0
-                AND t.created_by_zynq_user_id = ?
-                AND ttstum.zynq_user_id = ?
+    b.benefits_en,
+    b.benefits_sv,
 
-            GROUP BY 
-                t.treatment_id
+    st.sub_treatment_ids
 
-            ORDER BY 
-                t.created_at DESC
+FROM tbl_treatments t
+
+/* -------------------- Like-wise terms -------------------- */
+LEFT JOIN (
+    SELECT
+        tlwt.treatment_id,
+        GROUP_CONCAT(DISTINCT lwt.name SEPARATOR ',') AS like_wise_terms,
+        GROUP_CONCAT(DISTINCT lwt.swedish SEPARATOR ',') AS like_wise_terms_swedish
+    FROM tbl_treatment_like_wise_terms tlwt
+    JOIN tbl_likewise_terms lwt
+        ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+       AND lwt.is_deleted = 0
+       AND lwt.approval_status = 'APPROVED'
+    GROUP BY tlwt.treatment_id
+) lw ON lw.treatment_id = t.treatment_id
+
+/* -------------------- Concerns -------------------- */
+LEFT JOIN (
+    SELECT
+        tc.treatment_id,
+        GROUP_CONCAT(DISTINCT c.concern_id SEPARATOR ',') AS concern_ids,
+        GROUP_CONCAT(DISTINCT c.name SEPARATOR ',') AS concern_name,
+        GROUP_CONCAT(DISTINCT c.swedish SEPARATOR ',') AS concern_name_swedish
+    FROM tbl_treatment_concerns tc
+    JOIN tbl_concerns c
+        ON c.concern_id = tc.concern_id
+       AND c.is_deleted = 0
+       AND c.approval_status = 'APPROVED'
+    GROUP BY tc.treatment_id
+) c ON c.treatment_id = t.treatment_id
+
+/* -------------------- Devices -------------------- */
+LEFT JOIN (
+    SELECT
+        td.treatment_id,
+        GROUP_CONCAT(DISTINCT d.name SEPARATOR ',') AS device_name,
+        GROUP_CONCAT(DISTINCT d.swedish SEPARATOR ',') AS device_name_swedish
+    FROM tbl_treatment_devices td
+    JOIN tbl_devices d
+        ON d.device_id = td.device_id
+       AND d.is_deleted = 0
+       AND d.approval_status = 'APPROVED'
+    GROUP BY td.treatment_id
+) d ON d.treatment_id = t.treatment_id
+
+/* -------------------- Benefits -------------------- */
+LEFT JOIN (
+    SELECT
+        tbm.treatment_id,
+        GROUP_CONCAT(DISTINCT b.name SEPARATOR ',') AS benefits_en,
+        GROUP_CONCAT(DISTINCT b.swedish SEPARATOR ',') AS benefits_sv
+    FROM tbl_treatment_benefits tbm
+    JOIN tbl_benefits b
+        ON b.benefit_id = tbm.benefit_id
+       AND b.is_deleted = 0
+       AND b.approval_status = 'APPROVED'
+    GROUP BY tbm.treatment_id
+) b ON b.treatment_id = t.treatment_id
+
+/* -------------------- Sub-treatments -------------------- */
+LEFT JOIN (
+    SELECT
+        ttstum.treatment_id,
+        GROUP_CONCAT(DISTINCT ttstum.sub_treatment_id SEPARATOR ',') AS sub_treatment_ids
+    FROM tbl_treatment_sub_treatment_user_maps ttstum
+    WHERE ttstum.zynq_user_id = ?
+    GROUP BY ttstum.treatment_id
+) st ON st.treatment_id = t.treatment_id
+
+WHERE
+    t.is_deleted = 0
+    AND t.created_by_zynq_user_id = ?
+
+ORDER BY
+    t.created_at DESC;
         `;
 
         return await db.query(query, [zynq_user_id, zynq_user_id]);
@@ -2435,21 +2540,111 @@ export const getAllSubTreatmentsMasterModel = async () => {
 export const getTreatmentsByTreatmentId = async (treatment_id, zynq_user_id = null) => {
     try {
         let query = `
-            SELECT 
-                t.*,
-                JSON_ARRAYAGG(
-                    JSON_OBJECT(
-                        'concern_id', c.concern_id,
-                        'concern_name', c.name
-                    )
-                ) AS concerns
-            FROM tbl_treatments t
-            LEFT JOIN tbl_treatment_concerns tc 
-                ON tc.treatment_id = t.treatment_id
-            LEFT JOIN tbl_concerns c 
-                ON c.concern_id = tc.concern_id
-            WHERE t.treatment_id = ?
-              AND t.is_deleted = 0
+            SELECT
+    t.treatment_id,
+    t.name,
+    t.swedish,
+    t.classification_type,
+    t.description_en,
+    t.description_sv,
+    t.technology,
+    t.type,
+    t.source,
+    t.application,
+    t.is_device,
+    t.created_by_zynq_user_id,
+    t.approval_status,
+    t.is_deleted,
+    t.embeddings,
+    t.name_embeddings,
+    t.created_at,
+
+    c.concerns,
+
+    l.like_wise_terms_ids,
+    l.like_wise_terms,
+    l.like_wise_terms_swedish,
+
+    d.device_name_ids,
+    d.device_name,
+    d.device_name_swedish,
+
+    b.benefits_en_ids,
+    b.benefits_en,
+    b.benefits_sv
+
+FROM tbl_treatments t
+
+/* ---------- CONCERNS ---------- */
+LEFT JOIN (
+    SELECT
+        tc.treatment_id,
+        JSON_ARRAYAGG(
+            JSON_OBJECT(
+                'concern_id', c.concern_id,
+                'concern_name', c.name
+            )
+        ) AS concerns
+    FROM (
+        SELECT DISTINCT treatment_id, concern_id
+        FROM tbl_treatment_concerns
+    ) tc
+    JOIN tbl_concerns c
+        ON c.concern_id = tc.concern_id
+    GROUP BY tc.treatment_id
+) c ON c.treatment_id = t.treatment_id
+
+
+/* ---------- LIKE WISE TERMS ---------- */
+LEFT JOIN (
+    SELECT
+        tlwt.treatment_id,
+        GROUP_CONCAT(DISTINCT lwt.like_wise_term_id ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms_ids,
+        GROUP_CONCAT(DISTINCT lwt.name ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms,
+        GROUP_CONCAT(DISTINCT lwt.swedish ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms_swedish
+    FROM tbl_treatment_like_wise_terms tlwt
+    JOIN tbl_likewise_terms lwt
+        ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+       AND lwt.is_deleted = 0
+       AND lwt.approval_status = 'APPROVED'
+    GROUP BY tlwt.treatment_id
+) l ON l.treatment_id = t.treatment_id
+
+
+/* ---------- DEVICES ---------- */
+LEFT JOIN (
+    SELECT
+        d.treatment_id,
+        GROUP_CONCAT(DISTINCT tbd.device_id ORDER BY tbd.name SEPARATOR ',') AS device_name_ids,
+        GROUP_CONCAT(DISTINCT tbd.name ORDER BY tbd.name SEPARATOR ',') AS device_name,
+        GROUP_CONCAT(DISTINCT tbd.swedish ORDER BY tbd.name SEPARATOR ',') AS device_name_swedish
+    FROM tbl_treatment_devices d
+    JOIN tbl_devices tbd
+        ON tbd.device_id = d.device_id
+       AND tbd.is_deleted = 0
+       AND tbd.approval_status = 'APPROVED'
+    GROUP BY d.treatment_id
+) d ON d.treatment_id = t.treatment_id
+
+
+/* ---------- BENEFITS ---------- */
+LEFT JOIN (
+    SELECT
+        ttb.treatment_id,
+        GROUP_CONCAT(DISTINCT tb.benefit_id ORDER BY tb.name SEPARATOR ',') AS benefits_en_ids,
+        GROUP_CONCAT(DISTINCT tb.name ORDER BY tb.name SEPARATOR ',') AS benefits_en,
+        GROUP_CONCAT(DISTINCT tb.swedish ORDER BY tb.name SEPARATOR ',') AS benefits_sv
+    FROM tbl_treatment_benefits ttb
+    JOIN tbl_benefits tb
+        ON tb.benefit_id = ttb.benefit_id
+       AND tb.is_deleted = 0
+       AND tb.approval_status = 'APPROVED'
+    GROUP BY ttb.treatment_id
+) b ON b.treatment_id = t.treatment_id
+
+
+WHERE t.treatment_id = ?
+  AND t.is_deleted = 0
         `;
 
         const params = [treatment_id];
@@ -2460,7 +2655,7 @@ export const getTreatmentsByTreatmentId = async (treatment_id, zynq_user_id = nu
             params.push(zynq_user_id);
         }
 
-        query += ` GROUP BY t.treatment_id `;
+        // query += ` GROUP BY t.treatment_id `;
 
         return await db.query(query, params);
 
@@ -2728,6 +2923,12 @@ export const addTreatmentDeviceNameModel = async (treatment_id, devices) => {
 
 export const addTreatmentSubTreatmentModel = async (treatment_id, subTreatments) => {
     try {
+
+        if (!treatment_id || !Array.isArray(subTreatments) || subTreatments.length === 0) {
+            return [];
+        }
+
+
         const values = subTreatments.map(sub => [treatment_id, sub]);
 
         return await db.query(
@@ -3135,21 +3336,6 @@ export const getTreatmentByIdModel = async (treatment_id) => {
     return rows[0];
 };
 
-export const getTreatmentConcernsModel = async (treatment_id) => {
-    const rows = await db.query(
-        `SELECT concern_id FROM tbl_treatment_concerns WHERE treatment_id = ?`,
-        [treatment_id]
-    );
-    return rows.map(r => r.concern_id);
-};
-
-export const getTreatmentDevicesModel = async (treatment_id) => {
-    const rows = await db.query(
-        `SELECT device_name FROM tbl_treatment_devices WHERE treatment_id = ?`,
-        [treatment_id]
-    );
-    return rows.map(r => r.device_name);
-};
 
 export const getTreatmentSubTreatmentsModel = async (treatment_id) => {
     const rows = await db.query(
@@ -3389,7 +3575,7 @@ export const updateBenifitsModel = async (benefit_id, data) => {
     try {
         return await db.query(
             `UPDATE tbl_benefits SET ? WHERE benefit_id   = ?`,
-            [data, benefit_id ]
+            [data, benefit_id]
         );
     } catch (error) {
         console.error("updateConcernModel error:", error);
@@ -3409,11 +3595,11 @@ export const addBenifitsModel = async (data) => {
     }
 };
 
-export const checkExistingBenifitsModel = async (benefit_id , zynq_user_id) => {
+export const checkExistingBenifitsModel = async (benefit_id, zynq_user_id) => {
     try {
         return await db.query(
             `SELECT * FROM tbl_benefits WHERE benefit_id   = ? AND created_by_zynq_user_id = ?`,
-            [benefit_id , zynq_user_id]
+            [benefit_id, zynq_user_id]
         );
     } catch (error) {
         console.error("checkExistingConcernModel error:", error);
@@ -3483,7 +3669,7 @@ export const updateBenefitApprovalStatusModel = async (benefit_id, approval_stat
 
 
 
-export const getBeforeDevices = async() => {
+export const getBeforeDevices = async () => {
     try {
         return await db.query(
             `SELECT t.treatment_id,t.is_admin_created,t.approval_status,t.created_by_zynq_user_id,tdum.device_name FROM tbl_treatments t JOIN tbl_treatment_devices tdum ON t.treatment_id = tdum.treatment_id WHERE t.is_deleted = 0;`
@@ -3549,11 +3735,11 @@ order by
 
 
 
-export const updateDeviceModel = async (device_id , data) => {
+export const updateDeviceModel = async (device_id, data) => {
     try {
         return await db.query(
             `UPDATE tbl_devices SET ? WHERE device_id    = ?`,
-            [data, device_id  ]
+            [data, device_id]
         );
     } catch (error) {
         console.error("updateConcernModel error:", error);
@@ -3573,11 +3759,11 @@ export const addDeviceModel = async (data) => {
     }
 };
 
-export const checkExistingDeviceModel = async (device_id  , zynq_user_id) => {
+export const checkExistingDeviceModel = async (device_id, zynq_user_id) => {
     try {
         return await db.query(
             `SELECT * FROM tbl_devices WHERE device_id    = ? AND created_by_zynq_user_id = ?`,
-            [device_id  , zynq_user_id]
+            [device_id, zynq_user_id]
         );
     } catch (error) {
         console.error("checkExistingConcernModel error:", error);
@@ -3735,3 +3921,325 @@ export const getAllBenefitsModel = async (user_id = null, isAdmin = false) => {
     }
 };
 
+export const getLikeWiseTermsByIdsModel = async (
+    like_wise_term_ids = []
+) => {
+    if (!Array.isArray(like_wise_term_ids) || like_wise_term_ids.length === 0) {
+        return [];
+    }
+
+    try {
+        const query = `
+            SELECT *
+            FROM tbl_likewise_terms
+            WHERE is_deleted = 0
+              AND like_wise_term_id IN (?)
+            ORDER BY created_at DESC
+        `;
+
+        return await db.query(query, [like_wise_term_ids]);
+    } catch (error) {
+        console.error("getLikeWiseTermsByIdsModel error:", error);
+        throw error;
+    }
+};
+
+
+export const getDevicesByIdsModel = async (
+    device_ids = []
+) => {
+    if (!Array.isArray(device_ids) || device_ids.length === 0) {
+        return [];
+    }
+
+    try {
+        const query = `
+            SELECT *
+            FROM tbl_devices
+            WHERE is_deleted = 0
+              AND device_id IN (?)
+            ORDER BY created_at DESC
+        `;
+
+        return await db.query(query, [device_ids]);
+    } catch (error) {
+        console.error("getDevicesByIdsModel error:", error);
+        throw error;
+    }
+};
+
+export const getBenefitsByIdsModel = async (
+    benefit_ids = []
+) => {
+    if (!Array.isArray(benefit_ids) || benefit_ids.length === 0) {
+        return [];
+    }
+
+    try {
+        const query = `
+            SELECT *
+            FROM tbl_benefits
+            WHERE is_deleted = 0
+              AND benefit_id IN (?)
+            ORDER BY created_at DESC
+        `;
+
+        return await db.query(query, [benefit_ids]);
+    } catch (error) {
+        console.error("getBenefitsByIdsModel error:", error);
+        throw error;
+    }
+};
+
+export const getConcernsByIdsModel = async (
+    concern_ids = []
+) => {
+    if (!Array.isArray(concern_ids) || concern_ids.length === 0) {
+        return [];
+    }
+
+    try {
+        const query = `
+            SELECT *
+            FROM tbl_concerns
+            WHERE is_deleted = 0
+              AND concern_id IN (?)
+            ORDER BY created_at DESC
+        `;
+
+        return await db.query(query, [concern_ids]);
+    } catch (error) {
+        console.error("getConcernsByIdsModel error:", error);
+        throw error;
+    }
+};
+
+
+export const deleteLikeWiseTermTreatmentModel = async (treatment_id) => {
+    try {
+        const query = `
+            DELETE FROM tbl_treatment_like_wise_terms
+            WHERE treatment_id = ?
+        `;
+        return await db.query(query, [treatment_id]);
+    } catch (error) {
+        console.error("deleteLikeWiseTermTreatmentModel error:", error);
+        throw error;
+    }
+};
+
+export const deleteTreatmentDevicesModel = async (treatment_id) => {
+    try {
+        const query = `
+            DELETE FROM tbl_treatment_devices
+            WHERE treatment_id = ?
+        `;
+        return await db.query(query, [treatment_id]);
+    } catch (error) {
+        console.error("deleteTreatmentDevicesModel error:", error);
+        throw error;
+    }
+};
+
+export const deleteTreatmentConcernsModel = async (treatment_id) => {
+    try {
+        const query = `
+            DELETE FROM tbl_treatment_concerns
+            WHERE treatment_id = ?
+        `;
+        return await db.query(query, [treatment_id]);
+    } catch (error) {
+        console.error("deleteTreatmentConcernsModel error:", error);
+        throw error;
+    }
+};
+
+export const deleteTreatmentBenefitsModel = async (treatment_id) => {
+    try {
+        const query = `
+            DELETE FROM tbl_treatment_benefits
+            WHERE treatment_id = ?
+        `;
+        return await db.query(query, [treatment_id]);
+    } catch (error) {
+        console.error("deleteTreatmentBenefitsModel error:", error);
+        throw error;
+    }
+};
+
+export const insertTreatmentBenefitsModel = async (
+    treatment_id,
+    benefits = []
+) => {
+    if (!treatment_id || !Array.isArray(benefits) || benefits.length === 0) {
+        return [];
+    }
+
+    try {
+        const values = benefits.map(item => [
+            treatment_id,
+            item.benefit_id
+        ]);
+
+        const query = `
+            INSERT INTO tbl_treatment_benefits
+                (treatment_id, benefit_id)
+            VALUES ?
+        `;
+
+        return await db.query(query, [values]);
+    } catch (error) {
+        console.error("insertTreatmentBenefitsModel error:", error);
+        throw error;
+    }
+};
+
+
+export const insertTreatmentDevicesModel = async (
+    treatment_id,
+    devices = []
+) => {
+    if (!treatment_id || !Array.isArray(devices) || devices.length === 0) {
+        return [];
+    }
+
+    try {
+        const values = devices.map(item => [
+            treatment_id,
+            item.device_id,
+            item.name
+        ]);
+
+        const query = `
+            INSERT INTO tbl_treatment_devices
+                (treatment_id, device_id,device_name)
+            VALUES ?
+        `;
+
+        return await db.query(query, [values]);
+    } catch (error) {
+        console.error("insertTreatmentDevicesModel error:", error);
+        throw error;
+    }
+};
+
+
+export const insertTreatmentConcernsModel = async (
+    treatment_id,
+    concerns = []
+) => {
+    if (!treatment_id || !Array.isArray(concerns) || concerns.length === 0) {
+        return [];
+    }
+
+    try {
+        const values = concerns.map(item => [
+            treatment_id,
+            item.concern_id
+        ]);
+
+        const query = `
+            INSERT INTO tbl_treatment_concerns
+                (treatment_id, concern_id)
+            VALUES ?
+        `;
+
+        return await db.query(query, [values]);
+    } catch (error) {
+        console.error("insertTreatmentConcernsModel error:", error);
+        throw error;
+    }
+};
+
+
+export const insertTreatmentLikeWiseTermsModel = async (
+    treatment_id,
+    like_wise_terms = []
+) => {
+    if (!treatment_id || !Array.isArray(like_wise_terms) || like_wise_terms.length === 0) {
+        return [];
+    }
+
+    try {
+        const values = like_wise_terms.map(item => [
+            treatment_id,
+            item.like_wise_term_id
+        ]);
+
+        const query = `
+            INSERT INTO tbl_treatment_like_wise_terms
+                (treatment_id, like_wise_term_id)
+            VALUES ?
+        `;
+
+        return await db.query(query, [values]);
+    } catch (error) {
+        console.error("insertTreatmentLikeWiseTermsModel error:", error);
+        throw error;
+    }
+};
+
+
+export const getTreatmentBenefitsModel = async (treatment_id) => {
+    if (!treatment_id) return [];
+
+    try {
+        const query = `
+            SELECT benefit_id
+            FROM tbl_treatment_benefits
+            WHERE treatment_id = ?
+        `;
+        return await db.query(query, [treatment_id]);
+    } catch (error) {
+        console.error("getTreatmentBenefitsModel error:", error);
+        throw error;
+    }
+};
+
+export const getTreatmentDevicesModel = async (treatment_id) => {
+    if (!treatment_id) return [];
+
+    try {
+        const query = `
+            SELECT device_id
+            FROM tbl_treatment_devices
+            WHERE treatment_id = ?
+        `;
+        return await db.query(query, [treatment_id]);
+    } catch (error) {
+        console.error("getTreatmentDevicesModel error:", error);
+        throw error;
+    }
+};
+
+export const getTreatmentConcernsModel = async (treatment_id) => {
+    if (!treatment_id) return [];
+
+    try {
+        const query = `
+            SELECT concern_id
+            FROM tbl_treatment_concerns
+            WHERE treatment_id = ?
+        `;
+        return await db.query(query, [treatment_id]);
+    } catch (error) {
+        console.error("getTreatmentConcernsModel error:", error);
+        throw error;
+    }
+};
+
+export const getTreatmentLikeWiseTermsModel = async (treatment_id) => {
+    if (!treatment_id) return [];
+
+    try {
+        const query = `
+            SELECT like_wise_term_id
+            FROM tbl_treatment_like_wise_terms
+            WHERE treatment_id = ?
+        `;
+        return await db.query(query, [treatment_id]);
+    } catch (error) {
+        console.error("getTreatmentLikeWiseTermsModel error:", error);
+        throw error;
+    }
+};

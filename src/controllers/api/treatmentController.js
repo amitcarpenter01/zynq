@@ -49,7 +49,21 @@ import {
     updateBenefitApprovalStatusModel,
     getAllBenefitsModel,
     getAllDevicesModel,
-    getAllLikeWiseTermsModel
+    getAllLikeWiseTermsModel,
+    getLikeWiseTermsByIdsModel,
+    getDevicesByIdsModel,
+    getConcernsByIdsModel,
+    deleteLikeWiseTermTreatmentModel,
+    deleteTreatmentDevicesModel,
+    deleteTreatmentConcernsModel,
+    deleteTreatmentBenefitsModel,
+    insertTreatmentBenefitsModel,
+    insertTreatmentDevicesModel,
+    insertTreatmentConcernsModel,
+    insertTreatmentLikeWiseTermsModel,
+    getBenefitsByIdsModel,
+    getTreatmentBenefitsModel,
+    getTreatmentLikeWiseTermsModel
 } from "../../models/admin.js";
 import { getTreatmentsByConcernId } from "../../models/api.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../../services/notifications.service.js";
@@ -78,8 +92,24 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
     const isAdmin = role === "ADMIN";
     const dbData = { ...body };
     dbData.swedish = await googleTranslator(dbData.name, "sv");
-    dbData.benefits_sv = await googleTranslator(dbData.benefits_en, "sv");
+    // dbData.benefits_sv = await googleTranslator(dbData.benefits_en, "sv");
     dbData.description_sv = await googleTranslator(dbData.description_en, "sv");
+
+
+    const benefits_ids = dbData.benefits_ids;
+    const device_ids = dbData.device_ids;
+    const like_wise_terms_ids = dbData.like_wise_terms_ids;
+    const concerns_ids = dbData.concerns_ids;
+
+    const benefits = await getBenefitsByIdsModel(benefits_ids);
+    const devices = await getDevicesByIdsModel(device_ids);
+    const like_wise_terms = await getLikeWiseTermsByIdsModel(like_wise_terms_ids);
+    const concerns = await getConcernsByIdsModel(concerns_ids);
+
+    dbData.benefits_en = benefits.map((benefit) => benefit.name).join(', ') || null;
+    dbData.benefits_sv = benefits.map((benefit) => benefit.swedish).join(', ') || null;
+    dbData.device_name = devices.map((device) => device.name).join(', ') || null;
+    dbData.like_wise_terms = like_wise_terms.map((like_wise_term) => like_wise_term.name).join(', ') || null;
 
     // 🧩 Creator metadata
     if (isAdmin) {
@@ -131,15 +161,24 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
             !isAdmin
                 ?
                 deleteZynqUserSubTreatmentsModel(treatment_id)
-                : deleteTreatmentSubTreatmentsModel(treatment_id)
+                : deleteTreatmentSubTreatmentsModel(treatment_id),
+            deleteLikeWiseTermTreatmentModel(treatment_id),
+            deleteTreatmentDevicesModel(treatment_id),
+            deleteTreatmentConcernsModel(treatment_id),
+            deleteTreatmentBenefitsModel(treatment_id),
         ]);
 
-        // Insert fresh mappings
-        if (dbData.concerns?.length > 0)
-            await addTreatmentConcernsModel(treatment_id, dbData.concerns);
+        // // Insert fresh mappings
+        // if (dbData.concerns?.length > 0)
+        //     await addTreatmentConcernsModel(treatment_id, dbData.concerns);
 
-        if (req.body.device_name?.length > 0)
-            await addTreatmentDeviceNameModel(treatment_id, req.body.device_name);
+        // if (req.body.device_name?.length > 0)
+        //     await addTreatmentDeviceNameModel(treatment_id, req.body.device_name);
+
+        await insertTreatmentBenefitsModel(treatment_id, benefits);
+        await insertTreatmentDevicesModel(treatment_id, devices);
+        await insertTreatmentConcernsModel(treatment_id, concerns);
+        await insertTreatmentLikeWiseTermsModel(treatment_id, like_wise_terms);
 
         if (req.body.sub_treatments?.length > 0)
             console.log({ sub_treatments: req.body.sub_treatments, treatment_id })
@@ -172,11 +211,17 @@ export const addEditTreatment = asyncHandler(async (req, res) => {
 
         await addTreatmentModel(addTreatment);
 
-        if (dbData.concerns?.length > 0)
-            await addTreatmentConcernsModel(dbData.treatment_id, dbData.concerns);
+        // if (dbData.concerns?.length > 0)
+        //     await addTreatmentConcernsModel(dbData.treatment_id, dbData.concerns);
 
-        if (req.body.device_name?.length > 0)
-            await addTreatmentDeviceNameModel(dbData.treatment_id, req.body.device_name);
+        // if (req.body.device_name?.length > 0)
+        //     await addTreatmentDeviceNameModel(dbData.treatment_id, req.body.device_name);
+
+
+        await insertTreatmentBenefitsModel(dbData.treatment_id, benefits);
+        await insertTreatmentDevicesModel(dbData.treatment_id, devices);
+        await insertTreatmentConcernsModel(dbData.treatment_id, concerns);
+        await insertTreatmentLikeWiseTermsModel(dbData.treatment_id, like_wise_terms);
 
         if (req.body.sub_treatments?.length > 0)
             if (!isAdmin) await addTreatmentSubTreatmentUserModel(dbData.treatment_id, req.body.sub_treatments, user_id);
@@ -771,9 +816,7 @@ export const import_treatments_from_CSV = async (req, res) => {
 
 export const cloneTreatment = asyncHandler(async (req, res) => {
     const { treatment_id } = req.params;
-    const role = req.user?.role;
     const language = req.user?.language || 'en';
-
 
     // 1️⃣ Fetch original treatment
     const original = await getTreatmentByIdModel(treatment_id);
@@ -781,26 +824,46 @@ export const cloneTreatment = asyncHandler(async (req, res) => {
         return handleError(res, 404, language, "TREATMENT_NOT_FOUND");
     }
 
-
-    // 2️⃣ Fetch relations
-    const [concerns, devices, subTreatments] = await Promise.all([
-        getTreatmentConcernsModel(treatment_id),
+    // 2️⃣ Fetch relation IDs
+    const [
+        benefitMappings,
+        deviceMappings,
+        concernMappings,
+        likeWiseMappings,
+        subTreatments
+    ] = await Promise.all([
+        getTreatmentBenefitsModel(treatment_id),
         getTreatmentDevicesModel(treatment_id),
+        getTreatmentConcernsModel(treatment_id),
+        getTreatmentLikeWiseTermsModel(treatment_id),
         getTreatmentSubTreatmentsModel(treatment_id)
     ]);
 
-    // 3️⃣ Create new treatment
+    const benefit_ids = benefitMappings.map(b => b.benefit_id);
+    const device_ids = deviceMappings.map(d => d.device_id);
+    const concern_ids = concernMappings.map(c => c.concern_id);
+    const like_wise_term_ids = likeWiseMappings.map(l => l.like_wise_term_id);
+
+    // 3️⃣ Fetch master data
+    const [benefits, devices, concerns, like_wise_terms] = await Promise.all([
+        getBenefitsByIdsModel(benefit_ids),
+        getDevicesByIdsModel(device_ids),
+        getConcernsByIdsModel(concern_ids),
+        getLikeWiseTermsByIdsModel(like_wise_term_ids),
+    ]);
+
+    // 4️⃣ Prepare DB-friendly values
     const newTreatmentId = uuidv4();
 
     const clonedTreatment = {
         treatment_id: newTreatmentId,
         name: `${original.name}`,
         swedish: original.swedish,
-        device_name: original.device_name,
-        like_wise_terms: original.like_wise_terms,
         classification_type: original.classification_type,
-        benefits_en: original.benefits_en,
-        benefits_sv: original.benefits_sv,
+        benefits_en: benefits.map(b => b.name).join(', ') || null,
+        benefits_sv: benefits.map(b => b.swedish).join(', ') || null,
+        device_name: devices.map(d => d.name).join(', ') || null,
+        like_wise_terms: like_wise_terms.map(l => l.name).join(', ') || null,
         description_en: original.description_en,
         description_sv: original.description_sv,
         source: original.source,
@@ -810,28 +873,91 @@ export const cloneTreatment = asyncHandler(async (req, res) => {
         approval_status: "APPROVED",
     };
 
+    // 5️⃣ Insert treatment
     await addTreatmentModel(clonedTreatment);
 
+    // 6️⃣ Insert relations (same as addEditTreatment CREATE)
+    await Promise.all([
+        insertTreatmentBenefitsModel(newTreatmentId, benefits),
+        insertTreatmentDevicesModel(newTreatmentId, devices),
+        insertTreatmentConcernsModel(newTreatmentId, concerns),
+        insertTreatmentLikeWiseTermsModel(newTreatmentId, like_wise_terms),
+    ]);
 
-    // 4️⃣ Insert relations
-    if (concerns.length)
-        await addTreatmentConcernsModel(newTreatmentId, concerns);
-
-    if (devices.length)
-        await addTreatmentDeviceNameModel(newTreatmentId, devices);
-
-    if (subTreatments.length)
+    if (subTreatments?.length > 0) {
         await addTreatmentSubTreatmentModel(newTreatmentId, subTreatments);
+    }
 
-    // 5️⃣ Response
+    // 7️⃣ Response
     handleSuccess(res, 201, language, "TREATMENT_CLONED_SUCCESSFULLY", {
         treatment_id: newTreatmentId
     });
 });
 
 
+// export const cloneTreatment = asyncHandler(async (req, res) => {
+//     const { treatment_id } = req.params;
+//     const role = req.user?.role;
+//     const language = req.user?.language || 'en';
+
+
+//     // 1️⃣ Fetch original treatment
+//     const original = await getTreatmentByIdModel(treatment_id);
+//     if (!original) {
+//         return handleError(res, 404, language, "TREATMENT_NOT_FOUND");
+//     }
+
+
+//     // 2️⃣ Fetch relations
+//     const [concerns, devices, subTreatments] = await Promise.all([
+//         getTreatmentConcernsModel(treatment_id),
+//         getTreatmentDevicesModel(treatment_id),
+//         getTreatmentSubTreatmentsModel(treatment_id)
+//     ]);
+
+//     // 3️⃣ Create new treatment
+//     const newTreatmentId = uuidv4();
+
+//     const clonedTreatment = {
+//         treatment_id: newTreatmentId,
+//         name: `${original.name}`,
+//         swedish: original.swedish,
+//         device_name: original.device_name,
+//         like_wise_terms: original.like_wise_terms,
+//         classification_type: original.classification_type,
+//         benefits_en: original.benefits_en,
+//         benefits_sv: original.benefits_sv,
+//         description_en: original.description_en,
+//         description_sv: original.description_sv,
+//         source: original.source,
+//         is_device: original.is_device,
+//         is_admin_created: true,
+//         created_by_zynq_user_id: null,
+//         approval_status: "APPROVED",
+//     };
+
+//     await addTreatmentModel(clonedTreatment);
+
+
+//     // 4️⃣ Insert relations
+//     if (concerns.length)
+//         await addTreatmentConcernsModel(newTreatmentId, concerns);
+
+//     if (devices.length)
+//         await addTreatmentDeviceNameModel(newTreatmentId, devices);
+
+//     if (subTreatments.length)
+//         await addTreatmentSubTreatmentModel(newTreatmentId, subTreatments);
+
+//     // 5️⃣ Response
+//     handleSuccess(res, 201, language, "TREATMENT_CLONED_SUCCESSFULLY", {
+//         treatment_id: newTreatmentId
+//     });
+// });
+
+
 export const addEditLikeWiseTerms = asyncHandler(async (req, res) => {
-    const { like_wise_term_id : input_likewise_id, ...body } = req.body;
+    const { like_wise_term_id: input_likewise_id, ...body } = req.body;
     const role = req.user?.role;
     const user_id = req.user?.id;
     const language = req.user?.language || "en";
@@ -871,8 +997,8 @@ export const addEditLikeWiseTerms = asyncHandler(async (req, res) => {
     }
 
     const message = input_likewise_id
-        ? "CONCERN_UPDATED_SUCCESSFULLY"
-        : "CONCERN_ADDED_SUCCESSFULLY";
+        ? "LIKEWISETERM_UPDATED_SUCCESSFULLY"
+        : "LIKEWISETERM_ADDED_SUCCESSFULLY";
 
     return handleSuccess(res, 200, language, message, { like_wise_term_id });
 });
@@ -889,11 +1015,11 @@ export const deleteLikeWiseTerms = asyncHandler(async (req, res) => {
     } else {
         const deleted = await deleteZynqUserLikeWiseTermsModel(like_wise_term_id, user_id);
         if (deleted.affectedRows === 0) {
-            return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_CONCERN");
+            return handleError(res, 403, language, "NOT_AUTHORIZED_TO_DELETE_LIKEWISETERM");
         }
     }
 
-    return handleSuccess(res, 200, language, "CONCERN_DELETED_SUCCESSFULLY");
+    return handleSuccess(res, 200, language, "LIKEWISETERM_DELETED_SUCCESSFULLY");
 });
 
 export const updateLikeWiseTermsApprovalStatus = asyncHandler(async (req, res) => {
@@ -902,13 +1028,13 @@ export const updateLikeWiseTermsApprovalStatus = asyncHandler(async (req, res) =
 
     // 🧩 Map messages dynamically based on status
     const statusMessages = {
-        APPROVED: "CONCERN_APPROVED_SUCCESSFULLY",
-        REJECTED: "CONCERN_REJECTED_SUCCESSFULLY",
+        APPROVED: "LIKEWISETERM_APPROVED_SUCCESSFULLY",
+        REJECTED: "LIKEWISETERM_REJECTED_SUCCESSFULLY",
     };
 
     const notificationUpdates = {
-        APPROVED: "concern_approved",
-        REJECTED: "concern_rejected",
+        APPROVED: "LIKEWISETERM_approved",
+        REJECTED: "LIKEWISETERM_rejected",
     };
 
     // 🔹 Update approval status and fetch concern creator details
@@ -921,7 +1047,7 @@ export const updateLikeWiseTermsApprovalStatus = asyncHandler(async (req, res) =
     if (concernData) {
         await sendNotification({
             userData: req.user,
-            type: "CONCERN",
+            type: "LIKEWISETERM",
             type_id: like_wise_term_id,
             notification_type: NOTIFICATION_MESSAGES[notificationUpdates[approval_status]],
             receiver_id: concernData.role === "CLINIC" ? concernData.clinic_id : concernData.doctor_id,
@@ -1139,7 +1265,9 @@ export const getAllLikeWiseTerms = asyncHandler(async (req, res) => {
     const user_id = req.user?.id;
     const language = req.user?.language || "en";
 
-    const isAdmin = role === "ADMIN";
+    // const isAdmin = role === "ADMIN";
+
+    const isAdmin = true;
 
     const data = await getAllLikeWiseTermsModel(
         isAdmin ? null : user_id,
@@ -1150,7 +1278,7 @@ export const getAllLikeWiseTerms = asyncHandler(async (req, res) => {
         res,
         200,
         language,
-        "CONCERN_FETCHED_SUCCESSFULLY",
+        "LIKEWISETERM_FETCHED_SUCCESSFULLY",
         data
     );
 });
@@ -1160,7 +1288,9 @@ export const getAllDevices = asyncHandler(async (req, res) => {
     const user_id = req.user?.id;
     const language = req.user?.language || "en";
 
-    const isAdmin = role === "ADMIN";
+    // const isAdmin = role === "ADMIN";
+
+        const isAdmin = true;
 
     const data = await getAllDevicesModel(
         isAdmin ? null : user_id,
@@ -1181,7 +1311,9 @@ export const getAllBenefits = asyncHandler(async (req, res) => {
     const user_id = req.user?.id;
     const language = req.user?.language || "en";
 
-    const isAdmin = role === "ADMIN";
+    // const isAdmin = role === "ADMIN";
+
+    const isAdmin = true;
 
     const data = await getAllBenefitsModel(
         isAdmin ? null : user_id,

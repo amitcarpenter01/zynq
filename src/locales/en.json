@@ -329,5 +329,28 @@
   "CLINIC_UNSYNCED_SUCCESSFULLY": "Clinic Unlinked Successfully",
   "EXPERT_ADDED_SUCCESSFULLY": "Expert Added Successfully",
   "SOLO_EXPERT_UPDATED_SUCCESSFULLY": "Solo Expert Added Successfully",
-  "CALLBACK_REQUESTED_SUCCESSFULLY": "Callback Request Sent Successfully"
+  "CALLBACK_REQUESTED_SUCCESSFULLY": "Callback Request Sent Successfully",
+  "LIKEWISETERM_ADDED_SUCCESSFULLY": "Likewise Term Added Successfully",
+  "LIKEWISETERM_UPDATED_SUCCESSFULLY": "Likewise Term Updated Successfully",
+  "NOT_AUTHORIZED_TO_EDIT_LIKEWISETERM": "You are not authorized to edit this likewise term",
+  "LIKEWISETERM_DELETED_SUCCESSFULLY": "Likewise Term Deleted Successfully",
+  "NOT_AUTHORIZED_TO_DELETE_LIKEWISETERM": "You are not authorized to delete this likewise term",
+  "LIKEWISETERM_APPROVED_SUCCESSFULLY": "Likewise Term Approved Successfully",
+  "LIKEWISETERM_REJECTED_SUCCESSFULLY": "Likewise Term Rejected Successfully",
+
+  "DEVICE_ADDED_SUCCESSFULLY": "Device Added Successfully",
+  "DEVICE_UPDATED_SUCCESSFULLY": "Device Updated Successfully",
+  "NOT_AUTHORIZED_TO_EDIT_DEVICE": "You are not authorized to edit this device",
+  "DEVICE_DELETED_SUCCESSFULLY": "Device Deleted Successfully",
+  "NOT_AUTHORIZED_TO_DELETE_DEVICE": "You are not authorized to delete this device",
+  "DEVICE_APPROVED_SUCCESSFULLY": "Device Approved Successfully",
+  "DEVICE_REJECTED_SUCCESSFULLY": "Device Rejected Successfully",
+
+  "BENEFIT_ADDED_SUCCESSFULLY": "Benefit Added Successfully",
+  "BENEFIT_UPDATED_SUCCESSFULLY": "Benefit Updated Successfully",
+  "NOT_AUTHORIZED_TO_EDIT_BENEFIT": "You are not authorized to edit this benefit",
+  "BENEFIT_DELETED_SUCCESSFULLY": "Benefit Deleted Successfully",
+  "NOT_AUTHORIZED_TO_DELETE_BENEFIT": "You are not authorized to delete this benefit",
+  "BENEFIT_APPROVED_SUCCESSFULLY": "Benefit Approved Successfully",
+  "BENEFIT_REJECTED_SUCCESSFULLY": "Benefit Rejected Successfully"
 }

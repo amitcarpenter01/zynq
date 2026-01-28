@@ -1361,7 +1361,7 @@ const getSoloDoctorDashboard = async (doctorId, clinicId) => {
 
     FROM tbl_appointments a
     LEFT JOIN tbl_appointment_ratings ar ON a.appointment_id = ar.appointment_id AND ar.approval_status = 'APPROVED'
-    WHERE a.doctor_id = ?
+    WHERE a.doctor_id = ? AND a.payment_status != 'unpaid'
   `;
 
     const [row = {}] = await db.query(query, [
@@ -1415,7 +1415,7 @@ const getClinicDashboard = async (clinicId) => {
     LEFT JOIN tbl_doctor_clinic_map map ON map.clinic_id = c.clinic_id
     LEFT JOIN tbl_carts cart ON cart.clinic_id = c.clinic_id
     LEFT JOIN tbl_product_purchase pp ON pp.cart_id = cart.cart_id
-    WHERE c.clinic_id = ?
+    WHERE c.clinic_id = ? AND a.payment_status != 'unpaid'
   `;
 
     const [row = {}] = await db.query(query, [clinicId]);

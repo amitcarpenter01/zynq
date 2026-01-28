@@ -314,7 +314,7 @@ export const get_all_appointments = async (req, res) => {
         const appointments = await apiModels.get_all_appointments();
 
         if (!Array.isArray(appointments) || appointments.length === 0) {
-            return handleSuccess(res, 200, 'en', "No appointments found", { appointments: [] });
+            return handleSuccess(res, 200, 'en', "No appointments found",  [] );
         }
 
         const formatted = appointments.map(row => ({
