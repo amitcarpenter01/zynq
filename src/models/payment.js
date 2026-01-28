@@ -508,8 +508,8 @@ export const getCartMetadataAndStatusByCartId = async (cart_id) => {
 //           payment_method_types: ["klarna"],
 //           mode: "payment",
 //           line_items,
-//           success_url: `https://13.60.145.118:4000/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
-//           cancel_url: `https://13.60.145.118:4000/payment-cancel/?&redirect_url=${metadata.cancel_url}`,
+//           success_url: `https://getzynq.io:4000/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
+//           cancel_url: `https://getzynq.io:4000/payment-cancel/?&redirect_url=${metadata.cancel_url}`,
 //           metadata: {
 //           },
 //         });

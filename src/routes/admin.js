@@ -194,7 +194,7 @@ router.get('/unsubscribed/:is_unsubscribed', clinicControllers.unsubscribed);
 // <section class="coming-soon d-flex align-items-center justify-content-center">
 //   <div class="container text-center">
 //     <div class="ct_logo">
-//       <img src="https://13.60.145.118:4000/logo1.png">
+//       <img src="https://getzynq.io:4000/logo1.png">
 //     </div>
 
 
@@ -345,7 +345,7 @@ router.get('/unsubscribed/:is_unsubscribed', clinicControllers.unsubscribed);
 // <section class="coming-soon d-flex align-items-center justify-content-center">
 //   <div class="container text-center">
 //     <div class="ct_logo">
-//       <img src="https://13.60.145.118:4000/logo1.png">
+//       <img src="https://getzynq.io:4000/logo1.png">
 //     </div>
 
 
