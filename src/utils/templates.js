@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const APP_URL = process.env.APP_URL;
+const CLINIC_URL = process.env.CLINIC_URL;
 
 export const appointmentBookedTemplate = {
   subject: ({ user_name, appointment_date }) =>
@@ -575,7 +576,7 @@ export const zynqReminderEnglishTemplate = ({
   };
 
   const { subject, intro, heroAlt } = roles[roleKey] || roles.CLINIC;
-  let onboarding_link = `https://getzynq.io/zynq/`;
+  let onboarding_link = `${CLINIC_URL}`;
 
   return {
     subject,
@@ -689,7 +690,7 @@ export const zynqReminderSwedishTemplate = ({
   };
 
   const { subject, intro, heroAlt } = roles[roleKey] || roles.CLINIC;
-  let onboarding_link = `https://getzynq.io/zynq/`
+  let onboarding_link = `${CLINIC_URL}`
 
   return {
     subject,

@@ -6,6 +6,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const CLINIC_URL = process.env.CLINIC_URL;
+
 export const insertPayment = async (
   amount,
   type,
@@ -417,8 +419,8 @@ export const createPaymentSession = async ({ payment_gateway, metadata, redirect
           quantity: line.quantity,
         }));
 
-        const success_url = `https://getzynq.io/zynq/payment-success/?session_id={CHECKOUT_SESSION_ID}&redirect_url=${redirect_url}`;
-        const redirect_cancel_url = `https://getzynq.io/zynq/payment-cancel/?redirect_url=${cancel_url}`;
+        const success_url = `${CLINIC_URL}payment-success/?session_id={CHECKOUT_SESSION_ID}&redirect_url=${redirect_url}`;
+        const redirect_cancel_url = `${CLINIC_URL}payment-cancel/?redirect_url=${cancel_url}`;
 
         return await stripe.checkout.sessions.create({
           payment_method_types: payment_types,
@@ -514,8 +516,8 @@ export const createPaymentSessionForAppointment = async ({ metadata }) => {
       ],
 
       line_items,
-      success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
-      cancel_url: `https://getzynq.io/zynq/payment-cancel/?redirect_url=${metadata.cancel_url}`,
+      success_url: `${CLINIC_URL}payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
+      cancel_url: `${CLINIC_URL}payment-cancel/?redirect_url=${metadata.cancel_url}`,
       metadata: { appointment_id: metadata.appointment_id, payment_flow: "PAY_NOW" },
     });
 
@@ -546,8 +548,8 @@ export const createPaymentSessionForAppointmentPAYLATERKLARNA = async ({ metadat
       ],
 
       line_items,
-      success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
-      cancel_url: `https://getzynq.io/zynq/payment-cancel/?redirect_url=${metadata.cancel_url}`,
+      success_url: `${CLINIC_URL}payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
+      cancel_url: `${CLINIC_URL}payment-cancel/?redirect_url=${metadata.cancel_url}`,
       metadata: { appointment_id: metadata.appointment_id, payment_flow: "PAY_LATER_KLARNA" },
     });
 
@@ -577,8 +579,8 @@ export const createPayLaterSetupSession = async ({ metadata, final_total }) => {
       }
     ],
 
-    success_url: `https://getzynq.io/zynq/payment-success/?appointment_id=${metadata.appointment_id}&type=PAY_NOW`,
-    cancel_url: `https://getzynq.io/zynq/payment-cancel/?type=PAY_NOW`
+    success_url: `${CLINIC_URL}payment-success/?appointment_id=${metadata.appointment_id}&type=PAY_NOW`,
+    cancel_url: `${CLINIC_URL}payment-cancel/?type=PAY_NOW`
   });
 };
 

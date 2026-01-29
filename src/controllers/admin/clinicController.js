@@ -28,6 +28,8 @@ dotenv.config();
 
 const APP_URL = process.env.APP_URL;
 
+const CLINIC_URL = process.env.CLINIC_URL;
+
 export const import_clinics_from_CSV = async (req, res) => {
     const filePath = req.file?.path;
     if (!filePath) return handleError(res, 400, "en", "CSV_REQUIRED");
@@ -497,7 +499,7 @@ export const subscribed = async (req, res) => {
 
         const data = await onboardingByRole(gwetClinic[0].zynq_user_id, getRole.role_id);
 
-        return res.redirect(`https://getzynq.io/zynq/`);
+        return res.redirect(`${CLINIC_URL}`);
     } catch (error) {
         console.error("clinic unsubscribed Error:", error);
         return handleError(res, 500, 'en', "INTERNAL_SERVER_ERROR " + error.message);
