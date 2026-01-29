@@ -1264,7 +1264,7 @@ export const get_clinic_location_by_clinic_id = async (clinic_id) => {
 export const get_all_doctors_by_clinic_id = async (clinic_id) => {
     try {
         const query = `
-            SELECT dcm.*, d.*, zu.email,zu.on_boarding_status
+            SELECT d.*, dcm.*, zu.email,zu.on_boarding_status
             FROM tbl_doctor_clinic_map dcm
             JOIN tbl_doctors d ON dcm.doctor_id = d.doctor_id
             JOIN tbl_zqnq_users zu ON d.zynq_user_id = zu.id
