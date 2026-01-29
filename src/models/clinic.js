@@ -1169,7 +1169,16 @@ export const getDoctorTreatments = async (doctor_id) => {
 //         `, [doctor_id]);
 
                 const treatments = await db.query(`
-            SELECT
+           WITH dt_latest AS (
+    SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY treatment_id
+               ORDER BY created_at DESC
+           ) AS rn
+    FROM tbl_doctor_treatments
+    WHERE doctor_id = ?
+)
+SELECT
     dt.*,
     t.*,
     lw.like_wise_terms,
@@ -1178,11 +1187,9 @@ export const getDoctorTreatments = async (doctor_id) => {
     dv.device_name_swedish,
     bf.benefits_en,
     bf.benefits_sv
-
-FROM tbl_doctor_treatments dt
+FROM dt_latest dt
 JOIN tbl_treatments t 
     ON dt.treatment_id = t.treatment_id
-
 LEFT JOIN (
     SELECT
         tlwt.treatment_id,
@@ -1191,7 +1198,8 @@ LEFT JOIN (
     FROM tbl_treatment_like_wise_terms tlwt
     JOIN tbl_likewise_terms lwt 
         ON lwt.like_wise_term_id = tlwt.like_wise_term_id
-    WHERE lwt.is_deleted = 0 AND lwt.approval_status = 'APPROVED'
+    WHERE lwt.is_deleted = 0 
+      AND lwt.approval_status = 'APPROVED'
     GROUP BY tlwt.treatment_id
 ) lw ON lw.treatment_id = t.treatment_id
 
@@ -1203,7 +1211,8 @@ LEFT JOIN (
     FROM tbl_treatment_devices d
     JOIN tbl_devices tbd 
         ON tbd.device_id = d.device_id
-    WHERE tbd.is_deleted = 0 AND tbd.approval_status = 'APPROVED'
+    WHERE tbd.is_deleted = 0 
+      AND tbd.approval_status = 'APPROVED'
     GROUP BY d.treatment_id
 ) dv ON dv.treatment_id = t.treatment_id
 
@@ -1215,12 +1224,11 @@ LEFT JOIN (
     FROM tbl_treatment_benefits ttb
     JOIN tbl_benefits tb 
         ON tb.benefit_id = ttb.benefit_id
-    WHERE tb.is_deleted = 0 AND tb.approval_status = 'APPROVED'
+    WHERE tb.is_deleted = 0 
+      AND tb.approval_status = 'APPROVED'
     GROUP BY ttb.treatment_id
 ) bf ON bf.treatment_id = t.treatment_id
-
-WHERE dt.doctor_id = ?
-
+WHERE dt.rn = 1
 ORDER BY dt.created_at DESC;
         `, [doctor_id]);
 
