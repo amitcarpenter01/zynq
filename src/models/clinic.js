@@ -1079,93 +1079,149 @@ export const getDoctorSkinTypes = async (doctor_id) => {
 
 export const getDoctorTreatments = async (doctor_id) => {
     try {
-        const treatments = await db.query(`
-            SELECT dt.*,
-            t.treatment_id ,
-            t.name  ,
-            t.swedish  ,
-            t.classification_type  ,
-            t.description_en  ,
-            t.description_sv  ,
-            t.technology  ,
-            t.type  ,
-            t.source ,
-            t.application  ,
-            t.is_device ,
-            t.is_admin_created ,
-            t.created_by_zynq_user_id ,
-            t.approval_status  ,
-            t.is_deleted  ,
-            t.embeddings ,
-            t.name_embeddings ,
-            t.created_at ,
+//         const treatments = await db.query(`
+//             SELECT dt.*,
+//             t.treatment_id ,
+//             t.name  ,
+//             t.swedish  ,
+//             t.classification_type  ,
+//             t.description_en  ,
+//             t.description_sv  ,
+//             t.technology  ,
+//             t.type  ,
+//             t.source ,
+//             t.application  ,
+//             t.is_device ,
+//             t.is_admin_created ,
+//             t.created_by_zynq_user_id ,
+//             t.approval_status  ,
+//             t.is_deleted  ,
+//             t.embeddings ,
+//             t.name_embeddings ,
+//             t.created_at ,
 
-             GROUP_CONCAT(
-        DISTINCT lwt.name
-        ORDER BY lwt.name
-        SEPARATOR ','
-    ) AS like_wise_terms,
+//              GROUP_CONCAT(
+//         DISTINCT lwt.name
+//         ORDER BY lwt.name
+//         SEPARATOR ','
+//     ) AS like_wise_terms,
    
-      GROUP_CONCAT(
-        DISTINCT lwt.swedish
-        ORDER BY lwt.name
-        SEPARATOR ','
-    ) AS like_wise_terms_swedish,
+//       GROUP_CONCAT(
+//         DISTINCT lwt.swedish
+//         ORDER BY lwt.name
+//         SEPARATOR ','
+//     ) AS like_wise_terms_swedish,
 
 
-    GROUP_CONCAT(
-        DISTINCT tbd.name
-        ORDER BY tbd.name
-        SEPARATOR ','
-    ) AS device_name,
+//     GROUP_CONCAT(
+//         DISTINCT tbd.name
+//         ORDER BY tbd.name
+//         SEPARATOR ','
+//     ) AS device_name,
    
-    GROUP_CONCAT(
-        DISTINCT tbd.swedish
-        ORDER BY tbd.name
-        SEPARATOR ','
-    ) AS device_name_swedish,
+//     GROUP_CONCAT(
+//         DISTINCT tbd.swedish
+//         ORDER BY tbd.name
+//         SEPARATOR ','
+//     ) AS device_name_swedish,
 
-    GROUP_CONCAT(
-        DISTINCT tb.name
-        ORDER BY tb.name
-        SEPARATOR ','
-    ) AS benefits_en,
+//     GROUP_CONCAT(
+//         DISTINCT tb.name
+//         ORDER BY tb.name
+//         SEPARATOR ','
+//     ) AS benefits_en,
    
-      GROUP_CONCAT(
-        DISTINCT tb.swedish
-        ORDER BY tb.name
-        SEPARATOR ','
-    ) AS benefits_sv
+//       GROUP_CONCAT(
+//         DISTINCT tb.swedish
+//         ORDER BY tb.name
+//         SEPARATOR ','
+//     ) AS benefits_sv
 
-            FROM tbl_doctor_treatments dt
-            LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
+//             FROM tbl_doctor_treatments dt
+//             LEFT JOIN tbl_treatments t ON dt.treatment_id = t.treatment_id
 
-            LEFT JOIN tbl_treatment_like_wise_terms tlwt
-    ON tlwt.treatment_id = t.treatment_id
-   LEFT JOIN tbl_likewise_terms lwt
-    ON lwt.like_wise_term_id = tlwt.like_wise_term_id
-   AND lwt.is_deleted = 0
-   AND lwt.approval_status = 'APPROVED'
+//             LEFT JOIN tbl_treatment_like_wise_terms tlwt
+//     ON tlwt.treatment_id = t.treatment_id
+//    LEFT JOIN tbl_likewise_terms lwt
+//     ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+//    AND lwt.is_deleted = 0
+//    AND lwt.approval_status = 'APPROVED'
 
-   LEFT JOIN tbl_treatment_devices d
-    ON d.treatment_id = t.treatment_id
-   LEFT JOIN tbl_devices tbd
-    ON tbd.device_id = d.device_id
-    AND tbd.is_deleted = 0
-   AND tbd.approval_status = 'APPROVED'
+//    LEFT JOIN tbl_treatment_devices d
+//     ON d.treatment_id = t.treatment_id
+//    LEFT JOIN tbl_devices tbd
+//     ON tbd.device_id = d.device_id
+//     AND tbd.is_deleted = 0
+//    AND tbd.approval_status = 'APPROVED'
 
-   LEFT JOIN tbl_treatment_benefits ttb
-    ON ttb.treatment_id = t.treatment_id
-   LEFT JOIN tbl_benefits tb
-    ON tb.benefit_id = ttb.benefit_id
-    AND tb.is_deleted = 0
-   AND tb.approval_status = 'APPROVED'
+//    LEFT JOIN tbl_treatment_benefits ttb
+//     ON ttb.treatment_id = t.treatment_id
+//    LEFT JOIN tbl_benefits tb
+//     ON tb.benefit_id = ttb.benefit_id
+//     AND tb.is_deleted = 0
+//    AND tb.approval_status = 'APPROVED'
 
-            WHERE dt.doctor_id = ?
+//             WHERE dt.doctor_id = ?
 
-            GROUP BY dt.doctor_treatment_id
+//             GROUP BY dt.doctor_treatment_id
 
-            ORDER BY dt.created_at DESC;
+//             ORDER BY dt.created_at DESC;
+//         `, [doctor_id]);
+
+                const treatments = await db.query(`
+            SELECT
+    dt.*,
+    t.*,
+    lw.like_wise_terms,
+    lw.like_wise_terms_swedish,
+    dv.device_name,
+    dv.device_name_swedish,
+    bf.benefits_en,
+    bf.benefits_sv
+
+FROM tbl_doctor_treatments dt
+JOIN tbl_treatments t 
+    ON dt.treatment_id = t.treatment_id
+
+LEFT JOIN (
+    SELECT
+        tlwt.treatment_id,
+        GROUP_CONCAT(DISTINCT lwt.name ORDER BY lwt.name) AS like_wise_terms,
+        GROUP_CONCAT(DISTINCT lwt.swedish ORDER BY lwt.name) AS like_wise_terms_swedish
+    FROM tbl_treatment_like_wise_terms tlwt
+    JOIN tbl_likewise_terms lwt 
+        ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+    WHERE lwt.is_deleted = 0 AND lwt.approval_status = 'APPROVED'
+    GROUP BY tlwt.treatment_id
+) lw ON lw.treatment_id = t.treatment_id
+
+LEFT JOIN (
+    SELECT
+        d.treatment_id,
+        GROUP_CONCAT(DISTINCT tbd.name ORDER BY tbd.name) AS device_name,
+        GROUP_CONCAT(DISTINCT tbd.swedish ORDER BY tbd.name) AS device_name_swedish
+    FROM tbl_treatment_devices d
+    JOIN tbl_devices tbd 
+        ON tbd.device_id = d.device_id
+    WHERE tbd.is_deleted = 0 AND tbd.approval_status = 'APPROVED'
+    GROUP BY d.treatment_id
+) dv ON dv.treatment_id = t.treatment_id
+
+LEFT JOIN (
+    SELECT
+        ttb.treatment_id,
+        GROUP_CONCAT(DISTINCT tb.name ORDER BY tb.name) AS benefits_en,
+        GROUP_CONCAT(DISTINCT tb.swedish ORDER BY tb.name) AS benefits_sv
+    FROM tbl_treatment_benefits ttb
+    JOIN tbl_benefits tb 
+        ON tb.benefit_id = ttb.benefit_id
+    WHERE tb.is_deleted = 0 AND tb.approval_status = 'APPROVED'
+    GROUP BY ttb.treatment_id
+) bf ON bf.treatment_id = t.treatment_id
+
+WHERE dt.doctor_id = ?
+
+ORDER BY dt.created_at DESC;
         `, [doctor_id]);
 
         // Remove embeddings dynamically
