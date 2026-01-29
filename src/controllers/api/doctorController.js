@@ -341,8 +341,11 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
         Object.keys(price).length === 0 &&
         !min_rating;
 
+        let isEmptySearch = false;
+
     if (areAllFiltersEmpty) {
         const fallbackTreatmentIds = await getTreatmentIDsByUserID(user_id);
+        isEmptySearch = true;
         treatment_ids = fallbackTreatmentIds || [];
     }
     // userLatitude = 22.72481320
@@ -371,7 +374,8 @@ export const get_recommended_doctors = asyncHandler(async (req, res) => {
         userLatitude,
         userLongitude,
         limit,
-        offset
+        offset,
+        isEmptySearch
     };
 
     const doctors = await userModels.getAllRecommendedDoctors(queryFilters);
