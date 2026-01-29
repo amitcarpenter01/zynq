@@ -1809,7 +1809,11 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
             'd.name',
             'TIMESTAMPDIFF(YEAR, MIN(de.start_date), MAX(IFNULL(de.end_date, CURDATE()))) AS experience_years',
             'd.specialization',
-            'd.fee_per_session',
+            `CASE 
+        WHEN MAX(zu.role_id) = '407595e3-3196-11f0-9e07-0e8e5d906eef'
+            THEN MAX(d.fee_per_session)
+        ELSE MAX(dm.fee_per_session)
+     END AS fee_per_session`,
             'd.profile_image',
             'dm.clinic_id',
             'c.clinic_name',
