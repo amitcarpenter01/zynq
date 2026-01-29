@@ -1044,7 +1044,7 @@ export const getNearbyClinicsForUser = async ({
         if (joins.length > 0) query += ' ' + joins.join(' ');
 
         // --- Filters ---
-        query += ` WHERE c.profile_status = 'VERIFIED' AND c.profile_completion_percentage >= 50`;
+        query += ` WHERE c.profile_status = 'VERIFIED' AND c.profile_completion_percentage >= 50 AND c.is_deleted = 0 `;
         if (filters.length > 0) query += ` AND ${filters.join(' AND ')}`;
 
         // --- GROUP BY ---
