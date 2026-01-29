@@ -765,7 +765,7 @@ export const get_clinics_data_by_doctor_id = async (doctorId) => {
             WHERE
                 dcm.doctor_id = ? AND dcm.is_unsync = 0
             ORDER BY
-                dcm.assigned_at DESC;
+                dcm.assigned_at ASC;
         `, [doctorId]);
     } catch (error) {
         console.error("Database Error:", error.message);
