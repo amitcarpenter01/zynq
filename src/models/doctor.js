@@ -1133,7 +1133,10 @@ export const fetchAppointmentsBulkModel = async (doctorId, fromDate, toDate) => 
             WHERE doctor_id = ? 
               AND start_time >= ? 
               AND start_time <= ?
-              AND status != 'Cancelled'
+              AND (CASE 
+                    WHEN payment_timing = 'PAY_NOW' THEN payment_status = 'paid'
+                    ELSE TRUE
+                  END)
         `;
         return await db.query(query, [doctorId, `${fromDate} 00:00:00`, `${toDate} 23:59:59`]);
     } catch (error) {
