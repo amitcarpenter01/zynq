@@ -1,3 +1,10 @@
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const APP_URL = process.env.APP_URL;
+const CLINIC_URL = process.env.CLINIC_URL;
+
 export const appointmentBookedTemplate = {
   subject: ({ user_name, appointment_date }) =>
     `New Appointment Booked by ${user_name} - Appointment Booked For ${appointment_date}`,
@@ -64,8 +71,8 @@ export const orderConfirmationTemplate = ({
   customerName,
   products,
   totalAmount,
-  logoUrl = "https://getzynq.io:4000/white_logo.png",
-  bannerImageUrl = "https://getzynq.io:4000/product_main.png",
+  logoUrl = `${APP_URL}white_logo.png`,
+  bannerImageUrl = `${APP_URL}product_main.png`,
   clinicAddress,
   clinicName
 }) => {
@@ -236,8 +243,8 @@ export const orderConfirmationTemplateClinic = ({
   clinicName,
   products,
   totalAmount,
-  logoUrl = "https://getzynq.io:4000/white_logo.png",
-  bannerImageUrl = "https://getzynq.io:4000/product_main.png",
+  logoUrl = `${APP_URL}white_logo.png`,
+  bannerImageUrl = `${APP_URL}product_main.png`,
   customerState,
   customerCity,
   customerzipCode,
@@ -408,7 +415,7 @@ export const orderConfirmationTemplateClinic = ({
 };
 
 export const faceScanPDFTemplate = ({
-  logoUrl = "https://getzynq.io:4000/logo1.png",
+  logoUrl = `${APP_URL}logo1.png`,
   pdf,
   userName = ""
 }) => {
@@ -442,7 +449,7 @@ export const faceScanPDFTemplate = ({
           <!-- Hero Image -->
           <tr>
             <td align="center" style="padding:0;">
-              <img src="https://getzynq.io:4000/girl_img.png" alt="Skin Analysis Illustration" width="600" style="width:100%; max-width:600px; height:auto; display:block;">
+              <img src="${APP_URL}girl_img.png" alt="Skin Analysis Illustration" width="600" style="width:100%; max-width:600px; height:auto; display:block;">
             </td>
           </tr>
 
@@ -469,7 +476,7 @@ export const faceScanPDFTemplate = ({
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
                 <tr>
                   <td width="50" valign="top" style="text-align:center;">
-                    <img src="https://getzynq.io:4000/Simplification.png" alt="Skin Score Icon" width="40" style="display:block; margin:0 auto;">
+                    <img src="${APP_URL}Simplification.png" alt="Skin Score Icon" width="40" style="display:block; margin:0 auto;">
                   </td>
                   <td valign="top" style="padding-left:10px;">
                     <h4 style="font-size:16px; margin:0; color:#111111;">Your Skin Score & Key Indicators</h4>
@@ -484,7 +491,7 @@ export const faceScanPDFTemplate = ({
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
                 <tr>
                   <td width="50" valign="top" style="text-align:center;">
-                    <img src="https://getzynq.io:4000/Simplification_2.png" alt="Detailed Analysis Icon" width="40" style="display:block; margin:0 auto;">
+                    <img src="${APP_URL}Simplification_2.png" alt="Detailed Analysis Icon" width="40" style="display:block; margin:0 auto;">
                   </td>
                   <td valign="top" style="padding-left:10px;">
                     <h4 style="font-size:16px; margin:0; color:#111111;">Detailed Analysis Of Concerns</h4>
@@ -499,7 +506,7 @@ export const faceScanPDFTemplate = ({
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td width="50" valign="top" style="text-align:center;">
-                    <img src="https://getzynq.io:4000/Simplification_3.png" alt="Next Steps Icon" width="40" style="display:block; margin:0 auto;">
+                    <img src="${APP_URL}Simplification_3.png" alt="Next Steps Icon" width="40" style="display:block; margin:0 auto;">
                   </td>
                   <td valign="top" style="padding-left:10px;">
                     <h4 style="font-size:16px; margin:0; color:#111111;">Next Steps To Improve Your Skin Health</h4>
@@ -552,8 +559,8 @@ export const faceScanPDFTemplate = ({
 export const zynqReminderEnglishTemplate = ({
   recipient_name,
   roleKey = "CLINIC", // either "CLINIC" or "DOCTOR"
-  logoUrl = "https://getzynq.io:4000/logo1.png",
-  heroUrl = "https://getzynq.io:4000/clinic/files/1760014696773-placeholders.png",
+  logoUrl = `${APP_URL}logo1.png`,
+  heroUrl = `${APP_URL}clinic/files/1760014696773-placeholders.png`,
 }) => {
   const roles = {
     CLINIC: {
@@ -569,7 +576,7 @@ export const zynqReminderEnglishTemplate = ({
   };
 
   const { subject, intro, heroAlt } = roles[roleKey] || roles.CLINIC;
-  let onboarding_link = `https://getzynq.io/zynq/`;
+  let onboarding_link = `${CLINIC_URL}`;
 
   return {
     subject,
@@ -666,8 +673,8 @@ export const zynqReminderEnglishTemplate = ({
 export const zynqReminderSwedishTemplate = ({
   recipient_name,
   roleKey = "CLINIC", // either "CLINIC" or "DOCTOR"
-  logoUrl = "https://getzynq.io:4000/logo1.png",
-  heroUrl = "https://getzynq.io:4000/clinic/files/1760014696773-placeholders.png",
+  logoUrl = `${APP_URL}logo1.png`,
+  heroUrl = `${APP_URL}clinic/files/1760014696773-placeholders.png`,
 }) => {
   const roles = {
     CLINIC: {
@@ -683,7 +690,7 @@ export const zynqReminderSwedishTemplate = ({
   };
 
   const { subject, intro, heroAlt } = roles[roleKey] || roles.CLINIC;
-  let onboarding_link = `https://getzynq.io/zynq/`
+  let onboarding_link = `${CLINIC_URL}`
 
   return {
     subject,
@@ -784,7 +791,7 @@ export const supportTicketTemplateEnglish = ({
   userEmail,
   subject,
   description,
-  logoUrl = "https://getzynq.io:4000/logo1.png"
+  logoUrl = `${APP_URL}logo1.png`
 }) => {
   return {
     subject: `ZYNQ | New Support Ticket #${ticketId}`,
@@ -844,7 +851,7 @@ export const supportTicketTemplateSwedish = ({
   userEmail,
   subject,
   description,
-  logoUrl = "https://getzynq.io:4000/logo1.png"
+  logoUrl = `${APP_URL}logo1.png`
 }) => {
   return {
     subject: `ZYNQ | Ny supportärende #${ticketId}`,
@@ -983,7 +990,7 @@ export const appointmentReceiptTemplate = {
   subject: () => `Appointment Receipt`,
 
   body: ({
-    logo = 'https://getzynq.io:4000/logo1.png',
+    logo = `${APP_URL}logo1.png`,
     doctor_image,
     doctor_name,
     clinic_name,
@@ -1227,7 +1234,7 @@ export const appointmentReceiptTemplateSwedish = {
   subject: () => `Utnämningskvitto`,
 
   body: ({
-    logo = 'https://getzynq.io:4000/logo1.png',
+    logo = `${APP_URL}logo1.png`,
     doctor_image,
     doctor_name,
     clinic_name,
@@ -1470,7 +1477,7 @@ export const appointmentBookingConfirmationTemplate = {
   subject: (payment_timing) => `${payment_timing === "PAY_LATER" ? "Pay Later – Appointment Confirmed" : "Appointment Confirmed" }`,
 
   body: ({
-    logo = 'https://getzynq.io:4000/logo1.png',
+    logo = `${APP_URL}logo1.png`,
     doctor_image,
     doctor_name,
     clinic_name,
@@ -1750,7 +1757,7 @@ export const appointmentBookingConfirmationTemplateSwedish = {
   subject: (payment_timing) => `${payment_timing === "PAY_LATER" ? "Betala senare – Avtal bekräftat" : "Utnämning bekräftad"}`,
 
   body: ({
-    logo = 'https://getzynq.io:4000/logo1.png',
+    logo = `${APP_URL}logo1.png`,
     doctor_image,
     doctor_name,
     clinic_name,
