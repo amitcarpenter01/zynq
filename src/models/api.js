@@ -377,7 +377,8 @@ export const getAllRecommendedDoctors = async ({
     userLatitude,
     userLongitude,
     limit = 20,
-    offset = 0
+    offset = 0,
+    isEmptySearch = false
 }) => {
     try {
         const params = [];
@@ -390,6 +391,17 @@ export const getAllRecommendedDoctors = async ({
 
         if (needsDistance) {
             params.push(userLongitude, userLatitude);
+        }
+
+
+        const hasTreatmentPriority = isEmptySearch === true && treatment_ids.length > 0;
+
+        const treatmentMatchSelect = hasTreatmentPriority
+            ? `MAX(CASE WHEN dt.treatment_id IN (${treatment_ids.map(() => '?').join(', ')}) THEN 1 ELSE 0 END) AS treatment_match`
+            : null;
+
+        if (hasTreatmentPriority) {
+            params.push(...treatment_ids);
         }
 
         const selectFields = [
@@ -412,7 +424,8 @@ export const getAllRecommendedDoctors = async ({
             'c.clinic_name',
             'c.address AS clinic_address',
             'ROUND(AVG(ar.rating), 2) AS avg_rating',
-            distanceSelect
+            distanceSelect,
+            treatmentMatchSelect
         ].filter(Boolean).join(', ');
 
         // Base query
@@ -444,7 +457,9 @@ export const getAllRecommendedDoctors = async ({
             }
         };
 
-        addFilter(treatment_ids, 'dt', 'treatment_id');
+        if (treatment_ids.length > 0 && isEmptySearch == false) {
+            addFilter(treatment_ids, 'dt', 'treatment_id');
+        }
         addFilter(skin_condition_ids, 'dsc', 'skin_condition_id');
         addFilter(aesthetic_device_ids, 'dad', 'aesthetic_devices_id');
         addFilter(skin_type_ids, 'dst', 'skin_type_id');
@@ -503,16 +518,49 @@ export const getAllRecommendedDoctors = async ({
             params.push(min_rating, ceiling);
         }
 
-        // Sorting
-        if (sort.by === 'rating') {
-            query += ` ORDER BY avg_rating IS NULL, CAST(avg_rating AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
-        } else if (sort.by === 'nearest' && needsDistance) {
-            query += ` ORDER BY distance IS NULL, CAST(distance AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
-        } else if (sort.by === 'price') {
-            query += ` ORDER BY d.fee_per_session IS NULL, CAST(d.fee_per_session AS DECIMAL(10,2)) ${sort.order.toUpperCase()}`;
+
+        // -------------------- SORTING --------------------
+        if (isEmptySearch === true && hasTreatmentPriority) {
+            // Priority mode: Treatment match → Distance
+            if (needsDistance) {
+                query += `
+            ORDER BY 
+                treatment_match DESC,
+                distance IS NULL,
+                CAST(distance AS DECIMAL(10,2)) ASC
+        `;
+            } else {
+                query += `
+            ORDER BY 
+                treatment_match DESC,
+                d.created_at DESC
+        `;
+            }
         } else {
-            query += ` ORDER BY d.created_at DESC`;
+            // Normal sorting
+            if (sort.by === 'rating') {
+                query += `
+            ORDER BY 
+                avg_rating IS NULL,
+                CAST(avg_rating AS DECIMAL(10,2)) ${sort.order.toUpperCase()}
+        `;
+            } else if (sort.by === 'nearest' && needsDistance) {
+                query += `
+            ORDER BY 
+                distance IS NULL,
+                CAST(distance AS DECIMAL(10,2)) ${sort.order.toUpperCase()}
+        `;
+            } else if (sort.by === 'price') {
+                query += `
+            ORDER BY 
+                d.fee_per_session IS NULL,
+                CAST(d.fee_per_session AS DECIMAL(10,2)) ${sort.order.toUpperCase()}
+        `;
+            } else {
+                query += ` ORDER BY d.created_at DESC `;
+            }
         }
+
 
         // Run query
         const rows = await db.query(query, params);
