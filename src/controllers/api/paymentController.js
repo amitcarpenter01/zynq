@@ -15,6 +15,12 @@ import { getAdminCommissionRatesModel } from "../../models/admin.js";
 import { stripe } from "../../../app.js";
 import configs from "../../config/config.js";
 
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const APP_URL = process.env.APP_URL;
+
 export const process_earnings = async (
     metadata,
     user_id,
@@ -233,7 +239,7 @@ export const stripeSuccessHandler = asyncHandler(async (req, res) => {
         totalAmount: metadata.total_price,
         products: pro,
         logoUrl: process.env.LOGO_URL, // Optional - defaults to logo_2.png
-        bannerImageUrl: "https://getzynq.io:4000/product_main.png",
+        bannerImageUrl: `${APP_URL}product_main.png`,
         customerAddress: metadata.address_data?.address || "Not provided",
         customerState: metadata.address_data?.state || "Not provided",
         customerCity: metadata.address_data?.city || "Not provided",
