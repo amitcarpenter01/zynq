@@ -26,12 +26,13 @@ export const sendDoctorInvitation = async (req, res) => {
         const schema = Joi.object({
             emails: Joi.array().items(Joi.string().email().required()).min(1).required()
         });
+        const language = req?.user?.language || 'en';
 
         if (typeof req.body.emails === 'string') {
             try {
                 req.body.emails = JSON.parse(req.body.emails);
             } catch (err) {
-                return handleError(res, 400, "en", "INVALID_JSON_FOR_EMAILS");
+                return handleError(res, 400, language, "INVALID_JSON_FOR_EMAILS");
             }
         }
 
@@ -63,7 +64,7 @@ export const sendDoctorInvitation = async (req, res) => {
                     if (userRole.role === "CLINIC") {
                         invitationResults.failed.push({
                             email,
-                            reason: "This user already has a Clinic account."
+                            reason: language == "en" ? "This user already has a Clinic account." : "Den här användaren har redan ett klinikkonto."
                         });
                         continue; // Skip to next email
                     }
@@ -72,7 +73,7 @@ export const sendDoctorInvitation = async (req, res) => {
                     if (userRole.role === "SOLO_DOCTOR") {
                         invitationResults.failed.push({
                             email,
-                            reason: "This email already belongs to a Solo Expert. It cannot be mapped with a clinic."
+                            reason: language == "en" ?"This email already belongs to a Solo Expert. It cannot be mapped with a clinic." : "Denna e-postadress tillhör redan en SoloExpert. Den kan inte kopplas till en klinik."
                         });
                         continue; // Skip to next email
                     }
@@ -85,7 +86,7 @@ export const sendDoctorInvitation = async (req, res) => {
                         if (!existingDoctor) {
                             invitationResults.failed.push({
                                 email,
-                                reason: "Expert record not found."
+                                reason: language == "en" ? "Expert record not found." : "Expertjournalen hittades inte."
                             });
                             continue;
                         }
@@ -101,7 +102,7 @@ export const sendDoctorInvitation = async (req, res) => {
                         if (existingMap) {
                             invitationResults.failed.push({
                                 email,
-                                reason: "This expert is already mapped to this clinic."
+                                reason: language == "en" ? "This expert is already mapped to this clinic." : "Denna expert är redan kopplad till den här kliniken."
                             });
                             continue;
                         }
@@ -134,13 +135,13 @@ export const sendDoctorInvitation = async (req, res) => {
 
                         await sendEmail({
                             to: email,
-                            subject: "Expert Invitation",
+                            subject: language == "en" ? "Expert Invitation" : "Expertinbjudan",
                             html: emailHtml,
                         });
 
                         invitationResults.successful.push({
                             email,
-                            status: "Invitation sent to existing doctor (mapped to clinic)"
+                            status: language == "en" ? "Invitation sent to existing expert (mapped to clinic)" : "Inbjudan skickad till befintlig expert (mappad till klinik)"
                         });
 
                         continue; // go to next email
@@ -152,7 +153,7 @@ export const sendDoctorInvitation = async (req, res) => {
                     if (!doctorRole) {
                         invitationResults.failed.push({
                             email,
-                            reason: "Doctor role not found in system."
+                            reason: language == "en" ? "Expert role not found in system." : "Expertrollen hittades inte i systemet."
                         });
                         continue;
                     }
@@ -216,28 +217,28 @@ export const sendDoctorInvitation = async (req, res) => {
 
                     const emailOptions = {
                         to: email,
-                        subject: "Expert Invitation",
+                        subject: language == "en" ?"Expert Invitation" : "Expertinbjudan",
                         html: emailHtml,
                     };
                     await sendEmail(emailOptions);
 
                     invitationResults.successful.push({
                         email,
-                        status: "Invitation sent to new doctor (account created)"
+                        status: language == "en" ?"Invitation sent to new expert (account created)" : "Inbjudan skickad till ny expert (konto skapat)"
                     });
                 }
             } catch (emailError) {
                 console.error(`Error processing invitation for ${email}:`, emailError);
                 invitationResults.failed.push({
                     email,
-                    reason: "An error occurred while processing this invitation."
+                    reason: language == "en" ?"An error occurred while processing this invitation." : "Ett fel uppstod när den här inbjudan bearbetades."
                 });
             }
         }
 
         // Prepare response
         const response = {
-            message: "Invitation process completed",
+            message: language == "en" ? "Invitation process completed" : "Inbjudansprocessen slutförd",
             summary: {
                 total: emails.length,
                 successful: invitationResults.successful.length,
@@ -251,7 +252,7 @@ export const sendDoctorInvitation = async (req, res) => {
         //     ...response
         // });
 
-        return handleSuccess(res, 200, 'en', "INVITATION_SENT_SUCCESSFULLY",response);
+        return handleSuccess(res, 200, language, "INVITATION_SENT_SUCCESSFULLY",response);
 
     } catch (error) {
         console.error("Error sending doctor invitation:", error);
