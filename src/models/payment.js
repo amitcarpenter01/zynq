@@ -560,12 +560,13 @@ export const createPaymentSessionForAppointmentPAYLATERKLARNA = async ({ metadat
 };
 
 
+const PAY_LATER_CONFIGRATION_METHOD = process.env.PAY_LATER_CONFIGRATION_METHOD;
 
 export const createPayLaterSetupSession = async ({ metadata, final_total }) => {
   return await stripe.checkout.sessions.create({
     mode: "payment",
     customer: metadata.stripe_customer_id,
-    payment_method_configuration:"pmc_1SsKeiQQ6aAv64PfHDsY6cUL",
+    payment_method_configuration:PAY_LATER_CONFIGRATION_METHOD,
     line_items: [
       {
         price_data: {
