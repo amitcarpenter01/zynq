@@ -1580,6 +1580,7 @@ export const get_all_enrollments = async () => {
         throw new Error("Failed to fetch clinic.");
     }
 };
+
 export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
     if (!Array.isArray(concern_ids) || concern_ids.length === 0) return [];
 
@@ -1587,7 +1588,7 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
         const placeholders = concern_ids.map(() => '?').join(', ');
 
         const query = `
-            SELECT
+            SELECT DISTINCT
                 t.treatment_id,
                 t.name,
                 t.swedish,
@@ -1715,6 +1716,142 @@ export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
         throw new Error("Failed to fetch treatments by concern IDs.");
     }
 };
+// export const getTreatmentsByConcernIds = async (concern_ids = [], lang) => {
+//     if (!Array.isArray(concern_ids) || concern_ids.length === 0) return [];
+
+//     try {
+//         const placeholders = concern_ids.map(() => '?').join(', ');
+
+//         const query = `
+//             SELECT
+//                 t.treatment_id,
+//                 t.name,
+//                 t.swedish,
+//                 t.classification_type,
+//                 t.description_en,
+//                 t.description_sv,
+//                 t.technology,
+//                 t.type,
+//                 t.source,
+//                 t.application,
+//                 t.is_device,
+//                 t.is_admin_created,
+//                 t.created_by_zynq_user_id,
+//                 t.approval_status,
+//                 t.is_deleted,
+//                 t.embeddings,
+//                 t.name_embeddings,
+//                 t.created_at,
+
+//                 IFNULL(pagg.min_price, 0) AS min_price,
+//                 IFNULL(pagg.max_price, 0) AS max_price,
+
+//                 cagg.concerns,
+//                 lwtagg.like_wise_terms,
+//                 lwtagg.like_wise_terms_swedish,
+//                 dagg.device_name,
+//                 dagg.device_name_swedish,
+//                 bagg.benefits_en,
+//                 bagg.benefits_sv
+
+//             FROM tbl_treatments t
+
+//             /* -------- Filter treatments by concern IDs -------- */
+//             INNER JOIN tbl_treatment_concerns tcf
+//                 ON tcf.treatment_id = t.treatment_id
+//                AND tcf.concern_id IN (${placeholders})
+
+//             /* -------- Prices -------- */
+//             LEFT JOIN (
+//                 SELECT
+//                     treatment_id,
+//                     MIN(price) AS min_price,
+//                     MAX(price) AS max_price
+//                 FROM tbl_doctor_treatments
+//                 GROUP BY treatment_id
+//             ) pagg ON pagg.treatment_id = t.treatment_id
+
+//             /* -------- Concerns -------- */
+//             LEFT JOIN (
+//                 SELECT
+//                     tc.treatment_id,
+//                     JSON_ARRAYAGG(
+//                         JSON_OBJECT(
+//                             'concern_id', c.concern_id,
+//                             'name', c.name
+//                         )
+//                     ) AS concerns
+//                 FROM tbl_treatment_concerns tc
+//                 JOIN tbl_concerns c
+//                     ON c.concern_id = tc.concern_id
+//                 GROUP BY tc.treatment_id
+//             ) cagg ON cagg.treatment_id = t.treatment_id
+
+//             /* -------- Like Wise Terms -------- */
+//             LEFT JOIN (
+//                 SELECT
+//                     tlwt.treatment_id,
+//                     GROUP_CONCAT(DISTINCT lwt.name ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms,
+//                     GROUP_CONCAT(DISTINCT lwt.swedish ORDER BY lwt.name SEPARATOR ',') AS like_wise_terms_swedish
+//                 FROM tbl_treatment_like_wise_terms tlwt
+//                 JOIN tbl_likewise_terms lwt
+//                     ON lwt.like_wise_term_id = tlwt.like_wise_term_id
+//                    AND lwt.is_deleted = 0
+//                    AND lwt.approval_status = 'APPROVED'
+//                 GROUP BY tlwt.treatment_id
+//             ) lwtagg ON lwtagg.treatment_id = t.treatment_id
+
+//             /* -------- Devices -------- */
+//             LEFT JOIN (
+//                 SELECT
+//                     d.treatment_id,
+//                     GROUP_CONCAT(DISTINCT tbd.name ORDER BY tbd.name SEPARATOR ',') AS device_name,
+//                     GROUP_CONCAT(DISTINCT tbd.swedish ORDER BY tbd.name SEPARATOR ',') AS device_name_swedish
+//                 FROM tbl_treatment_devices d
+//                 JOIN tbl_devices tbd
+//                     ON tbd.device_id = d.device_id
+//                    AND tbd.is_deleted = 0
+//                    AND tbd.approval_status = 'APPROVED'
+//                 GROUP BY d.treatment_id
+//             ) dagg ON dagg.treatment_id = t.treatment_id
+
+//             /* -------- Benefits -------- */
+//             LEFT JOIN (
+//                 SELECT
+//                     ttb.treatment_id,
+//                     GROUP_CONCAT(DISTINCT tb.name ORDER BY tb.name SEPARATOR ',') AS benefits_en,
+//                     GROUP_CONCAT(DISTINCT tb.swedish ORDER BY tb.name SEPARATOR ',') AS benefits_sv
+//                 FROM tbl_treatment_benefits ttb
+//                 JOIN tbl_benefits tb
+//                     ON tb.benefit_id = ttb.benefit_id
+//                    AND tb.is_deleted = 0
+//                    AND tb.approval_status = 'APPROVED'
+//                 GROUP BY ttb.treatment_id
+//             ) bagg ON bagg.treatment_id = t.treatment_id
+
+//             WHERE t.is_deleted = 0
+//               AND t.approval_status = 'APPROVED'
+              
+//         `;
+
+//         let results = await db.query(query, concern_ids);
+
+//         // Remove embeddings dynamically
+//         results = results.map(row => {
+//             const treatmentRow = { ...row };
+//             if ('embeddings' in treatmentRow) delete treatmentRow.embeddings;
+//             if ('name_embeddings' in treatmentRow) delete treatmentRow.name_embeddings;
+//             return treatmentRow;
+//         });
+
+//         // Format benefits based on language
+//         return formatBenefitsUnified(results, lang);
+
+//     } catch (error) {
+//         console.error("Database Error in getTreatmentsByConcernIds:", error.message);
+//         throw new Error("Failed to fetch treatments by concern IDs.");
+//     }
+// };
 
 //AIshwarya Holkar changes 
 export const getTreatmentsByIds = async (concern_ids = [], lang) => {
