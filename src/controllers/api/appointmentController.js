@@ -1926,6 +1926,23 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 
                 const updateStatus = await updateAuthorizationSetupIntentIdOfAppointment(session.setup_intent, appointment_id);
 
+            } else if (payment_timing === 'PAY_LATER_KLARNA') {
+                session = await createPaymentSessionForAppointmentPAYLATERKLARNA({
+                    metadata: {
+                        order_lines: [
+                            {
+                                name: "Appointment",
+                                quantity: 1,
+                                unit_amount: final_total * 100,
+                            },
+                        ],
+                        appointment_id,
+                        redirect_url,
+                        cancel_url,
+                        currency: "sek",
+                        final_total
+                    },
+                });
             } else {
                 session = await createPaymentSessionForAppointment({
                     metadata: {
@@ -2458,7 +2475,7 @@ export const handleStripeWebhook = async (req, res) => {
 
 
             case "setup_intent.succeeded":
-            await handleSetupIntentSucceeded(event.data.object);
+                await handleSetupIntentSucceeded(event.data.object);
                 break;
 
             // case "setup_intent.succeeded": {
