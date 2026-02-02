@@ -543,12 +543,13 @@ export const createPaymentSessionForAppointmentPAYLATERKLARNA = async ({ metadat
 
     return await stripe.checkout.sessions.create({
       mode: "payment",
-      customer: metadata.stripe_customer_id,
-      payment_method_configuration: PAY_LATER_Klarna_CONFIGRATION_METHOD,
+      // customer: metadata.stripe_customer_id,
+      // payment_method_configuration: PAY_LATER_Klarna_CONFIGRATION_METHOD,
       // SHOW ALL PAYMENT METHODS AUTOMATICALLY
-      payment_method_types: [
-        "klarna",
-      ],
+      // payment_method_types: [
+      //   "klarna",
+      // ],
+      payment_method_configuration: "pmc_1SvHocQQ6aAv64PfmGe7G20T",
 
       line_items,
       success_url: `${CLINIC_URL}payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
@@ -568,6 +569,8 @@ const PAY_LATER_CONFIGRATION_METHOD = process.env.PAY_LATER_CONFIGRATION_METHOD;
 export const createPayLaterSetupSession = async ({ metadata, final_total }) => {
   return await stripe.checkout.sessions.create({
     mode: "payment",
+    customer: metadata.stripe_customer_id,
+    payment_method_configuration: PAY_LATER_CONFIGRATION_METHOD,
     line_items: [
       {
         price_data: {
