@@ -509,11 +509,12 @@ export const createPaymentSessionForAppointment = async ({ metadata }) => {
       mode: "payment",
 
       // SHOW ALL PAYMENT METHODS AUTOMATICALLY
-      payment_method_types: [
-        "card",
-        "klarna",
-        // "paypal"
-      ],
+      // payment_method_types: [
+      //   "card",
+      //   "klarna",
+      //   // "paypal"
+      // ],
+      payment_method_configuration: "pmc_1SvHocQQ6aAv64PfmGe7G20T",
 
       line_items,
       success_url: `${CLINIC_URL}payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
