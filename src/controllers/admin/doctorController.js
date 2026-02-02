@@ -234,7 +234,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
             doctor_slot_time: Joi.array().items(Joi.alternatives()
                 .try(Joi.string(), Joi.number())
                 .optional()
-                .allow(null)).optional().allow(null),
+                .allow(null,"")).optional().allow(null),
 
             education: Joi.array().items(Joi.object({
                 institute: Joi.string().required(),
