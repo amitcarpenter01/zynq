@@ -552,6 +552,22 @@ export const createPaymentSessionForAppointmentPAYLATERKLARNA = async ({ metadat
       payment_method_configuration: "pmc_1SvHocQQ6aAv64PfmGe7G20T",
 
       line_items,
+      // ✅ REQUIRED for Klarna
+
+      billing_address_collection: "required",
+
+      // ✅ Restrict country to Sweden (VERY IMPORTANT)
+
+      shipping_address_collection: {
+
+        allowed_countries: ["SE"],
+
+      },
+
+      // ✅ Ensure email is collected (Klarna needs it)
+
+      customer_creation: "if_required",
+
       success_url: `${CLINIC_URL}payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
       cancel_url: `${CLINIC_URL}payment-cancel/?redirect_url=${metadata.cancel_url}`,
       metadata: { appointment_id: metadata.appointment_id, payment_flow: "PAY_LATER_KLARNA" },
