@@ -1902,6 +1902,7 @@ export const getClinicDoctorsBulk = async (clinicIds = []) => {
                     OR
                   (zu.role_id = '3677a3e6-3196-11f0-9e07-0e8e5d906eef' AND zu.on_boarding_status >= 3)
                       )
+                  AND d.profile_status = "VERIFIED"
             GROUP BY d.doctor_id, dm.clinic_id
             ORDER BY d.created_at DESC
         `;
