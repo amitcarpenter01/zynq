@@ -601,7 +601,8 @@ export const createPayLaterSetupSession = async ({ metadata, final_total }) => {
     ],
 
     success_url: `${CLINIC_URL}payment-success/?appointment_id=${metadata.appointment_id}&type=PAY_NOW&redirect_url=${metadata.redirect_url}`,
-    cancel_url: `${CLINIC_URL}payment-cancel/?type=PAY_NOW&redirect_url=${metadata.redirect_url}`
+    cancel_url: `${CLINIC_URL}payment-cancel/?type=PAY_NOW&redirect_url=${metadata.redirect_url}`,
+     metadata: { appointment_id: metadata.appointment_id, payment_flow: "PAY_LATER" },
   });
 };
 
