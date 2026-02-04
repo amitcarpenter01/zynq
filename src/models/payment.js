@@ -592,7 +592,7 @@ export const createPayLaterSetupSession = async ({ metadata, final_total }) => {
         price_data: {
           currency: "eur",
           product_data: {
-            name: "Doctor Appointment"
+            name: "Appointment"
           },
           unit_amount: final_total * 100
         },
