@@ -514,8 +514,8 @@ export const createPaymentSessionForAppointment = async ({ metadata }) => {
       // ✅ Apple Pay controlled ONLY from dashboard config
       payment_method_configuration: process.env.PAY_NOW_CONFIGRATION_METHOD,
  
-      billing_address_collection: "required",
-      phone_number_collection: { enabled: true },
+      // billing_address_collection: "required",
+      // phone_number_collection: { enabled: true },
  
       line_items,
       success_url: `${CLINIC_URL}payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
