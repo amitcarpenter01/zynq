@@ -499,10 +499,7 @@ export const createPaymentSessionForAppointment = async ({ metadata }) => {
     const line_items = metadata.order_lines.map((line) => ({
       price_data: {
         currency: metadata.currency || "sek",
-        product_data: {
-          name: line.name,
-          description: line.description || "",
-        },
+         product_data: { name: line.name },
         unit_amount: line.unit_amount,
       },
       quantity: line.quantity,
