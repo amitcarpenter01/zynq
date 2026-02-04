@@ -493,39 +493,81 @@ export const getCartMetadataAndStatusByCartId = async (cart_id) => {
     throw new Error("Failed to get user carts.");
   }
 }
+
 export const createPaymentSessionForAppointment = async ({ metadata }) => {
   try {
-
     const line_items = metadata.order_lines.map((line) => ({
       price_data: {
         currency: metadata.currency || "sek",
-        product_data: { name: line.name },
+        product_data: {
+          name: line.name,
+          description: line.description || "",
+        },
         unit_amount: line.unit_amount,
       },
       quantity: line.quantity,
     }));
-
+ 
     return await stripe.checkout.sessions.create({
       mode: "payment",
-
-      // SHOW ALL PAYMENT METHODS AUTOMATICALLY
-      payment_method_types: [
-        "card",
-        // "klarna",
-        // "paypal"
-      ],
-
+ 
+      // ✅ Apple Pay controlled ONLY from dashboard config
+      payment_method_configuration: process.env.PAY_NOW_CONFIGRATION_METHOD,
+ 
+      billing_address_collection: "required",
+      phone_number_collection: { enabled: true },
+ 
       line_items,
       success_url: `${CLINIC_URL}payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
       cancel_url: `${CLINIC_URL}payment-cancel/?redirect_url=${metadata.cancel_url}`,
-      metadata: { appointment_id: metadata.appointment_id, payment_flow: "PAY_NOW" },
+ 
+      metadata: {
+        appointment_id: metadata.appointment_id,
+        payment_flow: "PAY_NOW",
+        currency: metadata.currency || "sek",
+      },
+ 
+      locale: "auto",
     });
-
   } catch (error) {
     console.error("Failed to create payment session:", error);
     throw error;
   }
 };
+
+// export const createPaymentSessionForAppointment = async ({ metadata }) => {
+//   try {
+
+//     const line_items = metadata.order_lines.map((line) => ({
+//       price_data: {
+//         currency: metadata.currency || "sek",
+//         product_data: { name: line.name },
+//         unit_amount: line.unit_amount,
+//       },
+//       quantity: line.quantity,
+//     }));
+
+//     return await stripe.checkout.sessions.create({
+//       mode: "payment",
+
+//       // SHOW ALL PAYMENT METHODS AUTOMATICALLY
+//       payment_method_types: [
+//         "card",
+//         // "klarna",
+//         // "paypal"
+//       ],
+
+//       line_items,
+//       success_url: `${CLINIC_URL}payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
+//       cancel_url: `${CLINIC_URL}payment-cancel/?redirect_url=${metadata.cancel_url}`,
+//       metadata: { appointment_id: metadata.appointment_id, payment_flow: "PAY_NOW" },
+//     });
+
+//   } catch (error) {
+//     console.error("Failed to create payment session:", error);
+//     throw error;
+//   }
+// };
 
 const PAY_LATER_Klarna_CONFIGRATION_METHOD = process.env.PAY_LATER_Klarna_CONFIGRATION_METHOD;
 
