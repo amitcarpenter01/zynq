@@ -511,7 +511,7 @@ export const createPaymentSessionForAppointment = async ({ metadata }) => {
       // SHOW ALL PAYMENT METHODS AUTOMATICALLY
       payment_method_types: [
         "card",
-        "klarna",
+        // "klarna",
         // "paypal"
       ],
 
