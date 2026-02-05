@@ -1958,7 +1958,9 @@ const generateSessions = (start, end, slotMinutes) => {
         startMinutes += slotMinutes;
     }
 
-    return sessions;
+    return sessions.sort((a, b) => 
+        a.start_time.localeCompare(b.start_time)
+    );
 };
 
 export const generateAvailabilityFromOperationHours = async (req, res) => {
