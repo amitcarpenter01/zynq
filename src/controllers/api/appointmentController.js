@@ -19,6 +19,7 @@ import { booleanValidation } from '../../utils/joi.util.js';
 import { getIO } from '../../utils/socketManager.js';
 import { onlineUsers } from "../../utils/callSocket.js";
 import { io, stripe } from '../../../app.js';
+import { get_user_by_user_id } from '../../models/api.js';
 
 export const bookAppointment = async (req, res) => {
     try {
@@ -2085,6 +2086,188 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
 });
 
 
+// export const markAppointmentAsPaid = async (req, res) => {
+//     try {
+
+//         const schema = Joi.object({
+//             appointment_id: Joi.string().required(),
+//         });
+
+
+//         const { error, value } = schema.validate(req.body);
+//         if (error) return joiErrorHandle(res, error);
+
+//         let {
+//             appointment_id
+//         } = value;
+
+
+//         const language = req?.user?.language || 'en';
+
+
+//         let chat_id = 0;
+//         let user_id = req.user.user_id;
+//         const appointmentDetails = await getAppointmentDetails(user_id, appointment_id);
+//         const doctor_id = appointmentDetails.doctor_id;
+//         const start_time = appointmentDetails.start_time;
+//         const total_price = appointmentDetails.total_price
+//         const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
+
+//         if (appointmentDetails.payment_timing != "PAY_LATER") {
+//             await appointmentModel.updateAppointmentAsPaid(appointment_id, 'paid');
+//         }
+
+//         const doctor = await getDocterByDocterId(doctor_id);
+//         let chatId = await getChatBetweenUsers(user_id, doctor[0].zynq_user_id);
+
+//         await sendNotification({
+//             userData: req.user,
+//             type: "APPOINTMENT",
+//             type_id: appointment_id,
+//             notification_type: NOTIFICATION_MESSAGES.appointment_booked,
+//             receiver_id: doctor_id,
+//             receiver_type: "DOCTOR"
+//         })
+
+
+//         await sendEmail({
+//             to: doctor[0].email,
+//             subject: appointmentBookedTemplate.subject({
+//                 user_name: req?.user?.full_name,
+//                 appointment_date: normalizedStart
+//             }),
+//             html: appointmentBookedTemplate.body({
+//                 user_name: req?.user?.full_name,
+//                 doctor_name: doctor[0].name,
+//                 appointment_date: normalizedStart,
+//                 total_price: total_price,
+//                 clinic_name: appointmentDetails.clinic_name,
+//             }),
+//         });
+
+//         if (chatId.length < 1) {
+//             let doctorId = doctor[0].zynq_user_id
+//             let chatCreatedSuccessfully = await createChat(user_id, doctorId);
+//             chat_id = chatCreatedSuccessfully.insertId
+//         }
+//         else {
+//             chat_id = chatId[0].id
+//         }
+
+
+//         const appointments = await appointmentModel.getAppointmentsById(user_id, appointment_id, language);
+
+//         const result = await Promise.all(
+//             appointments.map(async (app) => {
+//                 const doctor = await getDocterByDocterId(app.doctor_id);
+
+//                 if (app.profile_image && !app.profile_image.startsWith("http")) {
+//                     app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
+//                 }
+
+//                 if (app.pdf && !app.pdf.startsWith("http")) {
+//                     app.pdf = `${APP_URL}${app.pdf}`;
+//                 }
+
+//                 const treatments = await appointmentModel.getAppointmentTreatments(appointment_id, language);
+
+//                 return {
+//                     ...app,
+//                     treatments,
+//                 };
+//             })
+//         );
+
+//         // ----------------- Send single appointment response -----------------
+//         // return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", result[0]);
+//         const data = result[0];
+
+
+//         const [totalAppointmentBooked] = await appointmentModel.getNumberOfAppointments(user_id);
+//         const formattedAppointmentCount = formatAppointmentCount(totalAppointmentBooked.count);
+
+
+//         if (language == "en") {
+
+//             await sendEmail({
+//                 to: req.user.email,
+//                 subject: appointmentBookingConfirmationTemplate.subject(data.payment_timing),
+//                 html: appointmentBookingConfirmationTemplate.body({
+//                     doctor_image: data.profile_image ? data.profile_image : `${APP_URL}/default_doctor_img.jpg`,
+//                     doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
+//                     clinic_name: data.clinic_name,
+//                     visit_link: "#",
+//                     refund_policy: "This appointment can be cancelled and will be fully refunded up to  24 hours before the schedule time.",
+//                     subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
+//                     vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25)).toFixed(2)}` : "SEK 0.00",
+//                     vat_percentage: (() => {
+//                         const total = parseFloat(data.total_price) || 0;
+//                         const vat = parseFloat(data.vat_amount) || 0;
+//                         const base = total - vat;
+
+//                         return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
+//                     })(),
+
+//                     treatments: data.treatments,
+//                     start_time: formatDate(data.start_time),
+//                     end_time: formatDate(data.end_time),
+//                     order_number: `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
+//                     payment_timing: data.payment_timing
+//                 }),
+//             });
+//         } else {
+
+//             await sendEmail({
+//                 to: req.user.email,
+//                 subject: appointmentBookingConfirmationTemplateSwedish.subject(data.payment_timing),
+//                 html: appointmentBookingConfirmationTemplateSwedish.body({
+//                     doctor_image: data.profile_image ? data.profile_image : `${APP_URL}/default_doctor_img.jpg`,
+//                     doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
+//                     clinic_name: data.clinic_name,
+//                     visit_link: "#",
+//                     refund_policy: "Denna bokade tid kan avbokas och återbetalas i sin helhet upp till 24 timmar före den schemalagda tiden.",
+//                     subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
+//                     vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25))}` : "SEK 0.00",
+//                     vat_percentage: (() => {
+//                         const total = parseFloat(data.total_price) || 0;
+//                         const vat = parseFloat(data.vat_amount) || 0;
+//                         const base = total - vat;
+
+//                         return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
+//                     })(),
+
+//                     treatments: data.treatments,
+//                     start_time: formatDate(data.start_time),
+//                     end_time: formatDate(data.end_time),
+//                     order_number: `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
+//                     payment_timing: data.payment_timing
+//                 }),
+//             });
+//         }
+
+
+//         return handleSuccess(
+//             res,
+//             201,
+//             language,
+//             'APPOINTMENT_BOOKED_SUCCESSFULLY',
+//             { appointment_id, chat_id, appointmentDetails: appointmentDetails }
+//         );
+//     }
+
+
+
+
+
+//     catch (err) {
+//         if (err.code === 'ER_DUP_ENTRY') {
+//             return handleError(res, 400, "en", "SLOT_ALREADY_BOOKED");
+//         }
+//         console.error("Error in saveOrBookAppointment:", err);
+//         return handleError(res, 500, 'en', 'INTERNAL_SERVER_ERROR');
+//     }
+// };
+
 export const markAppointmentAsPaid = async (req, res) => {
     try {
 
@@ -2112,37 +2295,37 @@ export const markAppointmentAsPaid = async (req, res) => {
         const total_price = appointmentDetails.total_price
         const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
 
-        if (appointmentDetails.payment_timing != "PAY_LATER") {
-            await appointmentModel.updateAppointmentAsPaid(appointment_id, 'paid');
-        }
+        // if (appointmentDetails.payment_timing != "PAY_LATER") {
+        //     await appointmentModel.updateAppointmentAsPaid(appointment_id, 'paid');
+        // }
 
         const doctor = await getDocterByDocterId(doctor_id);
         let chatId = await getChatBetweenUsers(user_id, doctor[0].zynq_user_id);
 
-        await sendNotification({
-            userData: req.user,
-            type: "APPOINTMENT",
-            type_id: appointment_id,
-            notification_type: NOTIFICATION_MESSAGES.appointment_booked,
-            receiver_id: doctor_id,
-            receiver_type: "DOCTOR"
-        })
+        // await sendNotification({
+        //     userData: req.user,
+        //     type: "APPOINTMENT",
+        //     type_id: appointment_id,
+        //     notification_type: NOTIFICATION_MESSAGES.appointment_booked,
+        //     receiver_id: doctor_id,
+        //     receiver_type: "DOCTOR"
+        // })
 
 
-        await sendEmail({
-            to: doctor[0].email,
-            subject: appointmentBookedTemplate.subject({
-                user_name: req?.user?.full_name,
-                appointment_date: normalizedStart
-            }),
-            html: appointmentBookedTemplate.body({
-                user_name: req?.user?.full_name,
-                doctor_name: doctor[0].name,
-                appointment_date: normalizedStart,
-                total_price: total_price,
-                clinic_name: appointmentDetails.clinic_name,
-            }),
-        });
+        // await sendEmail({
+        //     to: doctor[0].email,
+        //     subject: appointmentBookedTemplate.subject({
+        //         user_name: req?.user?.full_name,
+        //         appointment_date: normalizedStart
+        //     }),
+        //     html: appointmentBookedTemplate.body({
+        //         user_name: req?.user?.full_name,
+        //         doctor_name: doctor[0].name,
+        //         appointment_date: normalizedStart,
+        //         total_price: total_price,
+        //         clinic_name: appointmentDetails.clinic_name,
+        //     }),
+        // });
 
         if (chatId.length < 1) {
             let doctorId = doctor[0].zynq_user_id
@@ -2156,26 +2339,26 @@ export const markAppointmentAsPaid = async (req, res) => {
 
         const appointments = await appointmentModel.getAppointmentsById(user_id, appointment_id, language);
 
-        const result = await Promise.all(
-            appointments.map(async (app) => {
-                const doctor = await getDocterByDocterId(app.doctor_id);
+        // const result = await Promise.all(
+        //     appointments.map(async (app) => {
+        //         const doctor = await getDocterByDocterId(app.doctor_id);
 
-                if (app.profile_image && !app.profile_image.startsWith("http")) {
-                    app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
-                }
+        //         if (app.profile_image && !app.profile_image.startsWith("http")) {
+        //             app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
+        //         }
 
-                if (app.pdf && !app.pdf.startsWith("http")) {
-                    app.pdf = `${APP_URL}${app.pdf}`;
-                }
+        //         if (app.pdf && !app.pdf.startsWith("http")) {
+        //             app.pdf = `${APP_URL}${app.pdf}`;
+        //         }
 
-                const treatments = await appointmentModel.getAppointmentTreatments(appointment_id, language);
+        //         const treatments = await appointmentModel.getAppointmentTreatments(appointment_id, language);
 
-                return {
-                    ...app,
-                    treatments,
-                };
-            })
-        );
+        //         return {
+        //             ...app,
+        //             treatments,
+        //         };
+        //     })
+        // );
 
         // ----------------- Send single appointment response -----------------
         // return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", result[0]);
@@ -2186,63 +2369,63 @@ export const markAppointmentAsPaid = async (req, res) => {
         const formattedAppointmentCount = formatAppointmentCount(totalAppointmentBooked.count);
 
 
-        if (language == "en") {
+        // if (language == "en") {
 
-            await sendEmail({
-                to: req.user.email,
-                subject: appointmentBookingConfirmationTemplate.subject(data.payment_timing),
-                html: appointmentBookingConfirmationTemplate.body({
-                    doctor_image: data.profile_image ? data.profile_image : `${APP_URL}/default_doctor_img.jpg`,
-                    doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
-                    clinic_name: data.clinic_name,
-                    visit_link: "#",
-                    refund_policy: "This appointment can be cancelled and will be fully refunded up to  24 hours before the schedule time.",
-                    subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
-                    vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25)).toFixed(2)}` : "SEK 0.00",
-                    vat_percentage: (() => {
-                        const total = parseFloat(data.total_price) || 0;
-                        const vat = parseFloat(data.vat_amount) || 0;
-                        const base = total - vat;
+        //     await sendEmail({
+        //         to: req.user.email,
+        //         subject: appointmentBookingConfirmationTemplate.subject(data.payment_timing),
+        //         html: appointmentBookingConfirmationTemplate.body({
+        //             doctor_image: data.profile_image ? data.profile_image : `${APP_URL}/default_doctor_img.jpg`,
+        //             doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
+        //             clinic_name: data.clinic_name,
+        //             visit_link: "#",
+        //             refund_policy: "This appointment can be cancelled and will be fully refunded up to  24 hours before the schedule time.",
+        //             subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
+        //             vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25)).toFixed(2)}` : "SEK 0.00",
+        //             vat_percentage: (() => {
+        //                 const total = parseFloat(data.total_price) || 0;
+        //                 const vat = parseFloat(data.vat_amount) || 0;
+        //                 const base = total - vat;
 
-                        return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
-                    })(),
+        //                 return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
+        //             })(),
 
-                    treatments: data.treatments,
-                    start_time: formatDate(data.start_time),
-                    end_time: formatDate(data.end_time),
-                    order_number: `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
-                    payment_timing: data.payment_timing
-                }),
-            });
-        } else {
+        //             treatments: data.treatments,
+        //             start_time: formatDate(data.start_time),
+        //             end_time: formatDate(data.end_time),
+        //             order_number: `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
+        //             payment_timing: data.payment_timing
+        //         }),
+        //     });
+        // } else {
 
-            await sendEmail({
-                to: req.user.email,
-                subject: appointmentBookingConfirmationTemplateSwedish.subject(data.payment_timing),
-                html: appointmentBookingConfirmationTemplateSwedish.body({
-                    doctor_image: data.profile_image ? data.profile_image : `${APP_URL}/default_doctor_img.jpg`,
-                    doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
-                    clinic_name: data.clinic_name,
-                    visit_link: "#",
-                    refund_policy: "Denna bokade tid kan avbokas och återbetalas i sin helhet upp till 24 timmar före den schemalagda tiden.",
-                    subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
-                    vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25))}` : "SEK 0.00",
-                    vat_percentage: (() => {
-                        const total = parseFloat(data.total_price) || 0;
-                        const vat = parseFloat(data.vat_amount) || 0;
-                        const base = total - vat;
+        //     await sendEmail({
+        //         to: req.user.email,
+        //         subject: appointmentBookingConfirmationTemplateSwedish.subject(data.payment_timing),
+        //         html: appointmentBookingConfirmationTemplateSwedish.body({
+        //             doctor_image: data.profile_image ? data.profile_image : `${APP_URL}/default_doctor_img.jpg`,
+        //             doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
+        //             clinic_name: data.clinic_name,
+        //             visit_link: "#",
+        //             refund_policy: "Denna bokade tid kan avbokas och återbetalas i sin helhet upp till 24 timmar före den schemalagda tiden.",
+        //             subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
+        //             vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25))}` : "SEK 0.00",
+        //             vat_percentage: (() => {
+        //                 const total = parseFloat(data.total_price) || 0;
+        //                 const vat = parseFloat(data.vat_amount) || 0;
+        //                 const base = total - vat;
 
-                        return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
-                    })(),
+        //                 return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
+        //             })(),
 
-                    treatments: data.treatments,
-                    start_time: formatDate(data.start_time),
-                    end_time: formatDate(data.end_time),
-                    order_number: `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
-                    payment_timing: data.payment_timing
-                }),
-            });
-        }
+        //             treatments: data.treatments,
+        //             start_time: formatDate(data.start_time),
+        //             end_time: formatDate(data.end_time),
+        //             order_number: `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
+        //             payment_timing: data.payment_timing
+        //         }),
+        //     });
+        // }
 
 
         return handleSuccess(
@@ -2253,10 +2436,6 @@ export const markAppointmentAsPaid = async (req, res) => {
             { appointment_id, chat_id, appointmentDetails: appointmentDetails }
         );
     }
-
-
-
-
 
     catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -2520,5 +2699,139 @@ export const handleStripeWebhook = async (req, res) => {
     } catch (err) {
         console.error("Error processing Stripe webhook:", err);
         res.status(500).send("Internal Server Error");
+    }
+};
+
+export const sendAppointmentConfirmationNotifications = async (appointment_id,userId) => {
+    try {
+        const appointmentDetails = await getAppointmentDetails(userId, appointment_id);
+        
+        if (!appointmentDetails) {
+            console.error(`Appointment ${appointment_id} not found`);
+            return false;
+        }
+
+        const user_id = userId;
+        const doctor_id = appointmentDetails.doctor_id;
+        const start_time = appointmentDetails.start_time;
+        const total_price = appointmentDetails.total_price;
+        const normalizedStart = dayjs.utc(start_time).format("YYYY-MM-DD HH:mm:ss");
+
+        // Get user and doctor details
+        const [user] = await get_user_by_user_id(user_id);
+        const doctor = await getDocterByDocterId(doctor_id);
+
+        if (!user || !doctor || doctor.length === 0) {
+            console.error(`User or doctor not found for appointment ${appointment_id}`);
+            return false;
+        }
+
+        const language = user?.language || 'en';
+
+        // Send notification to doctor
+        await sendNotification({
+            userData: { ...user, role: "USER" },
+            type: "APPOINTMENT",
+            type_id: appointment_id,
+            notification_type: NOTIFICATION_MESSAGES.appointment_booked,
+            receiver_id: doctor_id,
+            receiver_type: "DOCTOR"
+        });
+
+        // Send email to doctor
+        await sendEmail({
+            to: doctor[0].email,
+            subject: appointmentBookedTemplate.subject({
+                user_name: user?.full_name,
+                appointment_date: normalizedStart
+            }),
+            html: appointmentBookedTemplate.body({
+                user_name: user?.full_name,
+                doctor_name: doctor[0].name,
+                appointment_date: normalizedStart,
+                total_price: total_price,
+                clinic_name: appointmentDetails.clinic_name,
+            }),
+        });
+
+        // Get appointment details for user email
+        const appointments = await appointmentModel.getAppointmentsById(user_id, appointment_id, language);
+        
+        if (!appointments || appointments.length === 0) {
+            console.error(`Appointment details not found for ${appointment_id}`);
+            return false;
+        }
+
+        const result = await Promise.all(
+            appointments.map(async (app) => {
+                if (app.profile_image && !app.profile_image.startsWith("http")) {
+                    app.profile_image = `${APP_URL}doctor/profile_images/${app.profile_image}`;
+                }
+
+                if (app.pdf && !app.pdf.startsWith("http")) {
+                    app.pdf = `${APP_URL}${app.pdf}`;
+                }
+
+                const treatments = await appointmentModel.getAppointmentTreatments(appointment_id, language);
+
+                return {
+                    ...app,
+                    treatments,
+                };
+            })
+        );
+
+        const data = result[0];
+
+        // Get appointment count for order number
+        const [totalAppointmentBooked] = await appointmentModel.getNumberOfAppointments(user_id);
+        const formattedAppointmentCount = formatAppointmentCount(totalAppointmentBooked.count);
+
+        // Email template data
+        const emailData = {
+            doctor_image: data.profile_image ? data.profile_image : `${APP_URL}/default_doctor_img.jpg`,
+            doctor_name: `${appointments[0]?.name} ${appointments[0]?.last_name ? appointments[0]?.last_name : ""}`,
+            clinic_name: data.clinic_name,
+            visit_link: "#",
+            subtotal: data.total_price ? `SEK ${data.total_price}` : "SEK 0.00",
+            vat_amount: data.total_price ? `SEK ${(data.total_price - (data.total_price / 1.25)).toFixed(2)}` : "SEK 0.00",
+            vat_percentage: (() => {
+                const total = parseFloat(data.total_price) || 0;
+                const vat = parseFloat(data.vat_amount) || 0;
+                const base = total - vat;
+                return base > 0 ? `${Math.round((vat / base) * 100)}` : "0";
+            })(),
+            treatments: data.treatments,
+            start_time: formatDate(data.start_time),
+            end_time: formatDate(data.end_time),
+            order_number: `${generateOrderNumber(data.start_time)}${formattedAppointmentCount}`,
+            payment_timing: data.payment_timing
+        };
+
+        // Send email to user based on language
+        if (language === "en") {
+            emailData.refund_policy = "This appointment can be cancelled and will be fully refunded up to 24 hours before the schedule time.";
+            
+            await sendEmail({
+                to: user.email,
+                subject: appointmentBookingConfirmationTemplate.subject(data.payment_timing),
+                html: appointmentBookingConfirmationTemplate.body(emailData),
+            });
+        } else {
+            emailData.refund_policy = "Denna bokade tid kan avbokas och återbetalas i sin helhet upp till 24 timmar före den schemalagda tiden.";
+            
+            await sendEmail({
+                to: user.email,
+                subject: appointmentBookingConfirmationTemplateSwedish.subject(data.payment_timing),
+                html: appointmentBookingConfirmationTemplateSwedish.body(emailData),
+            });
+        }
+
+        console.log(`✅ Notifications and emails sent for appointment ${appointment_id}`);
+        return true;
+
+    } catch (error) {
+        console.error(`Error sending appointment notifications for ${appointment_id}:`, error);
+        return false;
     }
 };
