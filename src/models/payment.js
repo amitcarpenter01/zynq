@@ -3,6 +3,10 @@ import db from "../config/db.js";
 import { NOTIFICATION_MESSAGES, sendNotification } from "../services/notifications.service.js";
 import { get_user_by_user_id, getSinglePurchasedProductsModel } from "./api.js";
 import dotenv from "dotenv";
+import * as appointmentModel from "./appointment.js";
+import { getDocterByDocterId } from "./doctor.js";
+import { getAppointmentDetails } from "../utils/user_helper.js";
+import { sendAppointmentConfirmationNotifications } from "../controllers/api/appointmentController.js";
 
 dotenv.config();
 
@@ -499,31 +503,31 @@ export const createPaymentSessionForAppointment = async ({ metadata }) => {
     const line_items = metadata.order_lines.map((line) => ({
       price_data: {
         currency: metadata.currency || "sek",
-         product_data: { name: line.name },
+        product_data: { name: line.name },
         unit_amount: line.unit_amount,
       },
       quantity: line.quantity,
     }));
- 
+
     return await stripe.checkout.sessions.create({
       mode: "payment",
- 
+
       // ✅ Apple Pay controlled ONLY from dashboard config
       payment_method_configuration: process.env.PAY_NOW_CONFIGRATION_METHOD,
- 
+
       // billing_address_collection: "required",
       // phone_number_collection: { enabled: true },
- 
+
       line_items,
       success_url: `${CLINIC_URL}payment-success/?appointment_id=${metadata.appointment_id}&redirect_url=${metadata.redirect_url}`,
       cancel_url: `${CLINIC_URL}payment-cancel/?redirect_url=${metadata.cancel_url}`,
- 
+
       metadata: {
         appointment_id: metadata.appointment_id,
         payment_flow: "PAY_NOW",
         currency: metadata.currency || "sek",
       },
- 
+
       locale: "auto",
     });
   } catch (error) {
@@ -641,7 +645,7 @@ export const createPayLaterSetupSession = async ({ metadata, final_total }) => {
 
     success_url: `${CLINIC_URL}payment-success/?appointment_id=${metadata.appointment_id}&type=PAY_NOW&redirect_url=${metadata.redirect_url}`,
     cancel_url: `${CLINIC_URL}payment-cancel/?type=PAY_NOW&redirect_url=${metadata.redirect_url}`,
-     metadata: { appointment_id: metadata.appointment_id, payment_flow: "PAY_LATER" },
+    metadata: { appointment_id: metadata.appointment_id, payment_flow: "PAY_LATER" },
   });
 };
 
@@ -861,40 +865,52 @@ export const processDueAuthorizedAppointments = async () => {
 
 export const handleCheckoutSessionCompleted = async (session) => {
   const appointment_id = session.metadata?.appointment_id;
+  const payment_flow = session.metadata?.payment_flow;
 
   if (!appointment_id) {
     console.log("No appointment_id found in Checkout Session metadata");
     return;
   }
 
-  // Retrieve SetupIntent ID created by Checkout
-  const setupIntentId = session.setup_intent;
-
-  if (!setupIntentId) {
-    console.log("No setup_intent found on session");
-    return;
-  }
-
-  // Fetch SetupIntent to get payment_method
-  const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
-
   const [appointment] = await db.query(
     `SELECT user_id FROM tbl_appointments WHERE appointment_id = ?`,
     [appointment_id]
   );
 
-  if (!appointment) return;
+  if (!appointment) {
+    console.log(`Appointment ${appointment_id} not found`);
+    return;
+  }
 
   if (appointment.payment_timing == "PAY_LATER") {
+
+    // Retrieve SetupIntent ID created by Checkout
+    const setupIntentId = session.setup_intent;
+
+    if (!setupIntentId) {
+      console.log("No setup_intent found on session");
+      return;
+    }
+
+    // Fetch SetupIntent to get payment_method
+    const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
+
     await db.query(
       `UPDATE tbl_appointments 
      SET stripe_payment_method_id = ?, stripe_setup_intent_id = ? , payment_status = 'authorized'
      WHERE appointment_id = ?`,
       [setupIntent.payment_method, setupIntent.id, appointment_id]
     );
+    console.log(`✅ Card authorized for appointment ${appointment_id}`);
+  } else {
+    await appointmentModel.updateAppointmentAsPaid(appointment_id, 'paid');
   }
 
+  await sendAppointmentConfirmationNotifications(appointment_id, appointment.user_id);
 
+  console.log(`✅ Payment succeeded for appointment ${appointment_id}`);
 
-  console.log(`✅ Card authorized for appointment ${appointment_id}`);
 };
+
+// utils/appointmentNotifications.js or in your existing utils file
+
