@@ -2362,7 +2362,7 @@ export const markAppointmentAsPaid = async (req, res) => {
 
         // ----------------- Send single appointment response -----------------
         // return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", result[0]);
-        const data = result[0];
+        // const data = result[0];
 
 
         const [totalAppointmentBooked] = await appointmentModel.getNumberOfAppointments(user_id);
