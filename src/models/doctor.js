@@ -448,6 +448,17 @@ export const getDoctorSlotSessionsModel = async (doctorId, clinic_id) => {
             return [];
         }
 
+        // ✅ Sort sessions in ascending order for each day
+        if (Array.isArray(availability)) {
+            availability.forEach(daySlot => {
+                if (Array.isArray(daySlot.session)) {
+                    daySlot.session.sort((a, b) =>
+                        a.start_time.localeCompare(b.start_time)
+                    );
+                }
+            });
+        }
+
         return availability;
 
     } catch (error) {
