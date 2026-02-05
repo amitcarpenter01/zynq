@@ -1961,10 +1961,10 @@ const generateSessions = (start, end, slotMinutes) => {
     return sessions;
 };
 
-
 export const generateAvailabilityFromOperationHours = async (req, res) => {
     try {
         const language = req?.user?.language || "en";
+        
         const schema = Joi.object({
             slot_time: Joi.number().integer().positive().optional().allow(null),
             clinic_id: Joi.string().uuid().required()
@@ -1987,6 +1987,27 @@ export const generateAvailabilityFromOperationHours = async (req, res) => {
 
         if (!operationHours) return handleError(res, 404, language, "OPERATION_HOURS_NOT_FOUND");
 
+        // Day order and mapping
+        const dayOrder = [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday"
+        ];
+
+        const dayMapSv = {
+            Monday: "Måndag",
+            Tuesday: "Tisdag",
+            Wednesday: "Onsdag",
+            Thursday: "Torsdag",
+            Friday: "Fredag",
+            Saturday: "Lördag",
+            Sunday: "Söndag"
+        };
+
         const availability = [];
         const slotSummary = {};
 
@@ -1999,13 +2020,35 @@ export const generateAvailabilityFromOperationHours = async (req, res) => {
                 sessions = generateSessions(open_time, close_time, slot_time);
             }
 
+            // Map day name based on language
+            const displayDay = language === "en" 
+                ? day_of_week 
+                : dayMapSv[day_of_week] || day_of_week;
+
             availability.push({
-                day: day_of_week,
+                day: displayDay,
                 session: sessions
             });
 
-            slotSummary[day_of_week] = sessions.length;
+            slotSummary[displayDay] = sessions.length;
         }
+
+        // Sort availability by day order
+        availability.sort((a, b) => {
+            // Get English day names for sorting
+            const getDayKey = (day) => {
+                // If Swedish, find the English key
+                if (language !== "en") {
+                    return Object.keys(dayMapSv).find(key => dayMapSv[key] === day) || day;
+                }
+                return day;
+            };
+            
+            const dayA = getDayKey(a.day);
+            const dayB = getDayKey(b.day);
+            
+            return dayOrder.indexOf(dayA) - dayOrder.indexOf(dayB);
+        });
 
         return handleSuccess(
             res,
@@ -2015,10 +2058,69 @@ export const generateAvailabilityFromOperationHours = async (req, res) => {
             availability || [],
         );
     } catch (error) {
-        console.error("Error in getAllSurgery:", error);
+        console.error("Error in generateAvailabilityFromOperationHours:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
 };
+
+
+// export const generateAvailabilityFromOperationHours = async (req, res) => {
+//     try {
+//         const language = req?.user?.language || "en";
+//         const schema = Joi.object({
+//             slot_time: Joi.number().integer().positive().optional().allow(null),
+//             clinic_id: Joi.string().uuid().required()
+//         });
+
+//         const { error, value } = schema.validate(req.body);
+//         if (error) return joiErrorHandle(res, error);
+
+//         let { slot_time, clinic_id } = value;
+
+//         const [clinic] = await clinicModels.get_clinic_by_id(clinic_id);
+
+//         if (!clinic) return handleError(res, 404, language, "CLINIC_NOT_FOUND");
+
+//         if (!slot_time) {
+//             slot_time = clinic.slot_time || 30;
+//         }
+
+//         const operationHours = await clinicModels.getClinicOperationHours(clinic_id);
+
+//         if (!operationHours) return handleError(res, 404, language, "OPERATION_HOURS_NOT_FOUND");
+
+//         const availability = [];
+//         const slotSummary = {};
+
+//         for (const dayData of operationHours) {
+//             const { day_of_week, open_time, close_time, is_closed } = dayData;
+
+//             let sessions = [];
+
+//             if (!is_closed) {
+//                 sessions = generateSessions(open_time, close_time, slot_time);
+//             }
+
+//             availability.push({
+//                 day: day_of_week,
+//                 session: sessions
+//             });
+
+//             slotSummary[day_of_week] = sessions.length;
+//         }
+
+//         return handleSuccess(
+//             res,
+//             200,
+//             language,
+//             "SLOT_GENERATED_SUCCESSFULLY",
+//             availability || [],
+//         );
+//     } catch (error) {
+//         console.error("Error in getAllSurgery:", error);
+//         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
+//     }
+// };
 
 export const unsyncClinicController = async (req, res) => {
     try {
