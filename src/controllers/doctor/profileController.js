@@ -40,7 +40,7 @@ export const addPersonalInformation = async (req, res) => {
             latitude: Joi.number().optional().allow(null).empty('').default(null),
             longitude: Joi.number().optional().allow(null).empty('').default(null),
             slot_time: Joi.number().optional(),
-            email : Joi.string().optional().allow('', null),
+            email: Joi.string().optional().allow('', null),
         });
 
         let language = req?.user?.language || 'en';
@@ -161,6 +161,37 @@ export const addEducationAndExperienceInformation = async (req, res) => {
 
 export const addExpertise = async (req, res) => {
     try {
+
+        // Day name mapping from Swedish to English
+        const dayMapSwToEn = {
+            "Måndag": "Monday",
+            "Tisdag": "Tuesday",
+            "Onsdag": "Wednesday",
+            "Torsdag": "Thursday",
+            "Fredag": "Friday",
+            "Lördag": "Saturday",
+            "Söndag": "Sunday"
+        };
+
+        // Custom Joi validation for day names (accepts both English and Swedish)
+        const dayValidation = Joi.string()
+            .custom((value, helpers) => {
+                const validEnglishDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                const validSwedishDays = Object.keys(dayMapSwToEn);
+
+                if (validEnglishDays.includes(value) || validSwedishDays.includes(value)) {
+                    // Convert Swedish to English if needed
+                    return dayMapSwToEn[value] || value;
+                }
+
+                return helpers.error('any.invalid');
+            })
+            .required()
+            .messages({
+                'any.invalid': 'Day must be a valid day name in English or Swedish'
+            });
+
+
         const schema = Joi.object({
             clinic_id: Joi.array().items(Joi.string().uuid()).min(1).required(),
             treatments: Joi.array().items(
@@ -209,7 +240,8 @@ export const addExpertise = async (req, res) => {
             availability: Joi.array().items(
                 Joi.array().items(
                     Joi.object({
-                        day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                        // day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required(),
+                        day: dayValidation,
                         slot_time: Joi.alternatives()
                             .try(Joi.string(), Joi.number())
                             .optional()
@@ -775,7 +807,7 @@ export const editConsultationFeeAndAvailability = async (req, res) => {
         let language = req?.user?.language || 'en';
         let { doctor_availability_id } = req.params;
         const zynqUserId = req?.user?.id;
-        
+
         await doctorModels.update_docter_availability(req.body, doctor_availability_id);
         return handleSuccess(res, 200, language, "DOCTOR_PERSONAL_DETAILS_UPDATED", {});
     } catch (error) {
@@ -1117,7 +1149,7 @@ export const createDoctorAvailability = async (req, res) => {
         // const { days, fee_per_session, dr_type } = req.body;
         const language = req?.user?.language || 'en';
 
-        await dbOperations.updateData('tbl_doctors', { fee_per_session: fee_per_session,slot_time: slot_time }, `WHERE doctor_id = '${doctor_id}' `);
+        await dbOperations.updateData('tbl_doctors', { fee_per_session: fee_per_session, slot_time: slot_time }, `WHERE doctor_id = '${doctor_id}' `);
 
         if (availability?.length > 0) {
             const doctorSession = convertAvailability(availability, Number(slot_time));
@@ -1126,9 +1158,9 @@ export const createDoctorAvailability = async (req, res) => {
             await updateClinicOperationHours(clinic_timing, clinic_id);
         }
 
-            await update_onboarding_status(5, zynqUserId);
-        
-        await dbOperations.updateData('tbl_clinics', { is_onboarded: 1,same_for_all: same_for_all, slot_time: slot_time }, `WHERE zynq_user_id = '${zynqUserId}' `);
+        await update_onboarding_status(5, zynqUserId);
+
+        await dbOperations.updateData('tbl_clinics', { is_onboarded: 1, same_for_all: same_for_all, slot_time: slot_time }, `WHERE zynq_user_id = '${zynqUserId}' `);
         return handleSuccess(res, 200, language, 'UPDATE_DOCTOR_AVAILABILITY_SUCCESSFULLY');
     } catch (err) {
         console.error('Error creating availability:', err);
