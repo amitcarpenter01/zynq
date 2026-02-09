@@ -32,7 +32,8 @@ export const create_user = async (mobile_number, otp = '', language) => {
             otp,
             language,
             is_verified: 0,
-            is_active: 1
+            is_active: 1,
+            approval_status : "APPROVED"
         };
         return await db.query(`INSERT INTO tbl_users SET ?`, userData);
     } catch (error) {
