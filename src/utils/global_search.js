@@ -3,7 +3,6 @@ import db from "../config/db.js";
 import { openai } from "../../app.js"
 import { deleteGuestDataModel, getInvitedZynqUsers } from "../models/api.js";
 import { zynqReminderEnglishTemplate, zynqReminderSwedishTemplate } from "./templates.js";
-import { sendEmail } from "../services/send_email.js";
 import { cosineSimilarity } from "./user_helper.js";
 import axios from "axios";
 import OpenAI from "openai";
