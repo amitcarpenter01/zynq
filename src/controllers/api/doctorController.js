@@ -7,7 +7,6 @@ import * as clinicModels from "../../models/clinic.js";
 import * as doctorModels from "../../models/doctor.js";
 import * as apiModels from "../../models/api.js";
 import { asyncHandler, handleError, handleSuccess, joiErrorHandle } from "../../utils/responseHandler.js";
-import { sendEmail } from "../../services/send_email.js";
 import { formatImagePath, generateAccessToken, generatePassword, generateVerificationLink } from "../../utils/user_helper.js";
 import { fileURLToPath } from 'url';
 import { fetchChatById, getChatBetweenUsers } from "../../models/chat.js";
