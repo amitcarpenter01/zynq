@@ -65,6 +65,66 @@ export const appointmentBookedTemplate = {
     `
 };
 
+export const appointmentBookedTemplateSv = {
+  subject: ({ user_name, appointment_date }) =>
+    `Ny bokad tid av ${user_name} - Tid bokad för ${appointment_date}`,
+
+  body: ({
+    user_name,
+    doctor_name,
+    appointment_date,
+    total_price,
+    clinic_name
+  }) => `
+    <!DOCTYPE html>
+    <html lang="sv">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Bokningsbekräftelse</title>
+    </head>
+    <body style="margin:0; font-family: Arial, sans-serif; background-color:#ffffff;">
+ 
+        <!-- Header -->
+        <div style="text-align:center; padding:20px 0; font-size:24px; font-weight:bold;">
+            ZYNQ
+        </div>
+ 
+        <!-- Title Section -->
+        <div style="background-color:#1e1e1e; color:#ffffff; padding:40px 20px; text-align:center;">
+            <h2 style="margin:0;">Ny bokad tid av ${user_name}</h2>
+        </div>
+ 
+        <!-- Content -->
+        <div style="padding:20px; color:#333; max-width:600px; margin:0 auto;">
+            <p>Hej <strong>${doctor_name}</strong>,</p>
+ 
+            <p>En ny tid har bokats via appen. Här är bokningsdetaljerna:</p>
+ 
+            <p><strong>Användarnamn:</strong> ${user_name}</p>
+            <p><strong>Expertnamn:</strong> ${doctor_name}</p>
+            <p><strong>Kliniknamn:</strong> ${clinic_name}</p>
+            <p><strong>Datum och tid:</strong> ${appointment_date}</p>
+            <p><strong>Betalt belopp:</strong> ${total_price}</p>
+ 
+            <p>Förbered dig för den schemalagda sessionen därefter.<br/>
+               Denna bokning har bekräftats och betalningen har mottagits.</p>
+ 
+            <p>Vänliga hälsningar,<br/>
+            ZYNQ-teamet</p>
+        </div>
+ 
+        <!-- Footer -->
+        <div style="text-align:center; font-size:14px; color:#999; padding:20px;">
+            <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;" />
+            <p>ZYNQ</p>
+        </div>
+ 
+    </body>
+    </html>
+    `
+};
+
 
 export const orderConfirmationTemplate = ({
   orderDate,
