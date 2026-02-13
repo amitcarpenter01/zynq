@@ -20,6 +20,7 @@ import { getIO } from '../../utils/socketManager.js';
 import { onlineUsers } from "../../utils/callSocket.js";
 import { io, stripe } from '../../../app.js';
 import { get_user_by_user_id } from '../../models/api.js';
+import { get_clinic_by_id } from '../../models/clinic.js';
 
 export const bookAppointment = async (req, res) => {
     try {
@@ -259,6 +260,21 @@ export const getAppointmentsById = async (req, res) => {
         const result = await Promise.all(
             appointments.map(async (app) => {
                 const doctor = await getDocterByDocterId(app.doctor_id);
+                if (!doctor?.length || !doctor[0]?.zynq_user_id) {
+                    const notFoundError = new Error("Doctor not found");
+                    notFoundError.statusCode = 404;
+                    notFoundError.errorKey = "DOCTOR_NOT_FOUND";
+                    throw notFoundError;
+                }
+
+                const clinic = await get_clinic_by_id(app.clinic_id);
+                if (!clinic?.length) {
+                    const notFoundError = new Error("Clinic not found");
+                    notFoundError.statusCode = 404;
+                    notFoundError.errorKey = "CLINIC_NOT_FOUND";
+                    throw notFoundError;
+                }
+
                 const chatId = await getChatBetweenUsers(userId, doctor[0].zynq_user_id);
 
                 app.chatId = chatId.length > 0 ? chatId[0].id : null;
@@ -296,6 +312,9 @@ export const getAppointmentsById = async (req, res) => {
         return handleSuccess(res, 200, language, "APPOINTMENTS_FETCHED", result[0]);
 
     } catch (error) {
+        if (error?.statusCode === 404 && error?.errorKey) {
+            return handleError(res, 404, req?.user?.language || "en", error.errorKey);
+        }
         console.error("Error fetching appointment by ID:", error);
         return handleError(res, 500, "en", "INTERNAL_SERVER_ERROR");
     }
