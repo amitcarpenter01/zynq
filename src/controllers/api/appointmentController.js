@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { NOTIFICATION_MESSAGES, sendNotification } from '../../services/notifications.service.js';
 import { getLatestFaceScanReportIDByUserID } from '../../utils/misc.util.js';
 import { sendEmail } from '../../services/send_email.js';
-import { appointmentBookedTemplate, appointmentBookingConfirmationTemplate, appointmentBookingConfirmationTemplateSwedish, appointmentReceiptTemplate, appointmentReceiptTemplateSwedish } from '../../utils/templates.js';
+import { appointmentBookedTemplate, appointmentBookedTemplateSv, appointmentBookingConfirmationTemplate, appointmentBookingConfirmationTemplateSwedish, appointmentReceiptTemplate, appointmentReceiptTemplateSwedish } from '../../utils/templates.js';
 import { getAdminCommissionRatesModel } from '../../models/admin.js';
 import { createPayLaterSetupIntent, createPayLaterSetupSession, createPaymentSessionForAppointment, createPaymentSessionForAppointmentPAYLATERKLARNA, getOrCreateStripeCustomerId, handleCheckoutSessionCompleted, handlePaymentIntentFailed, handlePaymentIntentSucceeded, handleSetupIntentSucceeded, updateAuthorizationSetupIntentIdOfAppointment, verifyStripeWebhook } from '../../models/payment.js';
 import { booleanValidation } from '../../utils/joi.util.js';
@@ -437,6 +437,9 @@ export const saveOrBookAppointment = async (req, res) => {
             let user_id = req.user.user_id
             const doctor = await getDocterByDocterId(doctor_id);
             let chatId = await getChatBetweenUsers(user_id, doctor[0].zynq_user_id);
+            const selectedAppointmentBookedTemplate = (req?.user?.language || "en") === "sv"
+                ? appointmentBookedTemplateSv
+                : appointmentBookedTemplate;
 
 
             await sendNotification({
@@ -451,11 +454,11 @@ export const saveOrBookAppointment = async (req, res) => {
 
             await sendEmail({
                 to: doctor[0].email,
-                subject: appointmentBookedTemplate.subject({
+                subject: selectedAppointmentBookedTemplate.subject({
                     user_name: req?.user?.full_name,
                     appointment_date: normalizedStart
                 }),
-                html: appointmentBookedTemplate.body({
+                html: selectedAppointmentBookedTemplate.body({
                     user_name: req?.user?.full_name,
                     doctor_name: doctor[0].name,
                     appointment_date: normalizedStart,
@@ -1993,13 +1996,17 @@ export const bookDirectAppointment = asyncHandler(async (req, res) => {
             receiver_type: "DOCTOR",
         });
 
+        const selectedAppointmentBookedTemplate = language === "sv"
+            ? appointmentBookedTemplateSv
+            : appointmentBookedTemplate;
+
         await sendEmail({
             to: doctor.email,
-            subject: appointmentBookedTemplate.subject({
+            subject: selectedAppointmentBookedTemplate.subject({
                 user_name: req.user.full_name,
                 appointment_date: normalizedStart,
             }),
-            html: appointmentBookedTemplate.body({
+            html: selectedAppointmentBookedTemplate.body({
                 user_name: req.user.full_name,
                 doctor_name: doctor.name,
                 appointment_date: normalizedStart,
@@ -2758,13 +2765,16 @@ export const sendAppointmentConfirmationNotifications = async (appointment_id,us
         });
 
         // Send email to doctor
+        const selectedAppointmentBookedTemplate = language === "sv"
+            ? appointmentBookedTemplateSv
+            : appointmentBookedTemplate;
         await sendEmail({
             to: doctor[0].email,
-            subject: appointmentBookedTemplate.subject({
+            subject: selectedAppointmentBookedTemplate.subject({
                 user_name: user?.full_name,
                 appointment_date: normalizedStart
             }),
-            html: appointmentBookedTemplate.body({
+            html: selectedAppointmentBookedTemplate.body({
                 user_name: user?.full_name,
                 doctor_name: doctor[0].name,
                 appointment_date: normalizedStart,
