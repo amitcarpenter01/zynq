@@ -66,10 +66,14 @@ function startServer() {
 
   if (IS_LIVE) {
     console.log("🔒 SSL is enabled");
+    // const sslOptions = {
+    //   ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
+    //   key: fs.readFileSync("/var/www/html/ssl/private.key"),
+    //   cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
+    // };
     const sslOptions = {
-      ca: fs.readFileSync("/var/www/html/ssl/ca_bundle.crt"),
-      key: fs.readFileSync("/var/www/html/ssl/private.key"),
-      cert: fs.readFileSync("/var/www/html/ssl/certificate.crt"),
+      key: fs.readFileSync("/etc/letsencrypt/live/getzynq.io/privkey.pem"),
+      cert: fs.readFileSync("/etc/letsencrypt/live/getzynq.io/fullchain.pem"),
     };
     server = https.createServer(sslOptions, app);
   } else {
