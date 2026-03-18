@@ -28,6 +28,8 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
         min_rating = null
     } = filters;
 
+    treatment_ids = [];
+
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
@@ -54,22 +56,24 @@ export const get_all_clinics = asyncHandler(async (req, res) => {
     }
 
     // 👉 If all filters are empty, fallback to user-based treatment IDs
-    const areAllFiltersEmpty =
-        treatment_ids.length === 0 &&
-        skin_condition_ids.length === 0 &&
-        aesthetic_device_ids.length === 0 &&
-        skin_type_ids.length === 0 &&
-        concern_ids.length === 0 &&
-        surgery_ids.length === 0 &&
-        search.length === 0 &&
-        distance.min === null &&
-        price.min === null &&
-        !min_rating;
 
-    if (areAllFiltersEmpty) {
-        const userTreatmentIds = await getTreatmentIDsByUserID(req.user.user_id);
-        treatment_ids = userTreatmentIds || [];
-    }
+    //  Change on 18-03-2026
+    // const areAllFiltersEmpty =
+    //     treatment_ids.length === 0 &&
+    //     skin_condition_ids.length === 0 &&
+    //     aesthetic_device_ids.length === 0 &&
+    //     skin_type_ids.length === 0 &&
+    //     concern_ids.length === 0 &&
+    //     surgery_ids.length === 0 &&
+    //     search.length === 0 &&
+    //     distance.min === null &&
+    //     price.min === null &&
+    //     !min_rating;
+
+    // if (areAllFiltersEmpty) {
+    //     const userTreatmentIds = await getTreatmentIDsByUserID(req.user.user_id);
+    //     treatment_ids = userTreatmentIds || [];
+    // }
 
     const queryFilters = {
         treatment_ids,
