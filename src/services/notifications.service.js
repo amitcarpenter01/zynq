@@ -145,12 +145,12 @@ export const NOTIFICATION_MESSAGES = {
         getBody: () => `Your product has been rejected by administrator.`
     },
     treatment_approved: {
-        title: 'Treatment Approved',
-        getBody: () => `Your treatment has been approved by administrator.`
+        title: 'Service Approved',
+        getBody: () => `Your Service has been approved by administrator.`
     },
     treatment_rejected: {
-        title: 'Treatment Rejected',
-        getBody: () => `Your treatment has been rejected by administrator.`
+        title: 'Service Rejected',
+        getBody: () => `Your Service has been rejected by administrator.`
     },
     concern_approved: {
         title: 'Concern Approved',
