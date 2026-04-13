@@ -581,7 +581,7 @@ export const sendDoctorOnaboardingInvitation = async (req, res) => {
 
                     const emailOptions = {
                         to: email,
-                        subject: "Expert Invitation",
+                        subject: "Professional Invitation",
                         html: emailHtml,
                     };
                     // await sendEmail(emailOptions);
@@ -1501,7 +1501,7 @@ export const updateDoctorController = async (req, res) => {
 
                     await sendEmail({
                         to: user.email,
-                        subject: "Expert Invitation",
+                        subject: "Professional Invitation",
                         html: emailHtml,
                     });
                 }
@@ -2237,7 +2237,7 @@ export const sendDoctorInvitationListController = async (req, res) => {
 
                     const emailOptions = {
                         to: doctor.email,
-                        subject: "Expert Invitation",
+                        subject: "Professional Invitation",
                         html: emailHtml,
                     };
                     await sendEmail(emailOptions);

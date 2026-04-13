@@ -135,7 +135,7 @@ export const sendDoctorInvitation = async (req, res) => {
 
                         await sendEmail({
                             to: email,
-                            subject: language == "en" ? "Expert Invitation" : "Expertinbjudan",
+                            subject: language == "en" ? "Professional Invitation" : "Expertinbjudan",
                             html: emailHtml,
                         });
 
@@ -217,7 +217,7 @@ export const sendDoctorInvitation = async (req, res) => {
 
                     const emailOptions = {
                         to: email,
-                        subject: language == "en" ?"Expert Invitation" : "Expertinbjudan",
+                        subject: language == "en" ?"Professional Invitation" : "Expertinbjudan",
                         html: emailHtml,
                     };
                     await sendEmail(emailOptions);
